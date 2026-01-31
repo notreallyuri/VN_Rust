@@ -1,0 +1,4 @@
+[workspace]
+resolver = "2"
+
+members = ["script_compiler", "runtime", "vn_core"]

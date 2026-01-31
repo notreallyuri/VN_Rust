@@ -1,0 +1,101 @@
+{
+  "$defs": {
+    "Action": {
+      "enum": [
+        "Leave",
+        "Clear",
+        "Speak",
+        "Enter"
+      ],
+      "type": "string"
+    },
+    "Dialogue": {
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/Action"
+        },
+        "character": {
+          "anyOf": [
+            {
+              "enum": [
+                "Gabriel",
+                "Hugo",
+                "Crownley",
+                "Mary",
+                "Narrator"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "enum": [
+                "Happy",
+                "Sad",
+                "Angry",
+                "Thinking"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "position": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Position"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "text"
+      ],
+      "type": "object"
+    },
+    "Position": {
+      "enum": [
+        "Left",
+        "Middle",
+        "Right"
+      ],
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "bg_image": {
+      "type": "string"
+    },
+    "lines": {
+      "items": {
+        "$ref": "#/$defs/Dialogue"
+      },
+      "type": "array"
+    },
+    "next_scene": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "bg_image",
+    "lines"
+  ],
+  "title": "Scene",
+  "type": "object"
+}

@@ -1,0 +1,3 @@
+[game]
+characters = ["Gabriel", "Hugo", "Crownley", "Mary", "Narrator"]
+expressions = ["Happy", "Sad", "Angry", "Thinking"]

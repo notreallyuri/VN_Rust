@@ -1,0 +1,12 @@
+[package]
+name = "vn_core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+postcard = { version = "1.1.3", features = ["use-std"] }
+raylib = "5.5.1"
+schemars = "1.2.0"
+regex = "1.12.2"
+serde = { version = "1.0.228", features = ["derive"] }
+strum = { version = "0.27.2", features = ["derive"] }
