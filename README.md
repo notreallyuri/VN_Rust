@@ -13,8 +13,6 @@ It provides:
 
 The scripting language is intentionally limited — all game logic lives in Rust.
 
----
-
 ## Project Goals
 
 - 🦀 Rust-first engine architecture
@@ -24,8 +22,6 @@ The scripting language is intentionally limited — all game logic lives in Rust
 - 🛠 Tooling-first design (parser, formatter, LSP)
 - 📦 Scalable to large, multi-file projects
 - ❌ No embedded general-purpose scripting language
-
----
 
 ## Engine Overview
 
@@ -79,15 +75,11 @@ It may only:
 - Read engine-defined state
 - Request engine actions
 
----
-
 ## Writing Story Scripts
 
 Story content is written using a custom DSL designed for clarity and structure.
 
 📘 **[Story Script Specification](SCRIPT.md)**
-
----
 
 ## Design Intent
 
@@ -104,8 +96,6 @@ This keeps stories:
 - Easy to validate
 - Easy to refactor
 - Friendly to tooling and large projects
-
----
 
 ## Project Status
 
