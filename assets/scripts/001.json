@@ -5,13 +5,6 @@
     {
       "action": "Enter",
       "character": "Gabriel",
-      "text": "",
-      "expression": null,
-      "position": null
-    },
-    {
-      "action": "Speak",
-      "character": "Gabriel",
       "text": "Hey! This is really easy to read",
       "expression": null,
       "position": null
@@ -26,7 +19,7 @@
     {
       "action": "Enter",
       "character": "Mary",
-      "text": "",
+      "text": "...",
       "expression": null,
       "position": null
     },

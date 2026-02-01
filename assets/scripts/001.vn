@@ -1,12 +1,11 @@
 BG: classroom.png
 NEXT: 002.bin
 
-[ENTER] Gabriel
-Gabriel: "Hey! This is really easy to read"
+[ENTER] Gabriel : "Hey! This is really easy to read"
 
 Gabriel: "The parser just looks for the parentheses"
 
-[ENTER] Mary
+[ENTER] Mary : "..."
 Mary: "Is this custom parser working ?"
 
 Gabriel: "Yes!"

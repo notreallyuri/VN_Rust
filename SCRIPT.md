@@ -199,7 +199,8 @@ This ensures:
 
 ### 8.1 Variable Registry (Engine-Side)
 
-Variables are defined in the engine (or a schema file) and exposed to the script runtime.
+Variables are defined in the engine (or a schema file) and exposed to the script
+runtime.
 
 Example (conceptual):
 

@@ -1,4 +1,4 @@
 pub mod components;
-pub mod parser;
 pub mod providers;
+pub mod script;
 pub mod types;

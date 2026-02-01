@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = ["script_compiler", "runtime", "vn_core"]
+members = ["runtime", "vn_core", "test_compiler"]

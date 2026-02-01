@@ -1,0 +1,7 @@
+[package]
+name = "test_compiler"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vn_core = { path = "../vn_core" }
