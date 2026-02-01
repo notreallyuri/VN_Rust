@@ -79,7 +79,7 @@ It may only:
 
 Story content is written using a custom DSL designed for clarity and structure.
 
-📘 **[Story Script Specification](SCRIPT.md)**
+**[Story Script Specification](SCRIPT.md)**
 
 ## Design Intent
 
