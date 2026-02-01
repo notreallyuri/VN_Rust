@@ -15,13 +15,13 @@ The scripting language is intentionally limited — all game logic lives in Rust
 
 ## Project Goals
 
-- 🦀 Rust-first engine architecture
-- 📖 Writer-friendly story scripting
-- 🎬 Scene and flow management
-- 🧵 Centralized state ownership
-- 🛠 Tooling-first design (parser, formatter, LSP)
-- 📦 Scalable to large, multi-file projects
-- ❌ No embedded general-purpose scripting language
+- Rust-first engine architecture
+- Writer-friendly story scripting
+- Scene and flow management
+- Centralized state ownership
+- Tooling-first design (parser, formatter, LSP)
+- Scalable to large, multi-file projects
+- No embedded general-purpose scripting language
 
 ## Engine Overview
 
