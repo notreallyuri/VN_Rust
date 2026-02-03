@@ -2,6 +2,7 @@ use crate::script::types::Node;
 
 use super::types::Instruction;
 
+#[derive(Default)]
 pub struct Compiler {
     instructions: Vec<Instruction>,
 }
@@ -40,14 +41,14 @@ impl Compiler {
             Node::Jump { target } => self
                 .instructions
                 .push(Instruction::Jump { scene_id: target }),
-            Node::Choice { option } => {
+            Node::ChoiceBlock { options } => {
                 let choice_instr_index = self.instructions.len();
                 self.instructions.push(Instruction::Pause);
 
                 let mut options_map = Vec::new();
                 let mut exit_jumps = Vec::new();
 
-                for opt in option {
+                for opt in options {
                     let start_index = self.instructions.len();
                     options_map.push((opt.text, start_index));
 

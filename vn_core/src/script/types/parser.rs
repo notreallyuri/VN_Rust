@@ -6,7 +6,8 @@ pub enum TokenKind {
     Clear,
     Dialogue,
     Narration,
-    Choice,
+    ChoiceBlock,
+    ChoiceOption,
     Jump,
     If,
     Else,
@@ -46,8 +47,8 @@ pub enum Node {
         speaker: Option<String>,
         text: String,
     },
-    Choice {
-        option: Vec<ChoiceOption>,
+    ChoiceBlock {
+        options: Vec<ChoiceOption>,
     },
     If {
         condition: Condition,

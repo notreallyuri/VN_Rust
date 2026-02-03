@@ -40,11 +40,11 @@ pub fn parse_if(tokens: &[Token], start: usize) -> (Node, usize) {
     let if_token = &tokens[start];
     let base_indent = if_token.indent;
 
-    let condition_str = if_token
-        .payload
-        .trim_start_matches("if ")
-        .trim_end_matches(':')
-        .trim();
+    // let condition_str = if_token
+    //    .payload
+    //    .trim_start_matches("if ")
+    //    .trim_end_matches(':')
+    //    .trim();
     let condition = Condition;
 
     let then_indent = if start + 1 < tokens.len() {
@@ -87,12 +87,12 @@ pub fn parse_choice(tokens: &[Token], start: usize) -> (Node, usize) {
     let mut options = Vec::new();
 
     if i >= tokens.len() {
-        return (Node::Choice { option: options }, i);
+        return (Node::ChoiceBlock { options }, i);
     }
     let option_indent = tokens[i].indent;
 
     if option_indent <= base_indent {
-        return (Node::Choice { option: options }, i);
+        return (Node::ChoiceBlock { options }, i);
     }
 
     while i < tokens.len() {
@@ -129,7 +129,7 @@ pub fn parse_choice(tokens: &[Token], start: usize) -> (Node, usize) {
         i = next_i;
     }
 
-    (Node::Choice { option: options }, i)
+    (Node::ChoiceBlock { options }, i)
 }
 
 pub fn parse_statement(token: &Token) -> Node {
@@ -185,7 +185,7 @@ pub fn parse_blocks(tokens: &[Token], start: usize, indent: usize) -> (Vec<Node>
 
         let (node, next_i) = match token.kind {
             TokenKind::Scene => parse_scene(tokens, i),
-            TokenKind::Choice => parse_choice(tokens, i),
+            TokenKind::ChoiceBlock => parse_choice(tokens, i),
             TokenKind::If => parse_if(tokens, i),
             _ => (parse_statement(token), i + 1),
         };

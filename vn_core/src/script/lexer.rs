@@ -20,7 +20,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 trimmed.trim_start_matches("remove").trim(),
             ),
             Some("clear") => (TokenKind::Clear, ""),
-            Some("choice:") => (TokenKind::Choice, ""),
+            Some("choice:") => (TokenKind::ChoiceBlock, ""),
             Some("jump") => (TokenKind::Jump, trimmed.trim_start_matches("jump").trim()),
             Some("if") => (TokenKind::If, trimmed),
             Some("else:") => (TokenKind::Else, ""),
@@ -30,7 +30,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
             _ => {
                 if trimmed.starts_with('"') && trimmed.ends_with(':') {
-                    (TokenKind::Choice, trimmed)
+                    (TokenKind::ChoiceOption, trimmed)
                 } else if trimmed.starts_with('"') {
                     (TokenKind::Narration, trimmed)
                 } else {

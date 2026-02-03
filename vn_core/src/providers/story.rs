@@ -1,6 +1,5 @@
-use std::{collections::HashMap, fs};
-
 use crate::types::{Action, Position, Scene};
+use std::{collections::HashMap, fs};
 
 pub struct CurrentVisuals<E> {
     pub expression: E,

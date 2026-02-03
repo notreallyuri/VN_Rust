@@ -1,6 +1,13 @@
 use raylib::prelude::*;
-use vn_core::{providers::ScreenStateManager, types::ScreenState};
+use vn_core::{
+    providers::{ResourceProvider, ScreenProvider, ScreenStateManager},
+    types::ScreenState,
+};
 
+use crate::screen_manager::RaylibUpdateCtx;
+
+mod components;
+mod providers;
 mod screen_manager;
 mod screens;
 
@@ -15,11 +22,16 @@ fn main() {
         ScreenStateManager::new(ScreenState::StartScreen, director, "assets/scripts/001.bin");
 
     while !rl.window_should_close() {
-        state_manager.update(&mut rl, &thread);
+        let mut context = RaylibUpdateCtx {
+            rl: &mut rl,
+            thread: &thread,
+        };
+
+        state_manager.update(&mut context);
 
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::BLACK);
 
-        state_manager.draw(&mut d, &thread);
+        state_manager.draw(&mut d);
     }
 }

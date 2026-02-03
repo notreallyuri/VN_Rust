@@ -1,6 +1,7 @@
-use raylib::prelude::*;
-
-use crate::providers::{ResourceProvider, StoryProvider};
+use crate::{
+    providers::{ResourceProvider, StoryProvider},
+    types::GameContext,
+};
 
 #[derive(Clone)]
 pub enum ScreenState {
@@ -14,24 +15,7 @@ pub enum ScreenState {
     Settings(String),
 }
 
-pub trait Screen {
-    fn update(&mut self, _ctx: &mut GameContext) -> Option<ScreenState> {
-        None
-    }
-
-    fn draw(
-        &self,
-        _d: &mut RaylibDrawHandle,
-        _thread: &RaylibThread,
-        _resources: &mut ResourceProvider,
-        _story: &StoryProvider,
-    ) {
-    }
-}
-
-pub struct GameContext<'a> {
-    pub rl: &'a mut RaylibHandle,
-    pub thread: &'a RaylibThread,
-    pub resources: &'a mut ResourceProvider,
-    pub story: &'a mut StoryProvider,
+pub trait Screen<U, D, R> {
+    fn update(&mut self, ctx: GameContext<U, R>) -> Option<ScreenState>;
+    fn draw(&self, target: &mut D, resources: &mut R, story: &StoryProvider);
 }
