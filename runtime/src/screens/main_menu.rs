@@ -1,9 +1,61 @@
 use raylib::prelude::*;
 use vn_core::{
-    components::Button,
-    providers::{ResourceProvider, StoryProvider},
-    types::{GameContext, Screen, ScreenState},
+    runtime::{
+        ResourceManager,
+        types::{GameContext, Screen, ScreenState},
+    },
+    script::provider::StoryProvider,
 };
+
+pub struct Button {
+    pub rect: Rectangle,
+    pub text: String,
+    pub color: Color,
+    pub hover_color: Color,
+}
+
+impl Button {
+    pub fn new(x: f32, y: f32, w: f32, h: f32, text: &str, color: Color) -> Self {
+        Self {
+            rect: rrect(x, y, w, h),
+            text: text.to_string(),
+            color,
+            hover_color: Color::alpha(&color, 0.85),
+        }
+    }
+
+    pub fn is_clicked(&self, rl: &RaylibHandle) -> bool {
+        let mouse = rl.get_mouse_position();
+
+        self.rect.check_collision_point_rec(mouse)
+            && rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
+    }
+
+    pub fn draw(&self, d: &mut RaylibDrawHandle) {
+        let mouse = d.get_mouse_position();
+
+        let current_color = if self.rect.check_collision_point_rec(mouse) {
+            self.hover_color
+        } else {
+            self.color
+        };
+
+        d.draw_rectangle_rec(self.rect, current_color);
+
+        let font_size = 20;
+        let text_width = d.measure_text(&self.text, font_size);
+        let text_x = self.rect.x + (self.rect.width / 2.0) - (text_width as f32 / 2.0);
+        let text_y = self.rect.y + (self.rect.height / 2.0) - (font_size as f32 / 2.0);
+
+        d.draw_text(
+            &self.text,
+            text_x as i32,
+            text_y as i32,
+            font_size,
+            Color::WHITE,
+        );
+    }
+}
 
 pub struct MainMenuScreen {
     buttons: Vec<Button>,
@@ -46,7 +98,7 @@ impl MainMenuScreen {
 }
 
 impl Screen for MainMenuScreen {
-    fn update(&mut self, ctx: &mut GameContext) -> Option<ScreenState> {
+    fn update(&mut self, ctx: GameContext) -> Option<ScreenState> {
         if self.buttons[0].is_clicked(ctx.rl) {
             return Some(ScreenState::Playing);
         }
@@ -63,8 +115,7 @@ impl Screen for MainMenuScreen {
     fn draw(
         &self,
         d: &mut RaylibDrawHandle,
-        _thread: &RaylibThread,
-        _resources: &mut ResourceProvider,
+        _resources: &mut ResourceManager,
         _story: &StoryProvider,
     ) {
         d.draw_text("God Is Watching", 480, 150, 60, Color::RAYWHITE);

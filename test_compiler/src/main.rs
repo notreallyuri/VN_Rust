@@ -3,32 +3,16 @@ use vn_core::script::lexer::tokenize;
 use vn_core::script::parser::parse_scene;
 use vn_core::script::types::Instruction;
 
-fn main() {
-    let script = r#"
-scene start:
-    show gabriel happy
-    gabriel "Hello!"
-    show crownley serious
-    "hello"
-    crownley "Hello"
-    choice:
-        "Yes":
-            if affection > 2:
-                gabriel "character deep test"
-                jump yes_scene
-            else:
-                gabriel "character deep test 2"
-            "narration deep test"
-        "No":
-            "narration deep test 2"
-            jump no_scene
+use std::fs::*;
 
-scene yes_scene:
-    "We jumped out!"
-"#;
+fn main() {
+    let file_path = "assets/scripts/001.story";
+    let script = read_to_string(file_path).unwrap_or_else(|e| {
+        panic!("❌ Failed to read {}: {}", file_path, e);
+    });
 
     println!("--- 1. LEXER ---");
-    let tokens = tokenize(script);
+    let tokens = tokenize(&script);
 
     for t in tokens.iter().take(5) {
         println!("{:?} (Indent: {})", t.kind, t.indent);

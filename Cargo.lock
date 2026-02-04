@@ -599,6 +599,7 @@ name = "vn_core"
 version = "0.1.0"
 dependencies = [
  "postcard",
+ "raylib",
  "regex",
  "schemars",
  "serde",

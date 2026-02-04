@@ -1,51 +1,71 @@
+use std::collections::HashMap;
+
 use raylib::prelude::*;
 use vn_core::{
-    providers::{ResourceProvider, StoryProvider},
-    types::{GameContext, Screen, ScreenState},
+    runtime::{
+        ResourceManager,
+        types::{GameContext, Screen, ScreenState},
+    },
+    script::{Instruction, provider::StoryProvider},
 };
 
-pub struct PlayingScreen;
+pub struct PlayingScreen {
+    pub active_characters: HashMap<String, String>,
+    pub current_background: String,
+    pub current_instruction_index: usize,
+}
 
 impl PlayingScreen {
     pub fn new() -> Self {
-        Self
+        Self {
+            active_characters: HashMap::new(),
+            current_background: String::from(""),
+            current_instruction_index: 0,
+        }
     }
 }
 
 impl Screen for PlayingScreen {
-    fn update(&mut self, ctx: &mut GameContext) -> Option<ScreenState> {
+    fn update(&mut self, ctx: GameContext) -> Option<ScreenState> {
         if ctx
             .rl
             .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
         {
-            ctx.story.next_line();
+            ctx.story.next();
         }
+
+        for (name, expression) in &ctx.story.active_characters {
+            let path = format!("assets/characters/{}/{}.png", name, expression).to_lowercase();
+            ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
+        }
+
         None
     }
 
     fn draw(
         &self,
         d: &mut RaylibDrawHandle,
-        thread: &RaylibThread,
-        resources: &mut ResourceProvider,
+        resources: &mut ResourceManager,
         story: &StoryProvider,
     ) {
-        for (path, pos) in story.get_render_data() {
-            let tex = resources.get_texture(d, thread, &path);
-            let x = match pos {
-                vn_core::types::Position::Left => 100,
-                vn_core::types::Position::Middle => 540,
-                vn_core::types::Position::Right => 900,
-            };
-            d.draw_texture(tex, x, 200, Color::WHITE);
+        for (name, expression) in &story.active_characters {
+            let path = format!("assets/characters/{}/{}.png", name, expression).to_lowercase();
+
+            if let Some(tex) = resources.textures.get(&path) {
+                // Hardcoded x for now, or you can add Position to active_characters map
+                d.draw_texture(tex, 540, 200, Color::WHITE);
+            }
         }
 
-        let line = &story.current_scene.lines[story.current_index];
-        d.draw_rectangle(50, 550, 1180, 140, Color::new(0, 0, 0, 200));
+        // 3. Draw Dialogue Box
+        // We look at the instruction the VM is CURRENTLY stopped at
+        if let Some(Instruction::Say { char_id, text }) = story.instructions.get(story.ip) {
+            d.draw_rectangle(50, 550, 1180, 140, Color::new(0, 0, 0, 200));
 
-        if let Some(name) = &line.character {
-            d.draw_text(name, 70, 560, 20, Color::GOLD);
+            if let Some(name) = char_id {
+                d.draw_text(name, 70, 560, 20, Color::GOLD);
+            }
+            d.draw_text(text, 70, 600, 22, Color::RAYWHITE);
         }
-        d.draw_text(&line.text, 70, 600, 22, Color::RAYWHITE);
     }
 }

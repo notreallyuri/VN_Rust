@@ -184,7 +184,6 @@ pub fn parse_blocks(tokens: &[Token], start: usize, indent: usize) -> (Vec<Node>
         }
 
         let (node, next_i) = match token.kind {
-            TokenKind::Scene => parse_scene(tokens, i),
             TokenKind::ChoiceBlock => parse_choice(tokens, i),
             TokenKind::If => parse_if(tokens, i),
             _ => (parse_statement(token), i + 1),
