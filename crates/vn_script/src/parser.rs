@@ -1,7 +1,7 @@
 use crate::diagnostics::Diagnostic;
 use crate::lexer::{is_keyword, keyword_name, scan_string};
-use crate::types::Value;
 use crate::types::parser::{ChoiceOption, Node, Stmt, Token, TokenKind};
+use crate::types::{Position, Value};
 
 pub use crate::condition::parse_condition;
 
@@ -318,7 +318,17 @@ fn parse_statement(token: &Token) -> Result<Node, Diagnostic> {
             [character, image] => Ok(Node::Show {
                 character: character_id(character, line)?,
                 image: identifier(image, "image id", line)?,
+                position: None,
             }),
+            [character, image, "at", position] => Ok(Node::Show {
+                character: character_id(character, line)?,
+                image: identifier(image, "image id", line)?,
+                position: Some(parse_position(position, line)?),
+            }),
+            [_, _, "at"] => Err(error(format!(
+                "`at` needs a position: {}",
+                position_names()
+            ))),
             [] => Err(error(
                 "`show` needs a character and an image: `show <character> <image>`".into(),
             )),
@@ -327,7 +337,21 @@ fn parse_statement(token: &Token) -> Result<Node, Diagnostic> {
                 character, character
             ))),
             [_, _, ref extra @ ..] => Err(error(format!(
-                "`show` takes a character and an image; unexpected `{}`",
+                "`show` takes a character, an image and optionally `at <position>`; unexpected `{}`",
+                extra.join(" ")
+            ))),
+        },
+
+        TokenKind::Background => match words(&token.payload)[..] {
+            ["none"] => Ok(Node::Background { image: None }),
+            [image] => Ok(Node::Background {
+                image: Some(identifier(image, "background id", line)?),
+            }),
+            [] => Err(error(
+                "`background` needs an image: `background <image>` or `background none`".into(),
+            )),
+            [_, ref extra @ ..] => Err(error(format!(
+                "`background` takes one image; unexpected `{}`",
                 extra.join(" ")
             ))),
         },
@@ -381,6 +405,23 @@ fn parse_statement(token: &Token) -> Result<Node, Diagnostic> {
         | TokenKind::If
         | TokenKind::Else => unreachable!("block tokens are parsed by the block parser"),
     }
+}
+
+fn parse_position(name: &str, line: usize) -> Result<Position, Diagnostic> {
+    Position::from_name(name).ok_or_else(|| {
+        Diagnostic::error(
+            line,
+            format!(
+                "unknown position `{}` (expected {})",
+                name,
+                position_names()
+            ),
+        )
+    })
+}
+
+fn position_names() -> String {
+    Position::ALL.map(Position::name).join(", ")
 }
 
 pub fn parse_dialogue(payload: &str, line: usize) -> Result<(Option<String>, String), Diagnostic> {

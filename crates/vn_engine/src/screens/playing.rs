@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
 use raylib::prelude::*;
-use vn_script::{Event, StoryVm};
+use vn_script::{Event, Position, StoryVm};
 
 use crate::screens::PAUSE_OVERLAY;
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
     Action, Anchor, DrawContext, FontRole, GameContext, Layout, ResourceManager, Screen,
-    ScreenState,
+    ScreenState, background_path, character_path,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -88,6 +88,8 @@ pub struct PlayingConfig {
     pub menu_key: Option<KeyboardKey>,
     pub after_end: ScreenState,
     pub background: Option<Background>,
+    pub positions: [f32; 5],
+    pub character_height: Option<f32>,
     pub hud: Vec<HudButton>,
     pub hud_button: ButtonStyle,
     pub hud_margin: f32,
@@ -117,6 +119,8 @@ impl Default for PlayingConfig {
             menu_key: None,
             after_end: ScreenState::MainMenu,
             background: None,
+            positions: [0.15, 0.3, 0.5, 0.7, 0.85],
+            character_height: Some(0.8),
             hud: Vec::new(),
             hud_button: ButtonStyle::default()
                 .size(130.0, 40.0)
@@ -209,6 +213,20 @@ impl PlayingConfig {
         self
     }
 
+    pub fn position(mut self, position: Position, x: f32) -> Self {
+        self.positions[position_index(position)] = x;
+        self
+    }
+
+    pub fn position_x(&self, position: Position) -> f32 {
+        self.positions[position_index(position)]
+    }
+
+    pub fn character_height(mut self, fraction: Option<f32>) -> Self {
+        self.character_height = fraction;
+        self
+    }
+
     pub fn hud_button(mut self, label: impl Into<String>, action: Action) -> Self {
         self.hud.push(HudButton {
             label: label.into(),
@@ -270,6 +288,13 @@ impl PlayingConfig {
         self.choice_layout
             .place(inset(screen, self.dialogue_box.margin), &sizes)
     }
+}
+
+fn position_index(position: Position) -> usize {
+    Position::ALL
+        .iter()
+        .position(|p| *p == position)
+        .expect("every position is in Position::ALL")
 }
 
 fn inset(screen: Vector2, margin: f32) -> Rectangle {
@@ -541,6 +566,10 @@ impl Screen for PlayingScreen {
             let path = character_path(name, image);
             ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
         }
+        if let Some(image) = ctx.story.background() {
+            let path = background_path(image);
+            ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
+        }
 
         None
     }
@@ -549,8 +578,16 @@ impl Screen for PlayingScreen {
         let config = &self.config;
         let screen = ui::screen_size(d);
 
-        ui::draw_background(d, ctx.resources, config.background.as_ref());
-        draw_characters(d, ctx.resources, ctx.story, screen);
+        match ctx.story.background() {
+            Some(image) => match ctx.resources.textures.get(&background_path(image)) {
+                Some(texture) => {
+                    ui::draw_texture_cover(d, texture, Rectangle::new(0.0, 0.0, screen.x, screen.y))
+                }
+                None => ui::draw_background(d, ctx.resources, config.background.as_ref()),
+            },
+            None => ui::draw_background(d, ctx.resources, config.background.as_ref()),
+        }
+        draw_characters(d, ctx.resources, ctx.story, config, screen);
 
         let fonts = ctx.fonts();
 
@@ -622,27 +659,52 @@ impl Screen for PlayingScreen {
     }
 }
 
-fn character_path(name: &str, image: &str) -> String {
-    format!("characters/{}/{}.png", name, image).to_lowercase()
-}
-
 fn draw_characters(
     d: &mut RaylibDrawHandle,
     resources: &ResourceManager,
     story: &StoryVm,
+    config: &PlayingConfig,
     screen: Vector2,
 ) {
     let mut characters: Vec<_> = story.active_characters().iter().collect();
     characters.sort();
 
-    let slots = characters.len() as f32 + 1.0;
+    let unplaced = characters
+        .iter()
+        .filter(|(name, _)| story.position(name).is_none())
+        .count();
+    let mut next_unplaced = 0;
 
-    for (i, (name, image)) in characters.into_iter().enumerate() {
-        if let Some(texture) = resources.textures.get(&character_path(name, image)) {
-            let center_x = screen.x * (i as f32 + 1.0) / slots;
-            let x = center_x - texture.width as f32 / 2.0;
-            let y = screen.y - texture.height as f32;
-            d.draw_texture(texture, x as i32, y as i32, Color::WHITE);
-        }
+    for (name, image) in characters {
+        let Some(texture) = resources.textures.get(&character_path(name, image)) else {
+            continue;
+        };
+
+        let center_x = match story.position(name) {
+            Some(position) => screen.x * config.position_x(position),
+            None => {
+                next_unplaced += 1;
+                screen.x * next_unplaced as f32 / (unplaced as f32 + 1.0)
+            }
+        };
+
+        let (w, h) = (texture.width as f32, texture.height as f32);
+        let scale = config
+            .character_height
+            .map_or(1.0, |fraction| screen.y * fraction / h);
+        let dest = Rectangle::new(
+            center_x - w * scale / 2.0,
+            screen.y - h * scale,
+            w * scale,
+            h * scale,
+        );
+        d.draw_texture_pro(
+            texture,
+            Rectangle::new(0.0, 0.0, w, h),
+            dest,
+            Vector2::zero(),
+            0.0,
+            Color::WHITE,
+        );
     }
 }

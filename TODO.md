@@ -111,8 +111,9 @@ Three levels of control, each optional:
 
 ## M5: Presentation
 
-- [ ] Character positions: the default playing screen spreads characters evenly; add DSL positions (`show mary happy at left`)
-- [ ] Backgrounds (needs DSL syntax)
+- [x] Character positions: `show mary happy at left` (five spots; unpositioned characters are spread evenly), sprites scaled to the window height
+- [x] Backgrounds: `background <id>` / `background none`, drawn to cover the window, saved and rolled back with the story
+- [ ] Transitions (`background hall with fade`, dissolves between expressions)
 - [x] Fonts: built-in Noto Sans default, per-role fonts (`FontRole`) loaded from `assets/fonts/`
 - [x] Text wrapping (`Fonts::wrap`, `ui::draw_text_wrapped`)
 - [x] Typewriter effect (text speed setting; click shows the whole line)
@@ -153,4 +154,4 @@ Three levels of control, each optional:
 
 - [ ] Tests: golden tests over the SCRIPT.md examples (lexer, parser and VM done in `crates/vn_script/tests/`)
 - [x] SCRIPT.md §8.3 typo: `-+` → `-=`
-- [ ] SCRIPT.md: specify backgrounds, audio, positions (string escaping done)
+- [ ] SCRIPT.md: specify audio (backgrounds, positions and string escaping done)

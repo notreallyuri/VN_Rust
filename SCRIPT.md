@@ -29,9 +29,29 @@ show <character_id> <image_id>
 - `<character_id> and <image_id>` must exist in the engine registry
 - Re-showing a character updates the image
 
+### 2.3 Positions
+
+```story
+show <character_id> <image_id> at <position>
+```
+
+`<position>` is one of `far_left`, `left`, `center`, `right`, `far_right`.
+
+- The character stands at that spot until it is removed
+- Re-showing without `at` keeps the spot, so changing an expression doesn't move anyone
+- Characters shown without a position are spread evenly by the engine
+- `remove` and `clear` forget the spot
+
+```story
+show mary tired at left
+show hugo neutral at right
+mary "Father."
+show mary angry
+```
+
 ---
 
-### 2.3 Remove characters
+### 2.4 Remove characters
 
 ```story
 remove <character_id>
@@ -43,7 +63,27 @@ remove <character_id>
 clear
 ```
 
-- Removes **all** characters from the scene
+- Removes **all** characters from the scene (the background stays)
+
+### 2.5 Backgrounds
+
+```story
+background <image_id>
+background none
+```
+
+- Replaces the whole backdrop with `<image_id>`; `background none` removes it
+- The background stays until the next `background`, across `jump`s and scenes
+- Characters on screen are not affected
+- The engine decides where images live (for the default engine,
+  `assets/backgrounds/<image_id>.png`)
+
+```story
+scene the_study:
+  background study_night
+  show hugo tired at center
+  "Father burns them in the study fireplace."
+```
 
 ## 3. Dialogue & narration
 
@@ -181,14 +221,14 @@ jump <scene_id>
 - Applies to:
   - scene_id
   - character_id
-  - image_id
+  - image_id (characters and backgrounds)
   - variable_id, enum members
   - command_id
 
 A character_id can't be a keyword, because a line's first word decides what it is
 (`show "Hi"` is a broken `show`, not dialogue). The keywords are:
 
-`scene` `show` `remove` `clear` `choice` `commit` `jump` `if` `else` `call` `set` `add`
+`scene` `show` `background` `remove` `clear` `choice` `commit` `jump` `if` `else` `call` `set` `add`
 
 This guarantees:
 

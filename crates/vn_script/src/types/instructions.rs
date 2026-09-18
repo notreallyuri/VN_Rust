@@ -30,6 +30,46 @@ impl std::fmt::Display for Value {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Position {
+    FarLeft,
+    Left,
+    Center,
+    Right,
+    FarRight,
+}
+
+impl Position {
+    pub const ALL: [Position; 5] = [
+        Position::FarLeft,
+        Position::Left,
+        Position::Center,
+        Position::Right,
+        Position::FarRight,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Position::FarLeft => "far_left",
+            Position::Left => "left",
+            Position::Center => "center",
+            Position::Right => "right",
+            Position::FarRight => "far_right",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|p| p.name() == name)
+    }
+}
+
+impl std::fmt::Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Comparison {
     Equal,
@@ -91,6 +131,11 @@ pub enum Instruction {
     Show {
         char_id: String,
         img_id: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        position: Option<Position>,
+    },
+    Background {
+        image: Option<String>,
     },
     Hide {
         char_id: String,

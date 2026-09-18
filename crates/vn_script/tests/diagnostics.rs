@@ -170,10 +170,26 @@ fn show_needs_an_image() {
         )
     );
     assert_eq!(
-        one_error(&in_scene("show mary happy at left")),
+        one_error(&in_scene("show mary happy at the_moon")),
         (
             2,
-            "`show` takes a character and an image; unexpected `at left`".into()
+            "unknown position `the_moon` (expected far_left, left, center, right, far_right)"
+                .into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("show mary happy at")),
+        (
+            2,
+            "`at` needs a position: far_left, left, center, right, far_right".into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("show mary happy near left")),
+        (
+            2,
+            "`show` takes a character, an image and optionally `at <position>`; unexpected `near left`"
+                .into()
         )
     );
 }
@@ -505,5 +521,35 @@ fn same_file_duplicates_name_the_line() {
     assert_eq!(
         program.diagnostics[0].to_string(),
         "a.story:3: error: scene 'a' is already defined at line 1; this one is ignored"
+    );
+}
+
+#[test]
+fn background_statements() {
+    assert_eq!(
+        one_error(&in_scene("background")),
+        (
+            2,
+            "`background` needs an image: `background <image>` or `background none`".into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("background hall night")),
+        (2, "`background` takes one image; unexpected `night`".into())
+    );
+    assert_eq!(
+        one_error(&in_scene("background Hall")),
+        (
+            2,
+            "invalid background id `Hall`: use lowercase letters, digits and `_`, not starting with a digit"
+                .into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("background \"hi\"")),
+        (
+            2,
+            "`background` is a keyword and can't be a character id".into()
+        )
     );
 }

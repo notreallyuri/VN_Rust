@@ -309,7 +309,9 @@ impl<'a> Checker<'a> {
                     self.interpolations(line, text);
                 }
             }
-            Instruction::Show { char_id, img_id } => {
+            Instruction::Show {
+                char_id, img_id, ..
+            } => {
                 if let Some(def) = self.character(line, char_id, "`show`")
                     && !def.images.is_empty()
                     && !def.images.contains(img_id)
@@ -344,6 +346,7 @@ impl<'a> Checker<'a> {
                 }
             }
             Instruction::Clear
+            | Instruction::Background { .. }
             | Instruction::Commit
             | Instruction::Pause
             | Instruction::Goto(_)

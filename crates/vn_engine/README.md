@@ -136,7 +136,11 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
   so they don't jump between lines while typing.
 - `Choice`: one button per option, centered vertically.
 - `End`: an end title and hint; continuing goes to `after_end`.
-- Characters on screen are spread evenly across the width (sorted by id), bottom-aligned.
+- The story's `background` fills the window (scaled to cover it, cropping the edges if
+  the aspect ratio differs); without one, the `background` option is drawn.
+- Characters stand at their `at` position (a fraction of the window width, see
+  `position`), bottom-aligned and scaled to `character_height` of the window height.
+  Characters without a position are spread evenly (sorted by id).
 - Click or an advance key continues. **Esc** (`pause_key`) opens the [pause menu](#pause-menu).
   `menu_key` (off by default) jumps straight to the main menu.
 - `call` runs the matching [command](#commands) handler; unknown commands are logged.
@@ -158,7 +162,9 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 | `pause_key(Option<key>)`, `pause_overlay(name)` | `Some(Escape)`, `PAUSE_OVERLAY` |
 | `menu_key(Option<key>)` | `None` |
 | `after_end(state)` | `MainMenu` |
-| `background(bg)` | none |
+| `background(bg)` | none; drawn when the story has no `background` |
+| `position(Position, x)` | `far_left` 0.15, `left` 0.3, `center` 0.5, `right` 0.7, `far_right` 0.85 of the window width (the character's center) |
+| `character_height(Option<fraction>)` | `Some(0.8)`: sprites are scaled to 80% of the window height, keeping their aspect ratio. `None` draws them at their pixel size |
 | `hud_button(label, action)` | none |
 | `quick_save_key(Option<key>)`, `quick_load_key(Option<key>)` | `Some(F5)`, `Some(F9)` (the `quick` slot) |
 | `hud_button_style(\|b\| ...)`, `hud_margin(px)`, `hud_spacing(px)` | 130×40, dark translucent, 18 px text; 16; 10 |
@@ -173,7 +179,7 @@ raylib's "Esc closes the window" is turned off (see `VnApp::exit_key`).
 | `TextStyle::new(font, size, color)` | `.font()`, `.size()`, `.color()` |
 | `ButtonStyle::default()` | `.size(w, h)`, `.color(c)` (hover becomes a lighter shade), `.hover_color(c)`, `.roundness(0..1)`, `.text(style)`, `.font(role)`, `.font_size(px)`, `.text_color(c)` |
 | `DialogueBoxStyle::default()` | `.height()`, `.margin()`, `.padding()`, `.color()`, `.roundness()` |
-| `Background` | `Color(color)` fills the screen; `Image(path)` stretches an asset over it |
+| `Background` | `Color(color)` fills the screen; `Image(path)` covers it with an asset (scaled, cropping the edges if the aspect ratio differs) |
 
 ## Layouts
 
@@ -245,6 +251,7 @@ The `ui` module has the pieces the default screens use, for custom screens to re
 | `draw_text_wrapped_visible(.., visible)` | Wrapped text showing only the first `visible` characters (the typewriter) |
 | `screen_size(rl)` | Window size as a `Vector2` |
 | `load_background(ctx, bg)`, `draw_background(d, resources, bg)` | `Background` support (load in `update`, draw in `draw`) |
+| `draw_texture_cover(d, texture, rect)` | Draw a texture covering `rect`, cropping to keep its aspect ratio |
 
 See `examples/god_is_watching/src/screens/credits.rs` and `inventory.rs`.
 
@@ -594,7 +601,8 @@ errors; nothing in the script can make the game panic at startup:
   .../story/02_moriarty.story:40: error: speaker: unknown character 'marry'
 ```
 
-Warnings (currently: a `show` whose image file doesn't exist; a placeholder is drawn) are
+Warnings (currently: a `show` or `background` whose image file doesn't exist; a
+placeholder is drawn) are
 printed and the game starts. `VnApp::check()` runs the same checks without a window,
 returning the loaded story and the warnings (useful in tests), and `VnApp::schema()`
 returns the schema.
@@ -818,8 +826,11 @@ manager must be created after the window, and dropped before it (declare it afte
 `get_or_load(path, rl, thread)` loads a texture once and caches it by path. A missing or
 unreadable file logs a warning and is replaced by a generated placeholder: a
 300×500 card labeled with the path, with a color derived from the path so each
-character/expression keeps the same color between runs. A story can be played before
-its art exists.
+character/expression keeps the same color between runs, or, for a background, a dark
+1280×720 image labeled with the path. A story can be played before its art exists.
+
+Story art lives at `character_path(character, image)` (`characters/<id>/<image>.png`) and
+`background_path(image)` (`backgrounds/<image>.png`), relative to the assets.
 
 ### Fonts
 

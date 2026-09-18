@@ -10,6 +10,7 @@ fn fixture_covers_every_token_kind() {
     let expected = [
         TokenKind::Scene,
         TokenKind::Show,
+        TokenKind::Background,
         TokenKind::Remove,
         TokenKind::Clear,
         TokenKind::Dialogue,

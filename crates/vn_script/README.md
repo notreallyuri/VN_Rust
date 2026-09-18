@@ -73,6 +73,10 @@ Compilation rules:
   (validation reports them as errors).
 - A choice block compiles to `Choice { options: [(text, start)] }`, then each option's
   body followed by a `Goto` to the end of the block.
+- `show <c> <i> at <position>` compiles to `Show { char_id, img_id, position: Some(..) }`;
+  without `at`, `position` is `None` and isn't serialized, so scene fingerprints (and
+  saves) from before positions existed stay valid. `background <id>` / `background none`
+  compile to `Background { image }`.
 - `commit` compiles to `Commit`; `choice final:` compiles like `choice:` with a `Commit`
   at the start of every option's body (SCRIPT.md 10).
 - An `if` compiles to `JumpIfFalse { condition, else_start }` + then-branch + `Goto`
@@ -269,7 +273,8 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `Say { speaker, text }` | yes | A line of dialogue (`speaker: None` is narration) |
 | `Choice { options }` | yes | Waits for `choose(index)`; `advance` returns the same choice until then |
 | `End` | yes | The story is over; `advance` keeps returning `End` until `reset` |
-| `Show { character, image }` | no | Already applied to `active_characters()` |
+| `Show { character, image, position }` | no | Already applied to `active_characters()` (and `position()` when `at` was used) |
+| `Background { image }` | no | Already applied to `background()`; `None` for `background none` |
 | `Hide { character }` | no | Already applied |
 | `Clear` | no | Already applied |
 | `Call { command, args }` | no | For the game to handle |
@@ -295,6 +300,8 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `current()` | The blocking event (`Say`/`Choice`/`End`) waiting for the player, if any. Lets a frontend leave and come back without skipping a line; cleared by the next `advance`, `choose` and `reset` |
 | `current_scene()` | Scene the story is in (`None` for an empty file) |
 | `active_characters()` | Character id → image id for everyone on screen |
+| `position(character)` | The `Position` (`FarLeft`, `Left`, `Center`, `Right`, `FarRight`) given with `at`, if any. Kept when the character is shown again without `at`; forgotten by `remove` and `clear` |
+| `background()` | The current background image id, if any. `clear` doesn't touch it |
 | `variables()`, `variable(id)`, `variable_type(id)` | Story variables |
 | `set_variable(id, value) -> Result<(), VmError>` | Set from Rust. With registered variables, unknown names and wrong types are errors |
 | `program()` | The compiled program |
@@ -334,6 +341,7 @@ state but not returned.
 | `scene_fingerprint` | Hash of that scene's compiled instructions, with jump targets made relative to the scene |
 | `pending_choice`, `current` | Whether a choice is waiting, and the event on screen |
 | `variables`, `active_characters` | Sorted maps, so save files are stable |
+| `positions`, `background` | Character spots and the background (both missing in older snapshots, which restore with none) |
 
 `restore(&snapshot) -> Result<RestoreOutcome, VmError>`:
 

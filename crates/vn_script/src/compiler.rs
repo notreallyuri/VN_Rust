@@ -155,11 +155,19 @@ impl Compiler {
 
     fn compile_node(&mut self, node: Node) {
         match node {
-            Node::Show { character, image } => {
+            Node::Show {
+                character,
+                image,
+                position,
+            } => {
                 self.emit(Instruction::Show {
                     char_id: character,
                     img_id: image,
+                    position,
                 });
+            }
+            Node::Background { image } => {
+                self.emit(Instruction::Background { image });
             }
             Node::Remove { character } => {
                 self.emit(Instruction::Hide { char_id: character });

@@ -61,7 +61,17 @@ pub fn dump(file_path: &str) -> ExitCode {
                     format!("SAY [NARRATOR]: \"{}\"", text)
                 }
             }
-            Instruction::Show { char_id, .. } => format!("SHOW {}", char_id),
+            Instruction::Show {
+                char_id,
+                img_id,
+                position,
+            } => match position {
+                Some(position) => format!("SHOW {} {} AT {}", char_id, img_id, position),
+                None => format!("SHOW {} {}", char_id, img_id),
+            },
+            Instruction::Background { image } => {
+                format!("BACKGROUND {}", image.as_deref().unwrap_or("none"))
+            }
             Instruction::Jump { scene_id } => format!("JUMP_SCENE '{}'", scene_id),
             Instruction::End => "END".to_string(),
             Instruction::Commit => "COMMIT".to_string(),

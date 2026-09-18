@@ -370,3 +370,20 @@ mod stretch {
         );
     }
 }
+
+mod character_positions {
+    use vn_engine::PlayingConfig;
+    use vn_engine::script::Position;
+
+    #[test]
+    fn five_spots_across_the_window() {
+        let config = PlayingConfig::default();
+        let xs = Position::ALL.map(|p| config.position_x(p));
+        assert_eq!(xs, [0.15, 0.3, 0.5, 0.7, 0.85]);
+        assert_eq!(config.character_height, Some(0.8));
+
+        let moved = config.position(Position::Left, 0.25).character_height(None);
+        assert_eq!(moved.position_x(Position::Left), 0.25);
+        assert_eq!(moved.character_height, None);
+    }
+}

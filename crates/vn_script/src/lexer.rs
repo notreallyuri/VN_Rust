@@ -1,9 +1,10 @@
 use crate::diagnostics::Diagnostic;
 use crate::types::{Token, TokenKind};
 
-const KEYWORDS: [(&str, TokenKind); 12] = [
+const KEYWORDS: [(&str, TokenKind); 13] = [
     ("scene", TokenKind::Scene),
     ("show", TokenKind::Show),
+    ("background", TokenKind::Background),
     ("remove", TokenKind::Remove),
     ("clear", TokenKind::Clear),
     ("choice", TokenKind::ChoiceBlock),

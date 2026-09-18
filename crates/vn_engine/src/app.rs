@@ -574,19 +574,22 @@ pub(crate) fn missing_art(story: &StoryVm, assets: &Path) -> Vec<Diagnostic> {
         .instructions
         .iter()
         .enumerate()
-        .filter_map(|(index, instruction)| match instruction {
-            Instruction::Show { char_id, img_id } => {
-                let relative = format!("characters/{}/{}.png", char_id, img_id).to_lowercase();
-                let missing = !assets.join(&relative).exists() && seen.insert(relative.clone());
-                missing.then(|| {
-                    Diagnostic::warning(
-                        program.line(index),
-                        format!("missing {} (a placeholder will be drawn)", relative),
-                    )
-                    .with_file(program.file(index))
-                })
-            }
-            _ => None,
+        .filter_map(|(index, instruction)| {
+            let relative = match instruction {
+                Instruction::Show {
+                    char_id, img_id, ..
+                } => crate::character_path(char_id, img_id),
+                Instruction::Background { image: Some(image) } => crate::background_path(image),
+                _ => return None,
+            };
+            let missing = !assets.join(&relative).exists() && seen.insert(relative.clone());
+            missing.then(|| {
+                Diagnostic::warning(
+                    program.line(index),
+                    format!("missing {} (a placeholder will be drawn)", relative),
+                )
+                .with_file(program.file(index))
+            })
         })
         .collect()
 }

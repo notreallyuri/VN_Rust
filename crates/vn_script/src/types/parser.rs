@@ -1,9 +1,10 @@
-use super::instructions::{Condition, Value};
+use super::instructions::{Condition, Position, Value};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TokenKind {
     Scene,
     Show,
+    Background,
     Remove,
     Clear,
     Commit,
@@ -49,6 +50,10 @@ pub enum Node {
     Show {
         character: String,
         image: String,
+        position: Option<Position>,
+    },
+    Background {
+        image: Option<String>,
     },
     Remove {
         character: String,

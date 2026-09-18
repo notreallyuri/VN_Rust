@@ -221,6 +221,19 @@ pub fn load_background(ctx: &mut GameContext, background: Option<&Background>) {
     }
 }
 
+pub fn draw_texture_cover(d: &mut RaylibDrawHandle, texture: &Texture2D, area: Rectangle) {
+    let (w, h) = (texture.width as f32, texture.height as f32);
+    let scale = (area.width / w).max(area.height / h);
+    let (source_w, source_h) = (area.width / scale, area.height / scale);
+    let source = Rectangle::new(
+        (w - source_w) / 2.0,
+        (h - source_h) / 2.0,
+        source_w,
+        source_h,
+    );
+    d.draw_texture_pro(texture, source, area, Vector2::zero(), 0.0, Color::WHITE);
+}
+
 pub fn draw_background(
     d: &mut RaylibDrawHandle,
     resources: &ResourceManager,
@@ -232,9 +245,7 @@ pub fn draw_background(
         Some(Background::Color(color)) => d.clear_background(*color),
         Some(Background::Image(path)) => {
             if let Some(texture) = resources.textures.get(path) {
-                let source = Rectangle::new(0.0, 0.0, texture.width as f32, texture.height as f32);
-                let dest = Rectangle::new(0.0, 0.0, screen.x, screen.y);
-                d.draw_texture_pro(texture, source, dest, Vector2::zero(), 0.0, Color::WHITE);
+                draw_texture_cover(d, texture, Rectangle::new(0.0, 0.0, screen.x, screen.y));
             }
         }
         None => {}

@@ -10,6 +10,16 @@ use crate::{FontRole, Fonts};
 
 const PLACEHOLDER_WIDTH: i32 = 300;
 const PLACEHOLDER_HEIGHT: i32 = 500;
+const BACKGROUND_PLACEHOLDER_WIDTH: i32 = 1280;
+const BACKGROUND_PLACEHOLDER_HEIGHT: i32 = 720;
+
+pub fn character_path(character: &str, image: &str) -> String {
+    format!("characters/{}/{}.png", character, image).to_lowercase()
+}
+
+pub fn background_path(image: &str) -> String {
+    format!("backgrounds/{}.png", image).to_lowercase()
+}
 
 pub struct ResourceManager {
     root: PathBuf,
@@ -74,6 +84,10 @@ impl ResourceManager {
 }
 
 fn placeholder_image(path: &str) -> Image {
+    if path.starts_with("backgrounds/") {
+        return background_placeholder(path);
+    }
+
     let hash = path.bytes().fold(0x811c9dc5u32, |h, b| {
         (h ^ b as u32).wrapping_mul(0x01000193)
     });
@@ -97,5 +111,16 @@ fn placeholder_image(path: &str) -> Image {
         image.draw_text(part, 16, 16 + i as i32 * 28, 20, Color::RAYWHITE);
     }
 
+    image
+}
+
+fn background_placeholder(path: &str) -> Image {
+    let mut image = Image::gen_image_color(
+        BACKGROUND_PLACEHOLDER_WIDTH,
+        BACKGROUND_PLACEHOLDER_HEIGHT,
+        Color::new(28, 26, 36, 255),
+    );
+    let label = path.strip_suffix(".png").unwrap_or(path);
+    image.draw_text(label, 24, 24, 28, Color::new(120, 116, 140, 255));
     image
 }

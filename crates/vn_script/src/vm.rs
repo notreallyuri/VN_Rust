@@ -6,7 +6,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Comparison, Condition, Diagnostic, Instruction, Program, Schema, Value, VarType,
+    Comparison, Condition, Diagnostic, Instruction, Position, Program, Schema, Value, VarType,
     compile_source, compile_sources, interpolate, read_sources, story_files,
 };
 
@@ -24,6 +24,10 @@ pub enum Event {
     Show {
         character: String,
         image: String,
+        position: Option<Position>,
+    },
+    Background {
+        image: Option<String>,
     },
     Hide {
         character: String,
@@ -82,6 +86,10 @@ pub struct StorySnapshot {
     pub current: Option<Event>,
     pub variables: BTreeMap<String, Value>,
     pub active_characters: BTreeMap<String, String>,
+    #[serde(default)]
+    pub positions: BTreeMap<String, Position>,
+    #[serde(default)]
+    pub background: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,6 +105,8 @@ pub struct StoryVm {
     current_scene: Option<String>,
     variables: HashMap<String, Value>,
     active_characters: HashMap<String, String>,
+    positions: HashMap<String, Position>,
+    background: Option<String>,
     pending_choice: Option<usize>,
     current: Option<Event>,
     schema: Schema,
@@ -127,6 +137,8 @@ impl StoryVm {
             current_scene: None,
             variables: HashMap::new(),
             active_characters: HashMap::new(),
+            positions: HashMap::new(),
+            background: None,
             pending_choice: None,
             current: None,
             schema: Schema::default(),
@@ -197,6 +209,8 @@ impl StoryVm {
     pub fn reset(&mut self) {
         self.variables = self.schema.defaults().into_iter().collect();
         self.active_characters.clear();
+        self.positions.clear();
+        self.background = None;
         self.pending_choice = None;
         self.current = None;
         self.entered = false;
@@ -257,13 +271,29 @@ impl StoryVm {
                     self.pending_choice = Some(self.ip);
                     return self.choice_event(self.ip);
                 }
-                Instruction::Show { char_id, img_id } => {
+                Instruction::Show {
+                    char_id,
+                    img_id,
+                    position,
+                } => {
                     let event = Event::Show {
                         character: char_id.clone(),
                         image: img_id.clone(),
+                        position: *position,
                     };
                     self.active_characters
                         .insert(char_id.clone(), img_id.clone());
+                    if let Some(position) = position {
+                        self.positions.insert(char_id.clone(), *position);
+                    }
+                    self.ip += 1;
+                    return event;
+                }
+                Instruction::Background { image } => {
+                    let event = Event::Background {
+                        image: image.clone(),
+                    };
+                    self.background = image.clone();
                     self.ip += 1;
                     return event;
                 }
@@ -272,11 +302,13 @@ impl StoryVm {
                         character: char_id.clone(),
                     };
                     self.active_characters.remove(char_id);
+                    self.positions.remove(char_id);
                     self.ip += 1;
                     return event;
                 }
                 Instruction::Clear => {
                     self.active_characters.clear();
+                    self.positions.clear();
                     self.ip += 1;
                     return Event::Clear;
                 }
@@ -386,6 +418,14 @@ impl StoryVm {
         &self.active_characters
     }
 
+    pub fn position(&self, character: &str) -> Option<Position> {
+        self.positions.get(character).copied()
+    }
+
+    pub fn background(&self) -> Option<&str> {
+        self.background.as_deref()
+    }
+
     pub fn variables(&self) -> &HashMap<String, Value> {
         &self.variables
     }
@@ -447,6 +487,12 @@ impl StoryVm {
                 .iter()
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect(),
+            positions: self
+                .positions
+                .iter()
+                .map(|(k, v)| (k.clone(), *v))
+                .collect(),
+            background: self.background.clone(),
         }
     }
 
@@ -486,6 +532,8 @@ impl StoryVm {
                 .map(|(k, v)| (k.clone(), v.clone())),
         );
         self.active_characters = snapshot.active_characters.clone().into_iter().collect();
+        self.positions = snapshot.positions.clone().into_iter().collect();
+        self.background = snapshot.background.clone();
         self.pending_choice = None;
         self.current = None;
 

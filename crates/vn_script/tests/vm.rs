@@ -44,6 +44,7 @@ fn jump_enters_the_target_scene() {
         Event::Show {
             character: "mary".into(),
             image: "neutral".into(),
+            position: None,
         }
     );
     assert_eq!(vm.current_scene(), Some("second"));
@@ -468,7 +469,8 @@ fn scene_events_mark_the_start_and_every_jump() {
             scene_enter("b"),
             Event::Show {
                 character: "mary".into(),
-                image: "neutral".into()
+                image: "neutral".into(),
+                position: None,
             }
         ]
     );
@@ -502,4 +504,115 @@ fn restoring_the_exact_position_does_not_enter_the_scene() {
     restarted.set_scene_events(true);
     restarted.restore(&snapshot).unwrap();
     assert_eq!(events_until_blocking(&mut restarted)[0], scene_enter("a"));
+}
+
+const STAGE: &str = r#"
+scene a:
+  background hall
+  show mary tired at left
+  show hugo neutral
+  "one"
+  show mary happy
+  "two"
+  remove mary
+  show mary tired
+  "three"
+  show hugo neutral at far_right
+  clear
+  "four"
+  background none
+  "five"
+"#;
+
+fn next_line(vm: &mut StoryVm) {
+    assert!(matches!(vm.advance_until_blocking(), Event::Say { .. }));
+}
+
+#[test]
+fn positions_and_backgrounds() {
+    use vn_script::Position;
+    let mut vm = StoryVm::from_source(STAGE);
+
+    next_line(&mut vm);
+    assert_eq!(vm.background(), Some("hall"));
+    assert_eq!(vm.position("mary"), Some(Position::Left));
+    assert_eq!(vm.position("hugo"), None);
+
+    next_line(&mut vm);
+    assert_eq!(
+        vm.position("mary"),
+        Some(Position::Left),
+        "a new expression keeps the spot"
+    );
+
+    next_line(&mut vm);
+    assert_eq!(vm.position("mary"), None, "remove forgets the spot");
+
+    next_line(&mut vm);
+    assert!(vm.active_characters().is_empty());
+    assert_eq!(vm.position("hugo"), None, "clear forgets every spot");
+    assert_eq!(vm.background(), Some("hall"), "clear keeps the background");
+
+    next_line(&mut vm);
+    assert_eq!(vm.background(), None);
+
+    vm.reset();
+    next_line(&mut vm);
+    vm.reset();
+    assert_eq!(vm.background(), None);
+    assert_eq!(vm.position("mary"), None);
+}
+
+#[test]
+fn show_and_background_events() {
+    let mut vm = StoryVm::from_source(STAGE);
+    assert_eq!(
+        vm.advance(),
+        Event::Background {
+            image: Some("hall".into())
+        }
+    );
+    assert_eq!(
+        vm.advance(),
+        Event::Show {
+            character: "mary".into(),
+            image: "tired".into(),
+            position: Some(vn_script::Position::Left),
+        }
+    );
+}
+
+#[test]
+fn snapshots_keep_positions_and_the_background() {
+    let mut vm = StoryVm::from_source(STAGE);
+    next_line(&mut vm);
+    let json = serde_json::to_string(&vm.snapshot()).unwrap();
+
+    let mut restored = StoryVm::from_source(STAGE);
+    restored
+        .restore(&serde_json::from_str(&json).unwrap())
+        .unwrap();
+    assert_eq!(restored.background(), Some("hall"));
+    assert_eq!(restored.position("mary"), Some(vn_script::Position::Left));
+
+    let mut old: serde_json::Value = serde_json::from_str(&json).unwrap();
+    let object = old.as_object_mut().unwrap();
+    object.remove("positions");
+    object.remove("background");
+    let old: vn_script::StorySnapshot = serde_json::from_value(old).unwrap();
+    assert!(old.positions.is_empty());
+    assert_eq!(old.background, None);
+}
+
+#[test]
+fn a_show_without_a_position_serializes_as_before() {
+    let show = vn_script::Instruction::Show {
+        char_id: "mary".into(),
+        img_id: "tired".into(),
+        position: None,
+    };
+    assert_eq!(
+        serde_json::to_string(&show).unwrap(),
+        r#"{"Show":{"char_id":"mary","img_id":"tired"}}"#
+    );
 }
