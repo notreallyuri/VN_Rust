@@ -47,10 +47,10 @@ impl ScreenStateManager {
         initial_state: ScreenState,
         factory: Box<dyn ScreenFactory>,
         assets_root: impl Into<PathBuf>,
-        entry_script: &str,
+        story_dir: &str,
     ) -> io::Result<Self> {
         let assets_root = assets_root.into();
-        let story = StoryVm::from_file(assets_root.join(entry_script))?;
+        let story = StoryVm::from_dir(assets_root.join(story_dir))?;
         Self::with_story(rl, thread, initial_state, factory, assets_root, story)
     }
 

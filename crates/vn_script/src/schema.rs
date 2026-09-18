@@ -234,14 +234,16 @@ impl Schema {
             schema: self,
             program,
             diagnostics: program.diagnostics.clone(),
+            file: None,
         };
 
         for (index, instruction) in program.instructions.iter().enumerate() {
+            checker.file = program.file(index);
             checker.instruction(program.line(index), instruction);
         }
 
         let mut diagnostics = checker.diagnostics;
-        diagnostics.sort_by_key(|d| d.line);
+        program.sort_diagnostics(&mut diagnostics);
         diagnostics
     }
 }
@@ -250,11 +252,13 @@ struct Checker<'a> {
     schema: &'a Schema,
     program: &'a Program,
     diagnostics: Vec<Diagnostic>,
+    file: Option<&'a str>,
 }
 
 impl<'a> Checker<'a> {
     fn error(&mut self, line: usize, message: String) {
-        self.diagnostics.push(Diagnostic::error(line, message));
+        self.diagnostics
+            .push(Diagnostic::error(line, message).with_file(self.file));
     }
 
     fn instruction(&mut self, line: usize, instruction: &Instruction) {

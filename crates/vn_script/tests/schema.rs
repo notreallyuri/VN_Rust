@@ -322,9 +322,7 @@ fn enum_default_must_be_a_member() {
 
 #[test]
 fn every_example_story_is_valid_without_registries() {
-    for entry in std::fs::read_dir("../../examples/god_is_watching/assets/story").unwrap() {
-        let path = entry.unwrap().path();
-        let vm = StoryVm::from_file(&path).unwrap();
-        assert_eq!(vm.validate(), [], "{:?}", path);
-    }
+    let vm = StoryVm::from_dir("../../examples/god_is_watching/assets/story").unwrap();
+    assert_eq!(vm.program().files.len(), 3);
+    assert_eq!(vm.validate(), []);
 }

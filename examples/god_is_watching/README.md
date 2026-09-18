@@ -14,7 +14,7 @@ for assets next to the executable instead.
 
 | Path | Contents |
 |---|---|
-| `story/` | One file per POV: `01_mary`, `02_moriarty`, `03_field_post`. The game starts from `01_mary.story` |
+| `story/` | One file per POV: `01_mary`, `02_moriarty`, `03_field_post`, loaded together (the engine's default `story_dir`). Each ends with a `jump` into the next; the game starts from the first scene of `01_mary.story` |
 | `characters/<character>/<image>.png` | Character art for `show <character> <image>`. Missing art uses a placeholder |
 | `backgrounds/` | Reserved |
 | `fonts/` | Noto Serif (OFL, `fonts/OFL.txt`), used for the title and dialogue |

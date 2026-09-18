@@ -180,3 +180,4 @@ scene moriarty_1901:
   moriarty "And Francis. Whoever it is you write to at night, tell them this."
   moriarty "There's no family here. There's a boy."
   remove francis
+  jump post_start

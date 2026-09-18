@@ -128,22 +128,51 @@ pub enum Instruction {
     End,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Location {
+    pub file: usize,
+    pub line: usize,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Program {
     pub instructions: Vec<Instruction>,
     #[serde(default)]
-    pub lines: Vec<usize>,
+    pub locations: Vec<Location>,
+    #[serde(default)]
+    pub files: Vec<String>,
     pub scenes: HashMap<String, usize>,
     pub scene_order: Vec<String>,
     #[serde(default)]
-    pub scene_lines: HashMap<String, usize>,
+    pub scene_locations: HashMap<String, Location>,
     #[serde(skip)]
     pub diagnostics: Vec<crate::Diagnostic>,
 }
 
 impl Program {
+    pub fn location(&self, index: usize) -> Location {
+        self.locations.get(index).copied().unwrap_or_default()
+    }
+
     pub fn line(&self, index: usize) -> usize {
-        self.lines.get(index).copied().unwrap_or(0)
+        self.location(index).line
+    }
+
+    pub fn file(&self, index: usize) -> Option<&str> {
+        self.file_name(self.location(index).file)
+    }
+
+    pub fn file_name(&self, file: usize) -> Option<&str> {
+        self.files.get(file).map(String::as_str)
+    }
+
+    pub fn sort_diagnostics(&self, diagnostics: &mut [crate::Diagnostic]) {
+        let file_order = |d: &crate::Diagnostic| {
+            d.file
+                .as_deref()
+                .and_then(|file| self.files.iter().position(|f| f == file))
+        };
+        diagnostics.sort_by_key(|d| (file_order(d), d.line));
     }
 
     pub fn entry_scene(&self) -> Option<&str> {

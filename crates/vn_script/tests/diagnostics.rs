@@ -470,3 +470,40 @@ fn dedented_lines_after_a_scene_body() {
         ]
     );
 }
+
+#[test]
+fn diagnostics_carry_their_file() {
+    let program = vn_script::compile_sources([
+        ("a.story", "scene a:\n  show mary\n"),
+        (
+            "b.story",
+            "scene b:\n  \"ok\"\nscene a:\n  \"dup\"\n  jump nowhere\n",
+        ),
+    ]);
+
+    let shown: Vec<String> = vn_script::Schema::default()
+        .validate(&program)
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    assert_eq!(
+        shown,
+        [
+            "a.story:2: error: `show mary` needs an image: `show mary <image>`",
+            "b.story:3: error: scene 'a' is already defined at a.story:1; this one is ignored",
+        ]
+    );
+
+    assert_eq!(program.file(program.scenes["b"]), Some("b.story"));
+    assert_eq!(program.line(program.scenes["b"]), 2);
+}
+
+#[test]
+fn same_file_duplicates_name_the_line() {
+    let program =
+        vn_script::compile_sources([("a.story", "scene a:\n  \"x\"\nscene a:\n  \"y\"\n")]);
+    assert_eq!(
+        program.diagnostics[0].to_string(),
+        "a.story:3: error: scene 'a' is already defined at line 1; this one is ignored"
+    );
+}

@@ -1,10 +1,10 @@
-use vn_script::{Instruction, Schema, compile_source};
+use vn_script::{Instruction, Schema, compile_sources, read_sources, story_files};
 
 use std::collections::HashMap;
-use std::fs::read_to_string;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: vn dump <file.story>";
+const USAGE: &str = "usage: vn dump <file.story | directory>";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -19,25 +19,33 @@ fn main() -> ExitCode {
 }
 
 fn dump(file_path: &str) -> ExitCode {
-    let script = match read_to_string(file_path) {
-        Ok(s) => s,
+    let path = Path::new(file_path);
+    let files = if path.is_dir() {
+        story_files(path)
+    } else {
+        Ok(vec![PathBuf::from(path)])
+    };
+
+    let sources = match files.and_then(|files| read_sources(&files)) {
+        Ok(sources) => sources,
         Err(e) => {
-            eprintln!("❌ Failed to read {}: {}", file_path, e);
+            eprintln!("❌ {}", e);
             return ExitCode::FAILURE;
         }
     };
 
-    let program = compile_source(&script);
+    let program = compile_sources(sources);
 
     println!(
-        "{} scenes, {} instructions",
+        "{} files, {} scenes, {} instructions",
+        program.files.len(),
         program.scenes.len(),
         program.instructions.len()
     );
 
     let diagnostics = Schema::default().validate(&program);
     for diagnostic in &diagnostics {
-        println!("{}", diagnostic.in_file(file_path));
+        println!("{}", diagnostic);
     }
 
     let scene_starts: HashMap<usize, &str> = program
@@ -48,7 +56,9 @@ fn dump(file_path: &str) -> ExitCode {
 
     for (i, instr) in program.instructions.iter().enumerate() {
         if let Some(scene) = scene_starts.get(&i) {
-            println!("\nscene {}:", scene);
+            let location = program.location(i);
+            let file = program.file_name(location.file).unwrap_or_default();
+            println!("\nscene {}:  ({}:{})", scene, file, location.line);
         }
 
         let label = match instr {

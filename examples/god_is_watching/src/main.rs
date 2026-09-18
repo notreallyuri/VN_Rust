@@ -13,7 +13,6 @@ mod screens;
 use inventory::Inventory;
 
 const ASSETS_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
-const ENTRY_SCRIPT: &str = "story/01_mary.story";
 const SAVES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/saves");
 
 fn give_item(ctx: &mut GameContext, (item, count): (String, Option<u32>)) -> Option<ScreenState> {
@@ -35,7 +34,6 @@ fn main() -> ExitCode {
     let app = cast::register(VnApp::new("God Is Watching"))
         .size(1280, 720)
         .assets(ASSETS_ROOT)
-        .entry(ENTRY_SCRIPT)
         .saves_dir(SAVES_DIR)
         .font(FontRole::Title, "NotoSerif-Regular.ttf")
         .font(FontRole::Dialogue, "NotoSerif-Regular.ttf")

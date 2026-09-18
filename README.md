@@ -81,7 +81,7 @@ It may only:
 |---|---|
 | [`crates/vn_script`](crates/vn_script/README.md) | Story DSL: lexer, parser, compiler and VM. No rendering dependencies |
 | [`crates/vn_engine`](crates/vn_engine/README.md) | raylib-based engine: `VnApp` builder, configurable default screens, UI helpers, resources, fonts. Re-exports `raylib` and `vn_script` |
-| [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn dump <file.story>`) |
+| [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn dump <file.story | dir>`) |
 | [`examples/god_is_watching`](examples/god_is_watching/README.md) | Reference game built on `vn_engine` |
 
 Each crate documents its API and behavior in its own README.
@@ -102,7 +102,7 @@ Its assets live in `examples/god_is_watching/assets/`:
 
 | Path | Contents |
 |---|---|
-| `story/` | Chapter scripts. The game starts from `story/01_mary.story` |
+| `story/` | Chapter scripts, all loaded as one story. Each chapter ends with a `jump` into the next, and the game starts from the first scene of `01_mary.story` |
 | `characters/<character_id>/<image_id>.png` | Character art, as referenced by `show <character_id> <image_id>` |
 | `backgrounds/` | Reserved; backgrounds are not in the DSL yet |
 | `fonts/` | `.ttf`/`.otf` fonts, assigned to text roles with `VnApp::font` in `main.rs` |
@@ -117,7 +117,7 @@ The engine ships Noto Sans as its default font, and a game can give each kind of
 To inspect how a script compiles:
 
 ```sh
-cargo run -p vn_cli -- dump examples/god_is_watching/assets/story/01_mary.story
+cargo run -p vn_cli -- dump examples/god_is_watching/assets/story
 ```
 
 ## Writing Story Scripts

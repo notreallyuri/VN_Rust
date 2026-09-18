@@ -17,7 +17,6 @@ fn main() -> std::io::Result<()> {
     VnApp::new("My Novel")
         .size(1280, 720)
         .assets(concat!(env!("CARGO_MANIFEST_DIR"), "/assets"))
-        .entry("story/01_start.story")
         .font(FontRole::Dialogue, "NotoSerif-Regular.ttf")
         .main_menu(|m| {
             m.button_style(|b| b.size(260.0, 52.0).roundness(0.3))
@@ -43,7 +42,7 @@ loop until the window closes or a screen returns `ScreenState::Quit`. It returns
 | `target_fps(fps)` | 60 | |
 | `clear_color(color)` | black | Cleared every frame, before the screen draws |
 | `assets(path)` | `assets` | Asset root; every other path is relative to it |
-| `entry(path)` | `story/main.story` | Story file to load |
+| `story_dir(path)` | `story` | Directory of `.story` files; every one under it (recursively) is loaded into one story, in path order |
 | `initial_screen(state)` | `StartScreen` | First screen, e.g. `MainMenu` to skip the start screen |
 | `font(role, file)` | | Font from `<assets>/fonts/` for a `FontRole` (see [Fonts](#fonts)) |
 | `start_screen(\|s\| ...)` | | Configure the default start screen |
@@ -60,7 +59,7 @@ loop until the window closes or a screen returns `ScreenState::Quit`. It returns
 | `command(name, handler)` | | Handle `call <name> ...` from stories (see [Commands](#commands)) |
 | `variable(name, VariableDef)` | | Register a story variable (see [Registries and validation](#registries-and-validation)) |
 | `character(id, Character)` | | Register a character |
-| `entry_scene(id)` | first scene | Scene the story starts from |
+| `entry_scene(id)` | first scene of the first file | Scene the story starts from |
 | `warn_missing_art(bool)` | `true` | Warn at startup about `show`s with no image file |
 | `text_input(\|t\| ...)` | | Configure the default text input screen |
 | `saves_dir(path)` | `saves` | Where save files go (see [Save and load](#save-and-load)) |
@@ -430,9 +429,9 @@ lists every error with file and line. Syntax errors (`show mary` with no image, 
 errors; nothing in the script can make the game panic at startup:
 
 ```text
-❌ .../story/01_mary.story has 2 errors:
+❌ .../assets/story has 2 errors:
   .../story/01_mary.story:12: error: unknown variable 'curiosty'
-  .../story/01_mary.story:40: error: speaker: unknown character 'marry'
+  .../story/02_moriarty.story:40: error: speaker: unknown character 'marry'
 ```
 
 Warnings (currently: a `show` whose image file doesn't exist; a placeholder is drawn) are
@@ -442,8 +441,8 @@ returns the schema.
 
 | `AppError` | When |
 | --- | --- |
-| `Story { path, source }` | The entry script can't be read |
-| `Script { path, errors }` | Parsing or validation found errors (or the entry scene doesn't exist) |
+| `Story { path, source }` | The story directory (`path`) or a file in it can't be read, or it has no `.story` files |
+| `Script { path, errors }` | Parsing or validation found errors (or the entry scene doesn't exist); each error names its file |
 | `Screen(io::Error)` | No screen is registered for the initial `ScreenState` |
 
 ## Text input
@@ -600,7 +599,7 @@ ctx.saves.delete("3")?;
 
 ```rust
 let (mut rl, thread) = raylib::init().size(1280, 720).build();
-let mut manager = ScreenStateManager::new(&mut rl, &thread, ScreenState::StartScreen, factory, assets, entry)?;
+let mut manager = ScreenStateManager::new(&mut rl, &thread, ScreenState::StartScreen, factory, assets, "story")?;
 
 while !rl.window_should_close() && !manager.quit_requested() {
     manager.update(&mut rl, &thread);

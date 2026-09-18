@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Comparison, Condition, Diagnostic, Instruction, Program, Schema, Value, VarType,
-    compile_source, interpolate,
+    compile_source, compile_sources, interpolate, read_sources, story_files,
 };
 
 const MAX_SILENT_STEPS: usize = 100_000;
@@ -102,10 +102,13 @@ pub struct StoryVm {
 
 impl StoryVm {
     pub fn from_file(path: impl AsRef<Path>) -> io::Result<Self> {
-        let path = path.as_ref();
-        let source = std::fs::read_to_string(path)
-            .map_err(|e| io::Error::new(e.kind(), format!("{}: {}", path.display(), e)))?;
-        Ok(Self::from_source(&source))
+        let sources = read_sources(&[path.as_ref().to_path_buf()])?;
+        Ok(Self::from_program(compile_sources(sources)))
+    }
+
+    pub fn from_dir(dir: impl AsRef<Path>) -> io::Result<Self> {
+        let sources = read_sources(&story_files(dir)?)?;
+        Ok(Self::from_program(compile_sources(sources)))
     }
 
     pub fn from_source(source: &str) -> Self {

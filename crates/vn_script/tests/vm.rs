@@ -179,26 +179,56 @@ fn empty_source_ends_immediately() {
 }
 
 #[test]
-fn every_example_story_plays_to_the_end() {
-    let stories = std::fs::read_dir("../../examples/god_is_watching/assets/story").unwrap();
+fn the_example_plays_through_every_chapter() {
+    let mut vm = StoryVm::from_dir("../../examples/god_is_watching/assets/story").unwrap();
+    assert!(vm.program().unknown_jump_targets().is_empty());
 
-    for entry in stories {
-        let path = entry.unwrap().path();
-        let mut vm = StoryVm::from_file(&path).unwrap();
-        assert!(vm.program().unknown_jump_targets().is_empty(), "{:?}", path);
-
-        let mut lines = 0;
-        loop {
-            match vm.advance_until_blocking() {
-                Event::End => break,
-                Event::Choice { .. } => vm.choose(0).unwrap(),
-                _ => lines += 1,
-            }
-            assert!(lines < 10_000, "{:?} never ends", path);
+    let mut scenes = std::collections::BTreeSet::new();
+    let mut lines = 0;
+    loop {
+        scenes.extend(vm.current_scene().map(str::to_string));
+        match vm.advance_until_blocking() {
+            Event::End => break,
+            Event::Choice { .. } => vm.choose(0).unwrap(),
+            _ => lines += 1,
         }
-
-        assert!(lines > 0, "{:?}", path);
+        assert!(lines < 10_000, "the story never ends");
     }
+
+    for first in ["mary_start", "moriarty_start", "post_start"] {
+        assert!(scenes.contains(first), "never reached {}", first);
+    }
+    assert_eq!(vm.current_scene(), Some("post_last"));
+}
+
+#[test]
+fn story_files_in_a_directory() {
+    let dir = std::env::temp_dir().join(format!("vn_script_dir_{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("nested")).unwrap();
+    std::fs::write(dir.join("b.story"), "scene b:\n  \"b\"\n").unwrap();
+    std::fs::write(dir.join("nested/a.story"), "scene a:\n  \"a\"\n").unwrap();
+    std::fs::write(dir.join("a.story"), "scene first:\n  jump b\n").unwrap();
+    std::fs::write(dir.join("notes.txt"), "ignored").unwrap();
+
+    let files = vn_script::story_files(&dir).unwrap();
+    let names: Vec<_> = files
+        .iter()
+        .map(|f| f.strip_prefix(&dir).unwrap().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(names, ["a.story", "b.story", "nested/a.story"]);
+
+    let mut vm = StoryVm::from_dir(&dir).unwrap();
+    assert_eq!(vm.entry_scene(), Some("first"));
+    assert_eq!(
+        vm.advance_until_blocking(),
+        Event::Say {
+            speaker: None,
+            text: "b".into()
+        }
+    );
+
+    std::fs::remove_dir_all(&dir).unwrap();
 }
 
 fn branch_taken(setup: &str, condition: &str) -> bool {

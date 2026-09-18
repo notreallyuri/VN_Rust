@@ -11,9 +11,26 @@ The language itself is specified in [SCRIPT.md](../../SCRIPT.md).
 source ──tokenize──▶ Vec<Token> ──parse_program──▶ Vec<Node::Scene> ──Compiler::compile──▶ Program ──▶ StoryVm
 ```
 
-`compile_source(&str) -> Program` runs the whole pipeline and collects every stage's
-diagnostics into `Program::diagnostics`, sorted by line. `StoryVm::from_source` and
-`vn dump` use it.
+`compile_source(&str) -> Program` runs the whole pipeline on one source and collects
+every stage's diagnostics into `Program::diagnostics`, sorted by line.
+`compile_sources([(name, source), ...]) -> Program` does the same for several files
+compiled into **one** program, in the order given; each diagnostic carries its file name.
+
+## Multi-file stories
+
+A story is usually a directory of `.story` files (one per chapter or POV):
+
+- `story_files(dir)` lists every `*.story` file under `dir`, recursively, sorted by
+  path. Other files are ignored. Name files so they sort in reading order
+  (`01_mary.story`, `02_moriarty.story`, ...).
+- `read_sources(&paths)` reads them into `(path, source)` pairs for `compile_sources`.
+- `StoryVm::from_dir(dir)` does both. `StoryVm::from_file(path)` is the one-file case.
+
+Scene ids are global: `jump` works across files, and the default entry scene is the
+first scene of the first file. A scene id defined in two files is an error on the
+second one, naming where the first is (`scene 'a' is already defined at a.story:1`).
+Saves are unaffected by how scenes are split into files: snapshots store a scene id, an
+offset inside it and that scene's fingerprint.
 
 | Stage | Entry point | File |
 | --- | --- | --- |
@@ -21,21 +38,27 @@ diagnostics into `Program::diagnostics`, sorted by line. `StoryVm::from_source` 
 | Parser | `parse_program(&[Token]) -> (Vec<Stmt>, Vec<Diagnostic>)` (every top-level `scene`) | `src/parser.rs` |
 | Conditions | `parse_condition(&str, line) -> Result<Condition, Diagnostic>` | `src/condition.rs` |
 | Compiler | `Compiler::new().compile(scenes) -> Program` | `src/compiler.rs` |
-| VM | `StoryVm::from_file` / `from_source` / `from_program` | `src/vm.rs` |
+| Files | `story_files(dir)`, `read_sources(&paths)` | `src/files.rs` |
+| VM | `StoryVm::from_dir` / `from_file` / `from_source` / `from_program` | `src/vm.rs` |
 | Interpolation | `interpolate(&str, &variables) -> String` | `src/template.rs` |
 
 ## Program
 
 A whole `.story` file compiles into one `Program`:
 
-- `instructions`: one flat list for every scene in the file.
-- `lines`: the source line of each instruction, used by diagnostics.
+- `instructions`: one flat list for every scene in every file.
+- `locations`: the `Location { file, line }` of each instruction, used by diagnostics.
+  `program.line(i)` and `program.file(i)` read it; `file` indexes `files`.
+- `files`: source file names, in compile order (empty for `compile_source`).
+- `scene_locations`: where each scene is defined.
 - `scenes`: scene id → index of the scene's first instruction.
 - `scene_order`: scene ids in file order. The first is the default **entry scene**.
 - `diagnostics`: problems found while lexing, parsing and compiling.
 
 The parser keeps the source line of every statement (`Stmt { line, node }`), and the
-compiler copies it into `Program::lines`.
+compiler records it, with the current file, in `Program::locations`.
+`Compiler::start_file(name)` + `compile_scenes(scenes)` (repeated) + `finish()` is the
+multi-file form of `Compiler::new().compile(scenes)`.
 
 Compilation rules:
 
@@ -191,7 +214,8 @@ they run (SCRIPT.md 8.6, 9.2):
 them as the story grows; once a registry has an entry, every use is checked.
 
 `schema.validate(&program)` (or `vm.validate()`) returns `Vec<Diagnostic>` sorted by
-line, including compile diagnostics and unknown `jump` targets (always checked):
+file (in compile order) and line, including compile diagnostics and unknown `jump`
+targets (always checked):
 
 ```text
 story/01_mary.story:12: error: unknown variable 'curiosty'
@@ -199,8 +223,10 @@ story/01_mary.story:30: error: `set route`: 'great' is not one of good | bad | n
 story/01_mary.story:41: error: `call give_item` argument 2 should be a non-negative integer, got `many`
 ```
 
-`Diagnostic { severity, line, message }`: `Display` gives `line N: error: ...`,
-`in_file(path)` gives the `path:N: error: ...` form above. A speaker written as
+`Diagnostic { severity, file, line, message }`: `Display` gives `path:N: error: ...` (the
+form above) when `file` is set, `line N: error: ...` when it isn't, and leaves out the
+line when it is 0 (problems not tied to a line, like a missing entry scene).
+`with_file(Option<&str>)` sets the file. A speaker written as
 `{variable}` isn't checked against characters, only the variable is.
 
 Schemas are serde-serializable, so they can later be exported for `vn check` and editor
@@ -227,7 +253,7 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 
 | Method | Purpose |
 | --- | --- |
-| `from_file(path)`, `from_source(src)`, `from_program(program)` | Load. The VM starts at the entry scene, ready to run |
+| `from_dir(dir)`, `from_file(path)`, `from_source(src)`, `from_program(program)` | Load. The VM starts at the entry scene, ready to run |
 | `advance() -> Event` | Run to the next event |
 | `advance_until_blocking() -> Event` | Run to the next `Say`/`Choice`/`End`, applying presentation events on the way |
 | `choose(index) -> Result<(), VmError>` | Answer the pending choice (0-based) |
@@ -315,9 +341,9 @@ cargo test -p vn_script
 | --- | --- |
 | `tests/lexer.rs` | Every token kind, comment and blank-line skipping |
 | `tests/parser.rs` | Conditions (every operator, `&&`/` | | ` precedence, enum and string literals, operators inside strings), `set`/`add`, interpolated speakers, `choice final:`, and the fixture compiling |
-| `tests/diagnostics.rs` | Every parse error with its exact line and message, recovery (no follow-on errors, empty blocks don't swallow siblings, tabs), string escapes |
+| `tests/diagnostics.rs` | Every parse error with its exact line and message, recovery (no follow-on errors, empty blocks don't swallow siblings, tabs), string escapes, file names in multi-file diagnostics |
 | `tests/template.rs` | Interpolation of every value type, unset variables, `{{`/`}}`, malformed braces |
 | `tests/snapshot.rs` | Snapshot round trips (mid-scene, at a choice, JSON), edits to other scenes, edits to the saved scene, missing scenes |
-| `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example stories |
-| `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, the fixture and every example story playing to the end |
+| `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example story directory |
+| `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, the fixture playing through, the example playing through all three chapters, `story_files` (recursive, sorted, `.story` only) |
 | `tests/fixtures/all_features.story` | Golden input covering every construct in SCRIPT.md |

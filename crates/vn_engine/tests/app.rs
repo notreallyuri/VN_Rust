@@ -23,6 +23,12 @@ impl Project {
         Self(root)
     }
 
+    fn add_story(&self, name: &str, story: &str) {
+        let path = self.0.join("story").join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, story).unwrap();
+    }
+
     fn add_art(&self, character: &str, image: &str) {
         let dir = self.0.join("characters").join(character);
         fs::create_dir_all(&dir).unwrap();
@@ -110,10 +116,66 @@ fn missing_art_is_a_warning() {
 }
 
 #[test]
-fn missing_story_file() {
+fn missing_story_dir() {
     let project = Project::new("");
-    let error = project.app().entry("story/nope.story").check().unwrap_err();
+    let error = project.app().story_dir("nope").check().unwrap_err();
     assert!(matches!(error, AppError::Story { .. }));
+}
+
+#[test]
+fn story_dir_without_stories() {
+    let project = Project::new("");
+    fs::remove_file(project.0.join("story/main.story")).unwrap();
+    fs::write(project.0.join("story/notes.txt"), "not a story").unwrap();
+
+    let error = project.app().check().unwrap_err();
+    assert!(
+        error.to_string().contains("no .story files in"),
+        "{}",
+        error
+    );
+}
+
+#[test]
+fn every_story_file_is_loaded() {
+    let project = Project::new("scene start:\n  \"one\"\n  jump two\n");
+    project.add_story("b/two.story", "scene two:\n  \"two\"\n  jump three\n");
+    project.add_story("c.story", "scene three:\n  \"three\"\n");
+
+    let (mut story, _) = project.app().check().unwrap();
+    assert_eq!(story.program().files.len(), 3);
+    assert_eq!(story.program().scene_order, ["two", "three", "start"]);
+
+    story.set_entry_scene("start").unwrap();
+    let mut lines = Vec::new();
+    while let vn_engine::script::Event::Say { text, .. } = story.advance_until_blocking() {
+        lines.push(text);
+    }
+    assert_eq!(lines, ["one", "two", "three"]);
+}
+
+#[test]
+fn errors_name_their_file() {
+    let project = Project::new("scene start:\n  \"x\"\n  set nope = 1\n");
+    project.add_story("other.story", "scene start:\n  \"dup\"\n");
+
+    let Err(AppError::Script { errors, .. }) = project.app().check() else {
+        panic!("expected script errors");
+    };
+    let shown: Vec<String> = errors.iter().map(ToString::to_string).collect();
+    let main = project.0.join("story/main.story").display().to_string();
+    let other = project.0.join("story/other.story").display().to_string();
+
+    assert_eq!(
+        shown,
+        [
+            format!("{}:3: error: unknown variable 'nope'", main),
+            format!(
+                "{}:1: error: scene 'start' is already defined at {}:1; this one is ignored",
+                other, main
+            ),
+        ]
+    );
 }
 
 #[test]

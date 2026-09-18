@@ -29,7 +29,7 @@ pub struct VnApp {
     target_fps: u32,
     clear_color: Color,
     assets: PathBuf,
-    entry: String,
+    story_dir: String,
     initial_screen: ScreenState,
     fonts: Vec<(FontRole, String)>,
     start: StartScreenConfig,
@@ -69,9 +69,7 @@ pub enum AppError {
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AppError::Story { path, source } => {
-                write!(f, "could not read {}: {}", path.display(), source)
-            }
+            AppError::Story { source, .. } => write!(f, "could not load the story: {}", source),
             AppError::Script { path, errors } => {
                 let count = errors.len();
                 write!(
@@ -82,7 +80,7 @@ impl fmt::Display for AppError {
                     if count == 1 { "" } else { "s" }
                 )?;
                 for error in errors {
-                    write!(f, "\n  {}", error.in_file(path.display()))?;
+                    write!(f, "\n  {}", error)?;
                 }
                 Ok(())
             }
@@ -102,7 +100,7 @@ impl VnApp {
             target_fps: 60,
             clear_color: Color::BLACK,
             assets: PathBuf::from("assets"),
-            entry: "story/main.story".to_string(),
+            story_dir: "story".to_string(),
             initial_screen: ScreenState::StartScreen,
             fonts: Vec::new(),
             start: StartScreenConfig::default(),
@@ -190,11 +188,21 @@ impl VnApp {
     }
 
     pub fn check(&self) -> Result<(StoryVm, Vec<Diagnostic>), AppError> {
-        let path = self.assets.join(&self.entry);
-        let mut story = StoryVm::from_file(&path).map_err(|source| AppError::Story {
+        let path = self.assets.join(&self.story_dir);
+        let mut story = StoryVm::from_dir(&path).map_err(|source| AppError::Story {
             path: path.clone(),
             source,
         })?;
+
+        if story.program().files.is_empty() {
+            return Err(AppError::Story {
+                source: io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("no .story files in {}", path.display()),
+                ),
+                path,
+            });
+        }
 
         story.set_schema(self.schema());
 
@@ -254,8 +262,8 @@ impl VnApp {
         self
     }
 
-    pub fn entry(mut self, script: impl Into<String>) -> Self {
-        self.entry = script.into();
+    pub fn story_dir(mut self, dir: impl Into<String>) -> Self {
+        self.story_dir = dir.into();
         self
     }
 
@@ -326,9 +334,8 @@ impl VnApp {
 
     pub fn run(self) -> Result<(), AppError> {
         let (story, warnings) = self.check()?;
-        let path = self.assets.join(&self.entry);
         for warning in &warnings {
-            eprintln!("{}", warning.in_file(path.display()));
+            eprintln!("{}", warning);
         }
 
         let (mut rl, thread) = raylib::init()
@@ -463,6 +470,7 @@ fn missing_art(story: &StoryVm, assets: &Path) -> Vec<Diagnostic> {
                         program.line(index),
                         format!("missing {} (a placeholder will be drawn)", relative),
                     )
+                    .with_file(program.file(index))
                 })
             }
             _ => None,

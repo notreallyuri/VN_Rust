@@ -65,7 +65,7 @@ Three levels of control, each optional:
 
 ## M3: App builder and registries (the "how do I get going" API) ← next
 
-- [x] `VnApp` builder in `vn_engine`: title, window size, assets, entry file and scene, fonts, `.run()`
+- [x] `VnApp` builder in `vn_engine`: title, window size, assets, story directory and entry scene, fonts, `.run()`
 - [x] Character registry (id → display name, color, image set); display names may use `{variable}`
 - [x] Text input screen (`ctx.ask_text`), used by the example's `ask_name` command
 - [x] Variable registry (id → typed default: bool, int, enum, string)
@@ -126,8 +126,13 @@ Three levels of control, each optional:
 - [ ] Platform save directory (e.g. `~/.local/share/<game>`) instead of `./saves`
 - [ ] Save format migrations when `SAVE_FORMAT_VERSION` changes
 - [ ] `vn new` project template
-- [ ] Multi-file projects
-- [ ] Tree-sitter grammar, formatter, LSP (Neovim, VS Code, Zed)
+- [x] Multi-file projects: every `.story` under `story_dir` is one program; diagnostics name their file; the example's chapters jump into each other
+- [ ] Editor support for `.story` files:
+  - [ ] `tree-sitter-story` grammar, with an external scanner for indentation (INDENT/DEDENT, like tree-sitter-python); corpus tests from `all_features.story`
+  - [ ] Neovim: filetype detection, `highlights.scm`, `folds.scm`, `indents.scm` (registered through nvim-treesitter). Zed and Helix reuse the same grammar and queries
+  - [ ] VS Code: a TextMate grammar for highlighting (VS Code doesn't highlight with tree-sitter), packaged as an extension
+  - [ ] LSP (`vn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type, go to scene definition, completion of scene/character/variable ids. Works in every editor
+  - [ ] Formatter (`vn fmt`)
 
 ## Ongoing
 
