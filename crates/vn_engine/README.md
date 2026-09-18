@@ -61,6 +61,7 @@ loop until the window closes or a screen returns `ScreenState::Quit`. It returns
 | `character(id, Character)` | | Register a character |
 | `entry_scene(id)` | first scene of the first file | Scene the story starts from |
 | `warn_missing_art(bool)` | `true` | Warn at startup about `show`s with no image file |
+| `schema_file(Option<&str>)` | `Some("schema.json")` | Where the schema is exported, relative to the assets (see [Schema export](#schema-export)); `None` turns the export off |
 | `text_input(\|t\| ...)` | | Configure the default text input screen |
 | `saves_dir(path)` | `saves` | Where save files go (see [Save and load](#save-and-load)) |
 | `save_menu(\|s\| ...)` | | Configure the default Save/Load screens |
@@ -439,10 +440,26 @@ printed and the game starts. `VnApp::check()` runs the same checks without a win
 returning the loaded story and the warnings (useful in tests), and `VnApp::schema()`
 returns the schema.
 
+### Schema export
+
+The registries only exist in Rust, so tools that don't run the game (`vn check`, the
+LSP) read them from `<assets>/schema.json` (a `vn_script::SchemaFile`: title, story
+directory, entry scene, variables, characters and command signatures):
+
+- **Debug builds** refresh it on every `run()`, before validating the story, and print
+  `Updated <path>` when it changed. Unchanged schemas aren't rewritten, so the file only
+  shows up in a diff when a registry actually changes. Commit it.
+- **`--export-schema`**: `cargo run -- --export-schema` writes it (also in release builds,
+  and to `<assets>/schema.json` even when `schema_file(None)`) and exits without opening
+  a window or validating the story, so it works while the story has errors.
+- `schema_export()` returns the `SchemaFile`, `schema_path()` where it goes, and
+  `export_schema()` writes it (`Ok(Some(path))` when the file changed).
+
 | `AppError` | When |
 | --- | --- |
 | `Story { path, source }` | The story directory (`path`) or a file in it can't be read, or it has no `.story` files |
 | `Script { path, errors }` | Parsing or validation found errors (or the entry scene doesn't exist); each error names its file |
+| `Schema { path, source }` | `--export-schema` couldn't write the schema file |
 | `Screen(io::Error)` | No screen is registered for the initial `ScreenState` |
 
 ## Text input

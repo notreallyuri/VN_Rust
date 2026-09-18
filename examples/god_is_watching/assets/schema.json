@@ -1,0 +1,119 @@
+{
+  "format_version": 1,
+  "game": "God Is Watching",
+  "story_dir": "story",
+  "variables": {
+    "curiosity": {
+      "ty": "Int",
+      "default": {
+        "Int": 0
+      }
+    },
+    "obedience": {
+      "ty": "Int",
+      "default": {
+        "Int": 0
+      }
+    },
+    "player_name": {
+      "ty": "String",
+      "default": {
+        "String": "Reader"
+      }
+    },
+    "suspicion": {
+      "ty": "Int",
+      "default": {
+        "Int": 0
+      }
+    }
+  },
+  "characters": {
+    "adelaide": {
+      "name": "Adelaide",
+      "images": [
+        "neutral",
+        "afraid"
+      ]
+    },
+    "clara": {
+      "name": "Clara",
+      "images": [
+        "neutral"
+      ]
+    },
+    "francis": {
+      "name": "Francis",
+      "images": [
+        "neutral"
+      ]
+    },
+    "guest": {
+      "name": "Guest",
+      "images": [
+        "neutral"
+      ]
+    },
+    "house_envoy": {
+      "name": "Envoy of the House",
+      "images": [
+        "neutral"
+      ]
+    },
+    "hugo": {
+      "name": "Hugo Von Lucis",
+      "images": [
+        "neutral",
+        "tired"
+      ]
+    },
+    "man_in_black": {
+      "name": "The Man in Black",
+      "images": [
+        "neutral"
+      ]
+    },
+    "mary": {
+      "name": "Mary",
+      "images": [
+        "tired"
+      ]
+    },
+    "moriarty": {
+      "name": "Moriarty",
+      "images": [
+        "neutral"
+      ]
+    },
+    "shadow": {
+      "name": "Shadow",
+      "images": [
+        "neutral"
+      ]
+    },
+    "shadow_third": {
+      "name": "The Third Shadow",
+      "images": [
+        "neutral"
+      ]
+    }
+  },
+  "commands": {
+    "ask_name": {
+      "required": [
+        "Word"
+      ],
+      "optional": [],
+      "rest": null
+    },
+    "give_item": {
+      "required": [
+        "Word"
+      ],
+      "optional": [
+        "UInt"
+      ],
+      "rest": null
+    }
+  }
+}

@@ -6,7 +6,9 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use vn_script::{Diagnostic, Instruction, Schema, StoryVm, VariableDef};
+use vn_script::{
+    Diagnostic, Instruction, SCHEMA_FILE_NAME, Schema, SchemaFile, StoryVm, VariableDef,
+};
 
 use crate::screens::{
     CONFIRM_OVERLAY, ConfirmConfig, ConfirmDialog, LOAD_OVERLAY, MainMenuConfig, MainMenuScreen,
@@ -30,6 +32,7 @@ pub struct VnApp {
     clear_color: Color,
     assets: PathBuf,
     story_dir: String,
+    schema_file: Option<PathBuf>,
     initial_screen: ScreenState,
     fonts: Vec<(FontRole, String)>,
     start: StartScreenConfig,
@@ -63,6 +66,10 @@ pub enum AppError {
         path: PathBuf,
         errors: Vec<Diagnostic>,
     },
+    Schema {
+        path: PathBuf,
+        source: io::Error,
+    },
     Screen(io::Error),
 }
 
@@ -84,6 +91,9 @@ impl fmt::Display for AppError {
                 }
                 Ok(())
             }
+            AppError::Schema { source, .. } => {
+                write!(f, "could not write the schema: {}", source)
+            }
             AppError::Screen(e) => write!(f, "{}", e),
         }
     }
@@ -101,6 +111,7 @@ impl VnApp {
             clear_color: Color::BLACK,
             assets: PathBuf::from("assets"),
             story_dir: "story".to_string(),
+            schema_file: Some(PathBuf::from(SCHEMA_FILE_NAME)),
             initial_screen: ScreenState::StartScreen,
             fonts: Vec::new(),
             start: StartScreenConfig::default(),
@@ -204,19 +215,7 @@ impl VnApp {
             });
         }
 
-        story.set_schema(self.schema());
-
-        let mut diagnostics = Vec::new();
-        if let Some(scene) = &self.entry_scene
-            && story.set_entry_scene(scene.clone()).is_err()
-        {
-            diagnostics.push(Diagnostic::error(
-                0,
-                format!("entry scene '{}' does not exist", scene),
-            ));
-        }
-
-        diagnostics.extend(story.validate());
+        let mut diagnostics = story.prepare(self.schema(), self.entry_scene.as_deref());
         if self.warn_missing_art {
             diagnostics.extend(missing_art(&story, &self.assets));
         }
@@ -260,6 +259,38 @@ impl VnApp {
     pub fn assets(mut self, root: impl Into<PathBuf>) -> Self {
         self.assets = root.into();
         self
+    }
+
+    pub fn schema_file(mut self, file: Option<&str>) -> Self {
+        self.schema_file = file.map(PathBuf::from);
+        self
+    }
+
+    pub fn schema_export(&self) -> SchemaFile {
+        SchemaFile {
+            entry_scene: self.entry_scene.clone(),
+            ..SchemaFile::new(&self.title, &self.story_dir, self.schema())
+        }
+    }
+
+    pub fn schema_path(&self) -> Option<PathBuf> {
+        self.schema_file.as_ref().map(|file| self.assets.join(file))
+    }
+
+    pub fn export_schema(&self) -> Result<Option<PathBuf>, AppError> {
+        let Some(path) = self.schema_path() else {
+            return Ok(None);
+        };
+        Ok(self.write_schema(&path)?.then_some(path))
+    }
+
+    fn write_schema(&self, path: &Path) -> Result<bool, AppError> {
+        self.schema_export()
+            .write(path)
+            .map_err(|source| AppError::Schema {
+                path: path.to_path_buf(),
+                source,
+            })
     }
 
     pub fn story_dir(mut self, dir: impl Into<String>) -> Self {
@@ -333,6 +364,24 @@ impl VnApp {
     }
 
     pub fn run(self) -> Result<(), AppError> {
+        if std::env::args().any(|arg| arg == "--export-schema") {
+            let path = self
+                .schema_path()
+                .unwrap_or_else(|| self.assets.join(SCHEMA_FILE_NAME));
+            let written = self.write_schema(&path)?;
+            let status = if written { "wrote" } else { "unchanged:" };
+            println!("{} {}", status, path.display());
+            return Ok(());
+        }
+
+        if cfg!(debug_assertions) {
+            match self.export_schema() {
+                Ok(Some(path)) => println!("Updated {}", path.display()),
+                Ok(None) => {}
+                Err(e) => eprintln!("⚠️ {}", e),
+            }
+        }
+
         let (story, warnings) = self.check()?;
         for warning in &warnings {
             eprintln!("{}", warning);

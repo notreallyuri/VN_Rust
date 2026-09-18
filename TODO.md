@@ -94,8 +94,8 @@ Three levels of control, each optional:
 - [x] Choice options non-empty (text and body), `choice:` has at least one option
 - [x] Identifiers match `[a-z_][a-z0-9_]*` everywhere (scenes, characters, images, commands, variables, enum members); tabs in indentation are errors
 - [x] `{variable}` in text must name a registered variable
-- [ ] Export the registry as a schema file so `vn check` and the LSP can validate without running the game
-- [ ] `vn check <file>`
+- [x] Export the registry as a schema file (`schema.json`, refreshed in debug builds, `--export-schema`) so `vn check` and the LSP can validate without running the game
+- [x] `vn check <path>`: whole story or one file in its project, schema found by walking up, exit code for CI
 - [x] Parser edge cases:
   - [x] narration ending in `:` is lexed as `ChoiceOption` and panics
   - [x] an empty `if`/`else`/option body swallows the following siblings

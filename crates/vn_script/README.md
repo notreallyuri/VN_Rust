@@ -229,8 +229,36 @@ line when it is 0 (problems not tied to a line, like a missing entry scene).
 `with_file(Option<&str>)` sets the file. A speaker written as
 `{variable}` isn't checked against characters, only the variable is.
 
-Schemas are serde-serializable, so they can later be exported for `vn check` and editor
-tooling (TODO.md, M4).
+### Schema files
+
+A game writes its registries to a `schema.json` (`SCHEMA_FILE_NAME`) next to its assets,
+so tools can validate stories without running the game (`vn check`, and later the LSP):
+
+```json
+{
+  "format_version": 1,
+  "game": "God Is Watching",
+  "story_dir": "story",
+  "entry_scene": "start",
+  "variables": { "curiosity": { "ty": "Int", "default": { "Int": 0 } } },
+  "characters": { "mary": { "name": "Mary", "images": ["tired"] } },
+  "commands": { "give_item": { "required": ["Word"], "optional": ["UInt"], "rest": null } }
+}
+```
+
+`SchemaFile { format_version, game, story_dir, entry_scene, schema }` (the schema's
+fields are inlined). `story_dir` is relative to the schema file; `entry_scene` is left
+out when the game uses the default.
+
+| Method | Purpose |
+| --- | --- |
+| `SchemaFile::new(game, story_dir, schema)` | Current format version, no entry scene |
+| `to_json()` / `from_json(&str)` | Pretty JSON with a trailing newline, so the file diffs cleanly. A newer `format_version` than `SCHEMA_FORMAT_VERSION` is an error |
+| `read(path)` / `write(path) -> io::Result<bool>` | `write` returns `false` and leaves the file alone when nothing changed |
+
+Every field except `format_version`, `game` and `story_dir` may be left out (an empty
+registry, which turns its checks off), as may a character's `images` and a command's
+`optional`/`rest`.
 
 ## StoryVm
 
@@ -259,6 +287,7 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `choose(index) -> Result<(), VmError>` | Answer the pending choice (0-based) |
 | `set_schema(schema)` | Use a schema: variables start at their defaults, `set_variable` is type-checked. Resets the story |
 | `validate()` | The schema's diagnostics for this program (plus a missing entry scene) |
+| `prepare(schema, entry_scene) -> Vec<Diagnostic>` | `set_schema` + `set_entry_scene` + `validate` in one call, with an error for an unknown entry scene. What the engine and `vn check` run |
 | `set_entry_scene(id)`, `entry_scene()` | Start from a scene other than the first. Resets the story |
 | `reset()` | Restart from the entry scene; variables back to their defaults, no characters |
 | `start_at(scene_id) -> Result<(), VmError>` | Restart from a given scene |
@@ -344,6 +373,6 @@ cargo test -p vn_script
 | `tests/diagnostics.rs` | Every parse error with its exact line and message, recovery (no follow-on errors, empty blocks don't swallow siblings, tabs), string escapes, file names in multi-file diagnostics |
 | `tests/template.rs` | Interpolation of every value type, unset variables, `{{`/`}}`, malformed braces |
 | `tests/snapshot.rs` | Snapshot round trips (mid-scene, at a choice, JSON), edits to other scenes, edits to the saved scene, missing scenes |
-| `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example story directory |
+| `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example story directory, `prepare`, schema files (round trip, unchanged writes, missing fields, newer formats) |
 | `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, the fixture playing through, the example playing through all three chapters, `story_files` (recursive, sorted, `.story` only) |
 | `tests/fixtures/all_features.story` | Golden input covering every construct in SCRIPT.md |

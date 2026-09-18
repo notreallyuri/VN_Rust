@@ -18,6 +18,7 @@ for assets next to the executable instead.
 | `characters/<character>/<image>.png` | Character art for `show <character> <image>`. Missing art uses a placeholder |
 | `backgrounds/` | Reserved |
 | `fonts/` | Noto Serif (OFL, `fonts/OFL.txt`), used for the title and dialogue |
+| `schema.json` | Exported registries (refreshed by debug runs, or `cargo run -p god_is_watching -- --export-schema`), used by `vn check` |
 
 ## Setup
 

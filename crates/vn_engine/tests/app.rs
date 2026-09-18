@@ -273,3 +273,22 @@ fn parse_errors_are_reported_with_the_file_and_line() {
             .contains("main.story:2: error: `show mary` needs an image")
     );
 }
+
+#[test]
+fn schema_export_describes_the_game() {
+    let project = Project::new("scene start:\n  \"x\"\n");
+    let app = project.app().entry_scene("start");
+
+    let file = app.schema_export();
+    assert_eq!(file.game, "Test");
+    assert_eq!(file.story_dir, "story");
+    assert_eq!(file.entry_scene.as_deref(), Some("start"));
+    assert_eq!(file.schema, app.schema());
+
+    let path = project.0.join("schema.json");
+    assert_eq!(app.export_schema().unwrap(), Some(path.clone()));
+    assert_eq!(app.export_schema().unwrap(), None);
+    assert_eq!(vn_engine::script::SchemaFile::read(&path).unwrap(), file);
+
+    assert_eq!(app.schema_file(None).export_schema().unwrap(), None);
+}

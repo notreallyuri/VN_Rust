@@ -155,6 +155,23 @@ impl StoryVm {
         diagnostics
     }
 
+    pub fn prepare(&mut self, schema: Schema, entry_scene: Option<&str>) -> Vec<Diagnostic> {
+        self.set_schema(schema);
+
+        let mut diagnostics = Vec::new();
+        if let Some(scene) = entry_scene
+            && self.set_entry_scene(scene).is_err()
+        {
+            diagnostics.push(Diagnostic::error(
+                0,
+                format!("entry scene '{}' does not exist", scene),
+            ));
+        }
+
+        diagnostics.extend(self.validate());
+        diagnostics
+    }
+
     pub fn set_entry_scene(&mut self, scene_id: impl Into<String>) -> Result<(), VmError> {
         let scene_id = scene_id.into();
         if !self.program.scenes.contains_key(&scene_id) {

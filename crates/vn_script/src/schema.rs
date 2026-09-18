@@ -1,5 +1,8 @@
 use std::collections::BTreeMap;
 use std::fmt;
+use std::fs;
+use std::io;
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
@@ -100,6 +103,7 @@ impl VariableDef {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct CharacterDef {
     pub name: String,
     pub images: Vec<String>,
@@ -140,6 +144,7 @@ impl ParamKind {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct CommandSig {
     pub required: Vec<ParamKind>,
     pub optional: Vec<ParamKind>,
@@ -215,6 +220,7 @@ fn count(min: usize, max: usize, rest: bool) -> String {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Schema {
     pub variables: BTreeMap<String, VariableDef>,
     pub characters: BTreeMap<String, CharacterDef>,
@@ -392,5 +398,71 @@ impl<'a> Checker<'a> {
                 }
             }
         }
+    }
+}
+
+pub const SCHEMA_FILE_NAME: &str = "schema.json";
+pub const SCHEMA_FORMAT_VERSION: u32 = 1;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SchemaFile {
+    pub format_version: u32,
+    pub game: String,
+    pub story_dir: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entry_scene: Option<String>,
+    #[serde(flatten)]
+    pub schema: Schema,
+}
+
+impl SchemaFile {
+    pub fn new(game: impl Into<String>, story_dir: impl Into<String>, schema: Schema) -> Self {
+        Self {
+            format_version: SCHEMA_FORMAT_VERSION,
+            game: game.into(),
+            story_dir: story_dir.into(),
+            entry_scene: None,
+            schema,
+        }
+    }
+
+    pub fn to_json(&self) -> String {
+        let mut json = serde_json::to_string_pretty(self).expect("schemas serialize");
+        json.push('\n');
+        json
+    }
+
+    pub fn from_json(json: &str) -> Result<Self, String> {
+        let file: Self = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if file.format_version > SCHEMA_FORMAT_VERSION {
+            return Err(format!(
+                "schema format {} is newer than this tool supports ({})",
+                file.format_version, SCHEMA_FORMAT_VERSION
+            ));
+        }
+        Ok(file)
+    }
+
+    pub fn read(path: impl AsRef<Path>) -> io::Result<Self> {
+        let path = path.as_ref();
+        let json = fs::read_to_string(path)
+            .map_err(|e| io::Error::new(e.kind(), format!("{}: {}", path.display(), e)))?;
+        Self::from_json(&json).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("{}: {}", path.display(), e),
+            )
+        })
+    }
+
+    pub fn write(&self, path: impl AsRef<Path>) -> io::Result<bool> {
+        let path = path.as_ref();
+        let json = self.to_json();
+        if fs::read_to_string(path).is_ok_and(|existing| existing == json) {
+            return Ok(false);
+        }
+        fs::write(path, json)
+            .map_err(|e| io::Error::new(e.kind(), format!("{}: {}", path.display(), e)))?;
+        Ok(true)
     }
 }

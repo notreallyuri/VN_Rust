@@ -326,3 +326,59 @@ fn every_example_story_is_valid_without_registries() {
     assert_eq!(vm.program().files.len(), 3);
     assert_eq!(vm.validate(), []);
 }
+
+#[test]
+fn schema_files_round_trip() {
+    let mut file = vn_script::SchemaFile::new("Game", "story", schema());
+    file.entry_scene = Some("start".into());
+
+    let json = file.to_json();
+    assert_eq!(vn_script::SchemaFile::from_json(&json), Ok(file.clone()));
+    assert!(json.contains("\"story_dir\": \"story\""));
+    assert!(json.contains("\"give_item\""));
+
+    let path = std::env::temp_dir().join(format!("vn_schema_{}.json", std::process::id()));
+    let _ = std::fs::remove_file(&path);
+    assert!(file.write(&path).unwrap());
+    assert!(!file.write(&path).unwrap());
+    assert_eq!(vn_script::SchemaFile::read(&path).unwrap(), file);
+    std::fs::remove_file(&path).unwrap();
+}
+
+#[test]
+fn schema_files_can_leave_registries_out() {
+    let file = vn_script::SchemaFile::from_json(
+        r#"{ "format_version": 1, "game": "G", "story_dir": "story", "characters": { "mary": { "name": "Mary" } } }"#,
+    )
+    .unwrap();
+    assert!(file.schema.variables.is_empty());
+    assert_eq!(file.schema.characters["mary"].images, Vec::<String>::new());
+    assert_eq!(file.entry_scene, None);
+}
+
+#[test]
+fn newer_schema_files_are_rejected() {
+    let error = vn_script::SchemaFile::from_json(
+        r#"{ "format_version": 2, "game": "G", "story_dir": "story" }"#,
+    )
+    .unwrap_err();
+    assert_eq!(
+        error,
+        "schema format 2 is newer than this tool supports (1)"
+    );
+}
+
+#[test]
+fn prepare_applies_the_schema_and_the_entry_scene() {
+    let mut vm = StoryVm::from_source("scene a:\n  \"a\"\nscene b:\n  set nope = 1\n");
+    assert_eq!(
+        vm.prepare(schema(), Some("missing")),
+        [
+            Diagnostic::error(0, "entry scene 'missing' does not exist"),
+            Diagnostic::error(4, "unknown variable 'nope'"),
+        ]
+    );
+
+    assert_eq!(vm.prepare(schema(), Some("b")).len(), 1);
+    assert_eq!(vm.entry_scene(), Some("b"));
+}
