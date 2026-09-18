@@ -75,6 +75,51 @@ It may only:
 - Read engine-defined state
 - Request engine actions
 
+## Workspace Layout
+
+| Crate | Role |
+|---|---|
+| [`crates/vn_script`](crates/vn_script/README.md) | Story DSL: lexer, parser, compiler and VM. No rendering dependencies |
+| [`crates/vn_engine`](crates/vn_engine/README.md) | raylib-based engine: `VnApp` builder, configurable default screens, UI helpers, resources, fonts. Re-exports `raylib` and `vn_script` |
+| [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn dump <file.story>`) |
+| [`examples/god_is_watching`](examples/god_is_watching/README.md) | Reference game built on `vn_engine` |
+
+Each crate documents its API and behavior in its own README.
+
+Games depend only on `vn_engine`.
+
+## Running the Example
+
+`god_is_watching` is the reference game. Run it from anywhere in the workspace:
+
+```sh
+cargo run -p god_is_watching
+```
+
+raylib is built from source on the first run, so you need CMake and a C compiler.
+
+Its assets live in `examples/god_is_watching/assets/`:
+
+| Path | Contents |
+|---|---|
+| `story/` | Chapter scripts. The game starts from `story/01_mary.story` |
+| `characters/<character_id>/<image_id>.png` | Character art, as referenced by `show <character_id> <image_id>` |
+| `backgrounds/` | Reserved; backgrounds are not in the DSL yet |
+| `fonts/` | `.ttf`/`.otf` fonts, assigned to text roles with `VnApp::font` in `main.rs` |
+
+Missing art is not an error: the engine logs a warning and draws a labeled
+placeholder card, so a story can be played before its art exists.
+
+The engine ships Noto Sans as its default font, and a game can give each kind of text
+(menu, dialogue, speaker names, ...) its own font from `assets/fonts/`. See
+[vn_engine's README](crates/vn_engine/README.md#fonts).
+
+To inspect how a script compiles:
+
+```sh
+cargo run -p vn_cli -- dump examples/god_is_watching/assets/story/01_mary.story
+```
+
 ## Writing Story Scripts
 
 Story content is written using a custom DSL designed for clarity and structure.

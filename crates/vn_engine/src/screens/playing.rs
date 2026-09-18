@@ -1,0 +1,553 @@
+use std::rc::Rc;
+
+use raylib::prelude::*;
+use vn_script::{Event, StoryVm};
+
+use crate::screens::PAUSE_OVERLAY;
+use crate::ui::{self, Background, ButtonStyle, TextStyle};
+use crate::{Action, DrawContext, FontRole, GameContext, ResourceManager, Screen, ScreenState};
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DialogueBoxStyle {
+    pub height: f32,
+    pub margin: f32,
+    pub padding: f32,
+    pub color: Color,
+    pub roundness: f32,
+}
+
+impl Default for DialogueBoxStyle {
+    fn default() -> Self {
+        Self {
+            height: 170.0,
+            margin: 40.0,
+            padding: 24.0,
+            color: Color::new(0, 0, 0, 200),
+            roundness: 0.0,
+        }
+    }
+}
+
+impl DialogueBoxStyle {
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = height;
+        self
+    }
+
+    pub fn margin(mut self, margin: f32) -> Self {
+        self.margin = margin;
+        self
+    }
+
+    pub fn padding(mut self, padding: f32) -> Self {
+        self.padding = padding;
+        self
+    }
+
+    pub fn color(mut self, color: Color) -> Self {
+        self.color = color;
+        self
+    }
+
+    pub fn roundness(mut self, roundness: f32) -> Self {
+        self.roundness = roundness.clamp(0.0, 1.0);
+        self
+    }
+
+    fn rect(&self, screen: Vector2) -> Rectangle {
+        Rectangle::new(
+            self.margin,
+            screen.y - self.height - self.margin,
+            screen.x - self.margin * 2.0,
+            self.height,
+        )
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct HudButton {
+    pub label: String,
+    pub action: Action,
+}
+
+#[derive(Clone, Debug)]
+pub struct PlayingConfig {
+    pub dialogue_box: DialogueBoxStyle,
+    pub speaker_text: TextStyle,
+    pub dialogue_text: TextStyle,
+    pub choice_button: ButtonStyle,
+    pub choice_spacing: f32,
+    pub end_title: String,
+    pub end_title_text: TextStyle,
+    pub end_hint: String,
+    pub end_hint_text: TextStyle,
+    pub advance_keys: Vec<KeyboardKey>,
+    pub menu_key: Option<KeyboardKey>,
+    pub after_end: ScreenState,
+    pub background: Option<Background>,
+    pub hud: Vec<HudButton>,
+    pub hud_button: ButtonStyle,
+    pub hud_margin: f32,
+    pub hud_spacing: f32,
+    pub quick_save_key: Option<KeyboardKey>,
+    pub quick_load_key: Option<KeyboardKey>,
+    pub pause_key: Option<KeyboardKey>,
+    pub pause_overlay: String,
+}
+
+impl Default for PlayingConfig {
+    fn default() -> Self {
+        Self {
+            dialogue_box: DialogueBoxStyle::default(),
+            speaker_text: TextStyle::new(FontRole::Speaker, 24.0, Color::GOLD),
+            dialogue_text: TextStyle::new(FontRole::Dialogue, 26.0, Color::RAYWHITE),
+            choice_button: ButtonStyle::default()
+                .size(720.0, 56.0)
+                .color(Color::new(30, 30, 45, 230))
+                .font(FontRole::Choice),
+            choice_spacing: 16.0,
+            end_title: "The End".to_string(),
+            end_title_text: TextStyle::new(FontRole::Title, 56.0, Color::RAYWHITE),
+            end_hint: "Click to return to the menu".to_string(),
+            end_hint_text: TextStyle::new(FontRole::Menu, 20.0, Color::GRAY),
+            advance_keys: vec![KeyboardKey::KEY_SPACE, KeyboardKey::KEY_ENTER],
+            menu_key: None,
+            after_end: ScreenState::MainMenu,
+            background: None,
+            hud: Vec::new(),
+            hud_button: ButtonStyle::default()
+                .size(130.0, 40.0)
+                .color(Color::new(20, 20, 30, 190))
+                .font_size(18.0),
+            hud_margin: 16.0,
+            hud_spacing: 10.0,
+            quick_save_key: Some(KeyboardKey::KEY_F5),
+            quick_load_key: Some(KeyboardKey::KEY_F9),
+            pause_key: Some(KeyboardKey::KEY_ESCAPE),
+            pause_overlay: PAUSE_OVERLAY.to_string(),
+        }
+    }
+}
+
+impl PlayingConfig {
+    pub fn dialogue_box(
+        mut self,
+        style: impl FnOnce(DialogueBoxStyle) -> DialogueBoxStyle,
+    ) -> Self {
+        self.dialogue_box = style(self.dialogue_box);
+        self
+    }
+
+    pub fn speaker_text(mut self, style: TextStyle) -> Self {
+        self.speaker_text = style;
+        self
+    }
+
+    pub fn dialogue_text(mut self, style: TextStyle) -> Self {
+        self.dialogue_text = style;
+        self
+    }
+
+    pub fn choice_button(mut self, style: impl FnOnce(ButtonStyle) -> ButtonStyle) -> Self {
+        self.choice_button = style(self.choice_button);
+        self
+    }
+
+    pub fn choice_spacing(mut self, spacing: f32) -> Self {
+        self.choice_spacing = spacing;
+        self
+    }
+
+    pub fn end_title(mut self, text: impl Into<String>) -> Self {
+        self.end_title = text.into();
+        self
+    }
+
+    pub fn end_title_text(mut self, style: TextStyle) -> Self {
+        self.end_title_text = style;
+        self
+    }
+
+    pub fn end_hint(mut self, text: impl Into<String>) -> Self {
+        self.end_hint = text.into();
+        self
+    }
+
+    pub fn end_hint_text(mut self, style: TextStyle) -> Self {
+        self.end_hint_text = style;
+        self
+    }
+
+    pub fn advance_keys(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.advance_keys = keys.into_iter().collect();
+        self
+    }
+
+    pub fn menu_key(mut self, key: Option<KeyboardKey>) -> Self {
+        self.menu_key = key;
+        self
+    }
+
+    pub fn after_end(mut self, state: ScreenState) -> Self {
+        self.after_end = state;
+        self
+    }
+
+    pub fn background(mut self, background: Background) -> Self {
+        self.background = Some(background);
+        self
+    }
+
+    pub fn hud_button(mut self, label: impl Into<String>, action: Action) -> Self {
+        self.hud.push(HudButton {
+            label: label.into(),
+            action,
+        });
+        self
+    }
+
+    pub fn hud_button_style(mut self, style: impl FnOnce(ButtonStyle) -> ButtonStyle) -> Self {
+        self.hud_button = style(self.hud_button);
+        self
+    }
+
+    pub fn hud_margin(mut self, margin: f32) -> Self {
+        self.hud_margin = margin;
+        self
+    }
+
+    pub fn hud_spacing(mut self, spacing: f32) -> Self {
+        self.hud_spacing = spacing;
+        self
+    }
+
+    pub fn quick_save_key(mut self, key: Option<KeyboardKey>) -> Self {
+        self.quick_save_key = key;
+        self
+    }
+
+    pub fn quick_load_key(mut self, key: Option<KeyboardKey>) -> Self {
+        self.quick_load_key = key;
+        self
+    }
+
+    pub fn pause_key(mut self, key: Option<KeyboardKey>) -> Self {
+        self.pause_key = key;
+        self
+    }
+
+    pub fn pause_overlay(mut self, name: impl Into<String>) -> Self {
+        self.pause_overlay = name.into();
+        self
+    }
+
+    fn hud_rects(&self, screen: Vector2) -> Vec<Rectangle> {
+        let button = &self.hud_button;
+        let count = self.hud.len() as f32;
+        let total = count * button.width + (count - 1.0).max(0.0) * self.hud_spacing;
+        let left = screen.x - self.hud_margin - total;
+
+        (0..self.hud.len())
+            .map(|i| {
+                Rectangle::new(
+                    left + i as f32 * (button.width + self.hud_spacing),
+                    self.hud_margin,
+                    button.width,
+                    button.height,
+                )
+            })
+            .collect()
+    }
+
+    fn choice_rects(&self, count: usize, screen: Vector2) -> Vec<Rectangle> {
+        let button = &self.choice_button;
+        let total =
+            count as f32 * button.height + count.saturating_sub(1) as f32 * self.choice_spacing;
+
+        ui::stacked_rects(
+            count,
+            button.width,
+            button.height,
+            self.choice_spacing,
+            screen.x / 2.0,
+            (screen.y - total) / 2.0,
+        )
+    }
+}
+
+pub struct PlayingScreen {
+    config: Rc<PlayingConfig>,
+    current: Option<Event>,
+}
+
+impl PlayingScreen {
+    pub fn new(config: Rc<PlayingConfig>) -> Self {
+        Self {
+            config,
+            current: None,
+        }
+    }
+
+    fn advance(&mut self, ctx: &mut GameContext) -> Option<ScreenState> {
+        loop {
+            match ctx.story.advance() {
+                Event::Call { command, args } => {
+                    if ctx.rollback.blocks_command(&command) {
+                        ctx.rollback.mark_barrier();
+                    }
+                    if let Some(next) = ctx.run_command(&command, &args) {
+                        return Some(next);
+                    }
+                }
+                Event::Commit => ctx.rollback.mark_barrier(),
+                event if event.is_blocking() => {
+                    self.current = Some(event);
+                    ctx.rollback.record(ctx.story, ctx.state);
+                    return None;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn resume(&mut self, ctx: &mut GameContext) -> Option<ScreenState> {
+        match ctx.story.current() {
+            Some(event) => {
+                self.current = Some(event.clone());
+                ctx.rollback.record(ctx.story, ctx.state);
+                None
+            }
+            None => self.advance(ctx),
+        }
+    }
+
+    fn roll(&mut self, ctx: &mut GameContext) -> bool {
+        let config = ctx.rollback.config();
+        let wheel = if config.mouse_wheel {
+            ctx.rl.get_mouse_wheel_move()
+        } else {
+            0.0
+        };
+        let back = wheel > 0.0 || config.back_keys.iter().any(|&k| ctx.rl.is_key_pressed(k));
+        let forward = wheel < 0.0
+            || config
+                .forward_keys
+                .iter()
+                .any(|&k| ctx.rl.is_key_pressed(k));
+
+        let moved = if back {
+            ctx.rollback.back(ctx.story, ctx.state)
+        } else if forward {
+            ctx.rollback.forward(ctx.story, ctx.state)
+        } else {
+            false
+        };
+
+        if moved {
+            self.current = ctx.story.current().cloned();
+        }
+        back || forward
+    }
+
+    fn shows_hud(&self) -> bool {
+        !matches!(self.current, Some(Event::End))
+    }
+
+    fn continue_pressed(&self, rl: &RaylibHandle) -> bool {
+        rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
+            || self
+                .config
+                .advance_keys
+                .iter()
+                .any(|&key| rl.is_key_pressed(key))
+    }
+}
+
+impl Screen for PlayingScreen {
+    fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
+        ui::load_background(&mut ctx, self.config.background.as_ref());
+
+        let rl = &*ctx.rl;
+        let pressed = |key: Option<KeyboardKey>| key.is_some_and(|key| rl.is_key_pressed(key));
+        let [menu, pause, quick_save, quick_load] = [
+            self.config.menu_key,
+            self.config.pause_key,
+            self.config.quick_save_key,
+            self.config.quick_load_key,
+        ]
+        .map(pressed);
+
+        if menu {
+            return Some(ScreenState::MainMenu);
+        }
+
+        if pause {
+            ctx.open_overlay(self.config.pause_overlay.clone());
+            return None;
+        }
+
+        if self.current.is_some() && self.roll(&mut ctx) {
+            return None;
+        }
+
+        if self.current.is_some() {
+            if quick_save {
+                return Action::QuickSave.run(&mut ctx);
+            }
+            if quick_load {
+                return Action::QuickLoad.run(&mut ctx);
+            }
+        }
+
+        if self.shows_hud() {
+            let hud = self.config.hud_rects(ui::screen_size(ctx.rl));
+            if let Some(index) = hud.iter().position(|rect| ui::is_clicked(ctx.rl, *rect)) {
+                let action = self.config.hud[index].action.clone();
+                return action.run(&mut ctx);
+            }
+        }
+
+        let next = match &self.current {
+            None => self.resume(&mut ctx),
+            Some(Event::Choice { options }) => {
+                let rects = self
+                    .config
+                    .choice_rects(options.len(), ui::screen_size(ctx.rl));
+
+                match rects.iter().position(|rect| ui::is_clicked(ctx.rl, *rect)) {
+                    Some(index) => {
+                        if let Err(e) = ctx.story.choose(index) {
+                            eprintln!("⚠️ {}", e);
+                        }
+                        if !ctx.rollback.config().through_choices {
+                            ctx.rollback.mark_barrier();
+                        }
+                        self.advance(&mut ctx)
+                    }
+                    None => None,
+                }
+            }
+            Some(Event::End) => self
+                .continue_pressed(ctx.rl)
+                .then(|| self.config.after_end.clone()),
+            Some(_) => {
+                if self.continue_pressed(ctx.rl) {
+                    self.advance(&mut ctx)
+                } else {
+                    None
+                }
+            }
+        };
+
+        if next.is_some() {
+            return next;
+        }
+
+        for (name, image) in ctx.story.active_characters() {
+            let path = character_path(name, image);
+            ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
+        }
+
+        None
+    }
+
+    fn draw(&self, d: &mut RaylibDrawHandle, ctx: &DrawContext) {
+        let config = &self.config;
+        let screen = ui::screen_size(d);
+
+        ui::draw_background(d, ctx.resources, config.background.as_ref());
+        draw_characters(d, ctx.resources, ctx.story, screen);
+
+        let fonts = ctx.fonts();
+
+        if self.shows_hud() {
+            for (button, rect) in config.hud.iter().zip(config.hud_rects(screen)) {
+                ui::draw_button(d, fonts, rect, &button.label, &config.hud_button);
+            }
+        }
+
+        match &self.current {
+            Some(Event::Say { speaker, text }) => {
+                let rect = config.dialogue_box.rect(screen);
+                let style = &config.dialogue_box;
+
+                if style.roundness > 0.0 {
+                    d.draw_rectangle_rounded(rect, style.roundness, 8, style.color);
+                } else {
+                    d.draw_rectangle_rec(rect, style.color);
+                }
+
+                let inner_x = rect.x + style.padding;
+                let inner_width = rect.width - style.padding * 2.0;
+                let mut y = rect.y + style.padding;
+
+                if let Some(speaker) = speaker {
+                    let name = ctx.characters.display_name(speaker, ctx.story);
+                    let style = match ctx.characters.color(speaker) {
+                        Some(color) => config.speaker_text.clone().color(color),
+                        None => config.speaker_text.clone(),
+                    };
+                    ui::draw_text(d, fonts, &name, Vector2::new(inner_x, y), &style);
+                    y += config.speaker_text.size * 1.4;
+                }
+
+                ui::draw_text_wrapped(
+                    d,
+                    fonts,
+                    text,
+                    Vector2::new(inner_x, y),
+                    inner_width,
+                    &config.dialogue_text,
+                );
+            }
+            Some(Event::Choice { options }) => {
+                let rects = config.choice_rects(options.len(), screen);
+                for (option, rect) in options.iter().zip(rects) {
+                    ui::draw_button(d, fonts, rect, option, &config.choice_button);
+                }
+            }
+            Some(Event::End) => {
+                ui::draw_text_centered(
+                    d,
+                    fonts,
+                    &config.end_title,
+                    Vector2::new(screen.x / 2.0, screen.y * 0.42),
+                    &config.end_title_text,
+                );
+                ui::draw_text_centered(
+                    d,
+                    fonts,
+                    &config.end_hint,
+                    Vector2::new(screen.x / 2.0, screen.y * 0.52),
+                    &config.end_hint_text,
+                );
+            }
+            _ => {}
+        }
+    }
+}
+
+fn character_path(name: &str, image: &str) -> String {
+    format!("characters/{}/{}.png", name, image).to_lowercase()
+}
+
+fn draw_characters(
+    d: &mut RaylibDrawHandle,
+    resources: &ResourceManager,
+    story: &StoryVm,
+    screen: Vector2,
+) {
+    let mut characters: Vec<_> = story.active_characters().iter().collect();
+    characters.sort();
+
+    let slots = characters.len() as f32 + 1.0;
+
+    for (i, (name, image)) in characters.into_iter().enumerate() {
+        if let Some(texture) = resources.textures.get(&character_path(name, image)) {
+            let center_x = screen.x * (i as f32 + 1.0) / slots;
+            let x = center_x - texture.width as f32 / 2.0;
+            let y = screen.y - texture.height as f32;
+            d.draw_texture(texture, x as i32, y as i32, Color::WHITE);
+        }
+    }
+}

@@ -75,6 +75,30 @@ clear
 
 This rule is explicit and intentional — not a fallback.
 
+---
+
+### 3.5 Variable interpolation
+
+Dialogue text, narration, choice options and the speaker can show a variable's value
+with `{<variable_id>}`:
+
+```story
+mary "Nice to meet you, {player_name}."
+{player_name} "Nice to meet you, Mary."
+"You have {coins} coins."
+choice:
+  "Tell {player_name}'s story":
+    ...
+```
+
+### 3.6 Rules
+
+- `<variable_id>` must exist (see section 8)
+- The value is inserted as text: `true`/`false`, the number, the enum member, or the string
+- `{{` and `}}` insert a literal `{` or `}`
+- A variable with no value yet is shown as written (`{player_name}`), so the mistake is visible
+- `{<variable_id>} "<text>"` uses the variable's value as the displayed speaker name
+
 ## 4. Choices (branching)
 
 ### 4.1 Choice block
@@ -207,6 +231,7 @@ Example (conceptual):
 - `affection` -> Integer
 - `met_mary` -> boolean
 - `route` -> enum (`good`, `bad`, `neutral`)
+- `player_name` -> string
 
 Scripts **cannot create or redefine variables**.
 
@@ -218,17 +243,37 @@ Scripts **cannot create or redefine variables**.
 set <variable_id> = <value>
 ```
 
-#### 8.2.1 Rules
+#### 8.2.1 Values
+
+| Literal | Type |
+|---|---|
+| `true`, `false` | boolean |
+| `3`, `-2` | integer |
+| `good` (a bare identifier) | enum member |
+| `"Yuri"` (double-quoted) | string |
+
+A string literal cannot contain `"`.
+
+#### 8.2.2 Rules
 
 - `<variable_id>` must exist
 - Assigned value must match the variable's type
 - Enum values must be valid members
 
-#### 8.2.2 Examples
+#### 8.2.3 Examples
 
 ```story
 set met_mary = true
 set route = good
+set player_name = "Yuri"
+```
+
+Values the player provides (e.g. typing a name) are set by the engine, usually in
+response to a command (section 9):
+
+```story
+call ask_name player_name
+mary "Nice to meet you, {player_name}."
 ```
 
 ---
@@ -239,7 +284,7 @@ For integer variables only:
 
 ```story
 add <variable_id> += <integer>
-add <variable_id> -+ <integer>
+add <variable_id> -= <integer>
 ```
 
 #### 8.3.1 Rules
@@ -275,7 +320,8 @@ Allowed:
 - Variable references
 - Literal values
 - Comparison operators:
-  - `== != < > <= >=`
+  - `== != < > <= >=` for integers
+  - `== !=` for booleans, enums and strings
 - Boolean operators:
   - `&& ||`
 
@@ -376,7 +422,55 @@ call give_item stick 1
 call unlock_route good
 ```
 
-## 10. What this DSL intentionally does not include
+## 10. Rollback (points of no return)
+
+Players can roll back to earlier lines (mouse wheel up / Page Up) and forward again. The
+engine decides the defaults (SCRIPT.md does not require rollback); the script marks the
+moments that must not be undone.
+
+### 10.1 Commit
+
+```story
+commit
+```
+
+A point of no return: the player can't roll back to anything before it. Rolling back
+stops at the first line after the `commit`.
+
+### 10.2 Final choices
+
+```story
+choice final:
+  "Keep the letter":
+    ...
+  "Burn the letter":
+    ...
+```
+
+Whatever option is picked, the choice can't be undone. Same as starting every option's
+body with `commit`.
+
+### 10.3 Rules
+
+- `commit` takes no arguments
+- `choice final:` is the only choice modifier
+- Plain `choice:` blocks follow the engine's default (rollback through choices is allowed
+  unless the game turns it off)
+- Put `commit` inside a single option to make only that option permanent:
+
+```story
+choice:
+  "Spare him":
+    "He runs into the night."
+  "Pull the trigger":
+    commit
+    "It is done."
+```
+
+- Engine commands can also be declared as barriers on the Rust side (for example one that
+  unlocks an achievement)
+
+## 11. What this DSL intentionally does not include
 
 By design:
 
@@ -388,7 +482,7 @@ By design:
 
 Those belong in **Rust**, not the script.
 
-## 11. Why this structure is strong
+## 12. Why this structure is strong
 
 - Extremely easy to parse (indent + first token)
 - Writer-friendly

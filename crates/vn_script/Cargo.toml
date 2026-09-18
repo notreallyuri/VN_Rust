@@ -1,0 +1,12 @@
+[package]
+name = "vn_script"
+description = "Story DSL: lexer, parser, compiler and VM. No rendering dependencies."
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

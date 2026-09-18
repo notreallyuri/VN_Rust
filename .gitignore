@@ -1,2 +1,5 @@
 **/target/
-**/assets/
+# Local scratch assets at the repo root only; game assets under examples/ are tracked.
+/assets/
+# Player save files written while running the examples.
+/examples/*/saves/

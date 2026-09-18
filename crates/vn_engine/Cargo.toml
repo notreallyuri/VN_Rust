@@ -1,0 +1,14 @@
+[package]
+name = "vn_engine"
+description = "raylib-based visual novel engine built on vn_script."
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+vn_script.workspace = true
+raylib.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+serde.workspace = true

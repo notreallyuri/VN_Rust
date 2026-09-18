@@ -1,0 +1,12 @@
+[package]
+name = "vn_cli"
+description = "Command-line tooling for story scripts."
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "vn"
+path = "src/main.rs"
+
+[dependencies]
+vn_script.workspace = true

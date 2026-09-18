@@ -1,0 +1,9 @@
+[package]
+name = "god_is_watching"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+vn_engine.workspace = true
+serde.workspace = true
