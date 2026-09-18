@@ -13,12 +13,14 @@ use vn_script::{
 use crate::screens::{
     CONFIRM_OVERLAY, ConfirmConfig, ConfirmDialog, LOAD_OVERLAY, MainMenuConfig, MainMenuScreen,
     PAUSE_OVERLAY, PauseMenu, PauseMenuConfig, PlayingConfig, PlayingScreen, SAVE_OVERLAY,
-    SaveMenuConfig, SaveMenuMode, SaveMenuOverlay, SaveMenuScreen, StartScreen, StartScreenConfig,
+    SETTINGS_OVERLAY, SaveMenuConfig, SaveMenuMode, SaveMenuOverlay, SaveMenuScreen,
+    SettingsConfig, SettingsOverlay, SettingsScreen, StartScreen, StartScreenConfig,
     TextInputConfig, TextInputScreen,
 };
 use crate::{
-    Character, Characters, Commands, FontRole, FromArgs, GameContext, GameState, Overlay, Rollback,
-    RollbackConfig, Saves, Screen, ScreenFactory, ScreenState, ScreenStateManager, ToastConfig,
+    CLOSE_MESSAGE, Character, Characters, Commands, FontRole, FromArgs, GameContext, GameState,
+    Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, Saves, Screen, ScreenFactory,
+    ScreenState, ScreenStateManager, SettingsStore, ToastConfig,
 };
 
 type ScreenBuilder = Box<dyn Fn() -> Box<dyn Screen>>;
@@ -47,6 +49,8 @@ pub struct VnApp {
     text_input: TextInputConfig,
     pause_menu: PauseMenuConfig,
     confirm_dialog: ConfirmConfig,
+    settings: SettingsConfig,
+    close_confirmation: Option<String>,
     rollback: RollbackConfig,
     toast: ToastConfig,
     exit_key: Option<KeyboardKey>,
@@ -126,6 +130,8 @@ impl VnApp {
             text_input: TextInputConfig::default(),
             pause_menu: PauseMenuConfig::default(),
             confirm_dialog: ConfirmConfig::default(),
+            settings: SettingsConfig::default(),
+            close_confirmation: Some(CLOSE_MESSAGE.to_string()),
             rollback: RollbackConfig::default(),
             toast: ToastConfig::default(),
             exit_key: None,
@@ -163,6 +169,16 @@ impl VnApp {
 
     pub fn confirm_dialog(mut self, config: impl FnOnce(ConfirmConfig) -> ConfirmConfig) -> Self {
         self.confirm_dialog = config(self.confirm_dialog);
+        self
+    }
+
+    pub fn settings(mut self, config: impl FnOnce(SettingsConfig) -> SettingsConfig) -> Self {
+        self.settings = config(self.settings);
+        self
+    }
+
+    pub fn confirm_on_close(mut self, message: Option<&str>) -> Self {
+        self.close_confirmation = message.map(str::to_string);
         self
     }
 
@@ -394,6 +410,7 @@ impl VnApp {
         rl.set_target_fps(self.target_fps);
         rl.set_exit_key(self.exit_key);
 
+        let settings = SettingsStore::load(self.saves_dir.join(SETTINGS_FILE_NAME));
         let saves = Saves::new(self.saves_dir, self.title.clone());
 
         let factory = DefaultScreens {
@@ -402,6 +419,7 @@ impl VnApp {
             text_input: Rc::new(self.text_input),
             pause_menu: Rc::new(self.pause_menu),
             confirm_dialog: Rc::new(self.confirm_dialog),
+            settings: Rc::new(self.settings),
             start: Rc::new(self.start),
             menu: Rc::new(self.menu),
             playing: Rc::new(self.playing),
@@ -425,12 +443,21 @@ impl VnApp {
         manager.characters = self.characters;
         manager.toast_config = self.toast;
         manager.rollback = Rollback::new(self.rollback);
+        manager.settings = settings;
+        manager.close_confirmation = self.close_confirmation;
 
         for (role, file) in &self.fonts {
             manager.resources.set_font(&mut rl, &thread, *role, file);
         }
 
-        while !rl.window_should_close() && !manager.quit_requested() {
+        while !manager.quit_requested() {
+            if rl.window_should_close() {
+                manager.request_close();
+                if manager.quit_requested() {
+                    break;
+                }
+            }
+
             manager.update(&mut rl, &thread);
 
             let mut d = rl.begin_drawing(&thread);
@@ -451,6 +478,7 @@ pub struct DefaultScreens {
     pub text_input: Rc<TextInputConfig>,
     pub pause_menu: Rc<PauseMenuConfig>,
     pub confirm_dialog: Rc<ConfirmConfig>,
+    pub settings: Rc<SettingsConfig>,
     pub overrides: HashMap<ScreenState, ScreenBuilder>,
     pub overlays: HashMap<String, OverlayBuilder>,
 }
@@ -477,6 +505,7 @@ impl ScreenFactory for DefaultScreens {
                 SaveMenuMode::Load,
             ))),
             ScreenState::TextInput => Some(Box::new(TextInputScreen::new(self.text_input.clone()))),
+            ScreenState::Settings => Some(Box::new(SettingsScreen::new(self.settings.clone()))),
             _ => None,
         }
     }
@@ -489,6 +518,7 @@ impl ScreenFactory for DefaultScreens {
         match name {
             PAUSE_OVERLAY => Some(Box::new(PauseMenu::new(self.pause_menu.clone()))),
             CONFIRM_OVERLAY => Some(Box::new(ConfirmDialog::new(self.confirm_dialog.clone()))),
+            SETTINGS_OVERLAY => Some(Box::new(SettingsOverlay::new(self.settings.clone()))),
             SAVE_OVERLAY => Some(Box::new(SaveMenuOverlay::new(
                 self.save_menu.clone(),
                 SaveMenuMode::Save,

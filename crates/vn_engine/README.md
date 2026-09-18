@@ -29,8 +29,9 @@ fn main() -> std::io::Result<()> {
 }
 ```
 
-`run()` loads and validates the story, opens the window, loads the fonts, and runs the
-loop until the window closes or a screen returns `ScreenState::Quit`. It returns an
+`run()` loads and validates the story, opens the window, loads the fonts and the
+[settings](#settings), and runs the loop until the player closes the window (see
+[Closing the window](#closing-the-window)) or a screen returns `ScreenState::Quit`. It returns an
 `AppError` without opening a window if the story can't be read or has errors.
 
 ## VnApp
@@ -53,6 +54,8 @@ loop until the window closes or a screen returns `ScreenState::Quit`. It returns
 | `pause_menu(\|p\| ...)` | | Configure the pause menu (see [Pause menu](#pause-menu)) |
 | `confirm_dialog(\|c\| ...)` | | Configure confirmation dialogs (see [Confirmation dialogs](#confirmation-dialogs)) |
 | `rollback(\|r\| ...)` | on | Configure rollback (see [Rollback](#rollback)) |
+| `settings(\|s\| ...)` | | Configure the settings screen (see [Settings](#settings)) |
+| `confirm_on_close(Option<&str>)` | "Quit the game? Unsaved progress will be lost." | Message shown when the window's close button is clicked during a game; `None` quits right away (see [Closing the window](#closing-the-window)) |
 | `toast(\|t\| ...)` | | Configure notifications (see [Notifications](#notifications)) |
 | `exit_key(Option<key>)` | `None` | A key that closes the window. Off by default, so Esc can open the pause menu |
 | `state(value)` | | Register game state (see [Game state](#game-state)) |
@@ -93,9 +96,10 @@ Any key or click goes to `next`.
 | Option | Default |
 |---|---|
 | `title(text)`, `title_text(style)`, `title_y(f)` | app title, Title font 64 px, 0.25 |
-| `button(label, action)`, `item(MenuItem)` | New Game, Load, Quit |
+| `button(label, action)`, `item(MenuItem)` | New Game, Load, Settings, Quit |
 | `button_style(\|b\| ...)` | `ButtonStyle::default()` (240×52) |
 | `buttons_y(f)`, `spacing(px)` | 0.45, 18 |
+| `bottom_margin(px)` | 40: a menu that would reach closer to the bottom moves up (not into the title), then tightens its spacing |
 | `background(bg)` | none |
 
 The first `button`/`item` call replaces the default list; later calls append.
@@ -122,7 +126,11 @@ Plays the story from the VM's current position. Coming back to it (e.g. from an
 inventory screen) shows the same line or choice again, using `StoryVm::current()`.
 
 - `Say`: the dialogue box, with the speaker name above word-wrapped text. A registered
-  character's display name and color are used for its id.
+  character's display name and color are used for its id. New lines type out at the
+  player's [text speed](#settings); clicking (or an advance key) while a line is typing
+  shows all of it, the next click continues. Lines shown again (coming back to the
+  screen, rollback, loading) appear whole. Words are wrapped for the full line up front,
+  so they don't jump between lines while typing.
 - `Choice`: one button per option, centered vertically.
 - `End`: an end title and hint; continuing goes to `after_end`.
 - Characters on screen are spread evenly across the width (sorted by id), bottom-aligned.
@@ -151,8 +159,7 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 | `quick_save_key(Option<key>)`, `quick_load_key(Option<key>)` | `Some(F5)`, `Some(F9)` (the `quick` slot) |
 | `hud_button_style(\|b\| ...)`, `hud_margin(px)`, `hud_spacing(px)` | 130×40, dark translucent, 18 px text; 16; 10 |
 
-raylib's "Esc closes the window" is turned off (see `VnApp::exit_key`); the window's close
-button still quits.
+raylib's "Esc closes the window" is turned off (see `VnApp::exit_key`).
 
 ## Styles
 
@@ -210,11 +217,12 @@ Esc on the playing screen opens the pause menu, an overlay over the game:
 | Load | `Action::overlay(LOAD_OVERLAY)`: the load slots as a panel over the game |
 | Quick Save | `Action::QuickSave` |
 | Quick Load | `Action::QuickLoad` |
+| Settings | `Action::overlay(SETTINGS_OVERLAY)`: the [settings](#settings) as a panel over the game |
 | Main Menu | `Action::confirm(.., Goto(MainMenu))` ("Unsaved progress will be lost"); `Goto(Playing)` from the main menu resumes |
 | Quit | `Action::confirm(.., Quit)` |
 
-Save and Load open on top of the pause menu; their Back button, Esc or Backspace return to
-it. Loading a slot closes everything and continues playing from the save.
+Save, Load and Settings open on top of the pause menu; their Back button, Esc or
+Backspace return to it. Loading a slot closes everything and continues playing from the save.
 
 `PauseMenuConfig` (`.pause_menu(|p| ...)`):
 
@@ -249,6 +257,7 @@ Where the engine asks by default:
 | --- | --- | --- |
 | Pause menu → Main Menu | Return to the main menu? Unsaved progress will be lost. | replace the pause menu buttons |
 | Pause menu → Quit | Quit the game? Unsaved progress will be lost. | replace the pause menu buttons |
+| The window's close button, during a game | Quit the game? Unsaved progress will be lost. | `.confirm_on_close(None)` |
 | Saving over a used slot | Overwrite Slot N? | `.save_menu(\|s\| s.confirm_overwrite(false))` |
 | Loading from the in-game Load panel | Load Slot N? Unsaved progress will be lost. | `.save_menu(\|s\| s.confirm_load_in_game(false))` |
 
@@ -259,6 +268,59 @@ close it; the confirm button, Enter or Y run the action. `ConfirmConfig`
 (`.confirm_dialog(|c| ...)`): `message_text`, `confirm_label` ("Yes"), `cancel_label`
 ("Cancel"), `confirm_button` (red), `cancel_button`, `panel_width` (460), `padding`,
 `panel_color`, `panel_roundness`, `backdrop`, `confirm_keys`, `cancel_keys`.
+
+### Closing the window
+
+raylib reports a click on the window's close button (or the exit key, if one is set)
+through `window_should_close()` for a single frame, so the loop hands it to
+`ScreenStateManager::request_close()` instead of stopping:
+
+- On the start screen or main menu, or once the story has ended, the game quits.
+- On the playing screen or text input, and on any other screen once a story has started
+  (Settings, Load, a custom inventory screen, ...), the confirmation dialog opens with
+  `Action::Quit` behind its "Quit" button. `close_needs_confirmation(state, story)` is
+  the rule.
+- Clicking the close button again while that dialog is open quits, so the window can
+  always be closed.
+
+## Settings
+
+Player preferences, separate from saves: `Settings { fullscreen, text_speed }`, stored as
+`settings.json` in the saves directory and written as soon as something changes (via a
+temporary file, like saves). A missing or unreadable file gives the defaults (windowed,
+40 characters per second), with a warning for an unreadable one; missing fields take
+their default, so new settings don't break old files.
+
+- **Display:** windowed or fullscreen (borderless, at the monitor's resolution). Applied
+  at startup and whenever it changes.
+- **Text speed:** characters per second for the typewriter on the playing screen; `0` is
+  instant.
+
+The default settings screen shows one row per setting, whose button cycles through the
+values, and a sample line that types out at the chosen speed. It exists as a screen
+(`ScreenState::Settings`, in the default main menu) and as an overlay
+(`SETTINGS_OVERLAY`, in the pause menu). Back, Esc or Backspace return to where it was
+opened from.
+
+`SettingsConfig` (`.settings(|s| ...)`):
+
+| Option | Default |
+| --- | --- |
+| `title(text)`, `title_text(style)` | "Settings", Title font 44 px |
+| `label_text(style)` | Menu font 24 px |
+| `value_button(\|b\| ...)` | 220×46, 20 px text |
+| `row_width(px)`, `row_spacing(px)` | 560, 16 |
+| `text_speeds([(label, chars_per_second)])` | Slow 20, Normal 40, Fast 80, Instant 0 (a value not in the list shows as "N chars/s") |
+| `sample_text(text)`, `sample_text_style(style)` | "This is how fast the story's text appears.", Dialogue font 22 px |
+| `back_button(\|b\| ...)`, `back_label(text)`, `back_keys(keys)` | 200×48, "Back", Esc and Backspace |
+| `backdrop(c)` | black at 200 alpha, behind the overlay |
+| `background(bg)` | none, behind the screen |
+
+Labels (`display_label`, `windowed_label`, `fullscreen_label`, `text_speed_label`) are
+public fields. From code, `ctx.settings.values` reads the settings and
+`ctx.settings.update(|s| ...)` changes and saves them; `DrawContext::settings` is the
+read-only view. `Typewriter::start(text, chars_per_second, now)` / `visible(now)` /
+`finish()` is the timing the playing screen and the preview use.
 
 ## Rollback
 
@@ -618,7 +680,10 @@ ctx.saves.delete("3")?;
 let (mut rl, thread) = raylib::init().size(1280, 720).build();
 let mut manager = ScreenStateManager::new(&mut rl, &thread, ScreenState::StartScreen, factory, assets, "story")?;
 
-while !rl.window_should_close() && !manager.quit_requested() {
+while !manager.quit_requested() {
+    if rl.window_should_close() {
+        manager.request_close();
+    }
     manager.update(&mut rl, &thread);
     let mut d = rl.begin_drawing(&thread);
     manager.draw(&mut d);
@@ -629,7 +694,9 @@ while !rl.window_should_close() && !manager.quit_requested() {
 optionally `create_overlay(name)`); `DefaultScreens` is the one `VnApp` uses. The manager's
 `state`, `commands` and `saves` fields hold what `VnApp::state`/`command` register, and
 `open_overlay`/`close_overlay`/`confirm`/`notify` control overlays and notifications
-directly, and `rollback` holds the history. Textures and fonts live on the GPU, so the
+directly, and `rollback` holds the history. `settings` starts in memory
+(`SettingsStore::in_memory()`, never written); use `SettingsStore::load(path)` to keep
+them in a file. `close_confirmation` is the message for `request_close()`. Textures and fonts live on the GPU, so the
 manager must be created after the window, and dropped before it (declare it after `rl`).
 
 ## Resources

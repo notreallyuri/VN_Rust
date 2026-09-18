@@ -45,6 +45,7 @@ pub struct MainMenuConfig {
     pub button: ButtonStyle,
     pub buttons_y: f32,
     pub spacing: f32,
+    pub bottom_margin: f32,
     pub background: Option<Background>,
     custom_items: bool,
 }
@@ -58,11 +59,13 @@ impl Default for MainMenuConfig {
             items: vec![
                 MenuItem::new("New Game", Action::NewGame),
                 MenuItem::new("Load", Action::Goto(ScreenState::Load)),
+                MenuItem::new("Settings", Action::Goto(ScreenState::Settings)),
                 MenuItem::new("Quit", Action::Quit),
             ],
             button: ButtonStyle::default(),
             buttons_y: 0.45,
             spacing: 18.0,
+            bottom_margin: 40.0,
             background: None,
             custom_items: false,
         }
@@ -113,6 +116,18 @@ impl MainMenuConfig {
         self
     }
 
+    pub fn bottom_margin(mut self, margin: f32) -> Self {
+        self.bottom_margin = margin;
+        self
+    }
+
+    pub fn button_rects(&self, screen: Vector2) -> Vec<Rectangle> {
+        self.layout(screen)
+            .into_iter()
+            .map(|(rect, _)| rect)
+            .collect()
+    }
+
     pub fn background(mut self, background: Background) -> Self {
         self.background = Some(background);
         self
@@ -125,13 +140,27 @@ impl MainMenuConfig {
             .map(|item| item.resolve_style(&self.button))
             .collect();
 
-        let mut y = screen.y * self.buttons_y;
+        let heights: f32 = styles.iter().map(|style| style.height).sum();
+        let gaps = styles.len().saturating_sub(1) as f32;
+        let bottom = screen.y - self.bottom_margin;
+        let below_title = screen.y * self.title_y + self.title_text.size;
+
+        let top = (screen.y * self.buttons_y)
+            .min(bottom - heights - gaps * self.spacing)
+            .max(below_title.min(screen.y * self.buttons_y));
+        let spacing = if gaps > 0.0 {
+            self.spacing.min(((bottom - top - heights) / gaps).max(0.0))
+        } else {
+            0.0
+        };
+
+        let mut y = top;
         styles
             .into_iter()
             .map(|style| {
                 let rect =
                     Rectangle::new((screen.x - style.width) / 2.0, y, style.width, style.height);
-                y += style.height + self.spacing;
+                y += style.height + spacing;
                 (rect, style)
             })
             .collect()

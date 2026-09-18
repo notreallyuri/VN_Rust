@@ -3,6 +3,7 @@ pub mod main_menu;
 pub mod pause_menu;
 pub mod playing;
 pub mod save_menu;
+pub mod settings;
 pub mod start;
 pub mod text_input;
 
@@ -11,5 +12,6 @@ pub use main_menu::*;
 pub use pause_menu::*;
 pub use playing::*;
 pub use save_menu::*;
+pub use settings::*;
 pub use start::*;
 pub use text_input::*;

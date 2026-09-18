@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::screens::MenuItem;
+use crate::screens::{MenuItem, SETTINGS_OVERLAY};
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{Action, DrawContext, FontRole, GameContext, Overlay, OverlayAction, ScreenState};
 
@@ -37,6 +37,7 @@ impl Default for PauseMenuConfig {
                 MenuItem::new("Load", Action::overlay(LOAD_OVERLAY)),
                 MenuItem::new("Quick Save", Action::QuickSave),
                 MenuItem::new("Quick Load", Action::QuickLoad),
+                MenuItem::new("Settings", Action::overlay(SETTINGS_OVERLAY)),
                 MenuItem::new(
                     "Main Menu",
                     Action::confirm(

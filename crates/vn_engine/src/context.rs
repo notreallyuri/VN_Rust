@@ -7,7 +7,7 @@ use vn_script::StoryVm;
 use crate::screens::{CONFIRM_OVERLAY, Confirm};
 use crate::{
     Characters, Commands, Fonts, GameState, LoadReport, OverlayRequest, ResourceManager, Rollback,
-    SaveError, Saves, ScreenState, TextRequest, Toast,
+    SaveError, Saves, ScreenState, Settings, SettingsStore, TextRequest, Toast,
 };
 
 pub struct GameContext<'a> {
@@ -19,6 +19,7 @@ pub struct GameContext<'a> {
     pub saves: &'a Saves,
     pub previous: Option<&'a ScreenState>,
     pub rollback: &'a mut Rollback,
+    pub settings: &'a mut SettingsStore,
     pub(crate) commands: Rc<Commands>,
     pub(crate) overlay_requests: &'a mut Vec<OverlayRequest>,
     pub(crate) toast: &'a mut Option<Toast>,
@@ -102,6 +103,7 @@ pub struct DrawContext<'a> {
     pub state: &'a GameState,
     pub saves: &'a Saves,
     pub characters: &'a Characters,
+    pub settings: &'a Settings,
 }
 
 impl DrawContext<'_> {

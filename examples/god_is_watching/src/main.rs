@@ -46,6 +46,7 @@ fn main() -> ExitCode {
                 .button("New Game", Action::NewGame)
                 .button("Continue", Action::Goto(ScreenState::Playing))
                 .button("Load", Action::Goto(ScreenState::Load))
+                .button("Settings", Action::Goto(ScreenState::Settings))
                 .button("Credits", Action::Goto(credits.clone()))
                 .item(MenuItem::new("Exit", Action::Quit).style(move |b| b.color(muted_red)))
         })

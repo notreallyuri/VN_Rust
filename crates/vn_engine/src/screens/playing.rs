@@ -275,9 +275,55 @@ impl PlayingConfig {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct Typewriter {
+    started: f64,
+    chars_per_second: u32,
+    total: usize,
+    finished: bool,
+}
+
+impl Typewriter {
+    pub fn start(text: &str, chars_per_second: u32, now: f64) -> Self {
+        Self {
+            started: now,
+            chars_per_second,
+            total: text.chars().count(),
+            finished: chars_per_second == 0,
+        }
+    }
+
+    pub fn finished(text: &str) -> Self {
+        Self {
+            started: 0.0,
+            chars_per_second: 0,
+            total: text.chars().count(),
+            finished: true,
+        }
+    }
+
+    pub fn visible(&self, now: f64) -> usize {
+        if self.finished {
+            return self.total;
+        }
+        let elapsed = (now - self.started).max(0.0);
+        ((elapsed * self.chars_per_second as f64) as usize).min(self.total)
+    }
+
+    pub fn is_done(&self, now: f64) -> bool {
+        self.visible(now) >= self.total
+    }
+
+    pub fn finish(&mut self) {
+        self.finished = true;
+    }
+}
+
 pub struct PlayingScreen {
     config: Rc<PlayingConfig>,
     current: Option<Event>,
+    typewriter: Option<Typewriter>,
+    visible: Option<usize>,
 }
 
 impl PlayingScreen {
@@ -285,7 +331,25 @@ impl PlayingScreen {
         Self {
             config,
             current: None,
+            typewriter: None,
+            visible: None,
         }
+    }
+
+    fn show(&mut self, event: Event, typed: Option<(u32, f64)>) {
+        self.typewriter = match (&event, typed) {
+            (Event::Say { text, .. }, Some((speed, now))) => {
+                Some(Typewriter::start(text, speed, now))
+            }
+            _ => None,
+        };
+        self.current = Some(event);
+    }
+
+    fn typing(&self, now: f64) -> bool {
+        self.typewriter
+            .as_ref()
+            .is_some_and(|typewriter| !typewriter.is_done(now))
     }
 
     fn advance(&mut self, ctx: &mut GameContext) -> Option<ScreenState> {
@@ -301,7 +365,8 @@ impl PlayingScreen {
                 }
                 Event::Commit => ctx.rollback.mark_barrier(),
                 event if event.is_blocking() => {
-                    self.current = Some(event);
+                    let typed = (ctx.settings.values.text_speed, ctx.rl.get_time());
+                    self.show(event, Some(typed));
                     ctx.rollback.record(ctx.story, ctx.state);
                     return None;
                 }
@@ -313,7 +378,7 @@ impl PlayingScreen {
     fn resume(&mut self, ctx: &mut GameContext) -> Option<ScreenState> {
         match ctx.story.current() {
             Some(event) => {
-                self.current = Some(event.clone());
+                self.show(event.clone(), None);
                 ctx.rollback.record(ctx.story, ctx.state);
                 None
             }
@@ -345,6 +410,7 @@ impl PlayingScreen {
 
         if moved {
             self.current = ctx.story.current().cloned();
+            self.typewriter = None;
         }
         back || forward
     }
@@ -431,13 +497,25 @@ impl Screen for PlayingScreen {
                 .continue_pressed(ctx.rl)
                 .then(|| self.config.after_end.clone()),
             Some(_) => {
-                if self.continue_pressed(ctx.rl) {
-                    self.advance(&mut ctx)
-                } else {
+                let now = ctx.rl.get_time();
+                if !self.continue_pressed(ctx.rl) {
                     None
+                } else if self.typing(now) {
+                    if let Some(typewriter) = &mut self.typewriter {
+                        typewriter.finish();
+                    }
+                    None
+                } else {
+                    self.advance(&mut ctx)
                 }
             }
         };
+
+        let now = ctx.rl.get_time();
+        self.visible = self
+            .typewriter
+            .as_ref()
+            .map(|typewriter| typewriter.visible(now));
 
         if next.is_some() {
             return next;
@@ -491,13 +569,14 @@ impl Screen for PlayingScreen {
                     y += config.speaker_text.size * 1.4;
                 }
 
-                ui::draw_text_wrapped(
+                ui::draw_text_wrapped_visible(
                     d,
                     fonts,
                     text,
                     Vector2::new(inner_x, y),
                     inner_width,
                     &config.dialogue_text,
+                    self.visible.unwrap_or(usize::MAX),
                 );
             }
             Some(Event::Choice { options }) => {

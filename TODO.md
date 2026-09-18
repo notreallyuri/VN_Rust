@@ -80,8 +80,8 @@ Three levels of control, each optional:
 - [x] Confirmation dialogs (`Action::confirm`): pause → Main Menu / Quit, overwriting a save, loading during play
 - [x] Rollback (wheel / Page Up-Down) with barriers: `commit`, `choice final:`, `through_choices`, blocked commands
 - [ ] Rollback history in save files (rolling back after a load)
-- [ ] Confirm on the window close button while playing (raylib keeps `WindowShouldClose` set)
-- [ ] Default settings screen (and a Settings entry in the pause menu)
+- [x] Confirm on the window close button during a game (raylib reports it for one frame; `request_close`)
+- [x] Default settings screen (display, text speed; screen from the main menu, overlay from the pause menu), saved to `settings.json`
 - [x] Engine-provided UI helpers (`ui::draw_button`, text, layout, backgrounds) and styles (`TextStyle`, `ButtonStyle`, `DialogueBoxStyle`)
 - [ ] Hooks: `on_scene_enter`, etc.
 - [ ] Hot reload of `.story` files in debug builds
@@ -113,9 +113,9 @@ Three levels of control, each optional:
 - [ ] Backgrounds (needs DSL syntax)
 - [x] Fonts: built-in Noto Sans default, per-role fonts (`FontRole`) loaded from `assets/fonts/`
 - [x] Text wrapping (`Fonts::wrap`, `ui::draw_text_wrapped`)
-- [ ] Typewriter effect
+- [x] Typewriter effect (text speed setting; click shows the whole line)
 - [x] Window-relative layout in the default screens
-- [ ] Settings screen (see M3: default settings screen)
+- [x] Settings screen (see M3); volume settings come with audio
 - [x] Clean exit (`ScreenState::Quit`)
 - [ ] Audio: music and SFX (needs DSL syntax)
 

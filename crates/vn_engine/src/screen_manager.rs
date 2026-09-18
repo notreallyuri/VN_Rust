@@ -4,13 +4,25 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use vn_script::StoryVm;
+use vn_script::{Event, StoryVm};
 
+use crate::screens::{CONFIRM_OVERLAY, Confirm};
 use crate::{
-    Characters, Commands, DrawContext, GameContext, GameState, Overlay, OverlayAction,
-    OverlayRequest, ResourceManager, Rollback, Saves, Screen, ScreenState, TextRequest, Toast,
-    ToastConfig,
+    Action, Characters, Commands, DrawContext, GameContext, GameState, Overlay, OverlayAction,
+    OverlayRequest, ResourceManager, Rollback, Saves, Screen, ScreenState, SettingsStore,
+    TextRequest, Toast, ToastConfig,
 };
+
+pub const CLOSE_MESSAGE: &str = "Quit the game? Unsaved progress will be lost.";
+
+pub fn close_needs_confirmation(state: &ScreenState, story: &StoryVm) -> bool {
+    let ended = matches!(story.current(), Some(Event::End));
+    match state {
+        ScreenState::StartScreen | ScreenState::MainMenu | ScreenState::Quit => false,
+        ScreenState::Playing | ScreenState::TextInput => !ended,
+        _ => story.current().is_some() && !ended,
+    }
+}
 
 pub trait ScreenFactory {
     fn create_screen(&self, state: &ScreenState) -> Option<Box<dyn Screen>>;
@@ -32,12 +44,16 @@ pub struct ScreenStateManager {
     pub previous_state: Option<ScreenState>,
     pub characters: Characters,
     pub rollback: Rollback,
+    pub settings: SettingsStore,
+    pub close_confirmation: Option<String>,
     text_request: Option<TextRequest>,
-    confirm_request: Option<crate::screens::Confirm>,
+    confirm_request: Option<Confirm>,
     pub toast_config: ToastConfig,
     toast: Option<Toast>,
     overlays: Vec<(String, Box<dyn Overlay>)>,
     quit_requested: bool,
+    closing: bool,
+    fullscreen: bool,
 }
 
 impl ScreenStateManager {
@@ -82,12 +98,16 @@ impl ScreenStateManager {
             previous_state: None,
             characters: Characters::default(),
             rollback: Rollback::default(),
+            settings: SettingsStore::in_memory(),
+            close_confirmation: Some(CLOSE_MESSAGE.to_string()),
             text_request: None,
             confirm_request: None,
             toast_config: ToastConfig::default(),
             toast: None,
             overlays: Vec::new(),
             quit_requested: false,
+            closing: false,
+            fullscreen: false,
         })
     }
 
@@ -105,6 +125,7 @@ impl ScreenStateManager {
             saves: &self.saves,
             previous: self.previous_state.as_ref(),
             rollback: &mut self.rollback,
+            settings: &mut self.settings,
             commands: Rc::clone(&self.commands),
             overlay_requests: &mut overlay_requests,
             toast: &mut toast,
@@ -150,6 +171,38 @@ impl ScreenStateManager {
         if let Some(state) = next_state {
             self.transition_to(state);
         }
+
+        if self.closing && self.overlay_name() != Some(CONFIRM_OVERLAY) {
+            self.closing = false;
+        }
+
+        if self.settings.values.fullscreen != self.fullscreen {
+            rl.toggle_borderless_windowed();
+            self.fullscreen = self.settings.values.fullscreen;
+        }
+    }
+
+    pub fn request_close(&mut self) {
+        let confirm_open = self.overlay_name() == Some(CONFIRM_OVERLAY);
+
+        let message = match &self.close_confirmation {
+            Some(message)
+                if !(self.closing && confirm_open)
+                    && close_needs_confirmation(&self.current_state, &self.story) =>
+            {
+                message.clone()
+            }
+            _ => {
+                self.quit_requested = true;
+                return;
+            }
+        };
+
+        if confirm_open {
+            self.overlays.pop();
+        }
+        self.closing = true;
+        self.confirm(Confirm::new(message, Action::Quit).confirm_label("Quit"));
     }
 
     pub fn draw(&mut self, d: &mut RaylibDrawHandle) {
@@ -159,6 +212,7 @@ impl ScreenStateManager {
             state: &self.state,
             saves: &self.saves,
             characters: &self.characters,
+            settings: &self.settings.values,
         };
 
         self.current_screen.draw(d, &ctx);
@@ -172,9 +226,9 @@ impl ScreenStateManager {
         }
     }
 
-    pub fn confirm(&mut self, confirm: crate::screens::Confirm) {
+    pub fn confirm(&mut self, confirm: Confirm) {
         self.confirm_request = Some(confirm);
-        self.open_overlay(crate::screens::CONFIRM_OVERLAY);
+        self.open_overlay(CONFIRM_OVERLAY);
     }
 
     pub fn notify(&mut self, toast: Toast) {

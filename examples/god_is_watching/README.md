@@ -29,7 +29,7 @@ changes only:
   menus, buttons, speaker names and choices keep the engine's default font.
 - **Start screen:** an upper-case prompt and a `v0.1.0` footer.
 - **Main menu:** 260×52 buttons: New Game, Continue (`Goto(Playing)`, resumes the story),
-  Credits, and a red Exit (a per-button style override).
+  Load, Settings, Credits, and a red Exit (a per-button style override).
 - **Playing screen:** a taller dialogue box with slightly rounded corners, a larger
   speaker name, and HUD buttons: **Inventory** (a screen), **Stats** (an overlay),
   **Save** (the engine's save overlay) and **Menu** (the pause menu, same as Esc).

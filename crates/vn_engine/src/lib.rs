@@ -11,6 +11,7 @@ pub mod saves;
 pub mod screen;
 pub mod screen_manager;
 pub mod screens;
+pub mod settings;
 pub mod state;
 pub mod toast;
 pub mod ui;
@@ -30,6 +31,7 @@ pub use saves::{
 pub use screen::*;
 pub use screen_manager::*;
 pub use screens::*;
+pub use settings::*;
 pub use state::*;
 pub use toast::*;
 pub use ui::{Background, ButtonStyle, TextStyle};

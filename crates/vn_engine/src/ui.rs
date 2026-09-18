@@ -185,6 +185,32 @@ pub fn draw_text_wrapped(
     lines.len() as f32 * line_height
 }
 
+pub fn draw_text_wrapped_visible(
+    d: &mut RaylibDrawHandle,
+    fonts: &Fonts,
+    text: &str,
+    position: Vector2,
+    max_width: f32,
+    style: &TextStyle,
+    visible: usize,
+) -> f32 {
+    let line_height = style.size * 1.3;
+    let lines = fonts.wrap(style.font, text, style.size, max_width);
+    let mut remaining = visible;
+
+    for (i, line) in lines.iter().enumerate() {
+        if remaining == 0 {
+            break;
+        }
+        let shown: String = line.chars().take(remaining).collect();
+        remaining = remaining.saturating_sub(line.chars().count() + 1);
+        let y = position.y + i as f32 * line_height;
+        draw_text(d, fonts, &shown, Vector2::new(position.x, y), style);
+    }
+
+    lines.len() as f32 * line_height
+}
+
 pub fn stacked_rects(
     count: usize,
     width: f32,
