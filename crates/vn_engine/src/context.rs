@@ -6,8 +6,9 @@ use vn_script::StoryVm;
 
 use crate::screens::{CONFIRM_OVERLAY, Confirm};
 use crate::{
-    Characters, Commands, Fonts, GameState, LoadReport, OverlayRequest, ResourceManager, Rollback,
-    SaveError, Saves, ScreenState, Settings, SettingsStore, TextRequest, Toast,
+    Characters, Commands, Fonts, GameState, Hooks, LoadReport, LoadWarning, OverlayRequest,
+    ResourceManager, Rollback, SaveError, Saves, ScreenState, Settings, SettingsStore, TextRequest,
+    Toast,
 };
 
 pub struct GameContext<'a> {
@@ -21,6 +22,7 @@ pub struct GameContext<'a> {
     pub rollback: &'a mut Rollback,
     pub settings: &'a mut SettingsStore,
     pub(crate) commands: Rc<Commands>,
+    pub(crate) hooks: Rc<Hooks>,
     pub(crate) overlay_requests: &'a mut Vec<OverlayRequest>,
     pub(crate) toast: &'a mut Option<Toast>,
     pub(crate) text_request: &'a mut Option<TextRequest>,
@@ -79,12 +81,25 @@ impl GameContext<'_> {
     }
 
     pub fn save(&mut self, slot: &str) -> Result<(), SaveError> {
-        self.saves.save(slot, self.story, self.state)
+        let mut file = self.saves.capture(self.story, self.state)?;
+        file.rollback = self.rollback.history();
+        self.saves.write(slot, &file)
     }
 
     pub fn load(&mut self, slot: &str) -> Result<LoadReport, SaveError> {
-        let report = self.saves.load(slot, self.story, self.state)?;
-        self.rollback.clear();
+        let file = self.saves.read(slot)?;
+        let report = crate::saves::apply(&file, self.story, self.state)?;
+
+        let restarted = report
+            .warnings
+            .iter()
+            .any(|w| matches!(w, LoadWarning::SceneRestarted { .. }));
+        if restarted {
+            self.rollback.clear();
+        } else {
+            self.rollback.restore_history(file.rollback, self.story);
+        }
+
         for warning in &report.warnings {
             eprintln!("⚠️ Load '{}': {}", slot, warning);
         }
@@ -94,6 +109,16 @@ impl GameContext<'_> {
     pub fn run_command(&mut self, name: &str, args: &[String]) -> Option<ScreenState> {
         let commands = Rc::clone(&self.commands);
         commands.run(name, self, args)
+    }
+
+    pub fn run_scene_hooks(&mut self, scene: &str) -> Option<ScreenState> {
+        let hooks = Rc::clone(&self.hooks);
+        hooks.scene_entered(self, scene)
+    }
+
+    pub fn run_choice_hooks(&mut self, index: usize, text: &str) -> Option<ScreenState> {
+        let hooks = Rc::clone(&self.hooks);
+        hooks.choice_made(self, index, text)
     }
 }
 

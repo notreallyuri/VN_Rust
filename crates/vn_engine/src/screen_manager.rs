@@ -4,13 +4,13 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use vn_script::{Event, StoryVm};
+use vn_script::{Event, RestoreOutcome, StoryVm};
 
 use crate::screens::{CONFIRM_OVERLAY, Confirm};
 use crate::{
-    Action, Characters, Commands, DrawContext, GameContext, GameState, Overlay, OverlayAction,
-    OverlayRequest, ResourceManager, Rollback, Saves, Screen, ScreenState, SettingsStore,
-    TextRequest, Toast, ToastConfig,
+    Action, Characters, Commands, DrawContext, GameContext, GameState, Hooks, Overlay,
+    OverlayAction, OverlayRequest, ResourceManager, Rollback, Saves, Screen, ScreenState,
+    SettingsStore, TextRequest, Toast, ToastConfig,
 };
 
 pub const CLOSE_MESSAGE: &str = "Quit the game? Unsaved progress will be lost.";
@@ -40,6 +40,7 @@ pub struct ScreenStateManager {
     pub story: StoryVm,
     pub state: GameState,
     pub commands: Rc<Commands>,
+    pub hooks: Rc<Hooks>,
     pub saves: Saves,
     pub previous_state: Option<ScreenState>,
     pub characters: Characters,
@@ -94,6 +95,7 @@ impl ScreenStateManager {
             story,
             state: GameState::default(),
             commands: Rc::new(Commands::default()),
+            hooks: Rc::new(Hooks::default()),
             saves: Saves::new("saves", "game"),
             previous_state: None,
             characters: Characters::default(),
@@ -127,6 +129,7 @@ impl ScreenStateManager {
             rollback: &mut self.rollback,
             settings: &mut self.settings,
             commands: Rc::clone(&self.commands),
+            hooks: Rc::clone(&self.hooks),
             overlay_requests: &mut overlay_requests,
             toast: &mut toast,
             text_request: &mut self.text_request,
@@ -160,6 +163,10 @@ impl ScreenStateManager {
         if let Some(mut toast) = toast {
             toast.shown_at = Some(now);
             self.toast = Some(toast);
+        } else if let Some(toast) = &mut self.toast
+            && toast.shown_at.is_none()
+        {
+            toast.shown_at = Some(now);
         } else if self
             .toast
             .as_ref()
@@ -223,6 +230,27 @@ impl ScreenStateManager {
 
         if let Some(toast) = &self.toast {
             toast.draw(d, ctx.fonts(), &self.toast_config);
+        }
+    }
+
+    pub fn reload_story(&mut self, story: StoryVm) {
+        match crate::swap_story(&mut self.story, story, &mut self.rollback) {
+            Ok(RestoreOutcome::Exact) => self.notify(Toast::info("Story reloaded")),
+            Ok(RestoreOutcome::SceneRestarted { scene }) => self.notify(Toast::info(format!(
+                "Story reloaded; scene '{}' restarted",
+                scene
+            ))),
+            Err(e) => {
+                eprintln!("⚠️ Story not reloaded: {}", e);
+                self.notify(Toast::error(format!("Story not reloaded: {}", e)));
+                return;
+            }
+        }
+
+        if self.current_state == ScreenState::Playing
+            && let Some(screen) = self.factory.create_screen(&ScreenState::Playing)
+        {
+            self.current_screen = screen;
         }
     }
 

@@ -22,7 +22,7 @@ Three levels of control, each optional:
 | --- | --- |
 | `crates/vn_script` | DSL lexer, parser, compiler, VM. **No rendering deps**, reusable by CLI/LSP |
 | `crates/vn_engine` | raylib engine: screens, resources, game loop. Re-exports `raylib` and `vn_script` (as `script`) |
-| `crates/vn_cli` | `vn` binary. Currently `vn dump <file>`; later `check`, `new`, `run` |
+| `crates/vn_cli` | `vn` binary: `vn check`, `vn dump`; later `new`, `run`, `lsp`, `fmt` |
 | `examples/god_is_watching` | The reference game, and the first real consumer of the engine API |
 
 ---
@@ -63,7 +63,7 @@ Three levels of control, each optional:
 - [x] `advance()` is a loop (was recursive `step()`), with a guard against jump loops that never produce an event.
 - [x] New Game after returning to the menu reuses the old VM state. Add a reset.
 
-## M3: App builder and registries (the "how do I get going" API) ← next
+## M3: App builder and registries (the "how do I get going" API)
 
 - [x] `VnApp` builder in `vn_engine`: title, window size, assets, story directory and entry scene, fonts, `.run()`
 - [x] Character registry (id → display name, color, image set); display names may use `{variable}`
@@ -79,12 +79,12 @@ Three levels of control, each optional:
 - [x] Pause menu overlay on Esc (Resume, Save, Load, Quick Save, Quick Load, Main Menu, Quit) with Save/Load as overlays, an overlay stack, and engine-level notifications
 - [x] Confirmation dialogs (`Action::confirm`): pause → Main Menu / Quit, overwriting a save, loading during play
 - [x] Rollback (wheel / Page Up-Down) with barriers: `commit`, `choice final:`, `through_choices`, blocked commands
-- [ ] Rollback history in save files (rolling back after a load)
+- [x] Rollback history in save files (rolling back after a load; history in edited scenes is dropped)
 - [x] Confirm on the window close button during a game (raylib reports it for one frame; `request_close`)
 - [x] Default settings screen (display, text speed; screen from the main menu, overlay from the pause menu), saved to `settings.json`
 - [x] Engine-provided UI helpers (`ui::draw_button`, text, layout, backgrounds) and styles (`TextStyle`, `ButtonStyle`, `DialogueBoxStyle`)
-- [ ] Hooks: `on_scene_enter`, etc.
-- [ ] Hot reload of `.story` files in debug builds
+- [x] Hooks: `on_scene_enter`, `on_choice` (VM `Event::SceneEnter`, opt-in)
+- [x] Hot reload of `.story` files in debug builds (position kept or scene restarted, errors keep the old story)
 - [x] `ScreenState` is now `StartScreen`, `MainMenu`, `Playing`, `Save`, `Load`, `TextInput`, `Settings`, `Custom(String)`, `Quit`
 
 ## M4: Validation and diagnostics
@@ -96,6 +96,8 @@ Three levels of control, each optional:
 - [x] `{variable}` in text must name a registered variable
 - [x] Export the registry as a schema file (`schema.json`, refreshed in debug builds, `--export-schema`) so `vn check` and the LSP can validate without running the game
 - [x] `vn check <path>`: whole story or one file in its project, schema found by walking up, exit code for CI
+- [ ] "Did you mean" suggestions: a first word close to a keyword (`remoe hugo` → `remove`), and unknown scenes, characters, images, variables and commands close to a known one (`marry` → `mary`)
+- [ ] Show script errors in the game (debug builds): an overlay listing `file:line: message` when a hot reload fails, instead of only the console
 - [x] Parser edge cases:
   - [x] narration ending in `:` is lexed as `ChoiceOption` and panics
   - [x] an empty `if`/`else`/option body swallows the following siblings
@@ -135,6 +137,17 @@ Three levels of control, each optional:
   - [ ] VS Code: a TextMate grammar for highlighting (VS Code doesn't highlight with tree-sitter), packaged as an extension
   - [ ] LSP (`vn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type, go to scene definition, completion of scene/character/variable ids. Works in every editor
   - [ ] Formatter (`vn fmt`)
+
+## M7: Example overhaul (after M3 is finished)
+
+`examples/god_is_watching` becomes the showcase and the end-to-end test of every feature.
+
+- [ ] Rework the plot. The story may be rewritten, e.g. an outside character as the player, or Mary as the MC.
+- [ ] Use every DSL feature at least once, in the story itself: scenes and cross-file `jump`s, `show`/`remove`/`clear`, dialogue, narration, `{variable}` in text and as the speaker, `choice` and `choice final:`, `commit`, `if`/`else` with `&&`/`||`, `set`/`add` for bool, int, enum and string variables, `call` with typed arguments, string escapes
+- [ ] Use every engine feature at least once: registries (variables of each type, characters with images and colors, commands), game state by type, text input (`ask_name`), overlays and HUD buttons, custom screens, save/load/quick save, rollback with barriers and blocked commands, settings, confirmation dialogs, layouts, hooks, hot reload
+- [ ] A consistent visual style for the UI: palette, fonts, backgrounds, button and panel styles across the start screen, main menu, playing screen, pause menu, save/load, settings and the custom screens
+- [ ] Character art and backgrounds (or better placeholders) so the art pipeline is exercised
+- [ ] A short "feature tour" section in the example README that maps each feature to where it appears
 
 ## Ongoing
 

@@ -274,6 +274,7 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `Clear` | no | Already applied |
 | `Call { command, args }` | no | For the game to handle |
 | `Commit` | no | A `commit` (or the start of a `choice final:` option): a rollback barrier, for the frontend |
+| `SceneEnter { scene }` | no | The story entered a scene: at the start, on every `jump`, or when a restore restarted an edited scene. Only with `set_scene_events(true)` (off by default, so simple frontends never see it); not emitted when a restore returns to the exact position |
 
 `Event::is_blocking()` tells whether the frontend should wait for the player.
 
@@ -297,6 +298,7 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `variables()`, `variable(id)`, `variable_type(id)` | Story variables |
 | `set_variable(id, value) -> Result<(), VmError>` | Set from Rust. With registered variables, unknown names and wrong types are errors |
 | `program()` | The compiled program |
+| `set_scene_events(bool)` | Emit `Event::SceneEnter` (off by default) |
 
 `VmError` values: `UnknownScene(id)`, `NoChoicePending`, `ChoiceOutOfRange { index, options }`,
 `UnknownVariable(id)`, `TypeMismatch { variable, message }`.

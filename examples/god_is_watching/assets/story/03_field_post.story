@@ -128,7 +128,7 @@ scene post_blessing:
   # Report 220
   "Report No. 220. I ask that the House read this in full before replying."
   "There is no use of signatures in Santa Ilde. No master, no hand, no rival House."
-  "We spent two years looking for a master because Report 206 told us to."
+  "We spent two years looking for a master becuse Report 206 told us to."
   "Report 206 was right about the rule and wrong about the case."
   "Whoever does this has a blessing. A blessing is inherited, and inheritance has blood."
   "The blood there is Von Lucis."

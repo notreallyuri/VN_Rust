@@ -385,3 +385,45 @@ fn relative_times() {
     assert_eq!(time_ago(0, 90 * 86_400), "3 months ago");
     assert_eq!(time_ago(2000, 1000), "just now");
 }
+
+#[test]
+fn rollback_history_is_stored_in_the_file() {
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let (vm, state) = played_game();
+
+    let mut rollback = vn_engine::Rollback::default();
+    let mut replay = StoryVm::from_source(STORY);
+    replay.advance_until_blocking();
+    rollback.record(&replay, &state);
+    rollback.record(&vm, &state);
+
+    let mut file = saves.capture(&vm, &state).unwrap();
+    file.rollback = rollback.history();
+    saves.write("1", &file).unwrap();
+
+    let read = saves.read("1").unwrap();
+    assert_eq!(read.rollback.len(), 2);
+    assert_eq!(read.rollback, file.rollback);
+
+    let mut restored = vn_engine::Rollback::default();
+    let mut loaded = StoryVm::from_source(STORY);
+    vn_engine::saves::apply(&read, &mut loaded, &mut fresh_state()).unwrap();
+    assert_eq!(restored.restore_history(read.rollback, &loaded), 2);
+    assert!(restored.can_go_back());
+}
+
+#[test]
+fn saves_without_history_still_load() {
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let (vm, state) = played_game();
+
+    saves.save("1", &vm, &state).unwrap();
+    let json = fs::read_to_string(dir.0.join("1.json")).unwrap();
+    assert!(
+        !json.contains("\"rollback\""),
+        "empty history isn't written"
+    );
+    assert!(saves.read("1").unwrap().rollback.is_empty());
+}

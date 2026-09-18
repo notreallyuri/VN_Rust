@@ -64,6 +64,8 @@ fn main() -> std::io::Result<()> {
 | `character(id, Character)` | | Register a character |
 | `entry_scene(id)` | first scene of the first file | Scene the story starts from |
 | `warn_missing_art(bool)` | `true` | Warn at startup about `show`s with no image file |
+| `on_scene_enter(\|ctx, scene\| ...)`, `on_choice(\|ctx, index, text\| ...)` | | Run Rust code when the story enters a scene or the player picks an option (see [Hooks](#hooks)) |
+| `hot_reload(bool)` | on in debug builds | Reload the story when a `.story` file changes (see [Hot reload](#hot-reload)) |
 | `schema_file(Option<&str>)` | `Some("schema.json")` | Where the schema is exported, relative to the assets (see [Schema export](#schema-export)); `None` turns the export off |
 | `text_input(\|t\| ...)` | | Configure the default text input screen |
 | `saves_dir(path)` | `saves` | Where save files go (see [Save and load](#save-and-load)) |
@@ -380,8 +382,9 @@ What can't be undone is decided at three levels:
 | Story | `commit` | A point of no return anywhere; inside one option it makes only that option permanent (SCRIPT.md 10) |
 | Commands | `.rollback(\|r\| r.block_command("unlock_achievement"))` | Running this command is a point of no return, for effects that can't be taken back |
 
-Rollback stops at the first line after a barrier. It also resets on New Game and on every
-load, and isn't stored in save files.
+Rollback stops at the first line after a barrier. It resets on New Game. The history is
+stored in save files (see [Save and load](#rollback-history)), so a player can roll back
+after loading, up to the same barriers.
 
 `RollbackConfig` (`.rollback(|r| ...)`):
 
@@ -391,13 +394,16 @@ load, and isn't stored in save files.
 | `max_steps(n)` | 100 lines of history |
 | `through_choices(bool)` | `true` |
 | `block_command(name)` | none |
+| `save_history(bool)` | `true`: store the history in save files |
 | `mouse_wheel(bool)` | `true` |
 | `back_keys(keys)`, `forward_keys(keys)` | Page Up, Page Down |
 
 Each step stores a story snapshot and the game state as JSON (the same data as a save), so
 large state types make history more expensive; lower `max_steps` if needed. From code:
 `ctx.rollback.back(story, state)`, `forward`, `can_go_back()`, `steps_back()`,
-`mark_barrier()`, `clear()`.
+`mark_barrier()`, `clear()`; `history()` (the `Checkpoint`s a save stores),
+`restore_history(checkpoints, story)` and `retain_valid(story)` (drop what no longer fits
+the story).
 
 ## Notifications
 
@@ -504,6 +510,56 @@ story is checked at startup (argument count and kinds), and again when it runs.
 
 Returning `Some(state)` switches screens (e.g. to a text input); the story resumes from
 the next instruction when the playing screen is entered again.
+
+## Hooks
+
+Hooks run Rust code at points in the story without a `call` in the script:
+
+```rust
+VnApp::new("My Novel")
+    .on_scene_enter(|ctx, scene| {
+        ctx.state.get_mut::<Journal>().visited(scene);
+        None
+    })
+    .on_choice(|ctx, index, text| {
+        println!("picked option {} ({})", index, text);
+        None
+    })
+```
+
+| Hook | Runs |
+| --- | --- |
+| `on_scene_enter(\|ctx, scene\| ...)` | When the story enters a scene: at the start (New Game), on every `jump` (including one to the same scene), and when a load or hot reload restarts an edited scene. Not when a save or rollback puts the story back in the middle of a scene |
+| `on_choice(\|ctx, index, text\| ...)` | Right after the player picks an option, before the option's lines run. `text` is the option as shown (interpolated) |
+
+Hooks are registered in order and all run; like commands, returning `Some(state)` switches
+screens (the first one returned wins), and the story continues when the playing screen
+is entered again. They see the same `GameContext` as commands. Rolling back and playing
+forward again runs them again, so a hook with a permanent effect (an achievement) should
+check whether it already happened, or the story should `commit` first.
+
+In `vn_script`, scene entries are `Event::SceneEnter { scene }` events, off by default
+(`StoryVm::set_scene_events(true)`; the engine turns them on).
+
+## Hot reload
+
+In debug builds, editing a `.story` file while the game runs reloads the story without
+restarting: every half second the engine checks the files' modification times (and
+added or removed files) under `story_dir`. The new story is validated exactly like at
+startup (same schema, entry scene and art warnings), then the player's position moves
+into it the way a save loads:
+
+| Change | Result |
+| --- | --- |
+| Other scenes | The same line stays on screen; rollback history in unchanged scenes is kept. Notification: "Story reloaded" |
+| The current scene | The scene restarts from its top, keeping variables, characters and game state; rollback history is cleared. Notification: "Story reloaded; scene '…' restarted" |
+| The current scene was deleted | Nothing changes; the error is shown as a notification |
+| Errors in the story | Nothing changes; the diagnostics go to the console and a notification says so |
+
+`.hot_reload(false)` turns it off; `.hot_reload(true)` turns it on in release builds too.
+The pieces are public for custom loops: `StoryLoader` (what `VnApp::loader()` returns:
+load and validate), `StoryWatcher` (`poll(now)` / `changed()`),
+`swap_story(current, fresh, rollback)` and `ScreenStateManager::reload_story(story)`.
 
 ## Registries and validation
 
@@ -632,6 +688,16 @@ index, plus a fingerprint of that scene's compiled instructions. So:
   `LoadWarning::SceneRestarted`.
 - If the saved scene **no longer exists**, the load fails with `SaveError::Story`.
 
+### Rollback history
+
+A save made by `ctx.save` (the save menus, quick save) also stores the rollback history
+(`SaveFile::rollback`, a list of `Checkpoint`s), unless `.rollback(|r|
+r.save_history(false))`. After a load, the player can roll back as they could before
+saving. History that no longer fits the story is dropped: every checkpoint before one in
+an edited or deleted scene, and all of it when the saved scene itself was restarted.
+Saves without history (older ones, or `Saves::save`) load with none. It's the largest
+part of a save file (up to `max_steps` snapshots).
+
 ### Game state
 
 Every value registered with `.state(T)` is saved under its type name (`Inventory` for
@@ -736,7 +802,8 @@ while !manager.quit_requested() {
 optionally `create_overlay(name)`); `DefaultScreens` is the one `VnApp` uses. The manager's
 `state`, `commands` and `saves` fields hold what `VnApp::state`/`command` register, and
 `open_overlay`/`close_overlay`/`confirm`/`notify` control overlays and notifications
-directly, and `rollback` holds the history. `settings` starts in memory
+directly, `rollback` holds the history, and `hooks` holds the [hooks](#hooks).
+`reload_story(story)` swaps in a reloaded story (see [Hot reload](#hot-reload)). `settings` starts in memory
 (`SettingsStore::in_memory()`, never written); use `SettingsStore::load(path)` to keep
 them in a file. `close_confirmation` is the message for `request_close()`. Textures and fonts live on the GPU, so the
 manager must be created after the window, and dropped before it (declare it after `rl`).
@@ -794,3 +861,20 @@ Behavior:
 - Fonts are loaded through raylib's C `LoadFontFromMemory` rather than raylib-rs'
   wrapper. The wrapper passes the glyph string's byte length as the codepoint count,
   which reads out of bounds for non-ASCII glyphs.
+
+## Tests
+
+```sh
+cargo test -p vn_engine
+```
+
+The tests run without a window; drawing and input are checked by playing the example.
+
+| File | Covers |
+| --- | --- |
+| `tests/app.rs` | `VnApp::check` (validation, missing art, story directories, errors with their file), entry scene, typed command arguments, schema export, hook registration |
+| `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history |
+| `tests/rollback.rs` | Back/forward, barriers (`commit`, final choices, blocked commands, `through_choices`), history limits, history across a save and load |
+| `tests/settings.rs` | Settings files, the typewriter, text speeds, when closing the window asks |
+| `tests/layout.rs` | Every layout arrangement, anchor and alignment, fitting, and the default screens' positions |
+| `tests/hot_reload.rs` | The file watcher, swapping in a reloaded story, the story loader |

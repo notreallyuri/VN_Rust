@@ -19,8 +19,8 @@ use crate::screens::{
 };
 use crate::{
     CLOSE_MESSAGE, Character, Characters, Commands, FontRole, FromArgs, GameContext, GameState,
-    Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, Saves, Screen, ScreenFactory,
-    ScreenState, ScreenStateManager, SettingsStore, ToastConfig,
+    Hooks, Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, Saves, Screen, ScreenFactory,
+    ScreenState, ScreenStateManager, SettingsStore, StoryLoader, StoryWatcher, Toast, ToastConfig,
 };
 
 type ScreenBuilder = Box<dyn Fn() -> Box<dyn Screen>>;
@@ -44,6 +44,7 @@ pub struct VnApp {
     overlays: HashMap<String, OverlayBuilder>,
     state: GameState,
     commands: Commands,
+    hooks: Hooks,
     saves_dir: PathBuf,
     save_menu: SaveMenuConfig,
     text_input: TextInputConfig,
@@ -58,6 +59,7 @@ pub struct VnApp {
     variables: BTreeMap<String, VariableDef>,
     characters: Characters,
     warn_missing_art: bool,
+    hot_reload: bool,
 }
 
 #[derive(Debug)]
@@ -125,6 +127,7 @@ impl VnApp {
             overlays: HashMap::new(),
             state: GameState::default(),
             commands: Commands::default(),
+            hooks: Hooks::default(),
             saves_dir: PathBuf::from("saves"),
             save_menu: SaveMenuConfig::default(),
             text_input: TextInputConfig::default(),
@@ -139,6 +142,7 @@ impl VnApp {
             variables: BTreeMap::new(),
             characters: Characters::default(),
             warn_missing_art: true,
+            hot_reload: cfg!(debug_assertions),
         }
     }
 
@@ -214,36 +218,23 @@ impl VnApp {
         }
     }
 
+    pub fn loader(&self) -> StoryLoader {
+        StoryLoader {
+            assets: self.assets.clone(),
+            story_dir: PathBuf::from(&self.story_dir),
+            schema: self.schema(),
+            entry_scene: self.entry_scene.clone(),
+            warn_missing_art: self.warn_missing_art,
+        }
+    }
+
     pub fn check(&self) -> Result<(StoryVm, Vec<Diagnostic>), AppError> {
-        let path = self.assets.join(&self.story_dir);
-        let mut story = StoryVm::from_dir(&path).map_err(|source| AppError::Story {
-            path: path.clone(),
-            source,
-        })?;
+        self.loader().load()
+    }
 
-        if story.program().files.is_empty() {
-            return Err(AppError::Story {
-                source: io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("no .story files in {}", path.display()),
-                ),
-                path,
-            });
-        }
-
-        let mut diagnostics = story.prepare(self.schema(), self.entry_scene.as_deref());
-        if self.warn_missing_art {
-            diagnostics.extend(missing_art(&story, &self.assets));
-        }
-
-        let (errors, warnings): (Vec<_>, Vec<_>) =
-            diagnostics.into_iter().partition(Diagnostic::is_error);
-
-        if errors.is_empty() {
-            Ok((story, warnings))
-        } else {
-            Err(AppError::Script { path, errors })
-        }
+    pub fn hot_reload(mut self, enabled: bool) -> Self {
+        self.hot_reload = enabled;
+        self
     }
 
     pub fn saves_dir(mut self, dir: impl Into<PathBuf>) -> Self {
@@ -379,6 +370,26 @@ impl VnApp {
         self
     }
 
+    pub fn on_scene_enter(
+        mut self,
+        hook: impl Fn(&mut GameContext, &str) -> Option<ScreenState> + 'static,
+    ) -> Self {
+        self.hooks.on_scene_enter(hook);
+        self
+    }
+
+    pub fn on_choice(
+        mut self,
+        hook: impl Fn(&mut GameContext, usize, &str) -> Option<ScreenState> + 'static,
+    ) -> Self {
+        self.hooks.on_choice(hook);
+        self
+    }
+
+    pub fn hooks(&self) -> &Hooks {
+        &self.hooks
+    }
+
     pub fn run(self) -> Result<(), AppError> {
         if std::env::args().any(|arg| arg == "--export-schema") {
             let path = self
@@ -398,7 +409,9 @@ impl VnApp {
             }
         }
 
-        let (story, warnings) = self.check()?;
+        let loader = self.loader();
+        let (mut story, warnings) = loader.load()?;
+        story.set_scene_events(true);
         for warning in &warnings {
             eprintln!("{}", warning);
         }
@@ -439,6 +452,7 @@ impl VnApp {
 
         manager.state = self.state;
         manager.commands = Rc::new(self.commands);
+        manager.hooks = Rc::new(self.hooks);
         manager.saves = saves;
         manager.characters = self.characters;
         manager.toast_config = self.toast;
@@ -450,7 +464,27 @@ impl VnApp {
             manager.resources.set_font(&mut rl, &thread, *role, file);
         }
 
+        let mut watcher = self.hot_reload.then(|| StoryWatcher::new(loader.path()));
+
         while !manager.quit_requested() {
+            if let Some(watcher) = &mut watcher
+                && watcher.poll(rl.get_time())
+            {
+                match loader.load() {
+                    Ok((mut story, warnings)) => {
+                        for warning in &warnings {
+                            eprintln!("{}", warning);
+                        }
+                        story.set_scene_events(true);
+                        manager.reload_story(story);
+                    }
+                    Err(e) => {
+                        eprintln!("❌ Story not reloaded: {}", e);
+                        manager.notify(Toast::error("Story has errors; see the console"));
+                    }
+                }
+            }
+
             if rl.window_should_close() {
                 manager.request_close();
                 if manager.quit_requested() {
@@ -532,7 +566,7 @@ impl ScreenFactory for DefaultScreens {
     }
 }
 
-fn missing_art(story: &StoryVm, assets: &Path) -> Vec<Diagnostic> {
+pub(crate) fn missing_art(story: &StoryVm, assets: &Path) -> Vec<Diagnostic> {
     let program = story.program();
     let mut seen = std::collections::HashSet::new();
 

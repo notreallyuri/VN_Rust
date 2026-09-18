@@ -423,3 +423,83 @@ fn current_is_cleared_by_non_blocking_events() {
     assert!(matches!(vm.advance(), Event::Show { .. }));
     assert_eq!(vm.current(), None);
 }
+
+fn events_until_blocking(vm: &mut StoryVm) -> Vec<Event> {
+    let mut events = Vec::new();
+    loop {
+        let event = vm.advance();
+        let blocking = event.is_blocking();
+        events.push(event);
+        if blocking {
+            return events;
+        }
+    }
+}
+
+fn scene_enter(scene: &str) -> Event {
+    Event::SceneEnter {
+        scene: scene.into(),
+    }
+}
+
+const JUMPING: &str =
+    "scene a:\n  \"a1\"\n  \"a2\"\n  jump b\nscene b:\n  show mary neutral\n  \"b1\"\n";
+
+#[test]
+fn scene_events_are_off_by_default() {
+    let mut vm = StoryVm::from_source(JUMPING);
+    assert!(
+        std::iter::from_fn(|| Some(vm.advance()))
+            .take_while(|e| *e != Event::End)
+            .all(|e| !matches!(e, Event::SceneEnter { .. }))
+    );
+}
+
+#[test]
+fn scene_events_mark_the_start_and_every_jump() {
+    let mut vm = StoryVm::from_source(JUMPING);
+    vm.set_scene_events(true);
+
+    assert_eq!(events_until_blocking(&mut vm)[0], scene_enter("a"));
+    assert_eq!(events_until_blocking(&mut vm).len(), 1);
+    assert_eq!(
+        events_until_blocking(&mut vm)[..2],
+        [
+            scene_enter("b"),
+            Event::Show {
+                character: "mary".into(),
+                image: "neutral".into()
+            }
+        ]
+    );
+
+    vm.reset();
+    assert_eq!(events_until_blocking(&mut vm)[0], scene_enter("a"));
+}
+
+#[test]
+fn jumping_to_the_same_scene_enters_it_again() {
+    let mut vm = StoryVm::from_source("scene a:\n  \"x\"\n  jump a\n");
+    vm.set_scene_events(true);
+    events_until_blocking(&mut vm);
+    assert_eq!(events_until_blocking(&mut vm)[0], scene_enter("a"));
+}
+
+#[test]
+fn restoring_the_exact_position_does_not_enter_the_scene() {
+    let mut vm = StoryVm::from_source(JUMPING);
+    vm.set_scene_events(true);
+    events_until_blocking(&mut vm);
+    let snapshot = vm.snapshot();
+
+    let mut restored = StoryVm::from_source(JUMPING);
+    restored.set_scene_events(true);
+    restored.restore(&snapshot).unwrap();
+    assert_eq!(events_until_blocking(&mut restored).len(), 1);
+
+    let edited = JUMPING.replace("\"a2\"", "\"a2 (edited)\"");
+    let mut restarted = StoryVm::from_source(&edited);
+    restarted.set_scene_events(true);
+    restarted.restore(&snapshot).unwrap();
+    assert_eq!(events_until_blocking(&mut restarted)[0], scene_enter("a"));
+}

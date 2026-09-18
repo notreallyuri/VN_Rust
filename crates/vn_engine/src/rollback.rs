@@ -1,8 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use raylib::consts::KeyboardKey;
+use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
-use vn_script::{StorySnapshot, StoryVm};
+use vn_script::{RestoreOutcome, StorySnapshot, StoryVm};
 
 use crate::GameState;
 
@@ -12,6 +13,7 @@ pub struct RollbackConfig {
     pub max_steps: usize,
     pub through_choices: bool,
     pub blocked_commands: BTreeSet<String>,
+    pub save_history: bool,
     pub mouse_wheel: bool,
     pub back_keys: Vec<KeyboardKey>,
     pub forward_keys: Vec<KeyboardKey>,
@@ -24,6 +26,7 @@ impl Default for RollbackConfig {
             max_steps: 100,
             through_choices: true,
             blocked_commands: BTreeSet::new(),
+            save_history: true,
             mouse_wheel: true,
             back_keys: vec![KeyboardKey::KEY_PAGE_UP],
             forward_keys: vec![KeyboardKey::KEY_PAGE_DOWN],
@@ -52,6 +55,11 @@ impl RollbackConfig {
         self
     }
 
+    pub fn save_history(mut self, save: bool) -> Self {
+        self.save_history = save;
+        self
+    }
+
     pub fn mouse_wheel(mut self, enabled: bool) -> Self {
         self.mouse_wheel = enabled;
         self
@@ -68,11 +76,11 @@ impl RollbackConfig {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-struct Checkpoint {
-    story: StorySnapshot,
-    state: BTreeMap<String, Json>,
-    barrier: bool,
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Checkpoint {
+    pub story: StorySnapshot,
+    pub state: BTreeMap<String, Json>,
+    pub barrier: bool,
 }
 
 #[derive(Debug, Default)]
@@ -99,6 +107,38 @@ impl Rollback {
         self.history.clear();
         self.future.clear();
         self.pending_barrier = false;
+    }
+
+    pub fn history(&self) -> Vec<Checkpoint> {
+        if self.config.enabled && self.config.save_history {
+            self.history.iter().cloned().collect()
+        } else {
+            Vec::new()
+        }
+    }
+
+    pub fn restore_history(&mut self, checkpoints: Vec<Checkpoint>, story: &StoryVm) -> usize {
+        self.clear();
+        if !self.config.enabled {
+            return 0;
+        }
+
+        let exact = |checkpoint: &Checkpoint| {
+            matches!(
+                story.check_restore(&checkpoint.story),
+                Ok(RestoreOutcome::Exact)
+            )
+        };
+        let usable = checkpoints.iter().rev().take_while(|c| exact(c)).count();
+        let start = checkpoints.len() - usable.min(self.config.max_steps + 1);
+
+        self.history = checkpoints.into_iter().skip(start).collect();
+        self.history.len()
+    }
+
+    pub fn retain_valid(&mut self, story: &StoryVm) {
+        let history: Vec<Checkpoint> = self.history.drain(..).collect();
+        self.restore_history(history, story);
     }
 
     pub fn mark_barrier(&mut self) {

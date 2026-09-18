@@ -256,3 +256,88 @@ fn narration(text: &str) -> Event {
         text: text.into(),
     }
 }
+
+fn reload(game: &Game, source: &str, config: RollbackConfig) -> Game {
+    let mut story = StoryVm::from_source(source);
+    story.restore(&game.story.snapshot()).unwrap();
+    let mut state = GameState::default();
+    state.insert(Coins(0));
+    let pending = state.prepare_load(&game.state.to_json().unwrap()).unwrap();
+    state.apply(pending);
+
+    let mut rollback = Rollback::new(config);
+    let json = serde_json::to_string(&game.rollback.history()).unwrap();
+    rollback.restore_history(serde_json::from_str(&json).unwrap(), &story);
+    Game {
+        story,
+        state,
+        rollback,
+    }
+}
+
+#[test]
+fn history_survives_a_save_and_load() {
+    let mut game = Game::new(LINEAR, RollbackConfig::default());
+    game.next();
+    game.next();
+
+    let mut loaded = reload(&game, LINEAR, RollbackConfig::default());
+    assert_eq!(loaded.line(), "three");
+    assert!(loaded.back());
+    assert_eq!(loaded.line(), "two");
+    assert_eq!(loaded.state.get::<Coins>().0, 1);
+    assert!(loaded.back());
+    assert_eq!(loaded.line(), "one");
+    assert!(!loaded.back());
+}
+
+#[test]
+fn barriers_survive_a_save_and_load() {
+    let source = "scene a:\n  \"one\"\n  commit\n  \"two\"\n  \"three\"\n";
+    let mut game = Game::new(source, RollbackConfig::default());
+    game.next();
+    game.next();
+
+    let mut loaded = reload(&game, source, RollbackConfig::default());
+    assert!(loaded.back());
+    assert_eq!(loaded.line(), "two");
+    assert!(!loaded.back());
+}
+
+#[test]
+fn history_stops_at_an_edited_scene() {
+    let source = "scene a:\n  \"a1\"\n  \"a2\"\n  jump b\nscene b:\n  \"b1\"\n  \"b2\"\n";
+    let edited = "scene a:\n  \"a1 (edited)\"\n  \"a2\"\n  jump b\nscene b:\n  \"b1\"\n  \"b2\"\n";
+    let mut game = Game::new(source, RollbackConfig::default());
+    game.next();
+    game.next();
+    game.next();
+    assert_eq!(game.line(), "b2");
+
+    let mut loaded = reload(&game, edited, RollbackConfig::default());
+    assert_eq!(loaded.rollback.steps_back(), 1);
+    assert!(loaded.back());
+    assert_eq!(loaded.line(), "b1");
+    assert!(!loaded.back());
+}
+
+#[test]
+fn history_is_trimmed_to_the_configured_length() {
+    let mut game = Game::new(LINEAR, RollbackConfig::default());
+    game.next();
+    game.next();
+
+    let loaded = reload(&game, LINEAR, RollbackConfig::default().max_steps(1));
+    assert_eq!(loaded.rollback.steps_back(), 1);
+}
+
+#[test]
+fn history_can_be_left_out_of_saves() {
+    let mut game = Game::new(LINEAR, RollbackConfig::default().save_history(false));
+    game.next();
+    assert!(game.rollback.history().is_empty());
+    assert!(game.rollback.can_go_back(), "rollback itself still works");
+
+    let disabled = Game::new(LINEAR, RollbackConfig::default().enabled(false));
+    assert!(disabled.rollback.history().is_empty());
+}

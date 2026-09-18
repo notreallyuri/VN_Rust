@@ -34,6 +34,9 @@ pub enum Event {
         args: Vec<String>,
     },
     Commit,
+    SceneEnter {
+        scene: String,
+    },
     End,
 }
 
@@ -98,6 +101,8 @@ pub struct StoryVm {
     current: Option<Event>,
     schema: Schema,
     entry: Option<String>,
+    scene_events: bool,
+    entered: bool,
 }
 
 impl StoryVm {
@@ -126,6 +131,8 @@ impl StoryVm {
             current: None,
             schema: Schema::default(),
             entry: None,
+            scene_events: false,
+            entered: false,
         };
         vm.reset();
         vm
@@ -192,6 +199,7 @@ impl StoryVm {
         self.active_characters.clear();
         self.pending_choice = None;
         self.current = None;
+        self.entered = false;
         self.reset_position();
     }
 
@@ -220,6 +228,15 @@ impl StoryVm {
         }
 
         for _ in 0..MAX_SILENT_STEPS {
+            if std::mem::take(&mut self.entered)
+                && self.scene_events
+                && let Some(scene) = &self.current_scene
+            {
+                return Event::SceneEnter {
+                    scene: scene.clone(),
+                };
+            }
+
             let Some(instr) = self.program.instructions.get(self.ip) else {
                 return Event::End;
             };
@@ -353,6 +370,10 @@ impl StoryVm {
         Ok(())
     }
 
+    pub fn set_scene_events(&mut self, enabled: bool) {
+        self.scene_events = enabled;
+    }
+
     pub fn program(&self) -> &Program {
         &self.program
     }
@@ -473,6 +494,7 @@ impl StoryVm {
             (Some(scene), RestoreOutcome::SceneRestarted { .. }) => self.enter_scene(scene)?,
             (Some(scene), RestoreOutcome::Exact) => {
                 self.enter_scene(scene)?;
+                self.entered = false;
                 self.ip += snapshot.offset;
                 self.pending_choice = snapshot.pending_choice.then_some(self.ip);
                 self.current = snapshot.current.clone();
@@ -501,6 +523,7 @@ impl StoryVm {
 
         self.ip = start;
         self.current_scene = Some(scene_id.to_string());
+        self.entered = true;
         Ok(())
     }
 

@@ -292,3 +292,16 @@ fn schema_export_describes_the_game() {
 
     assert_eq!(app.schema_file(None).export_schema().unwrap(), None);
 }
+
+#[test]
+fn hooks_are_registered() {
+    let project = Project::new("scene start:\n  \"x\"\n");
+    let app = project
+        .app()
+        .on_scene_enter(|_, _| None)
+        .on_scene_enter(|_, scene| (scene == "credits").then_some(ScreenState::MainMenu))
+        .on_choice(|_, _, _| None);
+
+    assert_eq!(app.hooks().scene_enter_count(), 2);
+    assert_eq!(app.hooks().choice_count(), 1);
+}

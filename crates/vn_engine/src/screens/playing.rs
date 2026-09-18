@@ -370,6 +370,11 @@ impl PlayingScreen {
                     }
                 }
                 Event::Commit => ctx.rollback.mark_barrier(),
+                Event::SceneEnter { scene } => {
+                    if let Some(next) = ctx.run_scene_hooks(&scene) {
+                        return Some(next);
+                    }
+                }
                 event if event.is_blocking() => {
                     let typed = (ctx.settings.values.text_speed, ctx.rl.get_time());
                     self.show(event, Some(typed));
@@ -488,13 +493,18 @@ impl Screen for PlayingScreen {
 
                 match rects.iter().position(|rect| ui::is_clicked(ctx.rl, *rect)) {
                     Some(index) => {
+                        let text = options[index].clone();
                         if let Err(e) = ctx.story.choose(index) {
                             eprintln!("⚠️ {}", e);
+                            return None;
                         }
                         if !ctx.rollback.config().through_choices {
                             ctx.rollback.mark_barrier();
                         }
-                        self.advance(&mut ctx)
+                        match ctx.run_choice_hooks(index, &text) {
+                            Some(next) => Some(next),
+                            None => self.advance(&mut ctx),
+                        }
                     }
                     None => None,
                 }

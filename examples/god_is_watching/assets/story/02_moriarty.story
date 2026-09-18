@@ -3,7 +3,7 @@
 # Source: "Annex to Report No. 214" (Moriarty's notebook, 1894, and the 1901 conversation)
 
 scene moriarty_start:
-  "July 12th, 1894. Santa Ilde Orphanage."
+  "July 12t, 1894. Santa Ilde Orphanage."
   "Lately I have begun to forget things."
   "It's all been signed since May. I leave Santa Ilde on my birthday and go to live with my sister."
   "I spent a whole week planning September in this house before someone reminded me."

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use vn_script::{Event, RestoreOutcome, StorySnapshot, StoryVm, VmError};
 
-use crate::{GameState, StateError};
+use crate::{Checkpoint, GameState, StateError};
 
 pub const SAVE_FORMAT_VERSION: u32 = 1;
 pub const QUICK_SLOT: &str = "quick";
@@ -22,6 +22,8 @@ pub struct SaveFile {
     pub summary: String,
     pub story: StorySnapshot,
     pub state: BTreeMap<String, Json>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub rollback: Vec<Checkpoint>,
 }
 
 #[derive(Debug)]
@@ -201,6 +203,7 @@ impl Saves {
             summary: summary(story),
             story: story.snapshot(),
             state: state.to_json().map_err(SaveError::State)?,
+            rollback: Vec::new(),
         })
     }
 
