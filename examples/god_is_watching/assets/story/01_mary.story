@@ -21,12 +21,12 @@ scene mary_start:
       add obedience += 1
       "I do not read it. I do not need to. His hands told me everything at supper."
 
-  hugo "Mary. Y should be in bed."
+  hugo "Mary. You should be in bed."
   mary "So should you, Father."
   hugo "Go up. Lock your door tonight."
   mary "Why?"
   hugo "Because I asked."
-  remoe hugo
+  remove hugo
   jump mary_the_visit
 
 scene mary_the_visit:
