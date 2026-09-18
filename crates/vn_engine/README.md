@@ -98,8 +98,9 @@ Any key or click goes to `next`.
 | `title(text)`, `title_text(style)`, `title_y(f)` | app title, Title font 64 px, 0.25 |
 | `button(label, action)`, `item(MenuItem)` | New Game, Load, Settings, Quit |
 | `button_style(\|b\| ...)` | `ButtonStyle::default()` (240×52) |
-| `buttons_y(f)`, `spacing(px)` | 0.45, 18 |
-| `bottom_margin(px)` | 40: a menu that would reach closer to the bottom moves up (not into the title), then tightens its spacing |
+| `buttons_y(f)` | 0.45: top of the button area, as a fraction of the window height |
+| `layout(\|l\| ...)`, `spacing(px)` | a column anchored at the top of the button area, 18 apart (see [Layouts](#layouts)) |
+| `margin(px)` | 40 from the sides and bottom. A menu that would reach closer to the bottom moves up (not into the title), then tightens its spacing |
 | `background(bg)` | none |
 
 The first `button`/`item` call replaces the default list; later calls append.
@@ -148,6 +149,7 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 | `speaker_text(style)` | Speaker font 24 px gold |
 | `dialogue_text(style)` | Dialogue font 26 px white |
 | `choice_button(\|b\| ...)`, `choice_spacing(px)` | 720×56, Choice font; 16 |
+| `choice_layout(\|l\| ...)` | a column centered in the window, inside the dialogue box's margin |
 | `end_title(text)`, `end_title_text(style)` | "The End", Title font 56 px |
 | `end_hint(text)`, `end_hint_text(style)` | "Click to return to the menu", Menu font 20 px gray |
 | `advance_keys(keys)` | Space, Enter |
@@ -158,6 +160,7 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 | `hud_button(label, action)` | none |
 | `quick_save_key(Option<key>)`, `quick_load_key(Option<key>)` | `Some(F5)`, `Some(F9)` (the `quick` slot) |
 | `hud_button_style(\|b\| ...)`, `hud_margin(px)`, `hud_spacing(px)` | 130×40, dark translucent, 18 px text; 16; 10 |
+| `hud_layout(\|l\| ...)` | a row anchored top-right, inside `hud_margin` |
 
 raylib's "Esc closes the window" is turned off (see `VnApp::exit_key`).
 
@@ -169,6 +172,44 @@ raylib's "Esc closes the window" is turned off (see `VnApp::exit_key`).
 | `ButtonStyle::default()` | `.size(w, h)`, `.color(c)` (hover becomes a lighter shade), `.hover_color(c)`, `.roundness(0..1)`, `.text(style)`, `.font(role)`, `.font_size(px)`, `.text_color(c)` |
 | `DialogueBoxStyle::default()` | `.height()`, `.margin()`, `.padding()`, `.color()`, `.roundness()` |
 | `Background` | `Color(color)` fills the screen; `Image(path)` stretches an asset over it |
+
+## Layouts
+
+Every list of buttons the engine draws (main menu, pause menu, choices, HUD, save slots)
+is placed by a `Layout`, set with that screen's `layout` option. The option receives the
+current layout, so changing one part keeps the rest:
+
+```rust
+.main_menu(|m| m.layout(|l| l.rows_of([1, 2, 2, 1]).align(Align::Stretch)))
+.main_menu(|m| m.layout(|l| l.grid(2).anchor(Anchor::Bottom)))
+.pause_menu(|p| p.layout(|l| l.grid(2)))
+.playing(|p| p.choice_layout(|l| l.anchor(Anchor::Left).align(Align::Start)))
+.save_menu(|s| s.slot_size(560.0, 72.0).slot_layout(|l| l.grid(2)))
+```
+
+| Builder | Meaning |
+| --- | --- |
+| `.column()`, `.row()`, `.grid(columns)` | How items are arranged. A grid fills rows left to right; each column is as wide as its widest item, each row as tall as its tallest |
+| `.rows_of([counts])` | The number of items in each row, e.g. `[1, 2, 2, 1]`: one button, two rows of two, one button. Items past the list continue in rows of the last count; zeros are ignored, and an empty list is a column. Unlike a grid, each row is sized on its own and placed by `align`, so a single button is centered over (or aligned with) the rows below it |
+| `.custom(\|area, sizes\| rects)` | Your own placement: gets the available `Rectangle` and each item's size, returns one `Rectangle` per item |
+| `.anchor(Anchor)` | Where the block of items sits in the available area: `TopLeft`, `Top`, `TopRight`, `Left`, `Center`, `Right`, `BottomLeft`, `Bottom`, `BottomRight` |
+| `.align(Align)` | Where an item narrower than its column sits in it (or, for `rows_of`, where a narrower row sits): `Start`, `Center` (default), `End`. `Stretch` makes items fill instead: a column's items take the widest item's width, a grid's take their column's width, and a short `rows_of` row spreads the spare width over its items so every row is as wide as the widest (with `[1, 2, 2, 1]`, the single buttons span both columns) |
+| `.spacing(px)`, `.spacing_xy(x, y)` | Gaps between columns (x) and rows (y). They shrink (down to 0) when the block doesn't fit the area |
+
+What "the available area" is depends on the screen:
+
+| Screen | Area | Default |
+| --- | --- | --- |
+| Main menu | From `buttons_y` to the bottom `margin`, inside the side margins | column, top, 18 |
+| Pause menu | Inside the panel, below the title. The panel widens to fit a grid | column, 10 |
+| Choices | The window inside the dialogue box's margin | column, center, 16 |
+| HUD | The window inside `hud_margin` | row, top-right, 10 |
+| Save slots | Between the title and the Back button. Slots get shorter to fit the rows | column, top, 10 |
+
+`Layout::place(area, &sizes)`, `block_size(&sizes)`, `row_counts(count)`, `columns(count)`
+and `rows(count)` are public, for custom screens. `PlayingConfig::choice_rects`/`hud_rects`,
+`MainMenuConfig::button_rects` and `PauseMenuConfig::button_rects`/`panel` give the
+rectangles a default screen uses.
 
 ## Custom screens
 
@@ -187,11 +228,10 @@ time the screen is entered. A custom screen implements `Screen`:
 |---|---|
 | `ScreenState` | `StartScreen`, `MainMenu`, `Playing`, `Save`, `Load`, `TextInput`, `Settings`, `Custom(String)`, `Quit` |
 | `Screen` | `update(ctx) -> Option<ScreenState>` returns the next state; `draw(d, &DrawContext)` |
-| `GameContext` | What `update` gets: `rl`, `thread`, `resources`, `story`, `state`, `saves`, `previous` (the screen before this one); plus `open_overlay(name)`, `run_command(name, args)`, `ask_text(request)`, `save(slot)` and `load(slot)` |
-| `DrawContext` | What `draw` gets: `resources`, `story`, `state`, `saves`, `characters`, and `fonts()` |
+| `GameContext` | What `update` gets: `rl`, `thread`, `resources`, `story`, `state`, `saves`, `rollback`, `settings`, `previous` (the screen before this one); plus `open_overlay(name)`, `run_command(name, args)`, `ask_text(request)`, `save(slot)` and `load(slot)` |
+| `DrawContext` | What `draw` gets: `resources`, `story`, `state`, `saves`, `characters`, `settings`, and `fonts()` |
 
-There is no default `Settings` screen yet. Switching to a state with no screen logs a
-warning and stays on the current one.
+Switching to a state with no screen logs a warning and stays on the current one.
 
 The `ui` module has the pieces the default screens use, for custom screens to reuse:
 
@@ -200,7 +240,7 @@ The `ui` module has the pieces the default screens use, for custom screens to re
 | `draw_button(d, fonts, rect, label, &ButtonStyle)` | Button with hover color and centered label |
 | `is_clicked(rl, rect)`, `is_hovered(rl, rect)` | Mouse hit tests |
 | `draw_text`, `draw_text_centered`, `draw_text_wrapped` | Text with a `TextStyle`; wrapped returns the height used |
-| `stacked_rects(count, w, h, spacing, center_x, top)` | A centered column of rectangles |
+| `draw_text_wrapped_visible(.., visible)` | Wrapped text showing only the first `visible` characters (the typewriter) |
 | `screen_size(rl)` | Window size as a `Vector2` |
 | `load_background(ctx, bg)`, `draw_background(d, resources, bg)` | `Background` support (load in `update`, draw in `draw`) |
 
@@ -231,6 +271,7 @@ Backspace return to it. Loading a slot closes everything and continues playing f
 | `title(text)`, `title_text(style)` | "Paused", Title font 40 px |
 | `button(label, action)`, `item(MenuItem)` | the buttons above; the first call replaces the list |
 | `button_style(\|b\| ...)`, `spacing(px)` | 260×44, 20 px text; 10 |
+| `layout(\|l\| ...)` | a column (see [Layouts](#layouts)); a grid widens the panel |
 | `panel_width(px)`, `padding(px)`, `panel_color(c)`, `panel_roundness(r)` | 340, 28, dark translucent, 0.04 |
 | `backdrop(c)` | black at 150 alpha, over the game |
 | `close_keys(keys)` | Esc |
@@ -651,6 +692,7 @@ Non-fatal issues are returned as `LoadReport::warnings` (and printed by `ctx.loa
 | `slots(n)` | 6 |
 | `save_title(text)`, `load_title(text)`, `title_text(style)` | "Save Game", "Load Game", Title font 44 px |
 | `slot_size(w, h)`, `slot_spacing(px)`, `slot_color(c)` | 760×64 (shrinks to fit), 10, dark blue |
+| `slot_layout(\|l\| ...)` | a column at the top (see [Layouts](#layouts)) |
 | `slot_title_text`, `slot_summary_text`, `error_text` | Menu 20 px, Dialogue 17 px gray, Menu 17 px red |
 | `confirm_overwrite(bool)`, `confirm_load_in_game(bool)` | `true`, `true` |
 | `empty_label(text)` | "Empty" |

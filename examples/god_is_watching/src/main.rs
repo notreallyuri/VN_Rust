@@ -2,8 +2,8 @@ use std::process::ExitCode;
 
 use vn_engine::raylib::prelude::*;
 use vn_engine::{
-    Action, FontRole, GameContext, MenuItem, PAUSE_OVERLAY, SAVE_OVERLAY, ScreenState, TextRequest,
-    TextStyle, VnApp,
+    Action, Align, FontRole, GameContext, MenuItem, PAUSE_OVERLAY, SAVE_OVERLAY, ScreenState,
+    TextRequest, TextStyle, VnApp,
 };
 
 mod cast;
@@ -43,6 +43,11 @@ fn main() -> ExitCode {
         .start_screen(|s| s.prompt("PRESS ANY KEY TO START").footer("v0.1.0"))
         .main_menu(|m| {
             m.button_style(|b| b.size(260.0, 52.0))
+                .layout(|l| {
+                    l.rows_of([1, 2, 2, 1])
+                        .align(Align::Stretch)
+                        .spacing_xy(24.0, 18.0)
+                })
                 .button("New Game", Action::NewGame)
                 .button("Continue", Action::Goto(ScreenState::Playing))
                 .button("Load", Action::Goto(ScreenState::Load))

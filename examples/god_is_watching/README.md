@@ -28,8 +28,10 @@ changes only:
 - **Fonts:** `NotoSerif-Regular.ttf` for `FontRole::Title` and `FontRole::Dialogue`;
   menus, buttons, speaker names and choices keep the engine's default font.
 - **Start screen:** an upper-case prompt and a `v0.1.0` footer.
-- **Main menu:** 260×52 buttons: New Game, Continue (`Goto(Playing)`, resumes the story),
-  Load, Settings, Credits, and a red Exit (a per-button style override).
+- **Main menu:** 260×52 buttons in rows of 1, 2, 2 and 1
+  (`layout(|l| l.rows_of([1, 2, 2, 1]).align(Align::Stretch))`): New Game across the full
+  width, then Continue (`Goto(Playing)`, resumes the story) and Load, Settings and
+  Credits, then a red Exit across the full width (a per-button style override).
 - **Playing screen:** a taller dialogue box with slightly rounded corners, a larger
   speaker name, and HUD buttons: **Inventory** (a screen), **Stats** (an overlay),
   **Save** (the engine's save overlay) and **Menu** (the pause menu, same as Esc).

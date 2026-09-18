@@ -6,7 +6,8 @@ use crate::saves::{QUICK_SLOT, SaveError, SlotInfo, now, time_ago};
 use crate::screens::Confirm;
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
-    Action, DrawContext, FontRole, GameContext, Overlay, OverlayAction, Screen, ScreenState,
+    Action, Anchor, DrawContext, FontRole, GameContext, Layout, Overlay, OverlayAction, Screen,
+    ScreenState,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -23,7 +24,7 @@ pub struct SaveMenuConfig {
     pub title_text: TextStyle,
     pub slot_width: f32,
     pub slot_height: f32,
-    pub slot_spacing: f32,
+    pub slot_layout: Layout,
     pub slot_color: Color,
     pub slot_hover_color: Color,
     pub slot_title_text: TextStyle,
@@ -48,7 +49,7 @@ impl Default for SaveMenuConfig {
             title_text: TextStyle::new(FontRole::Title, 44.0, Color::RAYWHITE),
             slot_width: 760.0,
             slot_height: 64.0,
-            slot_spacing: 10.0,
+            slot_layout: Layout::default().anchor(Anchor::Top).spacing(10.0),
             slot_color: Color::new(30, 30, 45, 230),
             slot_hover_color: Color::new(50, 50, 72, 240),
             slot_title_text: TextStyle::new(FontRole::Menu, 20.0, Color::RAYWHITE),
@@ -94,7 +95,12 @@ impl SaveMenuConfig {
     }
 
     pub fn slot_spacing(mut self, spacing: f32) -> Self {
-        self.slot_spacing = spacing;
+        self.slot_layout = self.slot_layout.spacing(spacing);
+        self
+    }
+
+    pub fn slot_layout(mut self, layout: impl FnOnce(Layout) -> Layout) -> Self {
+        self.slot_layout = layout(self.slot_layout);
         self
     }
 
@@ -212,20 +218,16 @@ impl SaveMenu {
 
         let count = self.slots.as_ref().map_or(0, Vec::len);
         let config = &self.config;
+        let layout = &config.slot_layout;
 
         let bottom = self.back_rect(screen).y - MESSAGE_SPACE;
-        let gaps = count.saturating_sub(1) as f32 * config.slot_spacing;
-        let fitting = (bottom - TOP - gaps) / count.max(1) as f32;
-        let height = config.slot_height.min(fitting);
+        let area = Rectangle::new(0.0, TOP, screen.x, (bottom - TOP).max(0.0));
+        let rows = layout.rows(count).max(1);
+        let gaps = (rows - 1) as f32 * layout.spacing.y;
+        let fitting = (area.height - gaps) / rows as f32;
+        let size = Vector2::new(config.slot_width, config.slot_height.min(fitting));
 
-        ui::stacked_rects(
-            count,
-            config.slot_width,
-            height,
-            config.slot_spacing,
-            screen.x / 2.0,
-            TOP,
-        )
+        layout.place(area, &vec![size; count])
     }
 
     fn back_rect(&self, screen: Vector2) -> Rectangle {

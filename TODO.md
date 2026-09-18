@@ -115,6 +115,8 @@ Three levels of control, each optional:
 - [x] Text wrapping (`Fonts::wrap`, `ui::draw_text_wrapped`)
 - [x] Typewriter effect (text speed setting; click shows the whole line)
 - [x] Window-relative layout in the default screens
+- [x] Layouts for button lists (`Layout`: column, row, grid, rows_of, custom; anchors, alignment, fitted spacing) in the main menu, pause menu, choices, HUD and save slots
+- [ ] Keyboard/gamepad navigation between buttons (arrow keys, especially for grids)
 - [x] Settings screen (see M3); volume settings come with audio
 - [x] Clean exit (`ScreenState::Quit`)
 - [ ] Audio: music and SFX (needs DSL syntax)

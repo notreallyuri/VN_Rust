@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
+use crate::Layout;
 use crate::screens::{MenuItem, SETTINGS_OVERLAY};
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{Action, DrawContext, FontRole, GameContext, Overlay, OverlayAction, ScreenState};
@@ -16,7 +17,7 @@ pub struct PauseMenuConfig {
     pub title_text: TextStyle,
     pub items: Vec<MenuItem>,
     pub button: ButtonStyle,
-    pub spacing: f32,
+    pub layout: Layout,
     pub padding: f32,
     pub panel_width: f32,
     pub panel_color: Color,
@@ -54,7 +55,7 @@ impl Default for PauseMenuConfig {
                 ),
             ],
             button: ButtonStyle::default().size(260.0, 44.0).font_size(20.0),
-            spacing: 10.0,
+            layout: Layout::default().spacing(10.0),
             padding: 28.0,
             panel_width: 340.0,
             panel_color: Color::new(18, 18, 28, 240),
@@ -96,7 +97,12 @@ impl PauseMenuConfig {
     }
 
     pub fn spacing(mut self, spacing: f32) -> Self {
-        self.spacing = spacing;
+        self.layout = self.layout.spacing(spacing);
+        self
+    }
+
+    pub fn layout(mut self, layout: impl FnOnce(Layout) -> Layout) -> Self {
+        self.layout = layout(self.layout);
         self
     }
 
@@ -130,35 +136,54 @@ impl PauseMenuConfig {
         self
     }
 
-    fn layout(&self, screen: Vector2) -> (Rectangle, f32, Vec<(Rectangle, ButtonStyle)>) {
+    pub fn panel(&self, screen: Vector2) -> Rectangle {
+        self.placement(screen).0
+    }
+
+    pub fn button_rects(&self, screen: Vector2) -> Vec<Rectangle> {
+        self.placement(screen)
+            .2
+            .into_iter()
+            .map(|(rect, _)| rect)
+            .collect()
+    }
+
+    fn placement(&self, screen: Vector2) -> (Rectangle, f32, Vec<(Rectangle, ButtonStyle)>) {
         let styles: Vec<ButtonStyle> = self
             .items
             .iter()
             .map(|item| item.resolve_style(&self.button))
             .collect();
 
+        let sizes: Vec<Vector2> = styles
+            .iter()
+            .map(|style| Vector2::new(style.width, style.height))
+            .collect();
+        let block = self.layout.block_size(&sizes);
+
         let title_height = self.title_text.size * 1.6;
-        let buttons_height: f32 = styles.iter().map(|s| s.height).sum::<f32>()
-            + styles.len().saturating_sub(1) as f32 * self.spacing;
-        let height = self.padding * 2.0 + title_height + buttons_height;
+        let width = self.panel_width.max(block.x + self.padding * 2.0);
+        let height = self.padding * 2.0 + title_height + block.y;
 
         let panel = Rectangle::new(
-            (screen.x - self.panel_width) / 2.0,
+            (screen.x - width) / 2.0,
             (screen.y - height) / 2.0,
-            self.panel_width,
+            width,
             height,
         );
         let title_center_y = panel.y + self.padding + self.title_text.size * 0.5;
 
-        let mut y = panel.y + self.padding + title_height;
-        let buttons = styles
+        let area = Rectangle::new(
+            panel.x + self.padding,
+            panel.y + self.padding + title_height,
+            width - self.padding * 2.0,
+            block.y,
+        );
+        let buttons = self
+            .layout
+            .place(area, &sizes)
             .into_iter()
-            .map(|style| {
-                let rect =
-                    Rectangle::new((screen.x - style.width) / 2.0, y, style.width, style.height);
-                y += style.height + self.spacing;
-                (rect, style)
-            })
+            .zip(styles)
             .collect();
 
         (panel, title_center_y, buttons)
@@ -186,7 +211,7 @@ impl Overlay for PauseMenu {
             return OverlayAction::CloseAll;
         }
 
-        let (_, _, buttons) = self.config.layout(ui::screen_size(ctx.rl));
+        let (_, _, buttons) = self.config.placement(ui::screen_size(ctx.rl));
         let Some(index) = buttons
             .iter()
             .position(|(rect, _)| ui::is_clicked(ctx.rl, *rect))
@@ -204,7 +229,7 @@ impl Overlay for PauseMenu {
         let config = &self.config;
         let screen = ui::screen_size(d);
         let fonts = ctx.fonts();
-        let (panel, title_y, buttons) = config.layout(screen);
+        let (panel, title_y, buttons) = config.placement(screen);
 
         d.draw_rectangle(0, 0, screen.x as i32, screen.y as i32, config.backdrop);
         if config.panel_roundness > 0.0 {

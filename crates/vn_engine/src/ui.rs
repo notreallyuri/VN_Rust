@@ -211,26 +211,6 @@ pub fn draw_text_wrapped_visible(
     lines.len() as f32 * line_height
 }
 
-pub fn stacked_rects(
-    count: usize,
-    width: f32,
-    height: f32,
-    spacing: f32,
-    center_x: f32,
-    top: f32,
-) -> Vec<Rectangle> {
-    (0..count)
-        .map(|i| {
-            Rectangle::new(
-                center_x - width / 2.0,
-                top + i as f32 * (height + spacing),
-                width,
-                height,
-            )
-        })
-        .collect()
-}
-
 pub fn screen_size(rl: &RaylibHandle) -> Vector2 {
     Vector2::new(rl.get_screen_width() as f32, rl.get_screen_height() as f32)
 }

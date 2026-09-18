@@ -5,7 +5,10 @@ use vn_script::{Event, StoryVm};
 
 use crate::screens::PAUSE_OVERLAY;
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
-use crate::{Action, DrawContext, FontRole, GameContext, ResourceManager, Screen, ScreenState};
+use crate::{
+    Action, Anchor, DrawContext, FontRole, GameContext, Layout, ResourceManager, Screen,
+    ScreenState,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DialogueBoxStyle {
@@ -76,7 +79,7 @@ pub struct PlayingConfig {
     pub speaker_text: TextStyle,
     pub dialogue_text: TextStyle,
     pub choice_button: ButtonStyle,
-    pub choice_spacing: f32,
+    pub choice_layout: Layout,
     pub end_title: String,
     pub end_title_text: TextStyle,
     pub end_hint: String,
@@ -88,7 +91,7 @@ pub struct PlayingConfig {
     pub hud: Vec<HudButton>,
     pub hud_button: ButtonStyle,
     pub hud_margin: f32,
-    pub hud_spacing: f32,
+    pub hud_layout: Layout,
     pub quick_save_key: Option<KeyboardKey>,
     pub quick_load_key: Option<KeyboardKey>,
     pub pause_key: Option<KeyboardKey>,
@@ -105,7 +108,7 @@ impl Default for PlayingConfig {
                 .size(720.0, 56.0)
                 .color(Color::new(30, 30, 45, 230))
                 .font(FontRole::Choice),
-            choice_spacing: 16.0,
+            choice_layout: Layout::default().spacing(16.0),
             end_title: "The End".to_string(),
             end_title_text: TextStyle::new(FontRole::Title, 56.0, Color::RAYWHITE),
             end_hint: "Click to return to the menu".to_string(),
@@ -120,7 +123,10 @@ impl Default for PlayingConfig {
                 .color(Color::new(20, 20, 30, 190))
                 .font_size(18.0),
             hud_margin: 16.0,
-            hud_spacing: 10.0,
+            hud_layout: Layout::default()
+                .row()
+                .anchor(Anchor::TopRight)
+                .spacing(10.0),
             quick_save_key: Some(KeyboardKey::KEY_F5),
             quick_load_key: Some(KeyboardKey::KEY_F9),
             pause_key: Some(KeyboardKey::KEY_ESCAPE),
@@ -154,7 +160,12 @@ impl PlayingConfig {
     }
 
     pub fn choice_spacing(mut self, spacing: f32) -> Self {
-        self.choice_spacing = spacing;
+        self.choice_layout = self.choice_layout.spacing(spacing);
+        self
+    }
+
+    pub fn choice_layout(mut self, layout: impl FnOnce(Layout) -> Layout) -> Self {
+        self.choice_layout = layout(self.choice_layout);
         self
     }
 
@@ -217,7 +228,12 @@ impl PlayingConfig {
     }
 
     pub fn hud_spacing(mut self, spacing: f32) -> Self {
-        self.hud_spacing = spacing;
+        self.hud_layout = self.hud_layout.spacing(spacing);
+        self
+    }
+
+    pub fn hud_layout(mut self, layout: impl FnOnce(Layout) -> Layout) -> Self {
+        self.hud_layout = layout(self.hud_layout);
         self
     }
 
@@ -241,38 +257,28 @@ impl PlayingConfig {
         self
     }
 
-    fn hud_rects(&self, screen: Vector2) -> Vec<Rectangle> {
+    pub fn hud_rects(&self, screen: Vector2) -> Vec<Rectangle> {
         let button = &self.hud_button;
-        let count = self.hud.len() as f32;
-        let total = count * button.width + (count - 1.0).max(0.0) * self.hud_spacing;
-        let left = screen.x - self.hud_margin - total;
-
-        (0..self.hud.len())
-            .map(|i| {
-                Rectangle::new(
-                    left + i as f32 * (button.width + self.hud_spacing),
-                    self.hud_margin,
-                    button.width,
-                    button.height,
-                )
-            })
-            .collect()
+        let sizes = vec![Vector2::new(button.width, button.height); self.hud.len()];
+        self.hud_layout
+            .place(inset(screen, self.hud_margin), &sizes)
     }
 
-    fn choice_rects(&self, count: usize, screen: Vector2) -> Vec<Rectangle> {
+    pub fn choice_rects(&self, count: usize, screen: Vector2) -> Vec<Rectangle> {
         let button = &self.choice_button;
-        let total =
-            count as f32 * button.height + count.saturating_sub(1) as f32 * self.choice_spacing;
-
-        ui::stacked_rects(
-            count,
-            button.width,
-            button.height,
-            self.choice_spacing,
-            screen.x / 2.0,
-            (screen.y - total) / 2.0,
-        )
+        let sizes = vec![Vector2::new(button.width, button.height); count];
+        self.choice_layout
+            .place(inset(screen, self.dialogue_box.margin), &sizes)
     }
+}
+
+fn inset(screen: Vector2, margin: f32) -> Rectangle {
+    Rectangle::new(
+        margin,
+        margin,
+        (screen.x - margin * 2.0).max(0.0),
+        (screen.y - margin * 2.0).max(0.0),
+    )
 }
 
 #[derive(Clone, Debug, PartialEq)]

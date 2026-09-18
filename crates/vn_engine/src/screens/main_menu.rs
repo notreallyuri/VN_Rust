@@ -4,6 +4,7 @@ use raylib::prelude::*;
 
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{Action, DrawContext, FontRole, GameContext, Screen, ScreenState};
+use crate::{Anchor, Layout};
 
 type StyleOverride = Rc<dyn Fn(ButtonStyle) -> ButtonStyle>;
 
@@ -44,8 +45,8 @@ pub struct MainMenuConfig {
     pub items: Vec<MenuItem>,
     pub button: ButtonStyle,
     pub buttons_y: f32,
-    pub spacing: f32,
-    pub bottom_margin: f32,
+    pub layout: Layout,
+    pub margin: f32,
     pub background: Option<Background>,
     custom_items: bool,
 }
@@ -64,8 +65,8 @@ impl Default for MainMenuConfig {
             ],
             button: ButtonStyle::default(),
             buttons_y: 0.45,
-            spacing: 18.0,
-            bottom_margin: 40.0,
+            layout: Layout::default().anchor(Anchor::Top).spacing(18.0),
+            margin: 40.0,
             background: None,
             custom_items: false,
         }
@@ -112,17 +113,22 @@ impl MainMenuConfig {
     }
 
     pub fn spacing(mut self, spacing: f32) -> Self {
-        self.spacing = spacing;
+        self.layout = self.layout.spacing(spacing);
         self
     }
 
-    pub fn bottom_margin(mut self, margin: f32) -> Self {
-        self.bottom_margin = margin;
+    pub fn layout(mut self, layout: impl FnOnce(Layout) -> Layout) -> Self {
+        self.layout = layout(self.layout);
+        self
+    }
+
+    pub fn margin(mut self, margin: f32) -> Self {
+        self.margin = margin;
         self
     }
 
     pub fn button_rects(&self, screen: Vector2) -> Vec<Rectangle> {
-        self.layout(screen)
+        self.placement(screen)
             .into_iter()
             .map(|(rect, _)| rect)
             .collect()
@@ -133,36 +139,31 @@ impl MainMenuConfig {
         self
     }
 
-    fn layout(&self, screen: Vector2) -> Vec<(Rectangle, ButtonStyle)> {
+    fn placement(&self, screen: Vector2) -> Vec<(Rectangle, ButtonStyle)> {
         let styles: Vec<ButtonStyle> = self
             .items
             .iter()
             .map(|item| item.resolve_style(&self.button))
             .collect();
 
-        let heights: f32 = styles.iter().map(|style| style.height).sum();
-        let gaps = styles.len().saturating_sub(1) as f32;
-        let bottom = screen.y - self.bottom_margin;
+        let sizes: Vec<Vector2> = styles
+            .iter()
+            .map(|style| Vector2::new(style.width, style.height))
+            .collect();
+        let block = self.layout.block_size(&sizes);
+
+        let bottom = screen.y - self.margin;
+        let preferred = screen.y * self.buttons_y;
         let below_title = screen.y * self.title_y + self.title_text.size;
+        let top = preferred
+            .min(bottom - block.y)
+            .max(below_title.min(preferred));
+        let area = Rectangle::new(self.margin, top, screen.x - self.margin * 2.0, bottom - top);
 
-        let top = (screen.y * self.buttons_y)
-            .min(bottom - heights - gaps * self.spacing)
-            .max(below_title.min(screen.y * self.buttons_y));
-        let spacing = if gaps > 0.0 {
-            self.spacing.min(((bottom - top - heights) / gaps).max(0.0))
-        } else {
-            0.0
-        };
-
-        let mut y = top;
-        styles
+        self.layout
+            .place(area, &sizes)
             .into_iter()
-            .map(|style| {
-                let rect =
-                    Rectangle::new((screen.x - style.width) / 2.0, y, style.width, style.height);
-                y += style.height + spacing;
-                (rect, style)
-            })
+            .zip(styles)
             .collect()
     }
 }
@@ -186,7 +187,7 @@ impl Screen for MainMenuScreen {
     fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
         ui::load_background(&mut ctx, self.config.background.as_ref());
 
-        let layout = self.config.layout(ui::screen_size(ctx.rl));
+        let layout = self.config.placement(ui::screen_size(ctx.rl));
         let clicked = layout
             .iter()
             .position(|(rect, _)| ui::is_clicked(ctx.rl, *rect))?;
@@ -209,7 +210,7 @@ impl Screen for MainMenuScreen {
             &config.title_text,
         );
 
-        for (item, (rect, style)) in config.items.iter().zip(config.layout(screen)) {
+        for (item, (rect, style)) in config.items.iter().zip(config.placement(screen)) {
             ui::draw_button(d, fonts, rect, &item.label, &style);
         }
     }
