@@ -4,7 +4,8 @@ const ALL_FEATURES: &str = include_str!("fixtures/all_features.story");
 
 #[test]
 fn fixture_covers_every_token_kind() {
-    let tokens = tokenize(ALL_FEATURES);
+    let (tokens, diagnostics) = tokenize(ALL_FEATURES);
+    assert_eq!(diagnostics, []);
 
     let expected = [
         TokenKind::Scene,
@@ -35,7 +36,8 @@ fn fixture_covers_every_token_kind() {
 
 #[test]
 fn skips_comments_and_blank_lines() {
-    let tokens = tokenize(ALL_FEATURES);
+    let (tokens, diagnostics) = tokenize(ALL_FEATURES);
+    assert_eq!(diagnostics, []);
 
     assert!(tokens.iter().all(|t| !t.payload.starts_with('#')));
     assert_eq!(tokens[0].kind, TokenKind::Scene);

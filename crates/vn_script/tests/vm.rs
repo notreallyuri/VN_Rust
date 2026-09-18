@@ -309,6 +309,7 @@ fn fixture_plays_through() {
 
     assert!(lines.contains(&"You forgot.".to_string()));
     assert!(lines.contains(&"Something shifts.".to_string()));
+    assert!(lines.contains(&"The sign says \"Closed\".".to_string()));
     assert!(lines.contains(&"Nice to meet you, Yuri.".to_string()));
     assert!(speakers.contains(&"Yuri".to_string()));
     assert!(lines.contains(&"You shake your head.".to_string()));

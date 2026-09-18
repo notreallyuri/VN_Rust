@@ -89,20 +89,20 @@ Three levels of control, each optional:
 
 ## M4: Validation and diagnostics
 
-- [ ] Replace `panic!`/`unwrap` in lexer/parser with `Diagnostic`s (validation already reports file:line; parse errors still panic)
+- [x] Replace `panic!`/`unwrap` in lexer/parser with `Diagnostic`s, with recovery so one broken line doesn't hide the rest (`compile_source`)
 - [x] Validate against registries: characters/images, variables and types, command arity and types (M3)
-- [ ] Choice options non-empty (unique scene ids, jump targets and entry scene are checked)
-- [ ] Identifiers match `[a-z_][a-z0-9_]*` (done for variables and enum members); reject tabs in indentation
+- [x] Choice options non-empty (text and body), `choice:` has at least one option
+- [x] Identifiers match `[a-z_][a-z0-9_]*` everywhere (scenes, characters, images, commands, variables, enum members); tabs in indentation are errors
 - [x] `{variable}` in text must name a registered variable
 - [ ] Export the registry as a schema file so `vn check` and the LSP can validate without running the game
 - [ ] `vn check <file>`
-- [ ] Parser edge cases:
-  - [ ] narration ending in `:` is lexed as `ChoiceOption` and panics
-  - [ ] an empty `if`/`else`/option body swallows the following siblings
-  - [ ] a stray `else:` or choice option outside its block panics
-  - [ ] `show` with a missing image id panics
-  - [ ] no string escaping (a line or string literal can't contain `"`)
-  - [ ] a keyword-named character (`show "hi"`) is parsed as a keyword
+- [x] Parser edge cases:
+  - [x] narration ending in `:` is lexed as `ChoiceOption` and panics
+  - [x] an empty `if`/`else`/option body swallows the following siblings
+  - [x] a stray `else:` or choice option outside its block panics
+  - [x] `show` with a missing image id panics
+  - [x] no string escaping: `\"` and `\\` (SCRIPT.md 3.7)
+  - [x] a keyword-named character (`show "hi"`): keywords are reserved (SCRIPT.md 6.1)
 - [x] `JumpIfFalse` handles only Int/Int and Bool/Bool, and ignores `op` for bools (now Int/Bool/Enum; ordering on bools/enums is a parse error)
 - [x] `Add` on an unknown variable silently creates `Int(0)` (an error once variables are registered)
 - [x] `ResourceManager::get_or_load` panics on a missing texture. Use a placeholder and log a warning. (M1)
@@ -133,4 +133,4 @@ Three levels of control, each optional:
 
 - [ ] Tests: golden tests over the SCRIPT.md examples (lexer, parser and VM done in `crates/vn_script/tests/`)
 - [x] SCRIPT.md §8.3 typo: `-+` → `-=`
-- [ ] SCRIPT.md: specify backgrounds, audio, positions, string escaping
+- [ ] SCRIPT.md: specify backgrounds, audio, positions (string escaping done)

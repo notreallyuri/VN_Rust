@@ -1,4 +1,4 @@
-use vn_script::{Compiler, Instruction, Schema, parse_program, tokenize};
+use vn_script::{Instruction, Schema, compile_source};
 
 use std::collections::HashMap;
 use std::fs::read_to_string;
@@ -27,17 +27,16 @@ fn dump(file_path: &str) -> ExitCode {
         }
     };
 
-    let tokens = tokenize(&script);
-    let program = Compiler::new().compile(parse_program(&tokens));
+    let program = compile_source(&script);
 
     println!(
-        "{} tokens, {} scenes, {} instructions",
-        tokens.len(),
+        "{} scenes, {} instructions",
         program.scenes.len(),
         program.instructions.len()
     );
 
-    for diagnostic in Schema::default().validate(&program) {
+    let diagnostics = Schema::default().validate(&program);
+    for diagnostic in &diagnostics {
         println!("{}", diagnostic.in_file(file_path));
     }
 
@@ -87,5 +86,9 @@ fn dump(file_path: &str) -> ExitCode {
         println!("{:03}: {}", i, label);
     }
 
-    ExitCode::SUCCESS
+    if diagnostics.iter().any(|d| d.is_error()) {
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
+    }
 }

@@ -11,11 +11,15 @@ The language itself is specified in [SCRIPT.md](../../SCRIPT.md).
 source ──tokenize──▶ Vec<Token> ──parse_program──▶ Vec<Node::Scene> ──Compiler::compile──▶ Program ──▶ StoryVm
 ```
 
+`compile_source(&str) -> Program` runs the whole pipeline and collects every stage's
+diagnostics into `Program::diagnostics`, sorted by line. `StoryVm::from_source` and
+`vn dump` use it.
+
 | Stage | Entry point | File |
 | --- | --- | --- |
-| Lexer | `tokenize(&str) -> Vec<Token>` | `src/lexer.rs` |
-| Parser | `parse_program(&[Token]) -> Vec<Node>` (every top-level `scene`) | `src/parser.rs` |
-| Conditions | `parse_condition(&str, line) -> Condition` | `src/condition.rs` |
+| Lexer | `tokenize(&str) -> (Vec<Token>, Vec<Diagnostic>)` | `src/lexer.rs` |
+| Parser | `parse_program(&[Token]) -> (Vec<Stmt>, Vec<Diagnostic>)` (every top-level `scene`) | `src/parser.rs` |
+| Conditions | `parse_condition(&str, line) -> Result<Condition, Diagnostic>` | `src/condition.rs` |
 | Compiler | `Compiler::new().compile(scenes) -> Program` | `src/compiler.rs` |
 | VM | `StoryVm::from_file` / `from_source` / `from_program` | `src/vm.rs` |
 | Interpolation | `interpolate(&str, &variables) -> String` | `src/template.rs` |
@@ -28,7 +32,7 @@ A whole `.story` file compiles into one `Program`:
 - `lines`: the source line of each instruction, used by diagnostics.
 - `scenes`: scene id → index of the scene's first instruction.
 - `scene_order`: scene ids in file order. The first is the default **entry scene**.
-- `diagnostics`: problems found while compiling (duplicate scenes).
+- `diagnostics`: problems found while lexing, parsing and compiling.
 
 The parser keeps the source line of every statement (`Stmt { line, node }`), and the
 compiler copies it into `Program::lines`.
@@ -72,8 +76,8 @@ Values (`parse_value`):
 | Double-quoted text, e.g. `"Yuri"` | `String("Yuri")` |
 
 `Enum` is a closed set the game defines (`route = good | bad | neutral`); `String` is free
-text only known at runtime, like a name the player types. A string literal can't contain
-`"` (no escaping yet, same as dialogue).
+text only known at runtime, like a name the player types. Strings use the same escapes as
+dialogue (`\"`, `\\`, see [Parse errors](#parse-errors)).
 
 `Value` implements `Display` as player-facing text (`Yuri`, `3`, `true`, `good`), which
 interpolation uses. `Value::literal()` gives the DSL form (`"Yuri"`), which `vn dump` uses.
@@ -90,14 +94,9 @@ a == 1 || b == 2 && c == true
 A single comparison is a bare `Test`; `All`/`Any` only appear with two or more parts.
 `Condition` implements `Display`, which `vn dump` uses.
 
-Parse errors (these panic with the line number until M4 adds diagnostics):
-
-- no comparison operator, a single `=`, or a missing `:` after the condition
-- anything but `&&`/`||` between comparisons
-- `<`, `>`, `<=`, `>=` against a `Bool`, `Enum` or `String` literal
-- an unterminated string, or an integer outside `i32`
-- a variable or enum name that isn't `[a-z_][a-z0-9_]*` (SCRIPT.md 6.1)
-- `add` without `+=`/`-=`, or with a non-integer amount
+Condition errors: no comparison operator, a single `=`, anything but `&&`/`||` between
+comparisons, `<`/`>`/`<=`/`>=` against a non-integer literal, an unterminated string, an
+integer outside `i32`, or a name that isn't an identifier.
 
 Comparison rules in the VM:
 
@@ -118,6 +117,42 @@ validation](#schema-and-validation).
 Values the player provides are set from Rust with `vm.set_variable`, typically when the
 game handles a `call` (e.g. `call ask_name player_name` → show an input screen →
 `set_variable("player_name", Value::String(input))`).
+
+## Parse errors
+
+Nothing in the lexer or parser panics. Every error becomes an error `Diagnostic` with its
+line, and parsing goes on so one broken line doesn't hide the rest.
+
+The lexer:
+
+- classifies each line by its first word, with a trailing `:` stripped (`else:` and
+  `choice:` are keywords). A token's `payload` is the rest of the line. The keyword
+  table (`keyword`, `keyword_name`, `is_keyword`) is shared with the parser.
+- reads quoted text with `scan_string`, which handles the `\"` and `\\` escapes. A quoted
+  line followed by `:` is a `ChoiceOption`; anything else quoted is `Narration`, so
+  narration whose text ends in `:` stays narration.
+- reports tabs in indentation and drops that line, so the lines after it still parse in
+  the right block.
+
+The parser (a `Parser` struct that collects diagnostics) recovers this way:
+
+| Problem | Recovery |
+| --- | --- |
+| A broken simple statement (`show mary`, `jump`, bad identifier, bad string) | The statement is dropped |
+| A line indented deeper than its block | One error; the whole over-indented run is skipped |
+| A stray `else:`, choice option, or indented `scene` | Skipped with everything nested under it |
+| A line outside any scene | Skipped with everything nested under it |
+| `if` or a scene with a broken header | The body is still parsed (and checked), then dropped |
+| `if`, `else:` or an option with no indented block | Error; the body is empty and the following siblings are not swallowed |
+| `choice:` with no options, or a non-option line inside one | Error; that line and its nested lines are skipped |
+| A scene with no lines | Warning only |
+
+Rules checked here rather than in the schema: `scene`, `if` and `choice` headers end with
+`:`; `else` is exactly `else:`; `show` has exactly a character and an image; `remove` and
+`jump` take one identifier; `clear` and `commit` take nothing; choice option text isn't
+empty; every scene, character, image, variable, command and enum id is an identifier, and
+character ids aren't keywords (`show "Hi"` is an error, not dialogue); nothing follows
+a closing quote; `add` amounts fit in `i32`.
 
 ## Interpolation
 
@@ -279,7 +314,8 @@ cargo test -p vn_script
 | File | Covers |
 | --- | --- |
 | `tests/lexer.rs` | Every token kind, comment and blank-line skipping |
-| `tests/parser.rs` | Conditions (every operator, `&&`/` | | ` precedence, enum and string literals, operators inside strings, errors), `set`/`add`, interpolated speakers, and the fixture compiling |
+| `tests/parser.rs` | Conditions (every operator, `&&`/` | | ` precedence, enum and string literals, operators inside strings), `set`/`add`, interpolated speakers, `choice final:`, and the fixture compiling |
+| `tests/diagnostics.rs` | Every parse error with its exact line and message, recovery (no follow-on errors, empty blocks don't swallow siblings, tabs), string escapes |
 | `tests/template.rs` | Interpolation of every value type, unset variables, `{{`/`}}`, malformed braces |
 | `tests/snapshot.rs` | Snapshot round trips (mid-scene, at a choice, JSON), edits to other scenes, edits to the saved scene, missing scenes |
 | `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example stories |

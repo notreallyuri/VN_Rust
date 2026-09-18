@@ -425,7 +425,9 @@ VnApp::new("My Novel")
 - An **empty registry turns its checks off**, so prototypes can skip them.
 
 On errors, `run()` returns `AppError::Script` before opening the window; its `Display`
-lists every error with file and line:
+lists every error with file and line. Syntax errors (`show mary` with no image, a stray
+`else:`, a tab in the indentation, ...) are reported the same way, next to registry
+errors; nothing in the script can make the game panic at startup:
 
 ```text
 ❌ .../story/01_mary.story has 2 errors:
@@ -441,7 +443,7 @@ returns the schema.
 | `AppError` | When |
 | --- | --- |
 | `Story { path, source }` | The entry script can't be read |
-| `Script { path, errors }` | Validation found errors (or the entry scene doesn't exist) |
+| `Script { path, errors }` | Parsing or validation found errors (or the entry scene doesn't exist) |
 | `Screen(io::Error)` | No screen is registered for the initial `ScreenState` |
 
 ## Text input

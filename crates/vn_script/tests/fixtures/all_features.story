@@ -11,6 +11,7 @@ scene start:
   gabriel "This is a really interesting format."
   mary "Is the parser working?"
   "The room goes quiet."
+  mary "The sign says \"Closed\"."
 
   # Variables (SCRIPT.md 8)
   set met_mary = true

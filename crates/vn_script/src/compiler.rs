@@ -2,6 +2,19 @@ use std::collections::HashMap;
 
 use crate::diagnostics::Diagnostic;
 use crate::types::{Instruction, Node, Program, Stmt};
+use crate::{parse_program, tokenize};
+
+pub fn compile_source(source: &str) -> Program {
+    let (tokens, mut diagnostics) = tokenize(source);
+    let (scenes, parse_diagnostics) = parse_program(&tokens);
+    diagnostics.extend(parse_diagnostics);
+
+    let mut program = Compiler::new().compile(scenes);
+    diagnostics.append(&mut program.diagnostics);
+    diagnostics.sort_by_key(|d| d.line);
+    program.diagnostics = diagnostics;
+    program
+}
 
 #[derive(Default)]
 pub struct Compiler {

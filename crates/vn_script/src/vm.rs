@@ -6,8 +6,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Comparison, Compiler, Condition, Diagnostic, Instruction, Program, Schema, Value, VarType,
-    interpolate, parse_program, tokenize,
+    Comparison, Condition, Diagnostic, Instruction, Program, Schema, Value, VarType,
+    compile_source, interpolate,
 };
 
 const MAX_SILENT_STEPS: usize = 100_000;
@@ -109,8 +109,7 @@ impl StoryVm {
     }
 
     pub fn from_source(source: &str) -> Self {
-        let scenes = parse_program(&tokenize(source));
-        Self::from_program(Compiler::new().compile(scenes))
+        Self::from_program(compile_source(source))
     }
 
     pub fn from_program(program: Program) -> Self {

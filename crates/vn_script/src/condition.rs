@@ -1,4 +1,6 @@
-use crate::parser::parse_identifier;
+use crate::diagnostics::Diagnostic;
+use crate::lexer::scan_string;
+use crate::parser::identifier;
 use crate::types::{Comparison, Condition, Value};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,19 +26,13 @@ impl Token {
     }
 }
 
-pub fn parse_condition(payload: &str, line: usize) -> Condition {
-    let expr = payload.trim();
-    let expr = expr.strip_prefix("if").unwrap_or(expr).trim();
-    let expr = expr
-        .strip_suffix(':')
-        .unwrap_or_else(|| panic!("`if` must end with ':' at line {}", line))
-        .trim();
-
+pub fn parse_condition(expr: &str, line: usize) -> Result<Condition, Diagnostic> {
+    let expr = expr.trim();
     if expr.is_empty() {
-        panic!("`if` without a condition at line {}", line);
+        return Err(Diagnostic::error(line, "`if` without a condition"));
     }
 
-    let tokens = tokenize(expr, line);
+    let tokens = tokenize(expr).map_err(|message| Diagnostic::error(line, message))?;
     let mut parser = Parser {
         tokens: &tokens,
         pos: 0,
@@ -45,7 +41,7 @@ pub fn parse_condition(payload: &str, line: usize) -> Condition {
     parser.any()
 }
 
-fn tokenize(expr: &str, line: usize) -> Vec<Token> {
+fn tokenize(expr: &str) -> Result<Vec<Token>, String> {
     let chars: Vec<char> = expr.chars().collect();
     let mut tokens = Vec::new();
     let mut i = 0;
@@ -85,13 +81,10 @@ fn tokenize(expr: &str, line: usize) -> Vec<Token> {
                 i += 1;
             }
             '"' => {
-                let end = chars[i + 1..]
-                    .iter()
-                    .position(|&c| c == '"')
-                    .map(|offset| i + 1 + offset)
-                    .unwrap_or_else(|| panic!("Unterminated string at line {}", line));
-                tokens.push(Token::Str(chars[i + 1..end].iter().collect()));
-                i = end + 1;
+                let rest: String = chars[i..].iter().collect();
+                let (text, used) = scan_string(&rest)?;
+                tokens.push(Token::Str(text));
+                i += rest[..used].chars().count();
             }
             _ if c.is_ascii_digit() || (c == '-' && next.is_some_and(|n| n.is_ascii_digit())) => {
                 let start = i;
@@ -100,9 +93,9 @@ fn tokenize(expr: &str, line: usize) -> Vec<Token> {
                     i += 1;
                 }
                 let text: String = chars[start..i].iter().collect();
-                let n = text.parse().unwrap_or_else(|_| {
-                    panic!("Integer `{}` is out of range at line {}", text, line)
-                });
+                let n = text
+                    .parse()
+                    .map_err(|_| format!("integer `{}` is out of range (i32)", text))?;
                 tokens.push(Token::Int(n));
             }
             _ if c.is_ascii_alphanumeric() || c == '_' => {
@@ -112,12 +105,12 @@ fn tokenize(expr: &str, line: usize) -> Vec<Token> {
                 }
                 tokens.push(Token::Ident(chars[start..i].iter().collect()));
             }
-            '=' => panic!("Use `==` to compare, not `=`, at line {}", line),
-            _ => panic!("Unexpected `{}` in condition at line {}", c, line),
+            '=' => return Err("use `==` to compare, not `=`".to_string()),
+            _ => return Err(format!("unexpected `{}` in condition", c)),
         }
     }
 
-    tokens
+    Ok(tokens)
 }
 
 struct Parser<'a> {
@@ -127,45 +120,46 @@ struct Parser<'a> {
 }
 
 impl Parser<'_> {
-    fn any(&mut self) -> Condition {
-        let mut parts = vec![self.all()];
+    fn error(&self, message: String) -> Diagnostic {
+        Diagnostic::error(self.line, message)
+    }
+
+    fn any(&mut self) -> Result<Condition, Diagnostic> {
+        let mut parts = vec![self.all()?];
         while self.eat(&Token::Or) {
-            parts.push(self.all());
+            parts.push(self.all()?);
         }
-        self.expect_end();
-        collapse(parts, Condition::Any)
+        self.expect_end()?;
+        Ok(collapse(parts, Condition::Any))
     }
 
-    fn all(&mut self) -> Condition {
-        let mut parts = vec![self.test()];
+    fn all(&mut self) -> Result<Condition, Diagnostic> {
+        let mut parts = vec![self.test()?];
         while self.eat(&Token::And) {
-            parts.push(self.test());
+            parts.push(self.test()?);
         }
-        collapse(parts, Condition::All)
+        Ok(collapse(parts, Condition::All))
     }
 
-    fn test(&mut self) -> Condition {
-        let line = self.line;
-
+    fn test(&mut self) -> Result<Condition, Diagnostic> {
         let var_id = match self.next() {
-            Some(Token::Ident(name)) => parse_identifier(&name, line),
-            Some(other) => panic!(
-                "Expected a variable, got {} at line {}",
-                other.describe(),
-                line
-            ),
-            None => panic!(
-                "Expected a variable at the end of the condition at line {}",
-                line
-            ),
+            Some(Token::Ident(name)) => identifier(&name, "variable name", self.line)?,
+            Some(other) => {
+                return Err(self.error(format!("expected a variable, got {}", other.describe())));
+            }
+            None => {
+                return Err(self.error("expected a variable at the end of the condition".into()));
+            }
         };
 
         let op = match self.next() {
             Some(Token::Op(op)) => op,
-            _ => panic!(
-                "Expected a comparison (== != < > <= >=) after `{}` at line {}",
-                var_id, line
-            ),
+            _ => {
+                return Err(self.error(format!(
+                    "expected a comparison (== != < > <= >=) after `{}`",
+                    var_id
+                )));
+            }
         };
 
         let value = match self.next() {
@@ -173,26 +167,25 @@ impl Parser<'_> {
             Some(Token::Str(text)) => Value::String(text),
             Some(Token::Ident(name)) if name == "true" => Value::Bool(true),
             Some(Token::Ident(name)) if name == "false" => Value::Bool(false),
-            Some(Token::Ident(name)) => Value::Enum(parse_identifier(&name, line)),
-            Some(other) => panic!(
-                "Expected a value, got {} at line {}",
-                other.describe(),
-                line
-            ),
-            None => panic!("Expected a value after `{}` at line {}", op.symbol(), line),
+            Some(Token::Ident(name)) => Value::Enum(identifier(&name, "value", self.line)?),
+            Some(other) => {
+                return Err(self.error(format!("expected a value, got {}", other.describe())));
+            }
+            None => {
+                return Err(self.error(format!("expected a value after `{}`", op.symbol())));
+            }
         };
 
         let is_ordering = !matches!(op, Comparison::Equal | Comparison::NotEqual);
         if is_ordering && !matches!(value, Value::Int(_)) {
-            panic!(
-                "`{}` only compares integers, got `{}` at line {}",
+            return Err(self.error(format!(
+                "`{}` only compares integers, got `{}`",
                 op.symbol(),
-                value.literal(),
-                line
-            );
+                value.literal()
+            )));
         }
 
-        Condition::Test { var_id, op, value }
+        Ok(Condition::Test { var_id, op, value })
     }
 
     fn next(&mut self) -> Option<Token> {
@@ -210,13 +203,13 @@ impl Parser<'_> {
         }
     }
 
-    fn expect_end(&self) {
-        if let Some(token) = self.tokens.get(self.pos) {
-            panic!(
-                "Expected `&&`, `||` or the end of the condition, got {} at line {}",
-                token.describe(),
-                self.line
-            );
+    fn expect_end(&self) -> Result<(), Diagnostic> {
+        match self.tokens.get(self.pos) {
+            Some(token) => Err(self.error(format!(
+                "expected `&&`, `||` or the end of the condition, got {}",
+                token.describe()
+            ))),
+            None => Ok(()),
         }
     }
 }

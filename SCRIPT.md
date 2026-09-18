@@ -99,6 +99,23 @@ choice:
 - A variable with no value yet is shown as written (`{player_name}`), so the mistake is visible
 - `{<variable_id>} "<text>"` uses the variable's value as the displayed speaker name
 
+### 3.7 Strings
+
+Dialogue, narration, choice options and string values (`set`, conditions) are written in
+double quotes. Two escapes are allowed inside them:
+
+| Write | To get |
+|---|---|
+| `\"` | `"` |
+| `\\` | `\` |
+
+```story
+mary "The sign says \"Closed\"."
+```
+
+Any other `\` is an error. Nothing may follow the closing quote (except the `:` of a
+choice option).
+
 ## 4. Choices (branching)
 
 ### 4.1 Choice block
@@ -114,12 +131,14 @@ choice:
 ### 4.2 Rules
 
 - choice: must open a block
+- A choice must have at least one option
 - Each option must:
-- Be a quoted string
-- End with :
-- Contain at least one instruction
+  - Be a quoted string, not empty
+  - End with :
+  - Contain at least one instruction
 - No fall through
 - No implicit behavior
+- A quoted line ending in `:` outside a `choice:` block is an error, not narration
 
 ### 4.3 Example
 
@@ -163,6 +182,13 @@ jump <scene_id>
   - scene_id
   - character_id
   - image_id
+  - variable_id, enum members
+  - command_id
+
+A character_id can't be a keyword, because a line's first word decides what it is
+(`show "Hi"` is a broken `show`, not dialogue). The keywords are:
+
+`scene` `show` `remove` `clear` `choice` `commit` `jump` `if` `else` `call` `set` `add`
 
 This guarantees:
 
@@ -178,7 +204,15 @@ This guarantees:
 - Spaces only (recommended: 2 spaces)
 - Tabs are invalid
 - Blank lines are allowed
-- Comments start with #
+- Comments start with # (whole lines only)
+- `scene` lines are not indented; everything else belongs to a scene
+- Every `if`, `else:` and choice option needs an indented block below it
+- A scene with no lines is allowed, with a warning
+
+### 6.3 Errors
+
+Every mistake in a script is reported with its line number, and the game doesn't start
+until they are fixed. One broken line doesn't hide the errors after it.
 
 ## 7. Full Minimal Example (Valid script)
 
@@ -252,7 +286,7 @@ set <variable_id> = <value>
 | `good` (a bare identifier) | enum member |
 | `"Yuri"` (double-quoted) | string |
 
-A string literal cannot contain `"`.
+Quotes inside a string are escaped with `\"` (section 3.7).
 
 #### 8.2.2 Rules
 
@@ -312,6 +346,9 @@ if <condition>:
 else:
   <block>
 ```
+
+`else:` is optional and stands alone on its line. There is no `else if`: put an `if`
+inside `else:` instead.
 
 #### 8.4.1 Condition Rules
 

@@ -191,3 +191,23 @@ fn character_display_names_interpolate() {
     assert_eq!(characters.display_name("mary", &story), "Mary");
     assert_eq!(characters.display_name("unknown", &story), "unknown");
 }
+
+#[test]
+fn parse_errors_are_reported_with_the_file_and_line() {
+    let project = Project::new("scene start:\n  show mary\n  if affection = 1:\n    \"x\"\n");
+
+    let Err(error) = project.app().check() else {
+        panic!("expected parse errors");
+    };
+    let AppError::Script { errors, .. } = &error else {
+        panic!("expected a script error, got {:?}", error);
+    };
+
+    let lines: Vec<usize> = errors.iter().map(|e| e.line).collect();
+    assert_eq!(lines, [2, 3]);
+    assert!(
+        error
+            .to_string()
+            .contains("main.story:2: error: `show mary` needs an image")
+    );
+}
