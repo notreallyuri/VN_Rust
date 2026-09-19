@@ -4,13 +4,13 @@ use std::time::SystemTime;
 
 use vn_script::{Diagnostic, RestoreOutcome, Schema, StoryVm, VmError, story_files};
 
-use crate::{AppError, Rollback};
+use crate::{AppError, Assets, Rollback};
 
 pub const HOT_RELOAD_INTERVAL: f64 = 0.5;
 
 #[derive(Clone, Debug)]
 pub struct StoryLoader {
-    pub assets: PathBuf,
+    pub assets: Assets,
     pub story_dir: PathBuf,
     pub schema: Schema,
     pub entry_scene: Option<String>,
@@ -19,15 +19,34 @@ pub struct StoryLoader {
 
 impl StoryLoader {
     pub fn path(&self) -> PathBuf {
-        self.assets.join(&self.story_dir)
+        PathBuf::from(self.assets.describe(&self.story_dir.to_string_lossy()))
+    }
+
+    pub fn watch_dir(&self) -> Option<PathBuf> {
+        self.assets.dir().map(|dir| dir.join(&self.story_dir))
+    }
+
+    pub fn sources(&self) -> io::Result<Vec<(String, String)>> {
+        let story_dir = self.story_dir.to_string_lossy();
+        self.assets
+            .files_under(&story_dir)
+            .map_err(|e| io::Error::new(e.kind(), format!("{}: {}", self.path().display(), e)))?
+            .into_iter()
+            .filter(|file| file.ends_with(".story"))
+            .map(|file| {
+                let source = self.assets.read_to_string(&file)?;
+                Ok((self.assets.describe(&file), source))
+            })
+            .collect()
     }
 
     pub fn load(&self) -> Result<(StoryVm, Vec<Diagnostic>), AppError> {
         let path = self.path();
-        let mut story = StoryVm::from_dir(&path).map_err(|source| AppError::Story {
+        let sources = self.sources().map_err(|source| AppError::Story {
             path: path.clone(),
             source,
         })?;
+        let mut story = StoryVm::from_program(vn_script::compile_sources(sources));
 
         if story.program().files.is_empty() {
             return Err(AppError::Story {

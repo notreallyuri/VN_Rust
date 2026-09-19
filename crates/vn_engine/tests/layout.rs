@@ -185,7 +185,7 @@ mod pause_and_save_menus {
         let column = PauseMenuConfig::default();
         let grid = PauseMenuConfig::default().layout(|l| l.grid(2));
 
-        let (narrow, wide) = (column.panel(screen), grid.panel(screen));
+        let (narrow, wide) = (column.panel_rect(screen), grid.panel_rect(screen));
         assert_eq!(narrow.width, 340.0);
         assert_eq!(wide.width, 2.0 * 260.0 + 10.0 + 2.0 * 28.0);
         assert!(wide.height < narrow.height);

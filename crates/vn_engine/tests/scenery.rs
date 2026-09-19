@@ -1,0 +1,96 @@
+use vn_engine::raylib::prelude::*;
+use vn_engine::{
+    Action, Anchor, HudButton, Letterbox, MainMenuConfig, Motion, PlayingConfig, Scenery,
+};
+
+#[test]
+fn motion_breathes_between_rest_and_full_zoom() {
+    let motion = Motion::new(1.1, 40.0).pan(0.5, -0.5);
+    let (zoom, pan) = motion.at(0.0);
+    assert!((zoom - 1.0).abs() < 1e-5);
+    assert_eq!(pan, Vector2::new(-0.5, 0.5));
+
+    let (zoom, pan) = motion.at(20.0);
+    assert!((zoom - 1.1).abs() < 1e-5);
+    assert!((pan.x - 0.5).abs() < 1e-5 && (pan.y + 0.5).abs() < 1e-5);
+
+    let (zoom, _) = motion.at(40.0);
+    assert!((zoom - 1.0).abs() < 1e-5);
+    assert_eq!(Motion::new(0.5, 0.0).zoom, 1.0);
+}
+
+#[test]
+fn letterbox_slides_in_and_frames_the_screen() {
+    let bars = Letterbox::default().height(80.0).slide_in(1.0);
+    assert_eq!(bars.height_at(0.0), 0.0);
+    assert!(bars.height_at(0.5) > 40.0 && bars.height_at(0.5) < 80.0);
+    assert_eq!(bars.height_at(2.0), 80.0);
+    assert_eq!(Letterbox::default().height(80.0).height_at(0.0), 80.0);
+
+    let (top, bottom) = bars.bars(Vector2::new(1280.0, 720.0), 5.0);
+    assert_eq!((top.y, top.height, top.width), (0.0, 80.0, 1280.0));
+    assert_eq!((bottom.y, bottom.height), (640.0, 80.0));
+}
+
+#[test]
+fn scenery_builder() {
+    let scenery = Scenery::default()
+        .pan(0.3, 0.2)
+        .motion(1.05, 30.0)
+        .vignette(Color::BLACK, 0.9)
+        .letterbox(|l| l.height(60.0));
+    let motion = scenery.motion.unwrap();
+    assert_eq!((motion.zoom, motion.period), (1.05, 30.0));
+    assert_eq!(motion.pan, Vector2::new(0.3, 0.2));
+    assert_eq!(scenery.vignette.unwrap().size, 0.5);
+    assert_eq!(
+        scenery.bottom_bar(Vector2::new(1280.0, 720.0), 0.0),
+        Some(Rectangle::new(0.0, 660.0, 1280.0, 60.0))
+    );
+    assert_eq!(
+        Scenery::default().bottom_bar(Vector2::new(1.0, 1.0), 0.0),
+        None
+    );
+}
+
+#[test]
+fn menu_buttons_can_sit_in_the_bottom_bar_with_separators() {
+    let screen = Vector2::new(1280.0, 720.0);
+    let menu = MainMenuConfig::default()
+        .scenery(|s| s.letterbox(|l| l.height(80.0).slide_in(2.0)))
+        .buttons_in_bar(true)
+        .button_style(|b| b.size(100.0, 30.0))
+        .layout(|l| l.row().anchor(Anchor::Center).spacing(20.0))
+        .separator(6.0, |p| p);
+
+    let rects = menu.button_rects(screen);
+    assert_eq!(rects.len(), 5);
+    assert!(rects.iter().all(|r| r.y == 640.0 + 25.0));
+    let row_center = (rects[0].x + rects[4].x + rects[4].width) / 2.0;
+    assert!((row_center - 640.0).abs() < 0.5);
+
+    let separators = menu.separator_rects(screen);
+    assert_eq!(separators.len(), 4);
+    assert_eq!(separators[0].x + 3.0, rects[0].x + 100.0 + 10.0);
+    assert_eq!(separators[0].y + 3.0, 680.0);
+}
+
+#[test]
+fn hud_groups_have_their_own_layouts() {
+    let screen = Vector2::new(1280.0, 720.0);
+    let config = PlayingConfig::default()
+        .hud_margin(10.0)
+        .hud_button_style(|b| b.size(100.0, 30.0))
+        .hud_layout(|l| l.row().anchor(Anchor::Bottom).spacing(0.0))
+        .hud_group("top", |l| l.row().anchor(Anchor::TopRight).spacing(0.0))
+        .hud_item(HudButton::new("Evidence", Action::Resume).group("top"))
+        .hud_item(HudButton::new("Log", Action::Resume))
+        .hud_item(HudButton::new("Case", Action::Resume).group("top"))
+        .hud_item(HudButton::new("Menu", Action::Resume));
+
+    let rects = config.hud_rects(screen);
+    assert_eq!((rects[0].x, rects[0].y), (1070.0, 10.0));
+    assert_eq!((rects[2].x, rects[2].y), (1170.0, 10.0));
+    assert_eq!((rects[1].x, rects[1].y), (540.0, 680.0));
+    assert_eq!((rects[3].x, rects[3].y), (640.0, 680.0));
+}

@@ -1,27 +1,43 @@
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 
 use raylib::core::audio::{Music, RaylibAudio, Sound};
 
+use crate::assets::{Assets, extension_of};
+
 pub const AUDIO_EXTENSIONS: [&str; 4] = ["ogg", "mp3", "wav", "flac"];
 
-pub fn music_path(assets: &Path, track: &str) -> Option<PathBuf> {
+pub fn music_path(assets: &Assets, track: &str) -> Option<String> {
     find_audio(assets, "music", track)
 }
 
-pub fn sound_path(assets: &Path, id: &str) -> Option<PathBuf> {
+pub fn sound_path(assets: &Assets, id: &str) -> Option<String> {
     find_audio(assets, "sounds", id)
 }
 
-pub fn voice_path(assets: &Path, id: &str) -> Option<PathBuf> {
+pub fn voice_path(assets: &Assets, id: &str) -> Option<String> {
     find_audio(assets, "voice", id)
 }
 
-fn find_audio(assets: &Path, dir: &str, id: &str) -> Option<PathBuf> {
+fn find_audio(assets: &Assets, dir: &str, id: &str) -> Option<String> {
     AUDIO_EXTENSIONS
         .iter()
-        .map(|ext| assets.join(dir).join(format!("{}.{}", id, ext)))
-        .find(|path| path.is_file())
+        .map(|ext| format!("{}/{}.{}", dir, id, ext))
+        .find(|path| assets.exists(path))
+}
+
+fn load_sound(device: &'static RaylibAudio, assets: &Assets, path: &str) -> Option<Sound<'static>> {
+    let loaded = assets
+        .read(path)
+        .map_err(|e| e.to_string())
+        .and_then(|bytes| {
+            device
+                .new_wave_from_memory(&extension_of(path), &bytes)
+                .map_err(|e| e.to_string())
+        })
+        .and_then(|wave| device.new_sound_from_wave(&wave).map_err(|e| e.to_string()));
+    loaded
+        .map_err(|e| eprintln!("⚠️ Could not load {}: {}", assets.describe(path), e))
+        .ok()
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -94,11 +110,12 @@ struct Track {
     id: String,
     stream: Music<'static>,
     fade: Fade,
+    _data: Vec<u8>,
 }
 
 pub struct Audio {
     device: Option<&'static RaylibAudio>,
-    root: PathBuf,
+    assets: Assets,
     config: AudioConfig,
     current: Option<Track>,
     fading: Vec<Track>,
@@ -114,7 +131,7 @@ impl Audio {
     pub fn silent() -> Self {
         Self {
             device: None,
-            root: PathBuf::new(),
+            assets: Assets::Embedded(&[]),
             config: AudioConfig::default().enabled(false),
             current: None,
             fading: Vec::new(),
@@ -127,7 +144,7 @@ impl Audio {
         }
     }
 
-    pub fn new(root: impl Into<PathBuf>, config: AudioConfig) -> Self {
+    pub fn new(assets: impl Into<Assets>, config: AudioConfig) -> Self {
         let device = if config.enabled {
             match RaylibAudio::init_audio_device() {
                 Ok(device) => Some(&*Box::leak(Box::new(device))),
@@ -142,7 +159,7 @@ impl Audio {
 
         Self {
             device,
-            root: root.into(),
+            assets: assets.into(),
             config,
             ..Self::silent()
         }
@@ -177,21 +194,18 @@ impl Audio {
         let Some(device) = self.device else {
             return;
         };
-        let Some(path) = voice_path(&self.root, id) else {
+        let Some(path) = voice_path(&self.assets, id) else {
             eprintln!(
                 "⚠️ No voice file for '{}' in {}",
                 id,
-                self.root.join("voice").display()
+                self.assets.describe("voice")
             );
             return;
         };
-        match device.new_sound(&path.to_string_lossy()) {
-            Ok(sound) => {
-                sound.set_volume(self.voice_volume);
-                sound.play();
-                self.voice = Some((id.to_string(), sound));
-            }
-            Err(e) => eprintln!("⚠️ Could not load {}: {}", path.display(), e),
+        if let Some(sound) = load_sound(device, &self.assets, &path) {
+            sound.set_volume(self.voice_volume);
+            sound.play();
+            self.voice = Some((id.to_string(), sound));
         }
     }
 
@@ -238,27 +252,35 @@ impl Audio {
 
     fn load_track(&self, track: &str) -> Option<Track> {
         let device = self.device?;
-        let Some(path) = music_path(&self.root, track) else {
+        let Some(path) = music_path(&self.assets, track) else {
             eprintln!(
                 "⚠️ No music file for '{}' in {}",
                 track,
-                self.root.join("music").display()
+                self.assets.describe("music")
             );
             return None;
         };
 
-        match device.new_music(&path.to_string_lossy()) {
-            Ok(stream) => {
+        let loaded = self.assets.read(&path).map(|bytes| bytes.into_owned());
+        let result = loaded.map_err(|e| e.to_string()).and_then(|data| {
+            device
+                .new_music_from_memory(&extension_of(&path), &data)
+                .map(|stream| (stream, data))
+                .map_err(|e| e.to_string())
+        });
+        match result {
+            Ok((stream, data)) => {
                 stream.set_volume(0.0);
                 stream.play_stream();
                 Some(Track {
                     id: track.to_string(),
                     stream,
                     fade: Fade::fade_in(),
+                    _data: data,
                 })
             }
             Err(e) => {
-                eprintln!("⚠️ Could not load {}: {}", path.display(), e);
+                eprintln!("⚠️ Could not load {}: {}", self.assets.describe(&path), e);
                 None
             }
         }
@@ -269,23 +291,17 @@ impl Audio {
             return;
         };
 
-        let root = &self.root;
+        let assets = &self.assets;
         let sound = self.sounds.entry(id.to_string()).or_insert_with(|| {
-            let path = sound_path(root, id);
-            let loaded = path.as_ref().and_then(|path| {
-                device
-                    .new_sound(&path.to_string_lossy())
-                    .map_err(|e| eprintln!("⚠️ Could not load {}: {}", path.display(), e))
-                    .ok()
-            });
+            let path = sound_path(assets, id);
             if path.is_none() {
                 eprintln!(
                     "⚠️ No sound file for '{}' in {}",
                     id,
-                    root.join("sounds").display()
+                    assets.describe("sounds")
                 );
             }
-            loaded
+            path.and_then(|path| load_sound(device, assets, &path))
         });
 
         if let Some(sound) = sound {

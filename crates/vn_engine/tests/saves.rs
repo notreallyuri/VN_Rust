@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use vn_engine::saves::time_ago;
 use vn_engine::script::{Event, StoryVm, Value, VmError};
 use vn_engine::{
-    AUTO_SLOT, GameState, LoadWarning, SAVE_FORMAT_VERSION, SaveError, Saves, THUMBNAIL_WIDTH,
-    default_saves_dir, slug,
+    AUTO_SLOT, Checkpoint, GameState, LoadWarning, SAVE_FORMAT_VERSION, SaveError, Saves,
+    THUMBNAIL_WIDTH, default_saves_dir, slug,
 };
 
 const STORY: &str = r#"
@@ -485,4 +485,141 @@ fn slugs_name_the_platform_save_directory() {
 
     let dir = default_saves_dir("God Is Watching");
     assert!(dir.ends_with("god_is_watching"), "{}", dir.display());
+}
+
+fn write_old_save(dir: &TempDir) {
+    let (vm, state) = played_game();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let mut file = saves.capture(&vm, &state).unwrap();
+    file.rollback = vec![Checkpoint {
+        story: vm.snapshot(),
+        state: file.state.clone(),
+        barrier: false,
+        log_len: None,
+    }];
+    saves.write("1", &file).unwrap();
+
+    let path = dir.0.join("1.json");
+    let raw = fs::read_to_string(&path)
+        .unwrap()
+        .replace("\"Inventory\"", "\"Bag\"")
+        .replace("\"items\"", "\"things\"")
+        .replace("\"met_mary\"", "\"met\"");
+    fs::write(&path, raw).unwrap();
+}
+
+fn migrating_saves(dir: &TempDir) -> Saves {
+    Saves::new(&dir.0, "Test Game")
+        .with_version(2)
+        .with_migration(0, |save| {
+            save.rename_state("Bag", "Inventory");
+            save.rename_variable("met", "met_mary");
+            Ok(())
+        })
+        .with_migration(1, |save| {
+            save.state("Inventory", |inventory| {
+                let things = inventory
+                    .as_object_mut()
+                    .and_then(|o| o.remove("things"))
+                    .ok_or("no things")?;
+                inventory["items"] = things;
+                Ok(())
+            })
+        })
+}
+
+#[test]
+fn old_saves_are_migrated_on_load() {
+    let dir = TempDir::new();
+    write_old_save(&dir);
+
+    assert!(matches!(
+        Saves::new(&dir.0, "Test Game").read("1"),
+        Ok(file) if !file.state.contains_key("Inventory")
+    ));
+
+    let saves = migrating_saves(&dir);
+    let file = saves.read("1").unwrap();
+    assert_eq!(file.game_version, 2);
+    assert_eq!(file.format_version, SAVE_FORMAT_VERSION);
+    assert!(!file.state.contains_key("Bag"));
+    assert_eq!(file.rollback[0].state, file.state);
+    assert!(file.rollback[0].story.variables.contains_key("met_mary"));
+
+    let mut vm = StoryVm::from_source(STORY);
+    let mut state = fresh_state();
+    let report = saves.load("1", &mut vm, &mut state).unwrap();
+    assert!(report.warnings.is_empty());
+    assert_eq!(state.get::<Inventory>().items["letter"], 2);
+    assert_eq!(vm.variable("met_mary"), Some(&Value::Bool(true)));
+}
+
+#[test]
+fn saves_record_the_game_version() {
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game").with_version(3);
+    let (vm, state) = played_game();
+    saves.save("1", &vm, &state).unwrap();
+
+    let raw = fs::read_to_string(dir.0.join("1.json")).unwrap();
+    assert!(raw.contains("\"game_version\": 3"));
+    assert_eq!(saves.read("1").unwrap().game_version, 3);
+}
+
+#[test]
+fn versions_without_a_migration_load_unchanged() {
+    let dir = TempDir::new();
+    let (vm, state) = played_game();
+    Saves::new(&dir.0, "Test Game")
+        .save("1", &vm, &state)
+        .unwrap();
+
+    let file = Saves::new(&dir.0, "Test Game")
+        .with_version(4)
+        .read("1")
+        .unwrap();
+    assert_eq!(file.game_version, 4);
+    assert!(file.state.contains_key("Inventory"));
+}
+
+#[test]
+fn newer_game_version_is_rejected() {
+    let dir = TempDir::new();
+    let (vm, state) = played_game();
+    Saves::new(&dir.0, "Test Game")
+        .with_version(2)
+        .save("1", &vm, &state)
+        .unwrap();
+
+    let result = Saves::new(&dir.0, "Test Game").with_version(1).read("1");
+    assert!(matches!(
+        result,
+        Err(SaveError::NewerGameVersion {
+            found: 2,
+            supported: 1
+        })
+    ));
+}
+
+#[test]
+fn failed_migration_reports_its_version() {
+    let dir = TempDir::new();
+    let (vm, state) = played_game();
+    Saves::new(&dir.0, "Test Game")
+        .save("1", &vm, &state)
+        .unwrap();
+
+    let saves = Saves::new(&dir.0, "Test Game")
+        .with_version(2)
+        .with_migration(0, |_| Ok(()))
+        .with_migration(1, |_| Err("bad data".into()));
+    let error = saves.read("1").unwrap_err();
+    assert!(matches!(
+        &error,
+        SaveError::Migration { from: 1, message, .. } if message == "bad data"
+    ));
+    assert_eq!(
+        error.player_message(),
+        "This save couldn't be updated for this version of the game."
+    );
 }

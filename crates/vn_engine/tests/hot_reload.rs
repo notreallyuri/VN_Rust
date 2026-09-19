@@ -153,7 +153,7 @@ fn the_loader_validates_like_startup() {
     schema.variables.insert("mood".into(), VariableDef::int(0));
 
     let loader = StoryLoader {
-        assets: dir.0.clone(),
+        assets: dir.0.clone().into(),
         story_dir: "story".into(),
         schema,
         entry_scene: Some("start".into()),
@@ -175,7 +175,7 @@ fn failed_reloads_list_their_errors_relative_to_the_story_dir() {
     let dir = Dir::new();
     dir.write("01.story", "scene a:\n  remoe hugo\n  jump bb\n", 0);
     let loader = StoryLoader {
-        assets: dir.0.clone(),
+        assets: dir.0.clone().into(),
         story_dir: PathBuf::from("story"),
         schema: Schema::default(),
         entry_scene: None,
@@ -208,7 +208,7 @@ fn a_missing_story_dir_is_one_line() {
     let dir = Dir::new();
     fs::remove_dir_all(dir.0.join("story")).unwrap();
     let loader = StoryLoader {
-        assets: dir.0.clone(),
+        assets: dir.0.clone().into(),
         story_dir: PathBuf::from("story"),
         schema: Schema::default(),
         entry_scene: None,

@@ -1,6 +1,7 @@
 use raylib::prelude::*;
 
 use crate::ui::{self, TextStyle};
+use crate::{Border, PanelStyle};
 use crate::{FontRole, Fonts};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -8,8 +9,7 @@ pub struct TooltipConfig {
     pub enabled: bool,
     pub delay: f64,
     pub text: TextStyle,
-    pub background: Color,
-    pub border: Option<Color>,
+    pub panel: PanelStyle,
     pub padding: f32,
     pub max_width: f32,
     pub offset: Vector2,
@@ -21,8 +21,8 @@ impl Default for TooltipConfig {
             enabled: true,
             delay: 0.5,
             text: TextStyle::new(FontRole::Menu, 16.0, Color::RAYWHITE),
-            background: Color::new(12, 12, 18, 235),
-            border: Some(Color::new(90, 90, 110, 255)),
+            panel: PanelStyle::new(Color::new(12, 12, 18, 235))
+                .border(1.0, Color::new(90, 90, 110, 255)),
             padding: 8.0,
             max_width: 360.0,
             offset: Vector2::new(14.0, 20.0),
@@ -47,12 +47,17 @@ impl TooltipConfig {
     }
 
     pub fn background(mut self, color: Color) -> Self {
-        self.background = color;
+        self.panel.color = color;
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = style(self.panel);
         self
     }
 
     pub fn border(mut self, color: Option<Color>) -> Self {
-        self.border = color;
+        self.panel.border = color.map(|color| Border::new(1.0, color));
         self
     }
 
@@ -125,10 +130,7 @@ pub fn draw_tooltip(d: &mut RaylibDrawHandle, fonts: &Fonts, text: &str, config:
     }
 
     let panel = Rectangle::new(x, y, width, height);
-    d.draw_rectangle_rec(panel, config.background);
-    if let Some(border) = config.border {
-        d.draw_rectangle_lines_ex(panel, 1.0, border);
-    }
+    config.panel.draw(d, panel);
     for (i, line) in lines.iter().enumerate() {
         let position = Vector2::new(
             x + config.padding,

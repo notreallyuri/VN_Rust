@@ -1,5 +1,6 @@
 pub mod action;
 pub mod app;
+pub mod assets;
 pub mod audio;
 pub mod button;
 pub mod characters;
@@ -14,12 +15,14 @@ pub mod overlay;
 pub mod resources;
 pub mod rollback;
 pub mod saves;
+pub mod scenery;
 pub mod screen;
 pub mod screen_manager;
 pub mod screens;
 pub mod script_errors;
 pub mod session;
 pub mod settings;
+pub mod shape;
 pub mod stage;
 pub mod state;
 pub mod toast;
@@ -28,6 +31,7 @@ pub mod ui;
 
 pub use action::*;
 pub use app::*;
+pub use assets::{Assets, EmbeddedFile};
 pub use audio::*;
 pub use button::{
     Border, Button, ButtonIcon, ButtonImage, ButtonLook, ButtonStyle, IconSide, Shadow, Slice,
@@ -45,15 +49,17 @@ pub use overlay::*;
 pub use resources::*;
 pub use rollback::*;
 pub use saves::{
-    AUTO_SLOT, LoadReport, LoadWarning, QUICK_SLOT, SAVE_FORMAT_VERSION, SaveError, SaveFile,
-    Saves, SlotInfo, THUMBNAIL_WIDTH, default_saves_dir, slug,
+    AUTO_SLOT, LoadReport, LoadWarning, MigrationFn, Migrations, QUICK_SLOT, SAVE_FORMAT_VERSION,
+    SaveError, SaveFile, SaveMigration, Saves, SlotInfo, THUMBNAIL_WIDTH, default_saves_dir, slug,
 };
+pub use scenery::{Letterbox, Motion, Scenery, Vignette};
 pub use screen::*;
 pub use screen_manager::*;
 pub use screens::*;
 pub use script_errors::*;
 pub use session::*;
 pub use settings::*;
+pub use shape::{Corner, CornerShape, Corners, Gradient, GradientDirection, PanelStyle};
 pub use stage::*;
 pub use state::*;
 pub use toast::*;

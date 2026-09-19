@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
+use crate::PanelStyle;
 use crate::screens::PlayingConfig;
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{
@@ -236,7 +237,7 @@ pub struct KeybindsConfig {
     pub open_keys: Vec<KeyboardKey>,
     pub close_keys: Vec<KeyboardKey>,
     pub panel_width: f32,
-    pub panel_color: Color,
+    pub panel: PanelStyle,
     pub backdrop: Color,
     pub back_button: ButtonStyle,
     pub back_label: String,
@@ -262,7 +263,7 @@ impl Default for KeybindsConfig {
                 KeyboardKey::KEY_BACKSPACE,
             ],
             panel_width: 1160.0,
-            panel_color: Color::new(14, 14, 22, 240),
+            panel: PanelStyle::new(Color::new(14, 14, 22, 240)).roundness(0.03),
             backdrop: Color::new(0, 0, 0, 170),
             back_button: ButtonStyle::default().size(200.0, 44.0),
             back_label: "Back".to_string(),
@@ -314,7 +315,12 @@ impl KeybindsConfig {
     }
 
     pub fn panel_color(mut self, color: Color) -> Self {
-        self.panel_color = color;
+        self.panel.color = color;
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = style(self.panel);
         self
     }
 
@@ -370,13 +376,13 @@ impl KeybindsOverlay {
         &self.sections
     }
 
-    fn panel(&self, screen: Vector2) -> Rectangle {
+    fn panel_rect(&self, screen: Vector2) -> Rectangle {
         let width = self.config.panel_width.min(screen.x - 32.0);
         Rectangle::new((screen.x - width) / 2.0, 16.0, width, screen.y - 32.0)
     }
 
     fn back_rect(&self, screen: Vector2) -> Rectangle {
-        let panel = self.panel(screen);
+        let panel = self.panel_rect(screen);
         let style = &self.config.back_button;
         Rectangle::new(
             (screen.x - style.width) / 2.0,
@@ -413,10 +419,10 @@ impl Overlay for KeybindsOverlay {
         let config = &self.config;
         let fonts = ctx.fonts();
         let screen = ui::screen_size(d);
-        let panel = self.panel(screen);
+        let panel = self.panel_rect(screen);
 
         d.draw_rectangle(0, 0, screen.x as i32, screen.y as i32, config.backdrop);
-        d.draw_rectangle_rounded(panel, 0.03, 8, config.panel_color);
+        config.panel.draw(d, panel);
         ui::draw_text_centered(
             d,
             fonts,

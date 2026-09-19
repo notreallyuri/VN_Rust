@@ -4,6 +4,7 @@ use raylib::prelude::*;
 use vn_script::Value;
 
 use crate::ui::{self, Background, TextStyle};
+use crate::{Border, PanelStyle};
 use crate::{DrawContext, FontRole, GameContext, Screen, ScreenState};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -50,8 +51,9 @@ pub struct TextInputConfig {
     pub hint_text: TextStyle,
     pub box_width: f32,
     pub box_height: f32,
-    pub box_color: Color,
-    pub box_border: Color,
+    pub input_box: PanelStyle,
+    pub panel: Option<PanelStyle>,
+    pub panel_padding: f32,
     pub background: Option<Background>,
 }
 
@@ -64,8 +66,10 @@ impl Default for TextInputConfig {
             hint_text: TextStyle::new(FontRole::Menu, 16.0, Color::GRAY),
             box_width: 520.0,
             box_height: 60.0,
-            box_color: Color::new(20, 20, 30, 230),
-            box_border: Color::new(255, 255, 255, 60),
+            input_box: PanelStyle::new(Color::new(20, 20, 30, 230))
+                .border(2.0, Color::new(255, 255, 255, 60)),
+            panel: None,
+            panel_padding: 40.0,
             background: None,
         }
     }
@@ -98,13 +102,29 @@ impl TextInputConfig {
         self
     }
 
+    pub fn input_box(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.input_box = style(self.input_box);
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = Some(style(self.panel.unwrap_or_default()));
+        self
+    }
+
+    pub fn panel_padding(mut self, padding: f32) -> Self {
+        self.panel_padding = padding;
+        self
+    }
+
     pub fn box_color(mut self, color: Color) -> Self {
-        self.box_color = color;
+        self.input_box.color = color;
         self
     }
 
     pub fn box_border(mut self, color: Color) -> Self {
-        self.box_border = color;
+        let width = self.input_box.border.map_or(2.0, |b| b.width);
+        self.input_box.border = Some(Border::new(width, color));
         self
     }
 
@@ -201,6 +221,19 @@ impl Screen for TextInputScreen {
         ui::draw_background(d, ctx.resources, config.background.as_ref());
 
         let prompt = self.request.as_ref().map_or("", |r| r.prompt.as_str());
+        if let Some(panel) = &config.panel {
+            let pad = config.panel_padding;
+            let prompt_width = fonts
+                .measure(config.prompt_text.font, prompt, config.prompt_text.size)
+                .x;
+            let width = config.box_width.max(prompt_width) + pad * 2.0;
+            let top = screen.y * 0.38 - config.prompt_text.size / 2.0 - pad;
+            let bottom = screen.y * 0.47 + config.box_height + 30.0 + config.hint_text.size + pad;
+            panel.draw(
+                d,
+                Rectangle::new((screen.x - width) / 2.0, top, width, bottom - top),
+            );
+        }
         ui::draw_text_centered(
             d,
             fonts,
@@ -215,8 +248,7 @@ impl Screen for TextInputScreen {
             config.box_width,
             config.box_height,
         );
-        d.draw_rectangle_rec(field, config.box_color);
-        d.draw_rectangle_lines_ex(field, 2.0, config.box_border);
+        config.input_box.draw(d, field);
 
         let style = &config.input_text;
         let width = fonts.measure(style.font, &self.text, style.size).x;

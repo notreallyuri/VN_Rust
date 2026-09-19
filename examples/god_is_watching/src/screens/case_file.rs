@@ -1,6 +1,6 @@
 use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
-use vn_engine::{DrawContext, GameContext, Overlay, OverlayAction, TextStyle};
+use vn_engine::{DrawContext, GameContext, Overlay, OverlayAction, PanelStyle, TextStyle};
 
 use crate::journal::{Journal, note_text};
 use crate::style;
@@ -21,7 +21,7 @@ impl CaseFileOverlay {
     pub fn new() -> Self {
         Self {
             heading: style::heading(34.0),
-            section: style::label(16.0).color(style::PARCHMENT),
+            section: style::section(15.0),
             label: style::label(19.0),
             value: style::label(19.0).color(style::TEXT),
             line: style::body(17.0),
@@ -85,8 +85,7 @@ impl Overlay for CaseFileOverlay {
         );
 
         d.draw_rectangle(0, 0, screen.x as i32, screen.y as i32, style::BACKDROP);
-        d.draw_rectangle_rounded(panel, 0.04, 8, style::PANEL);
-        d.draw_rectangle_rounded_lines(panel, 0.04, 8, style::PARCHMENT.alpha(0.25));
+        style::frame(PanelStyle::default()).draw(d, panel);
 
         let name = variable(ctx, "player_name");
         ui::draw_text_centered(

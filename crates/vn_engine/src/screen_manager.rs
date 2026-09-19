@@ -1,5 +1,4 @@
 use std::io;
-use std::path::PathBuf;
 use std::rc::Rc;
 
 use raylib::prelude::*;
@@ -8,8 +7,8 @@ use vn_script::{Event, RestoreOutcome, StoryVm};
 
 use crate::screens::{CONFIRM_OVERLAY, Confirm, KEYBINDS_OVERLAY};
 use crate::{
-    Action, Audio, Characters, Commands, DrawContext, GameContext, GameState, Hooks, NavInput,
-    Navigation, Overlay, OverlayAction, OverlayRequest, ResourceManager, Rollback,
+    Action, Assets, Audio, Characters, Commands, DrawContext, GameContext, GameState, Hooks,
+    NavInput, Navigation, Overlay, OverlayAction, OverlayRequest, ResourceManager, Rollback,
     SCRIPT_ERRORS_KEY, Saves, Screen, ScreenState, ScriptErrors, SettingsStore, THUMBNAIL_WIDTH,
     TextRequest, Toast, ToastConfig, TooltipConfig, TooltipTimer,
 };
@@ -81,11 +80,18 @@ impl ScreenStateManager {
         thread: &RaylibThread,
         initial_state: ScreenState,
         factory: Box<dyn ScreenFactory>,
-        assets_root: impl Into<PathBuf>,
+        assets_root: impl Into<Assets>,
         story_dir: &str,
     ) -> io::Result<Self> {
         let assets_root = assets_root.into();
-        let story = StoryVm::from_dir(assets_root.join(story_dir))?;
+        let loader = crate::StoryLoader {
+            assets: assets_root.clone(),
+            story_dir: story_dir.into(),
+            schema: Default::default(),
+            entry_scene: None,
+            warn_missing_art: false,
+        };
+        let story = StoryVm::from_program(vn_script::compile_sources(loader.sources()?));
         Self::with_story(rl, thread, initial_state, factory, assets_root, story)
     }
 
@@ -94,7 +100,7 @@ impl ScreenStateManager {
         thread: &RaylibThread,
         initial_state: ScreenState,
         factory: Box<dyn ScreenFactory>,
-        assets_root: impl Into<PathBuf>,
+        assets_root: impl Into<Assets>,
         story: StoryVm,
     ) -> io::Result<Self> {
         let resources = ResourceManager::new(assets_root, rl, thread);
@@ -342,6 +348,7 @@ impl ScreenStateManager {
             return;
         }
 
+        flush_batch();
         let mut image = d.load_image_from_screen(thread);
         let height = THUMBNAIL_WIDTH * image.height().max(1) / image.width().max(1);
         image.resize(THUMBNAIL_WIDTH, height.max(1));
@@ -367,6 +374,7 @@ impl ScreenStateManager {
     }
 
     fn take_screenshot(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
+        flush_batch();
         let image = d.load_image_from_screen(thread);
         let dir = self.saves.dir().join("screenshots");
         let path = dir.join(format!("screenshot-{}.png", crate::saves::now()));
@@ -489,4 +497,8 @@ impl ScreenStateManager {
             None => eprintln!("⚠️ No screen registered for {:?}", next_state),
         }
     }
+}
+
+fn flush_batch() {
+    unsafe { raylib::ffi::rlDrawRenderBatchActive() };
 }

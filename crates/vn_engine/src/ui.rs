@@ -8,11 +8,22 @@ pub struct TextStyle {
     pub font: FontRole,
     pub size: f32,
     pub color: Color,
+    pub spacing: f32,
 }
 
 impl TextStyle {
     pub fn new(font: FontRole, size: f32, color: Color) -> Self {
-        Self { font, size, color }
+        Self {
+            font,
+            size,
+            color,
+            spacing: 0.0,
+        }
+    }
+
+    pub fn spacing(mut self, spacing: f32) -> Self {
+        self.spacing = spacing;
+        self
     }
 
     pub fn font(mut self, font: FontRole) -> Self {
@@ -175,7 +186,19 @@ pub fn draw_text(
     position: Vector2,
     style: &TextStyle,
 ) {
-    fonts.draw(d, style.font, text, position, style.size, style.color);
+    fonts.draw_spaced(
+        d,
+        style.font,
+        text,
+        position,
+        style.size,
+        style.spacing,
+        style.color,
+    );
+}
+
+pub fn measure_text(fonts: &Fonts, text: &str, style: &TextStyle) -> Vector2 {
+    fonts.measure_spaced(style.font, text, style.size, style.spacing)
 }
 
 pub fn draw_text_centered(
@@ -185,7 +208,7 @@ pub fn draw_text_centered(
     center: Vector2,
     style: &TextStyle,
 ) {
-    let size = fonts.measure(style.font, text, style.size);
+    let size = measure_text(fonts, text, style);
     let position = Vector2::new(center.x - size.x / 2.0, center.y - size.y / 2.0);
     draw_text(d, fonts, text, position, style);
 }
@@ -236,7 +259,7 @@ pub fn draw_text_wrapped_visible(
 }
 
 pub fn fit_text(fonts: &Fonts, style: &TextStyle, text: &str, max_width: f32) -> String {
-    let fits = |candidate: &str| fonts.measure(style.font, candidate, style.size).x <= max_width;
+    let fits = |candidate: &str| measure_text(fonts, candidate, style).x <= max_width;
     if fits(text) {
         return text.to_string();
     }

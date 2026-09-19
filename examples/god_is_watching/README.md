@@ -65,66 +65,97 @@ Where each feature is used, so the example can be read as a reference.
 | Text input | `ask_name` opens the engine's text input screen, pre-filled with "Archivist" |
 | Hooks | `on_scene_enter` announces each chapter as a notification; `on_choice` records every decision in the journal |
 | Custom screens and overlays | Evidence (a screen, HUD button or E), Case file (an overlay: variables, notes, recent decisions), Credits (ending reached, achievements) |
-| HUD buttons | Evidence, Case file, Save, Menu |
+| HUD buttons | Evidence and Case file as small plates at the top-right (a `hud_group("top", ..)`), Log, Auto and Menu as a quiet row of icon labels under the dialogue box (`hud_layout` anchored at the bottom) |
+| Title card and main menu | One shot for both: the title background slowly pushing in and drifting (`Scenery::motion`, `pan`), a vignette, letterbox bars that slide in on the start screen, "GOD IS WATCHING" in tracked capitals (`TextStyle::spacing`). "PRESS ANY KEY" pulses in the bottom bar; pressing it keeps the shot and fades the menu into the same bar (`buttons_in_bar`, `intro`): text links with an underline on hover and brass diamonds between them (`separator`) |
 | Rollback and barriers | Wheel / Page Up-Down; `choice final:` and `commit` in the story; `unlock` is a blocked command, so an achievement can't be rolled back |
 | Saves | Six slots in a 2-column grid with thumbnails and Delete, quick save/load (F5/F9), rollback history stored in saves, saved in the platform data directory (`~/.local/share/god_is_watching` on Linux) |
 | Autosave and Continue | An autosave on every new scene and on quit; the main menu's Continue (`Action::Continue`) picks up the newest save after a restart |
 | Audio | `.audio(\|a\| a.menu_music("title").fade_seconds(1.5))`: the title theme on the start screen and menu, story tracks crossfading in play; volume sliders in Settings, with `page_turn` as the sample sound |
 | Confirmation dialogs | Exit from the main menu, the pause menu's Main Menu and Quit, overwriting a slot, closing the window mid-game |
 | Settings | From the main menu and the pause menu, with sliders in the palette (`style::slider`); the text speed preview types one of Adelaide's lines |
-| Buttons | `src/style.rs`: every button has a border that brightens on hover and a press scale, with a 0.12 s transition; menu buttons slide right on hover and click with `page_turn`; Exit skews on hover; choices use a nine-slice paper image (`ui/choice.png`, swapped for `choice_hover.png` on hover), left-aligned wrapped text; HUD buttons have icons (`ui/icon_*.png`) and a shadow; Continue is disabled until there is something to continue |
+| Buttons | `src/style.rs`: beveled corners and a brass border that brightens on hover, with a 0.12 s transition; main menu links are text only, underlined on hover, and click with `page_turn`; Exit, Delete and Yes use the oxblood variant; choices use a nine-slice beveled frame (`ui/choice.png`, swapped for `choice_hover.png` on hover), left-aligned wrapped text; HUD buttons are borderless labels with icons (`ui/icon_*.png`); Continue is disabled until there is something to continue |
+| Shapes and panels | Scooped (inward) corners with a double brass rule on every panel (`style::frame`), beveled corners on buttons, slots and plates, diamond separators on the main menu |
+| Dialogue box | A framed box with a name plate on its top edge for the speaker (`name_plate`), narrower than the window (`max_width`) and raised off the bottom (`bottom`) to leave room for the HUD row |
 | Keyboard and gamepad | Every screen, including the example's Evidence, Credits and Case file (B closes them); `style.rs` gives every button a `focused` look matching its hover look |
 | Playing controls | Ren'Py's keys (H, Ctrl, Tab, A, L, S, F, middle and right click); the HUD has Log and Auto with icons; the log is styled like the rest (`Decided:` before choices); the voice row is hidden (`voice_row(false)`), since the story has no voice clips |
 | Controls overlay (F1) | Styled like the rest, with an extra "In the Archive" section for the Evidence and Case file keys (`KeySection`) |
 | Tooltips | On the HUD buttons (`HudButton::tooltip`), the menu's Continue (`MenuItem::tooltip`), the settings rows and the Delete button, styled with `.tooltips(...)` |
 | Typewriter text | Every line, at the player's text speed |
-| Layouts | Main menu `rows_of([1, 2, 2, 1])` with `Stretch`; pause menu and save slots as 2-column grids |
+| Layouts | Main menu as a centered row in the letterbox bar, each link sized to its label (`MenuItem::style`); pause menu and save slots as 2-column grids, the slots centered in their panel |
 | Backgrounds and positions | See the story language table; sprites are scaled to the window height |
 | Hot reload | Edit any `.story` file while playing (debug builds); a broken edit shows the error panel (F2 hides it) |
 | `after_end` | The end screen leads to the credits instead of the main menu |
 
 ## Visual style
 
-`src/style.rs` holds the palette (ink, panel, parchment, text, muted, oxblood) and the
-text and button styles built from it; `main.rs` applies them to every default screen
-(start, main menu, playing, pause menu, confirm dialog, save/load, settings, text input,
-notifications), and the custom screens use the same functions. Titles, dialogue and
-speaker names use Noto Serif; menus and buttons keep the engine's Noto Sans.
+The UI takes its materials from the art: candlelit ink browns, brass, parchment, and
+oxblood kept for the few actions that can't be undone. `src/style.rs` is the whole
+system, and `main.rs` and the custom screens only use it:
+
+| Piece | Look | Used for |
+| --- | --- | --- |
+| Palette | `INK`, `PANEL`, `RAISED`, `BRASS`, `BRASS_DIM`, `PARCHMENT`, `TEXT`, `MUTED`, `OXBLOOD`, `BACKDROP` | Everything |
+| `frame` | Scooped corners, a brass border and a faint inner rule, a soft shadow | The dialogue box, pause menu, confirm dialog, log, controls, settings, save/load, text input, case file, evidence, credits |
+| `scenery`, `title_card`, `menu_link` | Motion, vignette and letterbox; the tracked title; underlined text links | The start screen and the main menu |
+| `hud_chip` | A translucent beveled plate | The Evidence and Case file buttons |
+| `inset` | Beveled, darker than the frame, a dim rule | Save slots, the evidence list, the settings sample, the name field |
+| `plate` | Small beveled panel | Speaker names, tooltips, notifications, the skip/auto indicator |
+| `button`, `menu_button`, `danger_button`, `choice_button`, `hud_button` | Beveled; hover and focus only change the fill and the rule, never the position or size | Every button |
+| `heading`, `body`, `label`, `section` | Noto Serif for titles and dialogue, Noto Sans for menus; section labels in brass | Every text |
 
 ## Assets
 
 The asset root is `CARGO_MANIFEST_DIR/assets`, resolved at compile time so
-`cargo run -p god_is_watching` works from any directory. A shipped build would look for
-assets next to the executable instead.
+`cargo run -p god_is_watching` works from any directory. Release builds carry the assets
+inside the executable: `build.rs` embeds the folder with `vn_build` (leaving out
+`AUDIO_CREDITS.md` and `schema.json`), and `main.rs` passes
+`vn_engine::embedded_assets!()`. So `cargo build --release -p god_is_watching` gives a
+single file (about 40 MB) that runs on any machine, even one without the source:
+
+```sh
+cargo build --release -p god_is_watching
+./target/release/god_is_watching
+# or for Windows, from Linux:
+cargo build --release -p god_is_watching --target x86_64-pc-windows-gnu
+```
 
 | Path | Contents |
 |---|---|
 | `story/` | The six chapter files, loaded together (the engine's default `story_dir`) |
-| `backgrounds/<id>.png` | 11 backgrounds, 1280×720 |
-| `characters/<character>/<image>.png` | 23 portraits, 600×900 with transparency |
+| `backgrounds/<id>.png` | 11 backgrounds, 1280×720, generated with ChatGPT |
+| `characters/<character>/<image>.png` | 23 cartoon portraits, 1024×1536 with transparency, generated with ChatGPT |
 | `fonts/` | Noto Serif (OFL, `fonts/OFL.txt`) |
-| `ui/` | The choice panels (96×96, nine-slice with 16 px borders) and four 64×64 white HUD icons, generated |
+| `ui/` | The choice frames (96×96, nine-slice with 16 px borders) and the 64×64 white HUD icons, drawn by `tools/generate_art.py` |
 | `music/<track>.ogg` | 5 tracks, CC0 (sources in `AUDIO_CREDITS.md`) |
 | `sounds/<id>.ogg` | 7 sounds from Kenney's RPG Audio, CC0 (`AUDIO_CREDITS.md`) |
 | `schema.json` | Exported registries (refreshed by debug runs, or `cargo run -p god_is_watching -- --export-schema`), used by `vn check` |
 
-### Generated art
+### Art
 
-The art is generated, not drawn: `tools/generate_art.py` (Python 3 with Pillow and
-NumPy) paints each background from shapes, glows, a color grade and a vignette, and each
-portrait as a stylized silhouette in the character's color, with a rim light, a face
-light and a few identifying details (Mary's hair, Adelaide's cap, Clara's veil,
-Moriarty's glasses, hats, hoods, a child's proportions, and a doubled, blurred outline
-for the people the story forgets). Expressions change the pose, lighting and color.
+The backgrounds and portraits were generated with ChatGPT's image model. Replace any file
+with art of the same name and aspect ratio and the game picks it up.
+
+The character art uses bold ink outlines, expressive cartoon faces, angular shapes,
+flat shadows, and gritty painted texture. Mary's approved cartoon sample is the style
+reference for the cast. Expressions preserve each character's costume and framing;
+Gabriel has extra transparent space above his head to keep him shorter than the adults.
+The sprites retain their generated alpha and 2:3 aspect ratio at 1024×1536.
+
+The September 2026 restyle's original portraits are backed up under
+`output/imagegen/cartoon-cast/originals/` at the workspace root. The same folder's
+`gallery.html` compares the installed portraits with the originals, and
+`validation.json` records the image dimensions, transparency checks, and hashes.
+
+`tools/generate_art.py` (Python 3 with Pillow and NumPy) draws the UI images in the
+palette of `style.rs`:
 
 ```sh
-python3 examples/god_is_watching/tools/generate_art.py                 # everything
-python3 examples/god_is_watching/tools/generate_art.py --only mary title  # some of it
-python3 examples/god_is_watching/tools/generate_art.py --only ui          # the UI panels and icons
+python3 examples/god_is_watching/tools/generate_art.py                 # the UI frames and icons
+python3 examples/god_is_watching/tools/generate_art.py --only choice   # some of them
 ```
 
-The output is deterministic (fixed random seed). It is placeholder-grade art with a
-consistent style: replace any file with real art of the same name and size ratio, and
-the game picks it up.
+It also still has the painted placeholder backgrounds and silhouette portraits the game
+used before; `--placeholders` writes them over the current art (for example to test the
+engine without the real images).
 
 See [vn_engine's README](../../crates/vn_engine/README.md) for every option.

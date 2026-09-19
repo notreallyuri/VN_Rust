@@ -7,3 +7,6 @@ publish = false
 [dependencies]
 vn_engine.workspace = true
 serde.workspace = true
+
+[build-dependencies]
+vn_build.workspace = true

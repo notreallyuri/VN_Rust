@@ -64,7 +64,31 @@ scene box_the_letter:  (examples/god_is_watching/assets/story/01_box_14.story:24
 077: GOTO 80
 ```
 
-Planned: `new`, `run`, `lsp`, `fmt` (see TODO.md).
+### `vn new <directory> [--title <title>] [--engine-path <dir> | --engine-git <url>]`
+
+Creates a game project that runs with `cargo run`:
+
+```sh
+cargo run -p vn_cli -- new ../my-novel
+```
+
+| File | Contents |
+| --- | --- |
+| `Cargo.toml` | A package named after the directory (`my-novel` → `my_novel`), depending on `vn_engine` (and `vn_build` for the build script, from the same place), with an empty `[workspace]` so it builds on its own even inside another workspace |
+| `src/main.rs` | A `VnApp` with one character (`guide`), two variables and a `give_item` command, and the embedded assets |
+| `build.rs` | Embeds `assets/` in release builds with `vn_build`, so `cargo build --release` gives an executable that runs anywhere |
+| `assets/story/start.story` | Two scenes using dialogue, a choice, `set`, `if`, `call` and `jump` |
+| `assets/schema.json` | The registries of `main.rs`, so `vn check assets` works before the first run (debug builds rewrite it) |
+| `assets/{characters,backgrounds,fonts}/` | Empty; missing art is drawn as a placeholder |
+| `README.md`, `.gitignore` | |
+
+The window title is `--title`, or the directory name in title case (`My Novel`). The
+engine dependency is `--engine-path` (written relative to the project when they share a
+parent directory), `--engine-git`, or by default the `vn_engine` next to the `vn_cli` that
+was built, falling back to the GitHub repository. The directory may exist, but must be
+empty.
+
+Planned: `run`, `lsp`, `fmt` (see TODO.md).
 
 ## Tests
 
@@ -75,4 +99,7 @@ cargo test -p vn_cli
 `tests/check.rs` runs the `vn` binary on temporary projects: valid projects from each
 kind of path, registry and syntax errors with their files, one file checked inside its
 project, the schema's entry scene, files outside the story directory, no schema,
-`--schema`, unreadable inputs, and `dump` on a directory.
+`--schema`, unreadable inputs, and `dump` on a directory. `tests/new.rs` runs `vn new`:
+the files it writes pass `vn check`, the package name and engine path, `--title` and
+`--engine-git` (with quotes in the title), non-empty directories, names that aren't crate
+names, and bad arguments.

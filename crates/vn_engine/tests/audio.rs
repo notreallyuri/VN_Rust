@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use vn_engine::{Audio, AudioConfig, Fade, music_path, sound_path};
+use vn_engine::{Assets, Audio, AudioConfig, EmbeddedFile, Fade, music_path, sound_path};
 
 fn temp_assets() -> PathBuf {
     let dir = std::env::temp_dir().join(format!("vn_engine_audio_{}", std::process::id()));
@@ -13,23 +13,30 @@ fn temp_assets() -> PathBuf {
 
 #[test]
 fn audio_files_are_found_by_id_with_any_supported_extension() {
-    let assets = temp_assets();
-    fs::write(assets.join("music/theme.mp3"), b"").unwrap();
-    fs::write(assets.join("music/theme.ogg"), b"").unwrap();
-    fs::write(assets.join("sounds/knock.wav"), b"").unwrap();
+    let dir = temp_assets();
+    fs::write(dir.join("music/theme.mp3"), b"").unwrap();
+    fs::write(dir.join("music/theme.ogg"), b"").unwrap();
+    fs::write(dir.join("sounds/knock.wav"), b"").unwrap();
 
-    assert_eq!(
-        music_path(&assets, "theme"),
-        Some(assets.join("music/theme.ogg")),
-        "ogg is tried first"
-    );
-    assert_eq!(
-        sound_path(&assets, "knock"),
-        Some(assets.join("sounds/knock.wav"))
-    );
-    assert_eq!(music_path(&assets, "knock"), None);
-    assert_eq!(sound_path(&assets, "missing"), None);
-    fs::remove_dir_all(&assets).unwrap();
+    static EMBEDDED: &[EmbeddedFile] = &[
+        ("music/theme.mp3", b""),
+        ("music/theme.ogg", b""),
+        ("sounds/knock.wav", b""),
+    ];
+    for assets in [Assets::Dir(dir.clone()), Assets::Embedded(EMBEDDED)] {
+        assert_eq!(
+            music_path(&assets, "theme").as_deref(),
+            Some("music/theme.ogg"),
+            "ogg is tried first"
+        );
+        assert_eq!(
+            sound_path(&assets, "knock").as_deref(),
+            Some("sounds/knock.wav")
+        );
+        assert_eq!(music_path(&assets, "knock"), None);
+        assert_eq!(sound_path(&assets, "missing"), None);
+    }
+    fs::remove_dir_all(&dir).unwrap();
 }
 
 #[test]

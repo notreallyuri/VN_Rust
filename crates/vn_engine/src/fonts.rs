@@ -10,7 +10,6 @@ use raylib::{
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::io;
-use std::path::Path;
 
 const BUILTIN_FONT: &[u8] = include_bytes!("../assets/fonts/NotoSans-Regular.ttf");
 const RASTER_SIZE: i32 = 64;
@@ -55,20 +54,21 @@ impl Fonts {
         &mut self,
         rl: &mut RaylibHandle,
         thread: &RaylibThread,
-        fonts_dir: &Path,
+        data: io::Result<std::borrow::Cow<'static, [u8]>>,
+        source: &str,
         role: FontRole,
         file: &str,
     ) {
         if !self.loaded.contains_key(file) {
-            let full_path = fonts_dir.join(file);
-
-            match load_font_file(rl, thread, &full_path) {
+            let extension = crate::assets::extension_of(file);
+            let loaded = data.and_then(|data| load_font_from_memory(rl, thread, &extension, &data));
+            match loaded {
                 Ok(font) => {
                     println!("📥 Loaded font: {}", file);
                     self.loaded.insert(file.to_string(), font);
                 }
                 Err(e) => {
-                    eprintln!("⚠️ Could not load font {}: {}", full_path.display(), e);
+                    eprintln!("⚠️ Could not load font {}: {}", source, e);
                     return;
                 }
             }
@@ -103,6 +103,24 @@ impl Fonts {
         self.get(role).measure_text(text, size, 0.0)
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_spaced(
+        &self,
+        d: &mut impl RaylibDraw,
+        role: FontRole,
+        text: &str,
+        position: Vector2,
+        size: f32,
+        spacing: f32,
+        color: Color,
+    ) {
+        d.draw_text_ex(self.get(role), text, position, size, spacing, color);
+    }
+
+    pub fn measure_spaced(&self, role: FontRole, text: &str, size: f32, spacing: f32) -> Vector2 {
+        self.get(role).measure_text(text, size, spacing)
+    }
+
     pub fn wrap(&self, role: FontRole, text: &str, size: f32, max_width: f32) -> Vec<String> {
         let mut lines = Vec::new();
 
@@ -128,17 +146,6 @@ impl Fonts {
 
         lines
     }
-}
-
-fn load_font_file(rl: &mut RaylibHandle, thread: &RaylibThread, path: &Path) -> io::Result<Font> {
-    let data = std::fs::read(path)?;
-    let extension = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(|e| format!(".{}", e.to_lowercase()))
-        .unwrap_or_default();
-
-    load_font_from_memory(rl, thread, &extension, &data)
 }
 
 fn load_font_from_memory(

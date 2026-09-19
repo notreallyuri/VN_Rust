@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
+use crate::PanelStyle;
 use crate::screens::Typewriter;
 use crate::ui::{self, Background, ButtonStyle, SliderStyle, TextStyle};
 use crate::{
@@ -43,7 +44,7 @@ pub struct SettingsConfig {
     pub value_button: ButtonStyle,
     pub value_text: TextStyle,
     pub slider: SliderStyle,
-    pub focus_color: Color,
+    pub focus_panel: PanelStyle,
     pub row_width: f32,
     pub row_spacing: f32,
     pub display_label: String,
@@ -72,11 +73,13 @@ pub struct SettingsConfig {
     pub sound_volume_tooltip: Option<String>,
     pub sample_text: String,
     pub sample_text_style: TextStyle,
-    pub sample_box_color: Color,
+    pub sample_box: PanelStyle,
     pub back_button: ButtonStyle,
     pub back_label: String,
     pub back_keys: Vec<KeyboardKey>,
     pub backdrop: Color,
+    pub panel: Option<PanelStyle>,
+    pub panel_padding: f32,
     pub background: Option<Background>,
 }
 
@@ -89,7 +92,7 @@ impl Default for SettingsConfig {
             value_button: ButtonStyle::default().size(260.0, 40.0).font_size(19.0),
             value_text: TextStyle::new(FontRole::Menu, 18.0, Color::LIGHTGRAY),
             slider: SliderStyle::default(),
-            focus_color: Color::new(255, 255, 255, 22),
+            focus_panel: PanelStyle::new(Color::new(255, 255, 255, 22)).roundness(0.2),
             row_width: 600.0,
             row_spacing: 10.0,
             display_label: "Display".to_string(),
@@ -135,11 +138,13 @@ impl Default for SettingsConfig {
             ),
             sample_text: "This is how fast the story's text appears.".to_string(),
             sample_text_style: TextStyle::new(FontRole::Dialogue, 22.0, Color::RAYWHITE),
-            sample_box_color: Color::new(0, 0, 0, 170),
+            sample_box: PanelStyle::new(Color::new(0, 0, 0, 170)),
             back_button: ButtonStyle::default().size(200.0, 48.0),
             back_label: "Back".to_string(),
             back_keys: vec![KeyboardKey::KEY_ESCAPE, KeyboardKey::KEY_BACKSPACE],
             backdrop: Color::new(0, 0, 0, 200),
+            panel: None,
+            panel_padding: 40.0,
             background: None,
         }
     }
@@ -176,8 +181,13 @@ impl SettingsConfig {
         self
     }
 
+    pub fn focus_panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.focus_panel = style(self.focus_panel);
+        self
+    }
+
     pub fn focus_color(mut self, color: Color) -> Self {
-        self.focus_color = color;
+        self.focus_panel.color = color;
         self
     }
 
@@ -272,6 +282,26 @@ impl SettingsConfig {
 
     pub fn backdrop(mut self, color: Color) -> Self {
         self.backdrop = color;
+        self
+    }
+
+    pub fn sample_box(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.sample_box = style(self.sample_box);
+        self
+    }
+
+    pub fn sample_box_color(mut self, color: Color) -> Self {
+        self.sample_box.color = color;
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = Some(style(self.panel.unwrap_or_default()));
+        self
+    }
+
+    pub fn panel_padding(mut self, padding: f32) -> Self {
+        self.panel_padding = padding;
         self
     }
 
@@ -505,6 +535,11 @@ impl SettingsConfig {
         )
     }
 
+    pub fn panel_rect(&self, screen: Vector2) -> Rectangle {
+        let width = self.row_width + self.panel_padding * 2.0;
+        Rectangle::new((screen.x - width) / 2.0, 24.0, width, screen.y - 48.0)
+    }
+
     fn back_rect(&self, screen: Vector2) -> Rectangle {
         let style = &self.back_button;
         Rectangle::new(
@@ -661,6 +696,10 @@ impl SettingsMenu {
         let screen = ui::screen_size(d);
         let fonts = ctx.fonts();
 
+        if let Some(panel) = &config.panel {
+            panel.draw(d, config.panel_rect(screen));
+        }
+
         ui::draw_text_centered(
             d,
             fonts,
@@ -685,7 +724,7 @@ impl SettingsMenu {
                     row_rect.width + 24.0,
                     row_rect.height + 8.0,
                 );
-                d.draw_rectangle_rounded(band, 0.2, 6, config.focus_color);
+                config.focus_panel.draw(d, band);
             }
             let label_y = control.y + (control.height - config.label_text.size) / 2.0;
             ui::draw_text(
@@ -722,7 +761,7 @@ impl SettingsMenu {
         }
 
         let sample = config.sample_rect(screen);
-        d.draw_rectangle_rec(sample, config.sample_box_color);
+        config.sample_box.draw(d, sample);
         ui::draw_text_wrapped_visible(
             d,
             fonts,

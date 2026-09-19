@@ -3,6 +3,7 @@ use std::fmt;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use raylib::texture::Image;
@@ -21,6 +22,8 @@ pub const THUMBNAIL_WIDTH: i32 = 320;
 pub struct SaveFile {
     pub format_version: u32,
     pub game: String,
+    #[serde(default)]
+    pub game_version: u32,
     pub saved_at: u64,
     pub summary: String,
     pub story: StorySnapshot,
@@ -48,6 +51,15 @@ pub enum SaveError {
         found: u32,
         supported: u32,
     },
+    NewerGameVersion {
+        found: u32,
+        supported: u32,
+    },
+    Migration {
+        path: PathBuf,
+        from: u32,
+        message: String,
+    },
     OtherGame {
         found: String,
         expected: String,
@@ -69,6 +81,22 @@ impl fmt::Display for SaveError {
                 f,
                 "save format {} is newer than this game supports ({})",
                 found, supported
+            ),
+            SaveError::NewerGameVersion { found, supported } => write!(
+                f,
+                "save version {} is newer than this game supports ({})",
+                found, supported
+            ),
+            SaveError::Migration {
+                path,
+                from,
+                message,
+            } => write!(
+                f,
+                "{}: migrating from version {} failed: {}",
+                path.display(),
+                from,
+                message
             ),
             SaveError::OtherGame { found, expected } => {
                 write!(f, "save belongs to '{}', not '{}'", found, expected)
@@ -102,8 +130,11 @@ impl SaveError {
             SaveError::Corrupt { .. } => {
                 "This save file is damaged and can't be loaded.".to_string()
             }
-            SaveError::NewerFormat { .. } => {
+            SaveError::NewerFormat { .. } | SaveError::NewerGameVersion { .. } => {
                 "This save was made by a newer version of the game.".to_string()
+            }
+            SaveError::Migration { .. } => {
+                "This save couldn't be updated for this version of the game.".to_string()
             }
             SaveError::OtherGame { .. } => "This save belongs to a different game.".to_string(),
             SaveError::Story(_) => {
@@ -159,10 +190,163 @@ impl SlotInfo {
     }
 }
 
+pub type MigrationFn = dyn Fn(&mut SaveMigration) -> Result<(), String>;
+
+#[derive(Clone, Default)]
+pub struct Migrations {
+    steps: Vec<(u32, Rc<MigrationFn>)>,
+}
+
+impl fmt::Debug for Migrations {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_list()
+            .entries(self.steps.iter().map(|(from, _)| from))
+            .finish()
+    }
+}
+
+impl Migrations {
+    pub fn add(
+        &mut self,
+        from: u32,
+        migration: impl Fn(&mut SaveMigration) -> Result<(), String> + 'static,
+    ) {
+        self.steps.push((from, Rc::new(migration)));
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.steps.is_empty()
+    }
+
+    fn run(&self, json: &mut Json, from: u32, to: u32) -> Result<(), (u32, String)> {
+        for version in from..to {
+            for (_, migration) in self.steps.iter().filter(|(step, _)| *step == version) {
+                migration(&mut SaveMigration { json }).map_err(|message| (version, message))?;
+            }
+        }
+        Ok(())
+    }
+}
+
+pub struct SaveMigration<'a> {
+    json: &'a mut Json,
+}
+
+impl SaveMigration<'_> {
+    pub fn json(&mut self) -> &mut Json {
+        self.json
+    }
+
+    fn states(&mut self) -> Vec<&mut serde_json::Map<String, Json>> {
+        let Json::Object(file) = &mut *self.json else {
+            return Vec::new();
+        };
+        let mut maps = Vec::new();
+        for (key, value) in file.iter_mut() {
+            match (key.as_str(), value) {
+                ("state", Json::Object(state)) => maps.push(state),
+                ("rollback", Json::Array(checkpoints)) => maps.extend(
+                    checkpoints
+                        .iter_mut()
+                        .filter_map(|c| match c.get_mut("state") {
+                            Some(Json::Object(state)) => Some(state),
+                            _ => None,
+                        }),
+                ),
+                _ => {}
+            }
+        }
+        maps
+    }
+
+    fn variables(&mut self) -> Vec<&mut serde_json::Map<String, Json>> {
+        let Json::Object(file) = &mut *self.json else {
+            return Vec::new();
+        };
+        let mut stories = Vec::new();
+        for (key, value) in file.iter_mut() {
+            match (key.as_str(), value) {
+                ("story", story) => stories.push(story),
+                ("rollback", Json::Array(checkpoints)) => {
+                    stories.extend(checkpoints.iter_mut().filter_map(|c| c.get_mut("story")))
+                }
+                _ => {}
+            }
+        }
+        stories
+            .into_iter()
+            .filter_map(|story| match story.get_mut("variables") {
+                Some(Json::Object(variables)) => Some(variables),
+                _ => None,
+            })
+            .collect()
+    }
+
+    pub fn state(
+        &mut self,
+        key: &str,
+        mut edit: impl FnMut(&mut Json) -> Result<(), String>,
+    ) -> Result<(), String> {
+        for state in self.states() {
+            if let Some(value) = state.get_mut(key) {
+                edit(value)?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn rename_state(&mut self, from: &str, to: &str) {
+        for state in self.states() {
+            if let Some(value) = state.remove(from) {
+                state.insert(to.to_string(), value);
+            }
+        }
+    }
+
+    pub fn remove_state(&mut self, key: &str) {
+        for state in self.states() {
+            state.remove(key);
+        }
+    }
+
+    pub fn variable(
+        &mut self,
+        name: &str,
+        mut edit: impl FnMut(&mut Json) -> Result<(), String>,
+    ) -> Result<(), String> {
+        for variables in self.variables() {
+            if let Some(value) = variables.get_mut(name) {
+                edit(value)?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn rename_variable(&mut self, from: &str, to: &str) {
+        for variables in self.variables() {
+            if let Some(value) = variables.remove(from) {
+                variables.insert(to.to_string(), value);
+            }
+        }
+    }
+
+    pub fn remove_variable(&mut self, name: &str) {
+        for variables in self.variables() {
+            variables.remove(name);
+        }
+    }
+}
+
+fn format_migrations() -> Migrations {
+    Migrations::default()
+}
+
 #[derive(Debug, Clone)]
 pub struct Saves {
     dir: PathBuf,
     game: String,
+    version: u32,
+    migrations: Migrations,
     autosave: bool,
     generation: std::cell::Cell<u64>,
     any_cache: std::cell::Cell<Option<(u64, bool)>>,
@@ -173,6 +357,8 @@ impl Saves {
         Self {
             dir: dir.into(),
             game: game.into(),
+            version: 0,
+            migrations: Migrations::default(),
             autosave: false,
             generation: std::cell::Cell::new(0),
             any_cache: std::cell::Cell::new(None),
@@ -182,6 +368,29 @@ impl Saves {
     pub fn with_autosave(mut self, enabled: bool) -> Self {
         self.autosave = enabled;
         self
+    }
+
+    pub fn with_version(mut self, version: u32) -> Self {
+        self.version = version;
+        self
+    }
+
+    pub fn with_migrations(mut self, migrations: Migrations) -> Self {
+        self.migrations = migrations;
+        self
+    }
+
+    pub fn with_migration(
+        mut self,
+        from: u32,
+        migration: impl Fn(&mut SaveMigration) -> Result<(), String> + 'static,
+    ) -> Self {
+        self.migrations.add(from, migration);
+        self
+    }
+
+    pub fn version(&self) -> u32 {
+        self.version
     }
 
     pub fn autosaves(&self) -> bool {
@@ -244,6 +453,7 @@ impl Saves {
         Ok(SaveFile {
             format_version: SAVE_FORMAT_VERSION,
             game: self.game.clone(),
+            game_version: self.version,
             saved_at: now(),
             summary: summary(story),
             story: story.snapshot(),
@@ -288,24 +498,15 @@ impl Saves {
             Err(source) => return Err(SaveError::Io { path, source }),
         };
 
-        let header: Json = serde_json::from_slice(&bytes).map_err(|source| SaveError::Corrupt {
-            path: path.clone(),
-            source,
-        })?;
-
-        let found = header
-            .get("format_version")
-            .and_then(Json::as_u64)
-            .unwrap_or(0) as u32;
-        if found > SAVE_FORMAT_VERSION {
-            return Err(SaveError::NewerFormat {
-                found,
-                supported: SAVE_FORMAT_VERSION,
-            });
-        }
+        let mut json: Json =
+            serde_json::from_slice(&bytes).map_err(|source| SaveError::Corrupt {
+                path: path.clone(),
+                source,
+            })?;
+        self.migrate(&mut json, &path)?;
 
         let file: SaveFile =
-            serde_json::from_value(header).map_err(|source| SaveError::Corrupt { path, source })?;
+            serde_json::from_value(json).map_err(|source| SaveError::Corrupt { path, source })?;
 
         if file.game != self.game {
             return Err(SaveError::OtherGame {
@@ -315,6 +516,44 @@ impl Saves {
         }
 
         Ok(file)
+    }
+
+    pub fn migrate(&self, json: &mut Json, path: &Path) -> Result<(), SaveError> {
+        let version_of =
+            |json: &Json, key: &str| json.get(key).and_then(Json::as_u64).unwrap_or(0) as u32;
+
+        let format = version_of(json, "format_version");
+        if format > SAVE_FORMAT_VERSION {
+            return Err(SaveError::NewerFormat {
+                found: format,
+                supported: SAVE_FORMAT_VERSION,
+            });
+        }
+        let game = version_of(json, "game_version");
+        if game > self.version {
+            return Err(SaveError::NewerGameVersion {
+                found: game,
+                supported: self.version,
+            });
+        }
+
+        let failed = |(from, message)| SaveError::Migration {
+            path: path.to_path_buf(),
+            from,
+            message,
+        };
+        format_migrations()
+            .run(json, format, SAVE_FORMAT_VERSION)
+            .map_err(failed)?;
+        self.migrations
+            .run(json, game, self.version)
+            .map_err(failed)?;
+
+        if let Json::Object(file) = json {
+            file.insert("format_version".into(), SAVE_FORMAT_VERSION.into());
+            file.insert("game_version".into(), self.version.into());
+        }
+        Ok(())
     }
 
     pub fn load(

@@ -10,6 +10,7 @@ use crate::{
     Action, Anchor, DrawContext, Focus, FontRole, GameContext, Layout, Overlay, OverlayAction,
     Screen, ScreenState,
 };
+use crate::{Border, PanelStyle};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SaveMenuMode {
@@ -26,8 +27,9 @@ pub struct SaveMenuConfig {
     pub slot_width: f32,
     pub slot_height: f32,
     pub slot_layout: Layout,
-    pub slot_color: Color,
+    pub slot_panel: PanelStyle,
     pub slot_hover_color: Color,
+    pub slot_hover_border: Option<Border>,
     pub slot_title_text: TextStyle,
     pub slot_summary_text: TextStyle,
     pub error_text: TextStyle,
@@ -47,6 +49,8 @@ pub struct SaveMenuConfig {
     pub delete_keys: Vec<KeyboardKey>,
     pub background: Option<Background>,
     pub backdrop: Color,
+    pub panel: Option<PanelStyle>,
+    pub panel_padding: f32,
 }
 
 impl Default for SaveMenuConfig {
@@ -59,8 +63,9 @@ impl Default for SaveMenuConfig {
             slot_width: 760.0,
             slot_height: 64.0,
             slot_layout: Layout::default().anchor(Anchor::Top).spacing(10.0),
-            slot_color: Color::new(30, 30, 45, 230),
+            slot_panel: PanelStyle::new(Color::new(30, 30, 45, 230)),
             slot_hover_color: Color::new(50, 50, 72, 240),
+            slot_hover_border: None,
             slot_title_text: TextStyle::new(FontRole::Menu, 20.0, Color::RAYWHITE),
             slot_summary_text: TextStyle::new(FontRole::Dialogue, 17.0, Color::LIGHTGRAY),
             error_text: TextStyle::new(FontRole::Menu, 17.0, Color::new(230, 110, 110, 255)),
@@ -83,6 +88,8 @@ impl Default for SaveMenuConfig {
             delete_keys: vec![KeyboardKey::KEY_DELETE],
             background: None,
             backdrop: Color::new(8, 8, 14, 235),
+            panel: None,
+            panel_padding: 40.0,
         }
     }
 }
@@ -125,9 +132,32 @@ impl SaveMenuConfig {
     }
 
     pub fn slot_color(mut self, color: Color) -> Self {
-        self.slot_color = color;
+        self.slot_panel.color = color;
         self.slot_hover_color = ui::lighten(color);
         self
+    }
+
+    pub fn slot_panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.slot_panel = style(self.slot_panel);
+        self
+    }
+
+    pub fn slot_hover_color(mut self, color: Color) -> Self {
+        self.slot_hover_color = color;
+        self
+    }
+
+    pub fn slot_hover_border(mut self, width: f32, color: Color) -> Self {
+        self.slot_hover_border = Some(Border::new(width, color));
+        self
+    }
+
+    pub fn slot_hover_panel(&self) -> PanelStyle {
+        PanelStyle {
+            color: self.slot_hover_color,
+            border: self.slot_hover_border.or(self.slot_panel.border),
+            ..self.slot_panel
+        }
     }
 
     pub fn slot_title_text(mut self, style: TextStyle) -> Self {
@@ -217,6 +247,16 @@ impl SaveMenuConfig {
 
     pub fn backdrop(mut self, color: Color) -> Self {
         self.backdrop = color;
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = Some(style(self.panel.unwrap_or_default()));
+        self
+    }
+
+    pub fn panel_padding(mut self, padding: f32) -> Self {
+        self.panel_padding = padding;
         self
     }
 
@@ -361,6 +401,26 @@ impl SaveMenu {
         let size = Vector2::new(config.slot_width, config.slot_height.min(fitting));
 
         layout.place(area, &vec![size; count])
+    }
+
+    fn panel_rect(&self, screen: Vector2) -> Rectangle {
+        let slots = self.slot_rects(screen);
+        let half = self.config.slot_width / 2.0;
+        let left = slots
+            .iter()
+            .map(|r| r.x)
+            .fold(screen.x / 2.0 - half, f32::min);
+        let right = slots
+            .iter()
+            .map(|r| r.x + r.width)
+            .fold(screen.x / 2.0 + half, f32::max);
+        let padding = self.config.panel_padding;
+        Rectangle::new(
+            left - padding,
+            24.0,
+            right - left + padding * 2.0,
+            screen.y - 48.0,
+        )
     }
 
     fn back_rect(&self, screen: Vector2) -> Rectangle {
@@ -550,6 +610,10 @@ impl SaveMenu {
         let fonts = ctx.fonts();
         let now = now();
 
+        if let Some(panel) = &config.panel {
+            panel.draw(d, self.panel_rect(screen));
+        }
+
         let title = match self.mode {
             SaveMenuMode::Save => &config.save_title,
             SaveMenuMode::Load => &config.load_title,
@@ -565,12 +629,11 @@ impl SaveMenu {
         let slots = self.slots.as_deref().unwrap_or_default();
         for (index, (info, rect)) in slots.iter().zip(self.slot_rects(screen)).enumerate() {
             let hovered = ctx.pointer_over(d, rect);
-            let color = if hovered || ctx.shows_focus(&self.focus, index) {
-                config.slot_hover_color
+            if hovered || ctx.shows_focus(&self.focus, index) {
+                config.slot_hover_panel().draw(d, rect);
             } else {
-                config.slot_color
-            };
-            d.draw_rectangle_rec(rect, color);
+                config.slot_panel.draw(d, rect);
+            }
 
             let mut x = rect.x + 18.0;
             if let Some(frame) = config.thumbnail_rect(rect) {

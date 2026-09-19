@@ -4,6 +4,7 @@ use std::rc::Rc;
 use raylib::ffi;
 use raylib::prelude::*;
 
+use crate::PanelStyle;
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{DrawContext, Focus, FontRole, GameContext, LogEntry, Overlay, OverlayAction};
 
@@ -21,7 +22,7 @@ pub struct LogConfig {
     pub empty_label: String,
     pub panel_width: f32,
     pub entry_spacing: f32,
-    pub panel_color: Color,
+    pub panel: PanelStyle,
     pub backdrop: Color,
     pub back_button: ButtonStyle,
     pub back_label: String,
@@ -42,7 +43,7 @@ impl Default for LogConfig {
             empty_label: "Nothing has happened yet.".to_string(),
             panel_width: 900.0,
             entry_spacing: 16.0,
-            panel_color: Color::new(14, 14, 22, 235),
+            panel: PanelStyle::new(Color::new(14, 14, 22, 235)).roundness(0.03),
             backdrop: Color::new(0, 0, 0, 170),
             back_button: ButtonStyle::default().size(200.0, 46.0),
             back_label: "Back".to_string(),
@@ -108,7 +109,12 @@ impl LogConfig {
     }
 
     pub fn panel_color(mut self, color: Color) -> Self {
-        self.panel_color = color;
+        self.panel.color = color;
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = style(self.panel);
         self
     }
 
@@ -132,13 +138,13 @@ impl LogConfig {
         self
     }
 
-    fn panel(&self, screen: Vector2) -> Rectangle {
+    fn panel_rect(&self, screen: Vector2) -> Rectangle {
         let width = self.panel_width.min(screen.x - 40.0);
         Rectangle::new((screen.x - width) / 2.0, 24.0, width, screen.y - 48.0)
     }
 
     fn entries_area(&self, screen: Vector2) -> Rectangle {
-        let panel = self.panel(screen);
+        let panel = self.panel_rect(screen);
         let top = panel.y + self.title_text.size + 40.0;
         let bottom = self.back_rect(screen).y - 20.0;
         Rectangle::new(
@@ -150,7 +156,7 @@ impl LogConfig {
     }
 
     fn back_rect(&self, screen: Vector2) -> Rectangle {
-        let panel = self.panel(screen);
+        let panel = self.panel_rect(screen);
         let style = &self.back_button;
         Rectangle::new(
             (screen.x - style.width) / 2.0,
@@ -286,11 +292,11 @@ impl Overlay for LogOverlay {
         let config = &self.config;
         let screen = ui::screen_size(d);
         let fonts = ctx.fonts();
-        let panel = config.panel(screen);
+        let panel = config.panel_rect(screen);
         let area = config.entries_area(screen);
 
         d.draw_rectangle(0, 0, screen.x as i32, screen.y as i32, config.backdrop);
-        d.draw_rectangle_rounded(panel, 0.03, 8, config.panel_color);
+        config.panel.draw(d, panel);
         ui::draw_text_centered(
             d,
             fonts,

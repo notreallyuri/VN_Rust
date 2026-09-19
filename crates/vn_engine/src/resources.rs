@@ -1,3 +1,5 @@
+use crate::assets::{Assets, extension_of};
+use crate::{FontRole, Fonts};
 use raylib::{
     RaylibHandle, RaylibThread,
     color::Color,
@@ -5,9 +7,6 @@ use raylib::{
 };
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
-
-use crate::{FontRole, Fonts};
 
 const PLACEHOLDER_WIDTH: i32 = 300;
 const PLACEHOLDER_HEIGHT: i32 = 500;
@@ -23,16 +22,16 @@ pub fn background_path(image: &str) -> String {
 }
 
 pub struct ResourceManager {
-    root: PathBuf,
+    assets: Assets,
     pub textures: HashMap<String, Texture2D>,
     pub fonts: Fonts,
     requested: RefCell<HashSet<String>>,
 }
 
 impl ResourceManager {
-    pub fn new(root: impl Into<PathBuf>, rl: &mut RaylibHandle, thread: &RaylibThread) -> Self {
+    pub fn new(assets: impl Into<Assets>, rl: &mut RaylibHandle, thread: &RaylibThread) -> Self {
         Self {
-            root: root.into(),
+            assets: assets.into(),
             textures: HashMap::new(),
             fonts: Fonts::new(rl, thread),
             requested: RefCell::new(HashSet::new()),
@@ -46,16 +45,14 @@ impl ResourceManager {
         role: FontRole,
         file: &str,
     ) {
-        let fonts_dir = self.root.join("fonts");
-        self.fonts.assign(rl, thread, &fonts_dir, role, file);
+        let path = format!("fonts/{}", file);
+        let data = self.assets.read(&path);
+        let source = self.assets.describe(&path);
+        self.fonts.assign(rl, thread, data, &source, role, file);
     }
 
-    pub fn root(&self) -> &Path {
-        &self.root
-    }
-
-    pub fn path(&self, relative: impl AsRef<Path>) -> PathBuf {
-        self.root.join(relative)
+    pub fn assets(&self) -> &Assets {
+        &self.assets
     }
 
     pub fn texture(&self, path: &str) -> Option<&Texture2D> {
@@ -79,10 +76,21 @@ impl ResourceManager {
         rl: &mut RaylibHandle,
         thread: &RaylibThread,
     ) -> &Texture2D {
-        let full_path = self.root.join(path);
+        let assets = &self.assets;
 
         self.textures.entry(path.to_string()).or_insert_with(|| {
-            match rl.load_texture(thread, &full_path.to_string_lossy()) {
+            let loaded = assets
+                .read(path)
+                .map_err(|e| e.to_string())
+                .and_then(|bytes| {
+                    Image::load_image_from_mem(&extension_of(path), &bytes)
+                        .map_err(|e| e.to_string())
+                })
+                .and_then(|image| {
+                    rl.load_texture_from_image(thread, &image)
+                        .map_err(|e| e.to_string())
+                });
+            match loaded {
                 Ok(texture) => {
                     println!("📥 Loaded texture: {}", path);
                     texture
@@ -90,7 +98,7 @@ impl ResourceManager {
                 Err(_) => {
                     eprintln!(
                         "⚠️ Could not load {}, using a placeholder",
-                        full_path.display()
+                        assets.describe(path)
                     );
                     let image = placeholder_image(path);
                     rl.load_texture_from_image(thread, &image)

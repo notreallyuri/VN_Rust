@@ -1,5 +1,6 @@
 use raylib::prelude::*;
 
+use crate::PanelStyle;
 use crate::ui::{self, TextStyle};
 use crate::{FontRole, Fonts};
 
@@ -7,7 +8,7 @@ use crate::{FontRole, Fonts};
 pub struct ToastConfig {
     pub text: TextStyle,
     pub error_text: TextStyle,
-    pub background: Color,
+    pub panel: PanelStyle,
     pub seconds: f64,
     pub margin: f32,
 }
@@ -17,7 +18,7 @@ impl Default for ToastConfig {
         Self {
             text: TextStyle::new(FontRole::Menu, 18.0, Color::GOLD),
             error_text: TextStyle::new(FontRole::Menu, 18.0, Color::new(230, 110, 110, 255)),
-            background: Color::new(0, 0, 0, 200),
+            panel: PanelStyle::new(Color::new(0, 0, 0, 200)),
             seconds: 2.5,
             margin: 16.0,
         }
@@ -36,7 +37,12 @@ impl ToastConfig {
     }
 
     pub fn background(mut self, color: Color) -> Self {
-        self.background = color;
+        self.panel.color = color;
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = style(self.panel);
         self
     }
 
@@ -88,7 +94,7 @@ impl Toast {
         let size = fonts.measure(style.font, &self.text, style.size);
         let panel = Rectangle::new(config.margin, config.margin, size.x + 28.0, size.y + 16.0);
 
-        d.draw_rectangle_rec(panel, config.background);
+        config.panel.draw(d, panel);
         ui::draw_text(
             d,
             fonts,

@@ -23,10 +23,11 @@ use crate::screens::{
     default_keybinds,
 };
 use crate::{
-    Audio, AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, FontRole, FromArgs,
-    GameContext, GameState, Hooks, Navigation, NavigationConfig, Overlay, Rollback, RollbackConfig,
-    SETTINGS_FILE_NAME, Saves, Screen, ScreenFactory, ScreenState, ScreenStateManager,
-    ScriptErrors, SettingsStore, StoryLoader, StoryWatcher, ToastConfig, TooltipConfig,
+    Assets, Audio, AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, EmbeddedFile,
+    FontRole, FromArgs, GameContext, GameState, Hooks, Migrations, Navigation, NavigationConfig,
+    Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, SaveMigration, Saves, Screen,
+    ScreenFactory, ScreenState, ScreenStateManager, ScriptErrors, SettingsStore, StoryLoader,
+    StoryWatcher, ToastConfig, TooltipConfig,
 };
 
 type ScreenBuilder = Box<dyn Fn() -> Box<dyn Screen>>;
@@ -39,6 +40,7 @@ pub struct VnApp {
     target_fps: u32,
     clear_color: Color,
     assets: PathBuf,
+    embedded: Option<&'static [EmbeddedFile]>,
     story_dir: String,
     schema_file: Option<PathBuf>,
     initial_screen: ScreenState,
@@ -52,6 +54,8 @@ pub struct VnApp {
     commands: Commands,
     hooks: Hooks,
     saves_dir: Option<PathBuf>,
+    save_version: u32,
+    migrations: Migrations,
     autosave: bool,
     audio: AudioConfig,
     tooltips: TooltipConfig,
@@ -128,6 +132,7 @@ impl VnApp {
             target_fps: 60,
             clear_color: Color::BLACK,
             assets: PathBuf::from("assets"),
+            embedded: None,
             story_dir: "story".to_string(),
             schema_file: Some(PathBuf::from(SCHEMA_FILE_NAME)),
             initial_screen: ScreenState::StartScreen,
@@ -141,6 +146,8 @@ impl VnApp {
             commands: Commands::default(),
             hooks: Hooks::default(),
             saves_dir: None,
+            save_version: 0,
+            migrations: Migrations::default(),
             autosave: true,
             audio: AudioConfig::default(),
             tooltips: TooltipConfig::default(),
@@ -238,7 +245,7 @@ impl VnApp {
 
     pub fn loader(&self) -> StoryLoader {
         StoryLoader {
-            assets: self.assets.clone(),
+            assets: self.asset_source(),
             story_dir: PathBuf::from(&self.story_dir),
             schema: self.schema(),
             entry_scene: self.entry_scene.clone(),
@@ -291,6 +298,27 @@ impl VnApp {
         self
     }
 
+    pub fn save_version(mut self, version: u32) -> Self {
+        self.save_version = version;
+        self
+    }
+
+    pub fn migrate_save(
+        mut self,
+        from: u32,
+        migration: impl Fn(&mut SaveMigration) -> Result<(), String> + 'static,
+    ) -> Self {
+        self.migrations.add(from, migration);
+        self
+    }
+
+    pub fn saves(&self) -> Saves {
+        Saves::new(self.saves_path(), self.title.clone())
+            .with_version(self.save_version)
+            .with_migrations(self.migrations.clone())
+            .with_autosave(self.autosave)
+    }
+
     pub fn autosave(mut self, enabled: bool) -> Self {
         self.autosave = enabled;
         self
@@ -322,6 +350,28 @@ impl VnApp {
         self
     }
 
+    pub fn embedded_assets(mut self, files: &'static [EmbeddedFile]) -> Self {
+        self.embedded = Some(files).filter(|files| !files.is_empty());
+        self
+    }
+
+    pub fn asset_source(&self) -> Assets {
+        let prefer_disk = cfg!(debug_assertions) && self.assets.is_dir();
+        if let Some(files) = self.embedded
+            && !prefer_disk
+        {
+            return Assets::Embedded(files);
+        }
+        if self.assets.is_dir() {
+            return Assets::Dir(self.assets.clone());
+        }
+        let beside_exe = std::env::current_exe()
+            .ok()
+            .and_then(|exe| exe.parent().map(|dir| dir.join("assets")))
+            .filter(|dir| dir.is_dir());
+        Assets::Dir(beside_exe.unwrap_or_else(|| self.assets.clone()))
+    }
+
     pub fn schema_file(mut self, file: Option<&str>) -> Self {
         self.schema_file = file.map(PathBuf::from);
         self
@@ -335,7 +385,8 @@ impl VnApp {
     }
 
     pub fn schema_path(&self) -> Option<PathBuf> {
-        self.schema_file.as_ref().map(|file| self.assets.join(file))
+        let dir = self.asset_source().dir()?.to_path_buf();
+        self.schema_file.as_ref().map(|file| dir.join(file))
     }
 
     pub fn export_schema(&self) -> Result<Option<PathBuf>, AppError> {
@@ -464,6 +515,9 @@ impl VnApp {
         }
 
         let loader = self.loader();
+        if cfg!(debug_assertions) {
+            println!("Assets: {:?}", loader.assets);
+        }
         let (mut story, warnings) = loader.load()?;
         story.set_scene_events(true);
         for warning in &warnings {
@@ -482,7 +536,7 @@ impl VnApp {
             println!("Saves: {}", saves_dir.display());
         }
         let settings = SettingsStore::load(saves_dir.join(SETTINGS_FILE_NAME));
-        let saves = Saves::new(saves_dir, self.title.clone()).with_autosave(self.autosave);
+        let saves = self.saves();
 
         let factory = DefaultScreens {
             title: self.title,
@@ -507,7 +561,7 @@ impl VnApp {
             &thread,
             self.initial_screen,
             Box::new(factory),
-            self.assets,
+            loader.assets.clone(),
             story,
         )
         .map_err(AppError::Screen)?;
@@ -525,13 +579,16 @@ impl VnApp {
         manager.keybind_keys = self.keybinds.open_keys.clone();
         manager.navigation = Navigation::new(self.navigation);
         manager.seen = SeenLines::load(manager.saves.dir().join(crate::SEEN_FILE_NAME));
-        manager.audio = Audio::new(manager.resources.root().to_path_buf(), self.audio);
+        manager.audio = Audio::new(manager.resources.assets().clone(), self.audio);
 
         for (role, file) in &self.fonts {
             manager.resources.set_font(&mut rl, &thread, *role, file);
         }
 
-        let mut watcher = self.hot_reload.then(|| StoryWatcher::new(loader.path()));
+        let mut watcher = loader
+            .watch_dir()
+            .filter(|_| self.hot_reload)
+            .map(StoryWatcher::new);
 
         while !manager.quit_requested() {
             if let Some(watcher) = &mut watcher
@@ -644,7 +701,7 @@ impl ScreenFactory for DefaultScreens {
     }
 }
 
-pub(crate) fn missing_art(story: &StoryVm, assets: &Path) -> Vec<Diagnostic> {
+pub(crate) fn missing_art(story: &StoryVm, assets: &Assets) -> Vec<Diagnostic> {
     let program = story.program();
     let mut seen = std::collections::HashSet::new();
 
@@ -671,7 +728,7 @@ pub(crate) fn missing_art(story: &StoryVm, assets: &Path) -> Vec<Diagnostic> {
                 }
                 _ => return None,
             };
-            let missing = !assets.join(&relative).exists() && seen.insert(relative.clone());
+            let missing = !assets.exists(&relative) && seen.insert(relative.clone());
             missing.then(|| {
                 Diagnostic::warning(
                     program.line(index),

@@ -3,7 +3,8 @@
 A raylib-based visual novel engine built on [`vn_script`](../vn_script/README.md).
 
 It re-exports `raylib` and `vn_script` (as `vn_engine::script`), so games build against
-the same versions the engine uses and only need `vn_engine` as a dependency.
+the same versions the engine uses and only need `vn_engine` as a dependency (plus
+[`vn_build`](../vn_build/README.md) as a build dependency to [ship release builds](#shipping-a-release-build)).
 
 ## Quick start
 
@@ -43,6 +44,7 @@ fn main() -> std::io::Result<()> {
 | `target_fps(fps)` | 60 | |
 | `clear_color(color)` | black | Cleared every frame, before the screen draws |
 | `assets(path)` | `assets` | Asset root; every other path is relative to it |
+| `embedded_assets(files)` | none | Assets compiled into the executable, used by release builds (see [Assets](#assets)); `asset_source()` returns the source in use |
 | `story_dir(path)` | `story` | Directory of `.story` files; every one under it (recursively) is loaded into one story, in path order |
 | `initial_screen(state)` | `StartScreen` | First screen, e.g. `MainMenu` to skip the start screen |
 | `font(role, file)` | | Font from `<assets>/fonts/` for a `FontRole` (see [Fonts](#fonts)) |
@@ -74,6 +76,8 @@ fn main() -> std::io::Result<()> {
 | `schema_file(Option<&str>)` | `Some("schema.json")` | Where the schema is exported, relative to the assets (see [Schema export](#schema-export)); `None` turns the export off |
 | `text_input(\|t\| ...)` | | Configure the default text input screen |
 | `saves_dir(path)` | the platform data directory | Where save files and settings go (see [Where saves live](#where-saves-live)); `saves_path()` returns the directory in use |
+| `save_version(u32)` | `0` | The game's save version, stored in every save (see [Migrations](#migrations)) |
+| `migrate_save(from, \|m\| ...)` | | Update saves made at version `from` to `from + 1` (see [Migrations](#migrations)); `saves()` returns the configured `Saves` |
 | `autosave(bool)` | `true` | Save to the `auto` slot on entering a scene and on quitting (see [Autosave](#autosave)) |
 | `save_menu(\|s\| ...)` | | Configure the default Save/Load screens |
 
@@ -90,11 +94,17 @@ Layout is relative to the window: `*_y` values are fractions of the window heigh
 
 ### Start screen (`StartScreenConfig`)
 
-Any key or click goes to `next`.
+Any key or click goes to `next` (input is ignored for the first 0.3 s, so a key still held
+from launching doesn't skip it).
 
 | Option | Default |
 |---|---|
+| `title(text)`, `title_text(style)`, `title_y(f)` | none, Title font 64 px, 0.25: a title card, centered |
+| `subtitle(text)`, `subtitle_text(style)` | none, Menu font 20 px light gray, under the title |
+| `scenery(\|s\| ...)` | none: background motion, vignette and letterbox (see [Scenery](#scenery)) |
 | `prompt(text)`, `prompt_text(style)`, `prompt_y(f)` | "Press any key to start", Menu font 30 px, 0.5 |
+| `prompt_in_bar(bool)` | `false`. `true` centers the prompt in the letterbox's bottom bar instead of at `prompt_y` |
+| `prompt_pulse(seconds)` | 0 (steady). A period for a slow fade between 30% and 100% opacity |
 | `footer(text)`, `footer_text(style)` | none (bottom-right, e.g. a version), Menu font 14 px gray |
 | `background(bg)` | none |
 | `next(state)` | `MainMenu` |
@@ -104,12 +114,20 @@ Any key or click goes to `next`.
 | Option | Default |
 |---|---|
 | `title(text)`, `title_text(style)`, `title_y(f)` | app title, Title font 64 px, 0.25 |
+| `title_align(TextAlign)` | `Center` (the window's center). `Left`/`Right` line the title up with the button block's left/right edge |
+| `subtitle(text)`, `subtitle_text(style)` | none; Menu font 20 px light gray, under the title with the same alignment |
 | `button(label, action)`, `item(MenuItem)` | New Game, Continue, Load, Settings, Quit |
 | `button_style(\|b\| ...)` | `ButtonStyle::default()` (240×52) |
 | `buttons_y(f)` | 0.45: top of the button area, as a fraction of the window height |
 | `layout(\|l\| ...)`, `spacing(px)` | a column anchored at the top of the button area, 18 apart (see [Layouts](#layouts)) |
 | `margin(px)` | 40 from the sides and bottom. A menu that would reach closer to the bottom moves up (not into the title), then tightens its spacing |
 | `background(bg)` | none |
+| `panel(\|p\| ...)`, `panel_padding(px)` | none, 40: a [panel](#shapes-and-panels) behind the title and the buttons |
+| `scenery(\|s\| ...)` | none (see [Scenery](#scenery)) |
+| `buttons_in_bar(bool)` | `false`. `true` lays the buttons out inside the letterbox's bottom bar (e.g. `layout(\|l\| l.row().anchor(Anchor::Center))`) |
+| `separator(size, \|p\| ...)` | none: a diamond (`PanelStyle` with bevel corners) between buttons that sit side by side |
+| `intro(seconds)` | 0. When the menu opens at startup, the title fades in and then the buttons; coming from the start screen only the buttons fade in (the title card is already there); from anywhere else, nothing fades |
+| `panel_sidebar(bool)` | `false`. `true` stretches the panel to the top and bottom of the window and to the nearer side, past the edges, so only its inner edge (and its border there) shows |
 
 The first `button`/`item` call replaces the default list; later calls append.
 `MenuItem::new(label, action).style(|b| ...)` changes one button's style on top of
@@ -158,7 +176,7 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 
 | Option | Default |
 |---|---|
-| `dialogue_box(\|b\| ...)` | `DialogueBoxStyle`: height 170, margin 40, padding 24, black at 200 alpha, square corners |
+| `dialogue_box(\|b\| ...)` | `DialogueBoxStyle`: height 170, margin 40, padding 24, black at 200 alpha, square corners, the speaker's name on the first line (see [Dialogue box](#dialogue-box)) |
 | `speaker_text(style)` | Speaker font 24 px gold |
 | `dialogue_text(style)` | Dialogue font 26 px white |
 | `choice_button(\|b\| ...)`, `choice_spacing(px)` | 720×56, Choice font; 16 |
@@ -175,23 +193,134 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 | `hud_button(label, action)`, `hud_item(HudButton::new(label, action).tooltip(text))` | Log, Auto, Skip (the first call replaces them) |
 | `keys(\|k\| ...)` | see [Playing controls](#playing-controls) |
 | `skip_interval(s)`, `auto_per_character(s)` | 0.05 (a line every 3 frames while skipping), 0.02 (added to the auto-forward delay per character) |
-| `skip_label`, `auto_label`, `indicator_text`, `indicator_color` | "Skip »", "Auto", Menu 18 px on translucent black (top-left while skipping or in auto mode) |
+| `skip_label`, `auto_label`, `indicator_text`, `indicator(\|p\| ...)` (or `indicator_color`) | "Skip »", "Auto", Menu 18 px on a translucent black rounded panel (top-left while skipping or in auto mode) |
 | `log_overlay(name)` | `LOG_OVERLAY` |
 | `quick_save_key(Option<key>)`, `quick_load_key(Option<key>)` | `Some(F5)`, `Some(F9)` (the `quick` slot) |
 | `hud_button_style(\|b\| ...)`, `hud_margin(px)`, `hud_spacing(px)` | 130×40, dark translucent, 18 px text; 16; 10 |
 | `hud_layout(\|l\| ...)` | a row anchored top-right, inside `hud_margin` |
+| `hud_group(name, \|l\| ...)` | HUD buttons with `HudButton::group(name)` are placed by this layout instead (it starts from `hud_layout`), e.g. a "top" row at the top-right and the rest under the dialogue box |
 
 raylib's "Esc closes the window" is turned off (see `VnApp::exit_key`).
+
+#### Dialogue box
+
+`DialogueBoxStyle` (`.dialogue_box(|b| ...)`):
+
+| Option | Default |
+|---|---|
+| `height(px)`, `padding(px)` | 170, 24 |
+| `margin(px)` | 40 from the sides (and the bottom, unless `bottom` is set) |
+| `bottom(px)` | the margin: distance from the window's bottom edge, e.g. to leave a row for the HUD under the box |
+| `max_width(px)` | none; a narrower box is centered |
+| `panel(\|p\| ...)` (or `color(c)`, `roundness(r)`) | black at 200 alpha, square (see [Shapes and panels](#shapes-and-panels)) |
+| `name_plate(\|n\| ...)` | none: the speaker's name is the first line inside the box |
+
+With a name plate, the speaker's name sits in its own small panel on the box's top edge
+and the line starts at the top of the box. `NamePlate`: `panel(|p| ...)` (black at 220
+alpha), `padding(x, y)` around the name (18, 6), `indent(px)` from the box's left edge
+(24), `overlap(px)` over the box's top edge (12), `min_width(px)` (0). The name keeps the
+character's color.
+
+```rust
+.playing(|p| {
+    p.dialogue_box(|b| {
+        b.height(150.0)
+            .bottom(52.0)
+            .max_width(1120.0)
+            .panel(|p| p.corners(Corners::scoop(14.0)).border(1.0, BRASS))
+            .name_plate(|n| n.panel(|p| p.corners(Corners::bevel(6.0))).indent(34.0))
+    })
+    .hud_layout(|l| l.row().anchor(Anchor::Bottom))
+})
+```
 
 ## Styles
 
 | Type | Fields / builder methods |
 |---|---|
-| `TextStyle::new(font, size, color)` | `.font()`, `.size()`, `.color()` |
+| `TextStyle::new(font, size, color)` | `.font()`, `.size()`, `.color()`, `.spacing(px)` (extra space between letters, for tracked titles and small caps; honored by `ui::draw_text`, `draw_text_centered`, `measure_text`, `fit_text` and button labels) |
 | `ButtonStyle::default()` | See [Buttons](#buttons) |
 | `SliderStyle::default()` | `.track_height()`, `.knob_radius()`, `.track_color()`, `.fill_color()`, `.knob_color()`, `.step_marks(bool)` |
-| `DialogueBoxStyle::default()` | `.height()`, `.margin()`, `.padding()`, `.color()`, `.roundness()` |
+| `DialogueBoxStyle::default()` | See [Dialogue box](#dialogue-box) |
+| `PanelStyle::new(color)` | See [Shapes and panels](#shapes-and-panels) |
+| `Corners` | See [Shapes and panels](#shapes-and-panels) |
 | `Background` | `Color(color)` fills the screen; `Image(path)` covers it with an asset (scaled, cropping the edges if the aspect ratio differs) |
+
+## Shapes and panels
+
+Every surface the engine draws (buttons, the dialogue box, menus, dialogs, slots,
+tooltips, notifications) is a shape with `Corners`, and every panel is a `PanelStyle`, so
+a game can give all of them one look.
+
+`Corners` sets the shape of each corner:
+
+| `CornerShape` | Constructor | Shape |
+| --- | --- | --- |
+| `Square` | `Corners::square()` | A plain corner |
+| `Round` | `Corners::round(radius)` | A quarter circle, bulging out |
+| `Bevel` | `Corners::bevel(size)` | A straight diagonal cut |
+| `Scoop` | `Corners::scoop(radius)` | A quarter circle cut into the corner (an inward corner) |
+| `Notch` | `Corners::notch(size)` | A square step cut into the corner |
+
+Sizes are in pixels, capped at half the shorter side. `Corners::roundness(0..1)` is a
+round corner relative to the shorter side (what `roundness(r)` sets everywhere). Corners
+can differ: `.top_left(shape, size)`, `.top_right`, `.bottom_left`, `.bottom_right`,
+`.top(shape, size)`, `.bottom(shape, size)`:
+
+```rust
+Corners::scoop(14.0).bottom(CornerShape::Square, 0.0) // a tab: scooped top, square bottom
+```
+
+A `CornerShape` converts to `Corners` with 8 px corners (`.corners(CornerShape::Bevel)`).
+
+`PanelStyle::new(color)`:
+
+| Builder | Meaning |
+| --- | --- |
+| `color(c)` | Fill |
+| `gradient(to, GradientDirection)` | Fade the fill to `to`, `Vertical` (top to bottom) or `Horizontal` (left to right) |
+| `corners(Corners)`, `roundness(r)` | The shape |
+| `border(width, c)`, `no_border()` | An outline that follows the shape |
+| `inner_border(inset, width, c)` | A second outline `inset` pixels inside the first, for a double rule |
+| `shadow(x, y, c)` | A copy of the shape, offset and drawn behind |
+
+`panel.draw(d, rect)` draws one from a custom screen or overlay, and
+`shape::fill(rect, &corners, color, gradient)`, `shape::stroke(rect, &corners, width,
+color)` and `shape::contains(rect, &corners, point)` are the pieces. Curved and diagonal
+edges are drawn with a 1 px feathered edge, so they stay smooth without MSAA; straight
+edges stay sharp.
+
+`cargo run -p vn_engine --example corner_shapes` shows every shape with a border, a
+double rule, a shadow and a gradient.
+
+## Scenery
+
+`Scenery` frames a full-screen background like a film shot. The start screen and the main
+menu take one (`.scenery(|s| ...)`); a custom screen can call
+`scenery.draw_background(d, resources, background)` and `scenery.draw_frame(d,
+seconds_since_open)`.
+
+| Builder | Meaning |
+| --- | --- |
+| `motion(zoom, period)` | A slow push in and out of the background image: from 1.0 to `zoom` and back every `period` seconds. It runs on the app clock, so two screens with the same motion continue it across the switch |
+| `pan(x, y)` | Drift towards the image's edges while zooming (-1..1 of the room the zoom leaves) |
+| `vignette(color, size)` | Darken the edges, fading in over `size` (a fraction of the window) |
+| `letterbox(\|l\| ...)` | Black bars at the top and bottom. `Letterbox`: `height(px)` (80), `color(c)` (black), `rule(width, c)` (a line on each bar's inner edge), `slide_in(seconds)` (0: the bars grow in when the screen opens) |
+
+The example uses one scenery for both screens, with `slide_in` only on the start screen,
+so pressing a key keeps the shot and only brings the menu in:
+
+```rust
+let scenery = |s: Scenery| {
+    s.motion(1.07, 48.0)
+        .pan(0.35, -0.25)
+        .vignette(Color::new(4, 3, 2, 200), 0.24)
+        .letterbox(|l| l.height(84.0).color(INK).rule(1.0, BRASS_DIM))
+};
+VnApp::new("God Is Watching")
+    .start_screen(|s| s.scenery(|s| scenery(s).letterbox(|l| l.slide_in(1.6))).title("GOD IS WATCHING").prompt_in_bar(true))
+    .main_menu(|m| m.scenery(scenery).title("GOD IS WATCHING").intro(1.4).buttons_in_bar(true))
+```
 
 ## Buttons
 
@@ -219,7 +348,7 @@ ButtonStyle::default()
 | `size(w, h)` | 240×52 | |
 | `color(c)` | dark blue | Fill. Also sets the hovered fill to a lighter shade and the pressed fill back to `c` |
 | `hover_color(c)`, `pressed_color(c)` | | Fill in those states |
-| `roundness(0..1)` | 0 | Rounded corners (fill, border and shadow) |
+| `corners(Corners)`, `roundness(0..1)` | square | The shape of the fill, border and shadow (see [Shapes and panels](#shapes-and-panels)) |
 | `text(style)`, `font(role)`, `font_size(px)`, `text_color(c)`, `hover_text_color(c)` | Button font 22 px white | Label |
 | `align(TextAlign)` | `Center` | `Left`, `Center` or `Right` inside the padding |
 | `padding(x, y)` | 12, 6 | Space between the edge and the label/icon |
@@ -232,7 +361,8 @@ ButtonStyle::default()
 
 **States.** `hovered`, `pressed`, `focused` and `disabled` are each a `ButtonLook`, a
 list of overrides on top of the base: `fill`, `text_color`, `border(width, c)`,
-`shadow(x, y, c)`, `image(..)`, `transform(|t| ...)` and `opacity(0..1)`. Unset fields keep
+`shadow(x, y, c)`, `image(..)`, `transform(|t| ...)`, `opacity(0..1)` and
+`underline(width, c)` (a line under the label, for text-only buttons). Unset fields keep
 the base value. They stack in the order focused → hovered → pressed → disabled.
 
 | State | When | Default |
@@ -286,6 +416,7 @@ if ui::button_clicked(&mut ctx, rect, &style) { /* ... */ }
 // draw
 ui::draw_button(d, ctx, rect, "Back", &style);
 ui::Button::new("Gallery", &style).disabled(locked).focused(selected).draw(d, ctx, rect);
+// .opacity(0..1) fades the whole button, e.g. while a screen fades in
 ```
 
 `ui::button_hovered(rl, rect, &style)` is the hit test on its own. Only the layer that
@@ -399,7 +530,8 @@ Backspace return to it. Loading a slot closes everything and continues playing f
 | `button(label, action)`, `item(MenuItem)` | the buttons above; the first call replaces the list |
 | `button_style(\|b\| ...)`, `spacing(px)` | 260×44, 20 px text; 10 |
 | `layout(\|l\| ...)` | a column (see [Layouts](#layouts)); a grid widens the panel |
-| `panel_width(px)`, `padding(px)`, `panel_color(c)`, `panel_roundness(r)` | 340, 28, dark translucent, 0.04 |
+| `panel_width(px)`, `padding(px)` | 340, 28 |
+| `panel(\|p\| ...)` (or `panel_color(c)`, `panel_roundness(r)`) | dark translucent, roundness 0.04 (see [Shapes and panels](#shapes-and-panels)) |
 | `backdrop(c)` | black at 150 alpha, over the game |
 | `close_keys(keys)` | Esc |
 
@@ -435,7 +567,8 @@ The dialog is an overlay (`CONFIRM_OVERLAY`) on top of the current stack: Cancel
 close it; the confirm button, Enter or Y run the action. `ConfirmConfig`
 (`.confirm_dialog(|c| ...)`): `message_text`, `confirm_label` ("Yes"), `cancel_label`
 ("Cancel"), `confirm_button` (red), `cancel_button`, `panel_width` (460), `padding`,
-`panel_color`, `panel_roundness`, `backdrop`, `confirm_keys`, `cancel_keys`.
+`panel(|p| ...)` (or `panel_color`, `panel_roundness`), `backdrop`, `confirm_keys`,
+`cancel_keys`.
 
 ### Closing the window
 
@@ -499,6 +632,9 @@ opened from.
 | `sample_sound(id)` | none: a sound played when the sound slider is released (or stepped with the keys), so the player hears the new volume |
 | `tooltip(row, Option<&str>)` | a short description per row; `None` removes it |
 | `sample_text(text)`, `sample_text_style(style)` | "This is how fast the story's text appears.", Dialogue font 22 px |
+| `sample_box(\|p\| ...)` (or `sample_box_color(c)`) | black at 170 alpha, square: the box the sample text types into |
+| `focus_panel(\|p\| ...)` (or `focus_color(c)`) | white at 22 alpha, roundness 0.2: the band behind the focused row |
+| `panel(\|p\| ...)`, `panel_padding(px)` | none, 40: a panel from the top to the bottom of the window, around the rows |
 | `back_button(\|b\| ...)`, `back_label(text)`, `back_keys(keys)` | 200×48, "Back", Esc and Backspace |
 | `backdrop(c)` | black at 200 alpha, behind the overlay |
 | `background(bg)` | none, behind the screen |
@@ -556,7 +692,7 @@ the story).
 
 `ctx.notify(text)` / `ctx.notify_error(text)` show a short message at the top-left, above
 every screen and overlay (quick save/load use them). `ToastConfig` (`.toast(|t| ...)`):
-`text(style)`, `error_text(style)`, `background(color)`, `seconds(s)` (2.5),
+`text(style)`, `error_text(style)`, `panel(|p| ...)` (or `background(color)`), `seconds(s)` (2.5),
 `margin(px)` (16).
 
 ## Playing controls
@@ -613,7 +749,7 @@ disappear, and the gamepad column is empty when the gamepad is off. `key_name(ke
 | `sections([..])` | replaces the generated list |
 | `open_keys(keys)`, `close_keys(keys)` | F1; F1, Esc, Backspace (no open keys: F1 does nothing and the "Anywhere" row goes away) |
 | `title`, `title_text`, `section_text`, `key_text`, `action_text`, `header_text` | "Controls", Title 38 px, gold Menu 20 px, Menu 16 px |
-| `panel_color`, `backdrop`, `back_button`, `back_label` | |
+| `panel(\|p\| ...)` (or `panel_color`), `backdrop`, `back_button`, `back_label` | |
 
 ## Log
 
@@ -630,7 +766,7 @@ Back close it.
 
 `LogConfig` (`.log(|l| ...)`): `title`, `title_text`, `speaker_text`, `line_text`,
 `narration_text`, `choice_text`, `choice_prefix` ("» "), `empty_label`, `panel_width`
-(900), `entry_spacing`, `panel_color`, `backdrop`, `back_button`, `back_label`,
+(900), `entry_spacing`, `panel(|p| ...)` (or `panel_color`), `backdrop`, `back_button`, `back_label`,
 `close_keys`.
 
 ## Keyboard and gamepad
@@ -718,7 +854,7 @@ wins. The manager draws it on top of everything.
 | `enabled(bool)` | `true` |
 | `delay(seconds)` | 0.5 |
 | `text(style)` | Menu font 16 px white |
-| `background(c)`, `border(Option<c>)` | near-black, a gray 1 px border |
+| `panel(\|p\| ...)` (or `background(c)`, `border(Option<c>)`) | near-black, a gray 1 px border |
 | `padding(px)`, `max_width(px)`, `offset(x, y)` | 8, 360, (14, 20) from the pointer |
 
 `TooltipTimer` is the timing on its own (`update(hovered, now, clicked)`,
@@ -964,7 +1100,9 @@ player "Nice to meet you."
 non-string registered variable logs a warning and does nothing.
 
 `TextInputConfig` (`.text_input(|t| ...)`): `prompt_text`, `input_text`, `hint`,
-`hint_text`, `box_size`, `box_color`, `box_border`, `background`.
+`hint_text`, `box_size`, `input_box(|p| ...)` (or `box_color`, `box_border`), `background`,
+and `panel(|p| ...)` / `panel_padding(px)` (none, 40) for a panel around the prompt, the
+field and the hint.
 
 ## Save and load
 
@@ -996,6 +1134,7 @@ previous save intact.
 {
   "format_version": 1,
   "game": "God Is Watching",
+  "game_version": 0,
   "saved_at": 1789000000,
   "summary": "mary: The hallway candles were lit when I came down.",
   "story": {
@@ -1059,7 +1198,57 @@ part of a save file (up to `max_steps` snapshots).
 Every value registered with `.state(T)` is saved under its type name (`Inventory` for
 `my_game::inventory::Inventory`), so `T` must implement `Serialize` and `Deserialize`.
 Two registered types with the same name panic at startup. Renaming a type changes its
-key, so older saves then report it as missing (see below).
+key, so older saves then report it as missing (see below), unless a
+[migration](#migrations) renames it.
+
+### Migrations
+
+Two versions are stored in every save:
+
+- `format_version`: the engine's file layout (`SAVE_FORMAT_VERSION`). When the engine
+  changes it, it updates older saves itself.
+- `game_version`: yours, set with `.save_version(n)` (`0` by default, and in saves made
+  before the field existed).
+
+When a game changes what it stores (renames a state type or a field, renames or drops a
+story variable, changes an enum's members), it raises its version and registers a step
+that turns saves from the old version into the new one:
+
+```rust
+VnApp::new("My Game")
+    .save_version(2)
+    .migrate_save(0, |save| {
+        save.rename_state("Bag", "Inventory");
+        save.rename_variable("met", "met_mary");
+        Ok(())
+    })
+    .migrate_save(1, |save| {
+        save.state("Inventory", |inventory| {
+            let fields = inventory.as_object_mut().ok_or("not an object")?;
+            let things = fields.remove("things").unwrap_or_default();
+            fields.insert("items".into(), things);
+            Ok(())
+        })
+    })
+```
+
+A save is migrated when it's read: engine steps first, then every game step from its
+`game_version` up to the current one, in order (a version with no step registered is left
+as it is). The file on disk is only rewritten when the player saves over it.
+
+`SaveMigration` edits the save's JSON before it's deserialized. Its helpers apply to the
+save and to every checkpoint of its [rollback history](#rollback-history):
+
+| Method | Does |
+| --- | --- |
+| `state(key, \|value\| ...)` | Edit a state value (`serde_json::Value`) |
+| `rename_state(from, to)`, `remove_state(key)` | Rename or drop a state key |
+| `variable(name, \|value\| ...)` | Edit a story variable (`{"Int": 2}`, `{"Bool": true}`, `{"Enum": "calm"}`, `{"String": "..."}`) |
+| `rename_variable(from, to)`, `remove_variable(name)` | Rename or drop a story variable |
+| `json()` | The whole file, for anything else |
+
+A step returns `Err(message)` to refuse the save (`SaveError::Migration`). A save with a
+`game_version` above the game's is refused with `SaveError::NewerGameVersion`.
 
 ### Loading is all-or-nothing
 
@@ -1076,6 +1265,8 @@ changing anything. If any step fails, the running game is left exactly as it was
 | `Io { path, source }` | Can't read/write (permissions, disk full, ...) | Could not access the save file (...). |
 | `Corrupt { path, source }` | Not valid JSON / not a save (e.g. truncated) | This save file is damaged and can't be loaded. |
 | `NewerFormat { found, supported }` | `format_version` newer than this build | This save was made by a newer version of the game. |
+| `NewerGameVersion { found, supported }` | `game_version` newer than the game's `save_version` | This save was made by a newer version of the game. |
+| `Migration { path, from, message }` | A migration step returned an error | This save couldn't be updated for this version of the game. |
 | `OtherGame { found, expected }` | Saved by a game with another title | This save belongs to a different game. |
 | `Story(VmError)` | The saved scene doesn't exist anymore | This save points to a part of the story that no longer exists. |
 | `State(StateError)` | A state value doesn't match its type anymore (names the key) | This save's game data doesn't match this version of the game. |
@@ -1115,7 +1306,9 @@ Non-fatal issues are returned as `LoadReport::warnings` (and printed by `ctx.loa
 |---|---|
 | `slots(n)` | 6 |
 | `save_title(text)`, `load_title(text)`, `title_text(style)` | "Save Game", "Load Game", Title font 44 px |
-| `slot_size(w, h)`, `slot_spacing(px)`, `slot_color(c)` | 760×64 (shrinks to fit), 10, dark blue |
+| `slot_size(w, h)`, `slot_spacing(px)` | 760×64 (shrinks to fit), 10 |
+| `slot_panel(\|p\| ...)` (or `slot_color(c)`) | dark blue, square |
+| `slot_hover_color(c)`, `slot_hover_border(width, c)` | a lighter blue, the slot's border: the hovered or focused slot |
 | `slot_layout(\|l\| ...)` | a column at the top (see [Layouts](#layouts)) |
 | `slot_title_text`, `slot_summary_text`, `error_text` | Menu 20 px, Dialogue 17 px gray, Menu 17 px red |
 | `confirm_overwrite(bool)`, `confirm_load_in_game(bool)` | `true`, `true` |
@@ -1126,6 +1319,7 @@ Non-fatal issues are returned as `LoadReport::warnings` (and printed by `ctx.loa
 | `back_button(\|b\| ...)`, `back_label(text)`, `back_keys(keys)` | 200×46, "Back", Esc and Backspace |
 | `backdrop(c)` | near-black at 235 alpha (overlay version only) |
 | `background(bg)` | none |
+| `panel(\|p\| ...)`, `panel_padding(px)` | none, 40: a panel from the top to the bottom of the window, around the slots |
 
 ### From code
 
@@ -1231,10 +1425,56 @@ them in a file. `close_confirmation` is the message for `request_close()`. `audi
 auto slot (what `VnApp` does on quit). Textures and fonts live on the GPU, so the
 manager must be created after the window, and dropped before it (declare it after `rl`).
 
+## Assets
+
+Everything the engine loads (textures, fonts, music, sounds, voice clips, `.story` files)
+goes through `Assets`, one of:
+
+| Source | Reads |
+| --- | --- |
+| `Assets::Dir(path)` | Files under a folder (`VnApp::assets(path)`; a path converts with `.into()`) |
+| `Assets::Embedded(&'static [(&str, &[u8])])` | Files compiled into the executable, by relative path with `/` separators |
+
+`read(path)`, `read_to_string(path)`, `exists(path)`, `files_under(dir)` (recursive,
+sorted) and `describe(path)` (for messages: the full path, or `<embedded>/path`) work the
+same for both. Textures, fonts and sounds are decoded from memory either way, so a game
+behaves the same from a folder or from its executable.
+
+### Shipping a release build
+
+`VnApp::assets(concat!(env!("CARGO_MANIFEST_DIR"), "/assets"))` points at the game's source
+folder, which only exists on the machine that built it. To make a release build that runs
+anywhere, embed the folder with [`vn_build`](../vn_build/README.md) from `build.rs` and
+pass the result:
+
+```rust
+// build.rs
+fn main() {
+    vn_build::embed_assets("assets");
+}
+
+// main.rs
+VnApp::new("My Game")
+    .assets(concat!(env!("CARGO_MANIFEST_DIR"), "/assets"))
+    .embedded_assets(vn_engine::embedded_assets!())
+```
+
+`vn_build` only embeds files in release builds (debug builds get an empty list, so they
+compile quickly). `asset_source()` then picks:
+
+1. In a debug build, the `assets` folder if it exists, so hot reload and the schema export
+   keep working on the real files.
+2. Otherwise the embedded files, if there are any.
+3. Otherwise the `assets` folder, or, if it doesn't exist, an `assets` folder next to the
+   executable (for games shipped as an executable plus a folder).
+
+Hot reload and the schema export need a folder, so they're off with embedded assets. Debug
+builds print the source in use at startup.
+
 ## Resources
 
-`ResourceManager` resolves every path relative to the asset root passed to
-`ScreenStateManager::new`.
+`ResourceManager` reads every path from the `Assets` passed to `ScreenStateManager::new`
+(a folder path converts into `Assets::Dir`); `assets()` returns them.
 
 ### Textures
 
@@ -1304,7 +1544,7 @@ The tests run without a window; drawing and input are checked by playing the exa
 | File | Covers |
 | --- | --- |
 | `tests/app.rs` | `VnApp::check` (validation, missing art, story directories, errors with their file), entry scene, typed command arguments, schema export, hook registration |
-| `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history, thumbnails (scaled, replaced, deleted with the slot), autosave switch, save directory names |
+| `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history, thumbnails (scaled, replaced, deleted with the slot), autosave switch, save directory names, migrations (state and variables renamed in the save and its history, game version recorded, versions with no step, newer versions refused, failing steps) |
 | `tests/keybinds.rs` | Key names, the generated list following rebinding and disabled features, extra and replaced sections |
 | `tests/session.rs` | The session log (limit, rewinding and forwarding, a new branch after a rollback, replacing), seen lines on disk, log lengths in checkpoints (and older checkpoints), the log in save files, the default HUD, the auto-forward delay |
 | `tests/stage.rs` | Which events start which animations (entrances, expression changes, moves, exits, `clear`, backgrounds), lengths and expiry, textures kept for fading images, finishing and resetting, the character layout |
@@ -1313,5 +1553,8 @@ The tests run without a window; drawing and input are checked by playing the exa
 | `tests/audio.rs` | Finding audio files by extension, fades, the music a silent `Audio` tracks, `AudioConfig` |
 | `tests/rollback.rs` | Back/forward, barriers (`commit`, final choices, blocked commands, `through_choices`), history limits, history across a save and load |
 | `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
+| `tests/assets.rs` | Folders and embedded files answering the same (reads, path normalization, listings), descriptions, a story loaded only from embedded files, which source a build picks |
+| `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups |
+| `tests/shape.rs` | Corner outlines for each shape, round versus scooped hit tests, size capping and relative roundness, per-corner shapes, `PanelStyle`, the dialogue box's placement and the name plate |
 | `tests/layout.rs` | Every layout arrangement, anchor and alignment, fitting, and the default screens' positions |
 | `tests/hot_reload.rs` | The file watcher, swapping in a reloaded story, the story loader, the error panel's lines |

@@ -1,6 +1,6 @@
 use vn_engine::raylib::prelude::*;
 use vn_engine::ui::{self, ButtonStyle};
-use vn_engine::{DrawContext, GameContext, Screen, ScreenState, TextStyle};
+use vn_engine::{DrawContext, GameContext, PanelStyle, Screen, ScreenState, TextStyle};
 
 use crate::evidence::{Evidence, describe};
 use crate::style;
@@ -14,16 +14,20 @@ pub struct EvidenceScreen {
     detail: TextStyle,
     count: TextStyle,
     back: ButtonStyle,
+    frame: PanelStyle,
+    row: PanelStyle,
 }
 
 impl EvidenceScreen {
     pub fn new() -> Self {
         Self {
-            heading: style::heading(46.0),
+            heading: style::heading(40.0),
             name: style::body(24.0).color(style::PARCHMENT),
             detail: style::label(18.0),
-            count: style::label(20.0).color(style::PARCHMENT),
-            back: style::button(ButtonStyle::default().size(200.0, 48.0)),
+            count: style::section(19.0),
+            back: style::button(ButtonStyle::default().size(200.0, 44.0)),
+            frame: style::frame(PanelStyle::default()),
+            row: style::inset(PanelStyle::default()),
         }
     }
 
@@ -68,16 +72,26 @@ impl Screen for EvidenceScreen {
             Some(&style::background(style::ARCHIVE_BACKGROUND)),
         );
         d.draw_rectangle(0, 0, screen.x as i32, screen.y as i32, style::BACKDROP);
+        let panel_width = LIST_WIDTH + 80.0;
+        self.frame.draw(
+            d,
+            Rectangle::new(
+                (screen.x - panel_width) / 2.0,
+                24.0,
+                panel_width,
+                screen.y - 48.0,
+            ),
+        );
         ui::draw_text_centered(
             d,
             fonts,
             "Evidence",
-            Vector2::new(screen.x / 2.0, 80.0),
+            Vector2::new(screen.x / 2.0, 70.0),
             &self.heading,
         );
 
         let left = (screen.x - LIST_WIDTH) / 2.0;
-        let top = 140.0;
+        let top = 124.0;
 
         if evidence.is_empty() {
             ui::draw_text_centered(
@@ -92,7 +106,7 @@ impl Screen for EvidenceScreen {
         for (i, (item, count)) in evidence.items().enumerate() {
             let y = top + i as f32 * ROW_HEIGHT;
             let row = Rectangle::new(left, y, LIST_WIDTH, ROW_HEIGHT - 10.0);
-            d.draw_rectangle_rounded(row, 0.12, 6, style::PANEL);
+            self.row.draw(d, row);
 
             let (name, detail) = describe(item);
             ui::draw_text(

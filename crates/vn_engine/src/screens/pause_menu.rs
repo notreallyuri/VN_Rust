@@ -3,6 +3,7 @@ use std::rc::Rc;
 use raylib::prelude::*;
 
 use crate::Layout;
+use crate::PanelStyle;
 use crate::screens::{MenuItem, SETTINGS_OVERLAY};
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{
@@ -22,8 +23,7 @@ pub struct PauseMenuConfig {
     pub layout: Layout,
     pub padding: f32,
     pub panel_width: f32,
-    pub panel_color: Color,
-    pub panel_roundness: f32,
+    pub panel: PanelStyle,
     pub backdrop: Color,
     pub close_keys: Vec<KeyboardKey>,
     custom_items: bool,
@@ -60,8 +60,7 @@ impl Default for PauseMenuConfig {
             layout: Layout::default().spacing(10.0),
             padding: 28.0,
             panel_width: 340.0,
-            panel_color: Color::new(18, 18, 28, 240),
-            panel_roundness: 0.04,
+            panel: PanelStyle::new(Color::new(18, 18, 28, 240)).roundness(0.04),
             backdrop: Color::new(0, 0, 0, 150),
             close_keys: vec![KeyboardKey::KEY_ESCAPE],
             custom_items: false,
@@ -119,12 +118,17 @@ impl PauseMenuConfig {
     }
 
     pub fn panel_color(mut self, color: Color) -> Self {
-        self.panel_color = color;
+        self.panel.color = color;
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = style(self.panel);
         self
     }
 
     pub fn panel_roundness(mut self, roundness: f32) -> Self {
-        self.panel_roundness = roundness.clamp(0.0, 1.0);
+        self.panel = self.panel.roundness(roundness);
         self
     }
 
@@ -138,7 +142,7 @@ impl PauseMenuConfig {
         self
     }
 
-    pub fn panel(&self, screen: Vector2) -> Rectangle {
+    pub fn panel_rect(&self, screen: Vector2) -> Rectangle {
         self.placement(screen).0
     }
 
@@ -245,11 +249,7 @@ impl Overlay for PauseMenu {
         let (panel, title_y, buttons) = config.placement(screen);
 
         d.draw_rectangle(0, 0, screen.x as i32, screen.y as i32, config.backdrop);
-        if config.panel_roundness > 0.0 {
-            d.draw_rectangle_rounded(panel, config.panel_roundness, 8, config.panel_color);
-        } else {
-            d.draw_rectangle_rec(panel, config.panel_color);
-        }
+        config.panel.draw(d, panel);
 
         ui::draw_text_centered(
             d,

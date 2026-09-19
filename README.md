@@ -81,7 +81,8 @@ It may only:
 |---|---|
 | [`crates/vn_script`](crates/vn_script/README.md) | Story DSL: lexer, parser, compiler and VM. No rendering dependencies |
 | [`crates/vn_engine`](crates/vn_engine/README.md) | raylib-based engine: `VnApp` builder, configurable default screens, UI helpers, resources, fonts. Re-exports `raylib` and `vn_script` |
-| [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn check <path>`, `vn dump <file.story | dir>`) |
+| [`crates/vn_build`](crates/vn_build/README.md) | Build-script helper (no dependencies) that embeds a game's assets in release builds |
+| [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn new <dir>`, `vn check <path>`, `vn dump <file.story | dir>`) |
 | [`examples/god_is_watching`](examples/god_is_watching/README.md) | Reference game built on `vn_engine` |
 
 Each crate documents its API and behavior in its own README.
@@ -97,6 +98,10 @@ cargo run -p god_is_watching
 ```
 
 raylib is built from source on the first run, so you need CMake and a C compiler.
+
+`cargo build --release -p god_is_watching` embeds the assets in the executable, so
+`target/release/god_is_watching` (or the `.exe`) can be sent to someone and played on its
+own. See [vn_build](crates/vn_build/README.md).
 
 Its assets live in `examples/god_is_watching/assets/`:
 
@@ -121,6 +126,18 @@ To check the stories without starting the game, and to inspect how they compile:
 cargo run -p vn_cli -- check examples/god_is_watching/assets
 cargo run -p vn_cli -- dump examples/god_is_watching/assets/story
 ```
+
+## Starting a Game
+
+```sh
+cargo run -p vn_cli -- new ../my-novel
+cd ../my-novel
+cargo run
+```
+
+`vn new` writes a small working game (a `main.rs` that registers a character, variables
+and a command, and a two-scene story) that depends on this workspace's `vn_engine`. See
+[vn_cli's README](crates/vn_cli/README.md#vn-new-directory---title-title---engine-path-dir----engine-git-url).
 
 ## Writing Story Scripts
 
@@ -149,11 +166,10 @@ This keeps stories:
 Work in progress
 
 Working today: the story DSL with validation and "did you mean" diagnostics, the VM, the
-raylib engine (default screens, saves with autosave and thumbnails, rollback, settings,
-music and sound, hot reload), `vn check` / `vn dump`, and the example game.
+raylib engine (default screens, transitions, keyboard/gamepad navigation, saves with
+autosave, thumbnails and migrations, rollback, settings, music, sound and voice, hot
+reload), `vn new` / `vn check` / `vn dump`, and the example game.
 
 Planned (see TODO.md):
 
-- Transitions and keyboard/gamepad navigation
-- `vn new` and save format migrations
 - Tree-sitter grammar, editor support (Neovim, VS Code, Zed), an LSP and a formatter

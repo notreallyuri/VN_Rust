@@ -22,7 +22,8 @@ Three levels of control, each optional:
 | --- | --- |
 | `crates/vn_script` | DSL lexer, parser, compiler, VM. **No rendering deps**, reusable by CLI/LSP |
 | `crates/vn_engine` | raylib engine: screens, resources, game loop. Re-exports `raylib` and `vn_script` (as `script`) |
-| `crates/vn_cli` | `vn` binary: `vn check`, `vn dump`; later `new`, `run`, `lsp`, `fmt` |
+| `crates/vn_build` | Build-script helper: embeds a game's assets in release builds |
+| `crates/vn_cli` | `vn` binary: `vn new`, `vn check`, `vn dump`; later `run`, `lsp`, `fmt` |
 | `examples/god_is_watching` | The reference game, and the first real consumer of the engine API |
 
 ---
@@ -126,6 +127,7 @@ Three levels of control, each optional:
 - [x] Clean exit (`ScreenState::Quit`)
 - [x] Ren'Py playing controls: hide (H, middle click), skip (Ctrl held, Tab; read lines only unless set otherwise, remembered in `seen.json`), auto mode (A; waits for typing, transitions and voice), log (L, HUD button), screenshot (S), fullscreen (F), right click for the menu; gamepad equivalents
 - [x] Controls overlay on F1, generated from the configured keys, with game-specific sections
+- [x] Corner shapes (`Corners`: square, round, bevel, scoop, notch, per corner) and `PanelStyle` (fill or gradient, border, inner rule, shadow), with feathered curves; used by buttons, the dialogue box and every panel. Optional panels on the main menu (incl. a sidebar), settings, save/load and text input; a name plate for the speaker; the dialogue box's `bottom`/`max_width`; main menu title alignment and subtitle
 - [x] Session log overlay (lines and choices; rolled back with the story, kept in saves)
 - [x] `voice <id>` clips with a voice volume setting
 - [x] Audio: `music <track>` / `music none` / `sound <id>` (SCRIPT.md 2.7); looping music with crossfades, part of the story state (saves, rollback, hot reload); menu music; volumes in settings
@@ -135,8 +137,9 @@ Three levels of control, each optional:
 - [x] Save/load: VM snapshot (scene + offset + scene fingerprint, variables, characters, current line), game state by type name, JSON slots with atomic writes, all-or-nothing loads, `SaveError` / `LoadWarning`, default Save/Load screens, quick save/load
 - [x] Autosave (on scene change / on quit), save thumbnails, delete-slot and overwrite confirmation in the default screens; `Action::Continue` loads the newest save
 - [x] Platform save directory (e.g. `~/.local/share/<game>`) instead of `./saves`
-- [ ] Save format migrations when `SAVE_FORMAT_VERSION` changes
-- [ ] `vn new` project template
+- [x] Save format migrations: engine steps for `SAVE_FORMAT_VERSION`, and game steps (`.save_version(n)`, `.migrate_save(from, ..)`) that rename/edit state and variables in the save and its rollback history
+- [x] Release builds that run anywhere: `Assets` (a folder or files embedded in the executable) behind every load, `vn_build` embedding `assets/` from `build.rs` in release builds, `embedded_assets!()`, and an `assets` folder next to the executable as a fallback
+- [x] `vn new` project template (Cargo.toml, `main.rs`, a two-scene story, a matching `schema.json`)
 - [x] Multi-file projects: every `.story` under `story_dir` is one program; diagnostics name their file; the example's chapters jump into each other
 - [ ] Editor support for `.story` files:
   - [ ] `tree-sitter-story` grammar, with an external scanner for indentation (INDENT/DEDENT, like tree-sitter-python); corpus tests from `all_features.story`
@@ -157,6 +160,8 @@ Three levels of control, each optional:
 - [x] A feature tour in the example README
 - [x] Real art to replace the generated placeholders (Will change to proper styling later)
 - [x] Music and sound: 5 CC0 tracks and 7 CC0 sounds (`assets/AUDIO_CREDITS.md`)
+- [x] Cinematic title and menu: `Scenery` (background motion, vignette, sliding letterbox) on the start screen and main menu, a title card on the start screen, menu buttons in the letterbox bar with diamond separators and an intro fade, `TextStyle::spacing`, `ButtonLook::underline`, `Button::opacity`; HUD groups (`HudButton::group`, `hud_group`)
+- [x] UI overhaul: one visual system in `style.rs` taken from the art (warm ink, brass, parchment, oxblood for irreversible actions), scooped frames on every panel, beveled buttons with hover changes limited to fill and rule, a sidebar main menu, a framed dialogue box with a name plate and the HUD as a row beneath it, panels on the custom screens
 
 ## Ongoing
 

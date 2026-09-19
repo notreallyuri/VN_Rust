@@ -3,21 +3,82 @@ use std::rc::Rc;
 use raylib::prelude::*;
 use vn_script::{Event, Position};
 
-use crate::LogEntry;
 use crate::screens::{LOG_OVERLAY, PAUSE_OVERLAY};
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
     Action, Anchor, DrawContext, Focus, FontRole, GameContext, Layout, NavInput, Screen,
     ScreenState, Stage, StyleOverride, background_path, character_path,
 };
+use crate::{LogEntry, PanelStyle};
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct NamePlate {
+    pub panel: PanelStyle,
+    pub padding: Vector2,
+    pub indent: f32,
+    pub overlap: f32,
+    pub min_width: f32,
+}
+
+impl Default for NamePlate {
+    fn default() -> Self {
+        Self {
+            panel: PanelStyle::new(Color::new(0, 0, 0, 220)),
+            padding: Vector2::new(18.0, 6.0),
+            indent: 24.0,
+            overlap: 12.0,
+            min_width: 0.0,
+        }
+    }
+}
+
+impl NamePlate {
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = style(self.panel);
+        self
+    }
+
+    pub fn padding(mut self, x: f32, y: f32) -> Self {
+        self.padding = Vector2::new(x, y);
+        self
+    }
+
+    pub fn indent(mut self, indent: f32) -> Self {
+        self.indent = indent;
+        self
+    }
+
+    pub fn overlap(mut self, overlap: f32) -> Self {
+        self.overlap = overlap;
+        self
+    }
+
+    pub fn min_width(mut self, width: f32) -> Self {
+        self.min_width = width;
+        self
+    }
+
+    pub fn rect(&self, dialogue_box: Rectangle, name_size: Vector2) -> Rectangle {
+        let width = (name_size.x + self.padding.x * 2.0).max(self.min_width);
+        let height = name_size.y + self.padding.y * 2.0;
+        Rectangle::new(
+            dialogue_box.x + self.indent,
+            dialogue_box.y - height + self.overlap,
+            width,
+            height,
+        )
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DialogueBoxStyle {
     pub height: f32,
     pub margin: f32,
+    pub bottom: Option<f32>,
+    pub max_width: Option<f32>,
     pub padding: f32,
-    pub color: Color,
-    pub roundness: f32,
+    pub panel: PanelStyle,
+    pub name_plate: Option<NamePlate>,
 }
 
 impl Default for DialogueBoxStyle {
@@ -25,9 +86,11 @@ impl Default for DialogueBoxStyle {
         Self {
             height: 170.0,
             margin: 40.0,
+            bottom: None,
+            max_width: None,
             padding: 24.0,
-            color: Color::new(0, 0, 0, 200),
-            roundness: 0.0,
+            panel: PanelStyle::new(Color::new(0, 0, 0, 200)),
+            name_plate: None,
         }
     }
 }
@@ -43,26 +106,48 @@ impl DialogueBoxStyle {
         self
     }
 
+    pub fn bottom(mut self, distance: f32) -> Self {
+        self.bottom = Some(distance);
+        self
+    }
+
+    pub fn max_width(mut self, width: f32) -> Self {
+        self.max_width = Some(width);
+        self
+    }
+
     pub fn padding(mut self, padding: f32) -> Self {
         self.padding = padding;
         self
     }
 
     pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
+        self.panel.color = color;
         self
     }
 
     pub fn roundness(mut self, roundness: f32) -> Self {
-        self.roundness = roundness.clamp(0.0, 1.0);
+        self.panel = self.panel.roundness(roundness);
         self
     }
 
-    fn rect(&self, screen: Vector2) -> Rectangle {
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = style(self.panel);
+        self
+    }
+
+    pub fn name_plate(mut self, plate: impl FnOnce(NamePlate) -> NamePlate) -> Self {
+        self.name_plate = Some(plate(self.name_plate.unwrap_or_default()));
+        self
+    }
+
+    pub fn rect(&self, screen: Vector2) -> Rectangle {
+        let full = screen.x - self.margin * 2.0;
+        let width = self.max_width.map_or(full, |max| max.min(full));
         Rectangle::new(
-            self.margin,
-            screen.y - self.height - self.margin,
-            screen.x - self.margin * 2.0,
+            (screen.x - width) / 2.0,
+            screen.y - self.height - self.bottom.unwrap_or(self.margin),
+            width,
             self.height,
         )
     }
@@ -153,6 +238,7 @@ pub struct HudButton {
     pub action: Action,
     pub tooltip: Option<String>,
     pub style: Option<StyleOverride>,
+    pub group: Option<String>,
 }
 
 type ChoiceStyleFn = Rc<dyn Fn(usize, &str, ButtonStyle) -> ButtonStyle>;
@@ -173,7 +259,13 @@ impl HudButton {
             action,
             tooltip: None,
             style: None,
+            group: None,
         }
+    }
+
+    pub fn group(mut self, name: impl Into<String>) -> Self {
+        self.group = Some(name.into());
+        self
     }
 
     pub fn style(mut self, style: impl Fn(ButtonStyle) -> ButtonStyle + 'static) -> Self {
@@ -211,13 +303,14 @@ pub struct PlayingConfig {
     pub skip_interval: f64,
     pub auto_per_character: f64,
     pub indicator_text: TextStyle,
-    pub indicator_color: Color,
+    pub indicator: PanelStyle,
     pub skip_label: String,
     pub auto_label: String,
     pub log_overlay: String,
     pub hud_button: ButtonStyle,
     pub hud_margin: f32,
     pub hud_layout: Layout,
+    pub hud_groups: Vec<(String, Layout)>,
     pub quick_save_key: Option<KeyboardKey>,
     pub quick_load_key: Option<KeyboardKey>,
     pub pause_key: Option<KeyboardKey>,
@@ -259,7 +352,7 @@ impl Default for PlayingConfig {
             skip_interval: 0.05,
             auto_per_character: 0.02,
             indicator_text: TextStyle::new(FontRole::Menu, 18.0, Color::RAYWHITE),
-            indicator_color: Color::new(0, 0, 0, 160),
+            indicator: PanelStyle::new(Color::new(0, 0, 0, 160)).roundness(0.3),
             skip_label: "Skip »".to_string(),
             auto_label: "Auto".to_string(),
             log_overlay: LOG_OVERLAY.to_string(),
@@ -272,6 +365,7 @@ impl Default for PlayingConfig {
                 .row()
                 .anchor(Anchor::TopRight)
                 .spacing(10.0),
+            hud_groups: Vec::new(),
             quick_save_key: Some(KeyboardKey::KEY_F5),
             quick_load_key: Some(KeyboardKey::KEY_F9),
             pause_key: Some(KeyboardKey::KEY_ESCAPE),
@@ -459,7 +553,12 @@ impl PlayingConfig {
     }
 
     pub fn indicator_color(mut self, color: Color) -> Self {
-        self.indicator_color = color;
+        self.indicator.color = color;
+        self
+    }
+
+    pub fn indicator(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.indicator = style(self.indicator);
         self
     }
 
@@ -487,15 +586,52 @@ impl PlayingConfig {
         self
     }
 
+    pub fn hud_group(
+        mut self,
+        name: impl Into<String>,
+        layout: impl FnOnce(Layout) -> Layout,
+    ) -> Self {
+        let name = name.into();
+        let base = self.hud_layout.clone();
+        match self.hud_groups.iter_mut().find(|(n, _)| *n == name) {
+            Some((_, existing)) => *existing = layout(existing.clone()),
+            None => self.hud_groups.push((name, layout(base))),
+        }
+        self
+    }
+
+    fn group_layout(&self, group: Option<&str>) -> &Layout {
+        group
+            .and_then(|name| self.hud_groups.iter().find(|(n, _)| n == name))
+            .map_or(&self.hud_layout, |(_, layout)| layout)
+    }
+
     pub fn hud_rects(&self, screen: Vector2) -> Vec<Rectangle> {
-        let sizes: Vec<Vector2> = (0..self.hud.len())
-            .map(|i| {
-                let style = self.hud_style(i);
-                Vector2::new(style.width, style.height)
-            })
-            .collect();
-        self.hud_layout
-            .place(inset(screen, self.hud_margin), &sizes)
+        let area = inset(screen, self.hud_margin);
+        let mut rects = vec![Rectangle::new(0.0, 0.0, 0.0, 0.0); self.hud.len()];
+        let mut groups: Vec<Option<&str>> = Vec::new();
+        for button in &self.hud {
+            if !groups.contains(&button.group.as_deref()) {
+                groups.push(button.group.as_deref());
+            }
+        }
+        for group in groups {
+            let members: Vec<usize> = (0..self.hud.len())
+                .filter(|&i| self.hud[i].group.as_deref() == group)
+                .collect();
+            let sizes: Vec<Vector2> = members
+                .iter()
+                .map(|&i| {
+                    let style = self.hud_style(i);
+                    Vector2::new(style.width, style.height)
+                })
+                .collect();
+            let placed = self.group_layout(group).place(area, &sizes);
+            for (i, rect) in members.into_iter().zip(placed) {
+                rects[i] = rect;
+            }
+        }
+        rects
     }
 
     pub fn choice_rects(&self, count: usize, screen: Vector2) -> Vec<Rectangle> {
@@ -1030,7 +1166,7 @@ impl Screen for PlayingScreen {
             let style = &config.indicator_text;
             let size = fonts.measure(style.font, label, style.size);
             let panel = Rectangle::new(16.0, 16.0, size.x + 24.0, size.y + 12.0);
-            d.draw_rectangle_rounded(panel, 0.3, 6, config.indicator_color);
+            config.indicator.draw(d, panel);
             ui::draw_text(d, fonts, label, Vector2::new(28.0, 22.0), style);
         }
 
@@ -1039,11 +1175,7 @@ impl Screen for PlayingScreen {
                 let rect = config.dialogue_box.rect(screen);
                 let style = &config.dialogue_box;
 
-                if style.roundness > 0.0 {
-                    d.draw_rectangle_rounded(rect, style.roundness, 8, style.color);
-                } else {
-                    d.draw_rectangle_rec(rect, style.color);
-                }
+                style.panel.draw(d, rect);
 
                 let inner_x = rect.x + style.padding;
                 let inner_width = rect.width - style.padding * 2.0;
@@ -1051,12 +1183,26 @@ impl Screen for PlayingScreen {
 
                 if let Some(speaker) = speaker {
                     let name = ctx.characters.display_name(speaker, ctx.story);
-                    let style = match ctx.characters.color(speaker) {
+                    let text = match ctx.characters.color(speaker) {
                         Some(color) => config.speaker_text.clone().color(color),
                         None => config.speaker_text.clone(),
                     };
-                    ui::draw_text(d, fonts, &name, Vector2::new(inner_x, y), &style);
-                    y += config.speaker_text.size * 1.4;
+                    match &style.name_plate {
+                        Some(plate) => {
+                            let size = fonts.measure(text.font, &name, text.size);
+                            let plate_rect = plate.rect(rect, size);
+                            plate.panel.draw(d, plate_rect);
+                            let at = Vector2::new(
+                                plate_rect.x + (plate_rect.width - size.x) / 2.0,
+                                plate_rect.y + plate.padding.y,
+                            );
+                            ui::draw_text(d, fonts, &name, at, &text);
+                        }
+                        None => {
+                            ui::draw_text(d, fonts, &name, Vector2::new(inner_x, y), &text);
+                            y += config.speaker_text.size * 1.4;
+                        }
+                    }
                 }
 
                 ui::draw_text_wrapped_visible(

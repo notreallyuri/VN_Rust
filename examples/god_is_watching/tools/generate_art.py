@@ -538,18 +538,22 @@ PEOPLE = {
 }
 
 
-def ui_panel(fill, rule, size=96, inset=6):
+def ui_panel(fill, rule, size=96, cut=10, alpha=235):
     k = 4
     big = size * k
-    noise = RNG.normal(0.0, 5.0, (big, big, 1))
-    pixels = np.ones((big, big, 3), dtype=np.float32) * np.array(fill, dtype=np.float32) + noise
-    image = Image.fromarray(np.clip(pixels, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+    c = cut * k
+    shape = [(c, 0), (big - c, 0), (big, c), (big, big - c), (big - c, big), (c, big), (0, big - c), (0, c)]
+    image = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     d = ImageDraw.Draw(image)
-    a = inset * k
-    d.rectangle([a, a, big - a - 1, big - a - 1], outline=rule + (255,), width=2 * k)
-    for cx, cy in [(a, a), (big - a, a), (a, big - a), (big - a, big - a)]:
-        r = 5 * k
-        d.polygon([(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)], fill=rule + (255,))
+    d.polygon(shape, fill=fill + (alpha,))
+    o = k
+    rim = [(c + o * 0.4, o), (big - c - o * 0.4, o), (big - o, c + o * 0.4), (big - o, big - c - o * 0.4),
+           (big - c - o * 0.4, big - o), (c + o * 0.4, big - o), (o, big - c - o * 0.4), (o, c + o * 0.4)]
+    d.line(rim + [rim[0]], fill=rule + (255,), width=2 * k, joint="curve")
+    i = 5 * k
+    inner = [(c + i * 0.4, i), (big - c - i * 0.4, i), (big - i, c + i * 0.4), (big - i, big - c - i * 0.4),
+             (big - c - i * 0.4, big - i), (c + i * 0.4, big - i), (i, big - c - i * 0.4), (i, c + i * 0.4)]
+    d.line(inner + [inner[0]], fill=rule + (70,), width=k, joint="curve")
     return image.resize((size, size), Image.LANCZOS)
 
 
@@ -603,8 +607,8 @@ def icon_menu(d, s):
 
 
 UI = {
-    "choice": lambda: ui_panel(rgb("#1c1820"), rgb("#6e6456")),
-    "choice_hover": lambda: ui_panel(rgb("#2a2330"), rgb("#ddc9a4")),
+    "choice": lambda: ui_panel(rgb("#17120e"), rgb("#7a6242")),
+    "choice_hover": lambda: ui_panel(rgb("#2a2119"), rgb("#e2cea8"), alpha=245),
     "icon_evidence": lambda: ui_icon(icon_evidence),
     "icon_case_file": lambda: ui_icon(icon_case_file),
     "icon_save": lambda: ui_icon(icon_save),
@@ -618,10 +622,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--assets", default=str(Path(__file__).resolve().parent.parent / "assets"))
     parser.add_argument("--only", nargs="*")
+    parser.add_argument("--placeholders", action="store_true")
     args = parser.parse_args()
     assets = Path(args.assets)
 
-    for name, paint in BACKGROUNDS.items():
+    for name, paint in BACKGROUNDS.items() if args.placeholders else ():
         if args.only and name not in args.only:
             continue
         path = assets / "backgrounds" / f"{name}.png"
@@ -629,7 +634,7 @@ def main():
         paint().save(path, optimize=True)
         print(f"wrote {path}")
 
-    for person, (color, base, expressions) in PEOPLE.items():
+    for person, (color, base, expressions) in PEOPLE.items() if args.placeholders else ():
         if args.only and person not in args.only:
             continue
         for expression, overrides in expressions.items():

@@ -7,6 +7,7 @@ use std::rc::Rc;
 use raylib::ffi;
 use raylib::prelude::*;
 
+use crate::shape::{self, Corners};
 use crate::ui::{TextStyle, fit_text, lighten};
 use crate::{DrawContext, FontRole, GameContext};
 
@@ -287,9 +288,15 @@ pub struct ButtonLook {
     pub image: Option<ButtonImage>,
     pub transform: Option<Transform>,
     pub opacity: Option<f32>,
+    pub underline: Option<Border>,
 }
 
 impl ButtonLook {
+    pub fn underline(mut self, width: f32, color: Color) -> Self {
+        self.underline = Some(Border::new(width, color));
+        self
+    }
+
     pub fn fill(mut self, color: Color) -> Self {
         self.fill = Some(color);
         self
@@ -350,7 +357,7 @@ pub struct ButtonStyle {
     pub width: f32,
     pub height: f32,
     pub color: Color,
-    pub roundness: f32,
+    pub corners: Corners,
     pub text: TextStyle,
     pub align: TextAlign,
     pub padding: Vector2,
@@ -376,7 +383,7 @@ impl Default for ButtonStyle {
             width: 240.0,
             height: 52.0,
             color,
-            roundness: 0.0,
+            corners: Corners::SQUARE,
             text: TextStyle::new(FontRole::Button, 22.0, Color::WHITE),
             align: TextAlign::Center,
             padding: Vector2::new(12.0, 6.0),
@@ -421,8 +428,12 @@ impl ButtonStyle {
         self
     }
 
-    pub fn roundness(mut self, roundness: f32) -> Self {
-        self.roundness = roundness.clamp(0.0, 1.0);
+    pub fn roundness(self, roundness: f32) -> Self {
+        self.corners(Corners::roundness(roundness))
+    }
+
+    pub fn corners(mut self, corners: impl Into<Corners>) -> Self {
+        self.corners = corners.into();
         self
     }
 
@@ -556,6 +567,7 @@ impl ButtonStyle {
             image: self.image.clone(),
             transform: self.transform,
             opacity: 1.0,
+            underline: None,
         };
         look.blend(&self.focused, amounts.focus);
         look.blend(&self.hovered, amounts.hover);
@@ -594,6 +606,7 @@ pub struct Look {
     pub image: Option<ButtonImage>,
     pub transform: Transform,
     pub opacity: f32,
+    pub underline: Option<Border>,
 }
 
 impl Look {
@@ -639,6 +652,16 @@ impl Look {
         }
         if let Some(opacity) = other.opacity {
             self.opacity = mix(self.opacity, opacity, t);
+        }
+        if let Some(line) = other.underline {
+            let from = self.underline.unwrap_or(Border::new(
+                line.width,
+                Color::new(line.color.r, line.color.g, line.color.b, 0),
+            ));
+            self.underline = Some(Border::new(
+                mix(from.width, line.width, t),
+                mix_color(from.color, line.color, t),
+            ));
         }
     }
 }
@@ -751,9 +774,15 @@ pub struct Button<'a> {
     disabled: bool,
     focused: bool,
     active: bool,
+    opacity: f32,
 }
 
 impl<'a> Button<'a> {
+    pub fn opacity(mut self, opacity: f32) -> Self {
+        self.opacity = opacity.clamp(0.0, 1.0);
+        self
+    }
+
     pub fn new(label: &'a str, style: &'a ButtonStyle) -> Self {
         Self {
             label,
@@ -761,6 +790,7 @@ impl<'a> Button<'a> {
             disabled: false,
             focused: false,
             active: false,
+            opacity: 1.0,
         }
     }
 
@@ -820,7 +850,11 @@ impl<'a> Button<'a> {
     }
 
     pub fn draw(self, d: &mut RaylibDrawHandle, ctx: &DrawContext, rect: Rectangle) {
-        let look = self.style.look(self.amounts(d, ctx, rect));
+        let mut look = self.style.look(self.amounts(d, ctx, rect));
+        look.opacity *= self.opacity;
+        if look.opacity <= 0.0 {
+            return;
+        }
         with_transform(rect, &look.transform, || {
             draw_body(d, ctx, rect, self.style, &look);
             draw_content(d, ctx, rect, self.label, self.style, &look);
@@ -863,15 +897,8 @@ fn with_transform(rect: Rectangle, transform: &Transform, draw: impl FnOnce()) {
     }
 }
 
-fn draw_shape(d: &mut RaylibDrawHandle, rect: Rectangle, roundness: f32, color: Color) {
-    if color.a == 0 {
-        return;
-    }
-    if roundness > 0.0 {
-        d.draw_rectangle_rounded(rect, roundness, 8, color);
-    } else {
-        d.draw_rectangle_rec(rect, color);
-    }
+fn draw_shape(rect: Rectangle, corners: &Corners, color: Color) {
+    shape::fill(rect, corners, color, None);
 }
 
 fn draw_body(
@@ -888,31 +915,26 @@ fn draw_body(
             rect.width,
             rect.height,
         );
-        draw_shape(
-            d,
-            offset,
-            style.roundness,
-            faded(shadow.color, look.opacity),
-        );
+        draw_shape(offset, &style.corners, faded(shadow.color, look.opacity));
     }
 
     match &look.image {
         Some(image) => match ctx.resources.texture(&image.path) {
             Some(texture) => draw_image(d, texture, image, rect, faded(image.tint, look.opacity)),
-            None => draw_shape(d, rect, style.roundness, faded(look.fill, look.opacity)),
+            None => draw_shape(rect, &style.corners, faded(look.fill, look.opacity)),
         },
-        None => draw_shape(d, rect, style.roundness, faded(look.fill, look.opacity)),
+        None => draw_shape(rect, &style.corners, faded(look.fill, look.opacity)),
     }
 
     if let Some(border) = look.border
         && border.width > 0.0
     {
-        let color = faded(border.color, look.opacity);
-        if style.roundness > 0.0 {
-            d.draw_rectangle_rounded_lines_ex(rect, style.roundness, 8, border.width, color);
-        } else {
-            d.draw_rectangle_lines_ex(rect, border.width, color);
-        }
+        shape::stroke(
+            rect,
+            &style.corners,
+            border.width,
+            faded(border.color, look.opacity),
+        );
     }
 }
 
@@ -968,14 +990,15 @@ fn draw_content(
         (None, _) => 0.0,
     };
 
-    let mut text = TextStyle::new(style.text.font, style.text.size, text_color);
+    let mut text =
+        TextStyle::new(style.text.font, style.text.size, text_color).spacing(style.text.spacing);
     let available = (inner.width - icon_space).max(0.0);
     let lines: Vec<String> = match style.overflow {
         _ if label.is_empty() => Vec::new(),
         TextOverflow::Overflow => vec![label.to_string()],
         TextOverflow::Ellipsis => vec![fit_text(fonts, &text, label, available)],
         TextOverflow::Shrink => {
-            let width = fonts.measure(text.font, label, text.size).x;
+            let width = crate::ui::measure_text(fonts, label, &text).x;
             if width > available && width > 0.0 {
                 text.size = (text.size * available / width).max(8.0);
             }
@@ -986,7 +1009,7 @@ fn draw_content(
 
     let widths: Vec<f32> = lines
         .iter()
-        .map(|line| fonts.measure(text.font, line, text.size).x)
+        .map(|line| crate::ui::measure_text(fonts, line, &text).x)
         .collect();
     let text_width = widths.iter().copied().fold(0.0, f32::max);
     let group = text_width + icon_space;
@@ -1026,13 +1049,18 @@ fn draw_content(
             TextAlign::Right => text_x + text_width - width,
         };
         let y = top + i as f32 * line_height;
-        fonts.draw(
-            d,
-            text.font,
-            line,
-            Vector2::new(x, y),
-            text.size,
-            text.color,
-        );
+        crate::ui::draw_text(d, fonts, line, Vector2::new(x, y), &text);
+        if let Some(line) = look.underline
+            && line.width > 0.0
+            && line.color.a > 0
+        {
+            let under = Rectangle::new(x, y + text.size + 3.0, *width, line.width);
+            crate::shape::fill(
+                under,
+                &crate::Corners::SQUARE,
+                faded(line.color, look.opacity),
+                None,
+            );
+        }
     }
 }

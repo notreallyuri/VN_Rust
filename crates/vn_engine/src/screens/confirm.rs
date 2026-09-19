@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
+use crate::PanelStyle;
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{Action, DrawContext, Focus, FontRole, GameContext, Overlay, OverlayAction};
 
@@ -51,8 +52,7 @@ pub struct ConfirmConfig {
     pub cancel_button: ButtonStyle,
     pub panel_width: f32,
     pub padding: f32,
-    pub panel_color: Color,
-    pub panel_roundness: f32,
+    pub panel: PanelStyle,
     pub backdrop: Color,
     pub confirm_keys: Vec<KeyboardKey>,
     pub cancel_keys: Vec<KeyboardKey>,
@@ -71,8 +71,7 @@ impl Default for ConfirmConfig {
             cancel_button: ButtonStyle::default().size(150.0, 44.0).font_size(20.0),
             panel_width: 460.0,
             padding: 28.0,
-            panel_color: Color::new(22, 22, 34, 250),
-            panel_roundness: 0.05,
+            panel: PanelStyle::new(Color::new(22, 22, 34, 250)).roundness(0.05),
             backdrop: Color::new(0, 0, 0, 160),
             confirm_keys: vec![KeyboardKey::KEY_ENTER, KeyboardKey::KEY_Y],
             cancel_keys: vec![KeyboardKey::KEY_ESCAPE, KeyboardKey::KEY_N],
@@ -117,12 +116,17 @@ impl ConfirmConfig {
     }
 
     pub fn panel_color(mut self, color: Color) -> Self {
-        self.panel_color = color;
+        self.panel.color = color;
+        self
+    }
+
+    pub fn panel(mut self, style: impl FnOnce(PanelStyle) -> PanelStyle) -> Self {
+        self.panel = style(self.panel);
         self
     }
 
     pub fn panel_roundness(mut self, roundness: f32) -> Self {
-        self.panel_roundness = roundness.clamp(0.0, 1.0);
+        self.panel = self.panel.roundness(roundness);
         self
     }
 
@@ -276,11 +280,7 @@ impl Overlay for ConfirmDialog {
         let layout = self.layout(fonts, screen);
 
         d.draw_rectangle(0, 0, screen.x as i32, screen.y as i32, config.backdrop);
-        if config.panel_roundness > 0.0 {
-            d.draw_rectangle_rounded(layout.panel, config.panel_roundness, 8, config.panel_color);
-        } else {
-            d.draw_rectangle_rec(layout.panel, config.panel_color);
-        }
+        config.panel.draw(d, layout.panel);
 
         let style = &config.message_text;
         for (i, line) in layout.lines.iter().enumerate() {
