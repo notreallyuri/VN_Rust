@@ -1,0 +1,277 @@
+{
+  "tool": "Built-in image_gen",
+  "date": "2026-09-19",
+  "notes": "Ordered generation history. The last generation for each asset is the installed version. Backgrounds resized to 1280x720; sprites resized to 600x900 preserving generated alpha.",
+  "generations": [
+    {
+      "generation": 1,
+      "asset": "backgrounds/archive_office.png",
+      "prompt": "Use case: illustration-story. Production background asset for God Is Watching, a literary gothic visual novel set in 1903. Create a finished painterly realistic illustration of the House's underground archive office, two floors below street: vaulted low masonry ceiling, immense shelves of aged registers disappearing into darkness, worn dark wooden archivist desk with a closed document box, ivory papers, brass oil lamps always burning. Quiet oppressive bureaucratic atmosphere, subtle depth and meticulous believable period materials, no overt monsters. Refined hand-painted oil and charcoal aesthetic with readable details, restrained brush texture. Palette near-black ink #0c0a0f, muted parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents, warm lamps. Wide 16:9 composition, ideally 1280x720, eye level, no people; leave lower quarter visually quiet for dialogue overlay and central standing space for separate character sprites. No text, letters, logos, watermark, UI, border. Full bleed single scene.",
+      "references": []
+    },
+    {
+      "generation": 2,
+      "asset": "backgrounds/von_lucis_study.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Von Lucis aristocratic study in November 1893. Dark walnut paneling, a fireplace with the last fragments of pale envelopes burning, heavy desk with a pale unopened envelope, worn oxblood velvet armchair, tall curtained window showing night. Wealth, secrecy and a father's bargain. Believable modest manor room rather than palace.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 3,
+      "asset": "backgrounds/von_lucis_bedroom.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Mary Von Lucis's bedroom, 1893–94. A modestly elegant Victorian bedroom with high wooden bed, ivory linen, extinguished candle on bedside table, washstand with ceramic basin, tall window with dark glass that reveals nothing outside, heavy dusty plum curtains. Intimate vulnerable atmosphere, soft predawn light mixed with darkness. No person, no pregnancy imagery.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 4,
+      "asset": "backgrounds/von_lucis_hall.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Von Lucis manor hall, 1894. Dark wood staircase, worn runner in muted oxblood, portrait frames with indistinct paintings, pale plaster above wood wainscoting, a tall closed main door and smaller servants' door in back. Cold daylight through high window, empty and judgmental.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 5,
+      "asset": "backgrounds/santa_ilde_door.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Entrance of Santa Ilde orphanage viewed from outside in the dim light before dawn after rain. Old weathered pale limestone and plaster, heavy dark wooden double door, small iron bell, three shallow worn stone steps and damp paving. Humble Catholic institution, shelter and secrecy. No people, no baby, no note or text. Warm light very subtly showing beneath the door.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 6,
+      "asset": "backgrounds/santa_ilde_office.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Administrator Moriarty's small office at Santa Ilde orphanage, late 1890s. Humble limewashed stone room, battered walnut desk with open notebook and small pile of papers, old plain chair, narrow mullioned window, modest bookshelf, small wooden crucifix on wall, brass lamp. A room maintained with care despite poverty. Soft muted daylight, parchment and muted grey olive, warmer than the threatening archive.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 7,
+      "asset": "backgrounds/santa_ilde_courtyard.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Santa Ilde orphanage courtyard November 1903. Small humble Catholic institution in an unspecified European-influenced hill town: weathered pale lime plaster, stone foundations, dark tile roofs, a restrained two-story facade with exactly twenty-one simple windows arranged seven across in three rows, wooden central door below. Worn stone courtyard, sparse weeds, no people. Human scale, distant bare trees, overcast autumn morning, a little warmth behind windows. Additional reference image 2 establishes this institution's entrance: preserve its dark double doors, shallow steps, bell and weathered pale masonry, within a simpler broad facade.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 8,
+      "asset": "backgrounds/nursery.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Santa Ilde orphanage nursery 1903. Empty humble children's room, worn wooden floor, tall window casting a soft rectangle of daylight on the floor, low plain beds along distant wall, patched ivory blankets, small shelf, a single small painted wooden toy horse beside the window. No children or people. Ordinary room that feels quietly impossible, restrained muted parchment and blue-grey shadows, gentle human warmth.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 9,
+      "asset": "backgrounds/field_post.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: The House's covert field post near Santa Ilde, 1903. Cramped rented attic office, sloped rough timber roof, shuttered window, plain trestle desk crowded with handwritten reports whose writing is indistinct and illegible, ink bottle, three plain chairs, traveling coats hung by the door, brass oil lamp. Clinical surveillance and sudden abandonment, cool dim night and small warm lamp glow. No weapons on display, no people.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 10,
+      "asset": "backgrounds/river_road.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Old road beside a river near the Von Lucis manor, August 1894. Empty muddy track following a dark slow river toward a small stone bridge, wet reeds, dark trees, pale overcast dawn after rain. Grounded period rural landscape, no people, no body, no vehicles, no modern infrastructure. Stillness and dread, cold grey water, deep ink foliage, parchment sky.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 11,
+      "asset": "backgrounds/title.png",
+      "prompt": "Use case: illustration-story. Create one finished production background for the literary gothic visual novel God Is Watching. Style reference image 1: match its realistic painterly detail, restrained oil and charcoal texture, credible late-Victorian materials and understated unease. Palette: ink #0c0a0f, parchment #ddc9a4, dusty grey plum shadows, small oxblood #742626 accents. Wide 16:9 full-bleed composition ideally 1280x720, eye-level, legible environment, lower quarter quiet for dialogue overlay, central space for separate standing sprites. No people, typography, logos, watermarks, frames, UI or collage. Scene: Title/menu background for God Is Watching: atmospheric close view across an archivist's dark wooden desk toward shadowed shelves in a vaulted underground archive. A closed weathered document box, folded cream papers, oxblood wax seal and brass oil lamp occupy the far side edges. Central upper and middle area dark and uncluttered for separately rendered title and menu. No embedded title, no lettering, no people. Literary gothic institutional mystery, 1903.",
+      "references": [
+        "backgrounds/archive_office.png (generation 1)"
+      ]
+    },
+    {
+      "generation": 12,
+      "asset": "characters/registrar/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. The Registrar: lean man about sixty, long angular face, receding neatly combed iron-grey hair, clean-shaven, narrow attentive grey eyes, high stiff white collar, dark charcoal Victorian waistcoat and black frock coat, modest watch chain. Neutral dry composure, hands loosely clasped at waist.",
+      "references": []
+    },
+    {
+      "generation": 13,
+      "asset": "characters/registrar/stern.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. EXPRESSION EDIT: same Registrar, same face, body, clothes, lighting, framing and pose. Only brow draws down and mouth tightens: quietly stern and expectant.",
+      "references": [
+        "characters/registrar/neutral.png (generation 12)"
+      ]
+    },
+    {
+      "generation": 14,
+      "asset": "characters/mary/tired.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. Mary Von Lucis, adult young woman about twenty-three in 1894. Oval face, pale warm complexion, dark chestnut hair loosely pinned up with a few strands at temples, grey-brown eyes. Modest high-neck ivory long-sleeved blouse and dark muted plum long skirt, simple period clothes, no jewelry. Weary sleepless expression, shoulders slightly lowered, hands together at waist. Dignity and vulnerability, not glamorized.",
+      "references": []
+    },
+    {
+      "generation": 15,
+      "asset": "characters/mary/afraid.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. EXPRESSION EDIT: same adult Mary, same face, hairstyle, clothes, lighting, framing and body placement. Eyes widened with sudden fear, lips barely parted, brows raised and drawn together, hands tense at waist. Restrained realistic fear.",
+      "references": [
+        "characters/mary/tired.png (generation 14)"
+      ]
+    },
+    {
+      "generation": 16,
+      "asset": "characters/mary/resolved.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. EXPRESSION EDIT: same adult Mary, same face, hairstyle, clothes, lighting, framing and body placement. Determined steady gaze, lips closed, chin slightly raised; exhausted but resolved.",
+      "references": [
+        "characters/mary/tired.png (generation 14)"
+      ]
+    },
+    {
+      "generation": 17,
+      "asset": "characters/hugo/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. Hugo Von Lucis, aristocratic father about fifty-five. Broad shoulders, long face with prominent straight nose, chestnut hair greying at temples brushed back, neat short moustache, pale grey eyes. 1893 charcoal frock coat, dark oxblood waistcoat, white high collar and restrained black cravat. Controlled reserved expression, hands clasped in front.",
+      "references": []
+    },
+    {
+      "generation": 18,
+      "asset": "characters/hugo/tired.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. EXPRESSION EDIT: same Hugo, face, clothes, body, lighting and framing. Haunted weary eyes looking slightly down and away, tightened mouth, shoulders subtly sagging. Guilt and sleeplessness rather than anger.",
+      "references": [
+        "characters/hugo/neutral.png (generation 17)"
+      ]
+    },
+    {
+      "generation": 19,
+      "asset": "characters/adelaide/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. Adelaide Roque, lady's maid about thirty-three in 1894. Distinctive oval face with strong straight nose, warm olive skin, brown eyes, dark brown center-parted hair in low bun, small discreet mole on left cheek. Plain white linen maid's cap, dark grey high-neck long-sleeved dress, ivory apron. Calm attentive professional expression, hands naturally folded at waist. This exact face will later become Sister Clara.",
+      "references": []
+    },
+    {
+      "generation": 20,
+      "asset": "characters/adelaide/afraid.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. EXPRESSION EDIT: same Adelaide, same distinctive face with mole, cap, clothes, framing, lighting and pose. Shock and guilt: slightly widened eyes, pinched brows, lips parted, fingers tense. No props.",
+      "references": [
+        "characters/adelaide/neutral.png (generation 19)"
+      ]
+    },
+    {
+      "generation": 21,
+      "asset": "characters/clara/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. IDENTITY CONTINUITY: reference is Adelaide; depict this SAME WOMAN as Sister Clara, recognizably same facial structure, brown eyes, olive complexion and cheek mole. In 1894, same age thirty-three, now plain dark charcoal Catholic sister's habit and ivory wimple framing face, dark veil covering hair. No maid apron or cap. Composed neutral expression, hands folded at waist. Same framing and painterly style.",
+      "references": [
+        "characters/adelaide/neutral.png (generation 19)"
+      ]
+    },
+    {
+      "generation": 22,
+      "asset": "characters/clara/guarded.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. AGE AND EXPRESSION EDIT: same Sister Clara, now nine years older in 1903, about forty-two. Preserve face identity, cheek mole, habit, veil, framing, pose and lighting. Slight fine lines around eyes, watchful guarded expression, eyes lowered a little, lips closed.",
+      "references": [
+        "characters/clara/neutral.png (generation 21)"
+      ]
+    },
+    {
+      "generation": 23,
+      "asset": "characters/clara/unveiled.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. EXPRESSION EDIT: same forty-two-year-old Clara, preserve identical habit AND veil, face, age, mole, pose, lighting and framing. 'Unveiled' means her secret identity is admitted, not literal removal of religious clothing. Now meets viewer's eyes with quiet remorse and composure, softened brows, mouth relaxed, no smile.",
+      "references": [
+        "characters/clara/guarded.png (generation 22)"
+      ]
+    },
+    {
+      "generation": 24,
+      "asset": "characters/moriarty/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. J. Moriarty, orphanage administrator in 1894, about fifty-eight. Kind weathered broad face, round thin wire spectacles, receding wavy greying brown hair, short salt-and-pepper beard and moustache. Worn dark brown wool coat, muted brown waistcoat, ivory shirt, plain dark necktie. Slightly stooped shoulders, patient intelligent eyes, neutral thoughtful expression. Hands loosely clasped at waist.",
+      "references": []
+    },
+    {
+      "generation": 25,
+      "asset": "characters/moriarty/older.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. AGE EDIT: same Moriarty nine years later, sixty-seven in 1903. Preserve face identity, round glasses, same worn brown coat and waistcoat, lighting, framing and pose. Hair and short beard now mostly silver, deeper fine wrinkles, kind tired alert eyes. A gentle stoop, neutral expression.",
+      "references": [
+        "characters/moriarty/neutral.png (generation 24)"
+      ]
+    },
+    {
+      "generation": 26,
+      "asset": "characters/moriarty/wary.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. EXPRESSION EDIT: same older sixty-seven-year-old Moriarty, preserve identity, silver hair/beard, glasses, clothes, framing, lighting and pose. Wary protective expression: brows knit, eyes sharply attentive, lips firm.",
+      "references": [
+        "characters/moriarty/older.png (generation 25)"
+      ]
+    },
+    {
+      "generation": 27,
+      "asset": "characters/francis/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. Francis, young adult field observer about thirty in 1901. Slim face, short neatly parted dark brown hair, clean-shaven, warm light brown complexion, thoughtful brown eyes. Modest worn dark charcoal jacket, brown waistcoat, ivory shirt with turned-down collar and narrow dark tie. A careful listener, neutral attentive expression, hands resting together at waist, no hat.",
+      "references": []
+    },
+    {
+      "generation": 28,
+      "asset": "characters/house_envoy/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. Envoy of the House in 1903, dignified middle-aged man about forty-eight, broad square face, smooth combed silver-black hair, clean shaven, cold dark eyes. Immaculately tailored black Victorian frock coat, charcoal waistcoat, white standing collar, dark cravat with a tiny oxblood pin. Straight upright posture, composed instructional expression, arms relaxed, no hat.",
+      "references": []
+    },
+    {
+      "generation": 29,
+      "asset": "characters/man_in_black/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. Man in Black, House agent in 1894, adult man about forty. Tall broad build, square jaw, close dark moustache, impassive polite expression beneath low black bowler hat. Black wool overcoat with small lapels over black suit and ivory shirt, black gloves, hands relaxed near waist. Quiet professional menace, no visible weapon.",
+      "references": []
+    },
+    {
+      "generation": 30,
+      "asset": "characters/shadow/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. A Shadow, an adult human occult investigator employed by the House, 1903. Lean tall figure in heavy charcoal hooded traveling coat over period clothes. Face partly visible within hood: tired angular adult male features, dull human eyes. Subtle smoky violet-grey doubled contour only at outer shoulder suggests uncertain memory; body remains solid and readable. Neutral still posture, hands within sleeves at waist. No glowing eyes, skeleton, armor, weapon or monstrous anatomy.",
+      "references": []
+    },
+    {
+      "generation": 31,
+      "asset": "characters/shadow_third/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. The Third Shadow, a DIFFERENT adult occult investigator whose memory is failing. Slightly shorter slender man, heavy dark grey hooded traveling coat, recognizably distinct narrow clean-shaven pale face in hood, eyes unfocused with bewilderment, parted lips. Hands loosely together. Very subtle displaced violet-grey outline near one shoulder conveys memory loss. Solid readable human body. No glowing eyes, weapons, armor or monster. Face distinctive: older than first shadow, about fifty, receding hairline, long thin nose, hollow cheeks.",
+      "references": []
+    },
+    {
+      "generation": 32,
+      "asset": "characters/guest/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. The Guest, a mysterious adult male visitor to Santa Ilde in 1894 who cannot be remembered reliably. Tall seemingly thin man about forty-five in a grey Victorian frock coat, ivory high collar, no hat, black hair smoothly parted. Face ordinary and unremarkable, features softly uncertain but anatomically human, neutral expression. An almost imperceptible second shoulder contour suggests a broader build, subtle soft edges at temples; central body remains solid. Arms relaxed. No monster, glowing eyes, occult symbols or dramatic smoke.",
+      "references": []
+    },
+    {
+      "generation": 33,
+      "asset": "characters/gabriel/neutral.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. Gabriel, a clearly nine-year-old boy in 1903. Round youthful face, warm pale complexion, tousled chestnut hair, large grey-brown eyes echoing Mary's, small nose. Plain ivory shirt, worn brown waistcoat, dark knee-length trousers. Neutral quiet slightly apprehensive expression. Keep CHILD proportions, no adult features. Frame head to knees, hands loosely together at waist, no props. Child fills only lower 78% of canvas with head about 22% from top, so he stands shorter than adult sprites. The child-specific framing overrides adult framing: leave the top 22% completely transparent.",
+      "references": []
+    },
+    {
+      "generation": 34,
+      "asset": "characters/gabriel/curious.png",
+      "prompt": "Use case: illustration-story. One finished character sprite for God Is Watching, a literary gothic visual novel set in 1894–1903. Painterly realism, delicate oil/charcoal detail, natural human anatomy and readable face, subdued ink black, parchment cream, grey-plum and small oxblood accents. Soft warm key light with cool muted shadows, enough face illumination against dark game backgrounds. SINGLE isolated person on a genuinely TRANSPARENT PNG alpha background, no background color, no scenery, no checkerboard painted in, no floor shadow, no text, no frame. Portrait canvas 2:3 ideally 600x900. Standing front-facing slight three-quarter turn, framed from top of head to mid-thigh, head fully visible near top with 5% margin, both arms within canvas, lower clothing cut at bottom edge, consistent scale for visual novel expression crossfades. EXPRESSION EDIT: same nine-year-old Gabriel, preserve child face, hair, clothes, child scale and canvas placement, lighting and pose. Curious hopeful expression, eyes attentive, brows slightly raised, tiny tentative smile. No props. Preserve the extra transparent space above child's head from reference; do not enlarge him.",
+      "references": [
+        "characters/gabriel/neutral.png (generation 33)"
+      ]
+    },
+    {
+      "generation": 35,
+      "asset": "characters/gabriel/curious.png",
+      "prompt": "Use case: identity-preserve. Edit target image 1 is Gabriel neutral, a transparent character sprite. Change ONLY facial expression to curious and quietly hopeful: slightly raised eyebrows, attentive eyes and tiny tentative smile. Pixel composition invariant: preserve exact original subject size, head position with the top of hair around y=270 on the 1536-high canvas, hands, shoulders, clothing, knees, all empty space, transparent alpha, lighting, 1024x1536 canvas. Do not zoom, crop, enlarge, move or reframe. Do not change anything below the neck. Output one PNG with genuine transparency.",
+      "references": [
+        "characters/gabriel/neutral.png (generation 33)"
+      ]
+    },
+    {
+      "generation": 36,
+      "asset": "backgrounds/nursery.png",
+      "prompt": "Use case: precise-object-edit. Edit target image 1: nursery background. Change ONLY the wooden horse by the left window: replace the large rocking horse with a small handheld painted carved wooden horse about 18 cm high, on four legs, no rocking base, on the same floor near the window. It must be small enough for a nine-year-old boy to hold out in one hand. Keep the entire rest of the room, window, beds, floor, lighting, color palette, painterly style, camera, crop and 16:9 canvas unchanged. No people or text.",
+      "references": [
+        "backgrounds/nursery.png (generation 8)"
+      ]
+    },
+    {
+      "generation": 37,
+      "asset": "backgrounds/santa_ilde_courtyard.png",
+      "prompt": "Use case: precise-object-edit. Edit target image 1 is Santa Ilde orphanage courtyard. The facade currently has seventeen windows: nine upper (including one central), eight lower. Story explicitly describes twenty-one windows. Add exactly FOUR small dormer windows evenly spaced in the tiled roof, two left of central gable and two right, to make total twenty-one. Preserve all seventeen existing windows, door, bell, statue niche, architecture below roof, surroundings, lighting, camera, palette, painterly realism, and 16:9 canvas. No people, text, UI or other changes.",
+      "references": [
+        "backgrounds/santa_ilde_courtyard.png (generation 7)"
+      ]
+    }
+  ]
+}

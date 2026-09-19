@@ -155,7 +155,7 @@ Three levels of control, each optional:
 - [x] A consistent visual style for the UI (`src/style.rs`, applied to every default screen)
 - [x] Generated art (`tools/generate_art.py`): 11 backgrounds, 23 portraits
 - [x] A feature tour in the example README
-- [ ] Real art to replace the generated placeholders
+- [x] Real art to replace the generated placeholders (Will change to proper styling later)
 - [x] Music and sound: 5 CC0 tracks and 7 CC0 sounds (`assets/AUDIO_CREDITS.md`)
 
 ## Ongoing
