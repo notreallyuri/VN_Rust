@@ -3,7 +3,8 @@ use std::rc::Rc;
 use raylib::prelude::*;
 use vn_script::{Event, Position};
 
-use crate::screens::PAUSE_OVERLAY;
+use crate::LogEntry;
+use crate::screens::{LOG_OVERLAY, PAUSE_OVERLAY};
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
     Action, Anchor, DrawContext, Focus, FontRole, GameContext, Layout, NavInput, Screen,
@@ -67,6 +68,85 @@ impl DialogueBoxStyle {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct PlayingKeys {
+    pub hide: Vec<KeyboardKey>,
+    pub skip_toggle: Vec<KeyboardKey>,
+    pub skip_hold: Vec<KeyboardKey>,
+    pub auto: Vec<KeyboardKey>,
+    pub log: Vec<KeyboardKey>,
+    pub screenshot: Vec<KeyboardKey>,
+    pub fullscreen: Vec<KeyboardKey>,
+    pub middle_click_hides: bool,
+    pub right_click_pauses: bool,
+}
+
+impl Default for PlayingKeys {
+    fn default() -> Self {
+        Self {
+            hide: vec![KeyboardKey::KEY_H],
+            skip_toggle: vec![KeyboardKey::KEY_TAB],
+            skip_hold: vec![
+                KeyboardKey::KEY_LEFT_CONTROL,
+                KeyboardKey::KEY_RIGHT_CONTROL,
+            ],
+            auto: vec![KeyboardKey::KEY_A],
+            log: vec![KeyboardKey::KEY_L],
+            screenshot: vec![KeyboardKey::KEY_S],
+            fullscreen: vec![KeyboardKey::KEY_F],
+            middle_click_hides: true,
+            right_click_pauses: true,
+        }
+    }
+}
+
+impl PlayingKeys {
+    pub fn hide(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.hide = keys.into_iter().collect();
+        self
+    }
+
+    pub fn skip_toggle(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.skip_toggle = keys.into_iter().collect();
+        self
+    }
+
+    pub fn skip_hold(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.skip_hold = keys.into_iter().collect();
+        self
+    }
+
+    pub fn auto(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.auto = keys.into_iter().collect();
+        self
+    }
+
+    pub fn log(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.log = keys.into_iter().collect();
+        self
+    }
+
+    pub fn screenshot(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.screenshot = keys.into_iter().collect();
+        self
+    }
+
+    pub fn fullscreen(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.fullscreen = keys.into_iter().collect();
+        self
+    }
+
+    pub fn middle_click_hides(mut self, enabled: bool) -> Self {
+        self.middle_click_hides = enabled;
+        self
+    }
+
+    pub fn right_click_pauses(mut self, enabled: bool) -> Self {
+        self.right_click_pauses = enabled;
+        self
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct HudButton {
     pub label: String,
@@ -126,6 +206,15 @@ pub struct PlayingConfig {
     pub positions: [f32; 5],
     pub character_height: Option<f32>,
     pub hud: Vec<HudButton>,
+    custom_hud: bool,
+    pub keys: PlayingKeys,
+    pub skip_interval: f64,
+    pub auto_per_character: f64,
+    pub indicator_text: TextStyle,
+    pub indicator_color: Color,
+    pub skip_label: String,
+    pub auto_label: String,
+    pub log_overlay: String,
     pub hud_button: ButtonStyle,
     pub hud_margin: f32,
     pub hud_layout: Layout,
@@ -157,7 +246,23 @@ impl Default for PlayingConfig {
             background: None,
             positions: [0.15, 0.3, 0.5, 0.7, 0.85],
             character_height: Some(0.8),
-            hud: Vec::new(),
+            hud: vec![
+                HudButton::new("Log", Action::overlay(LOG_OVERLAY))
+                    .tooltip("Everything so far (L)"),
+                HudButton::new("Auto", Action::ToggleAuto)
+                    .tooltip("Advance on its own after each line (A)"),
+                HudButton::new("Skip", Action::ToggleSkip)
+                    .tooltip("Skip lines you've already seen (Tab, or hold Ctrl)"),
+            ],
+            custom_hud: false,
+            keys: PlayingKeys::default(),
+            skip_interval: 0.05,
+            auto_per_character: 0.02,
+            indicator_text: TextStyle::new(FontRole::Menu, 18.0, Color::RAYWHITE),
+            indicator_color: Color::new(0, 0, 0, 160),
+            skip_label: "Skip »".to_string(),
+            auto_label: "Auto".to_string(),
+            log_overlay: LOG_OVERLAY.to_string(),
             hud_button: ButtonStyle::default()
                 .size(130.0, 40.0)
                 .color(Color::new(20, 20, 30, 190))
@@ -290,6 +395,10 @@ impl PlayingConfig {
     }
 
     pub fn hud_item(mut self, button: HudButton) -> Self {
+        if !self.custom_hud {
+            self.hud.clear();
+            self.custom_hud = true;
+        }
         self.hud.push(button);
         self
     }
@@ -327,6 +436,50 @@ impl PlayingConfig {
     pub fn pause_key(mut self, key: Option<KeyboardKey>) -> Self {
         self.pause_key = key;
         self
+    }
+
+    pub fn keys(mut self, keys: impl FnOnce(PlayingKeys) -> PlayingKeys) -> Self {
+        self.keys = keys(self.keys);
+        self
+    }
+
+    pub fn skip_interval(mut self, seconds: f64) -> Self {
+        self.skip_interval = seconds.max(0.0);
+        self
+    }
+
+    pub fn auto_per_character(mut self, seconds: f64) -> Self {
+        self.auto_per_character = seconds.max(0.0);
+        self
+    }
+
+    pub fn indicator_text(mut self, style: TextStyle) -> Self {
+        self.indicator_text = style;
+        self
+    }
+
+    pub fn indicator_color(mut self, color: Color) -> Self {
+        self.indicator_color = color;
+        self
+    }
+
+    pub fn skip_label(mut self, text: impl Into<String>) -> Self {
+        self.skip_label = text.into();
+        self
+    }
+
+    pub fn auto_label(mut self, text: impl Into<String>) -> Self {
+        self.auto_label = text.into();
+        self
+    }
+
+    pub fn log_overlay(mut self, name: impl Into<String>) -> Self {
+        self.log_overlay = name.into();
+        self
+    }
+
+    pub fn auto_delay(&self, settings: &crate::Settings, text: &str) -> f64 {
+        settings.auto_seconds() + text.chars().count() as f64 * self.auto_per_character
     }
 
     pub fn pause_overlay(mut self, name: impl Into<String>) -> Self {
@@ -421,6 +574,10 @@ pub struct PlayingScreen {
     autosave_pending: bool,
     choice_focus: Focus,
     stage: Stage,
+    hidden: bool,
+    skipping: bool,
+    last_skip: f64,
+    ready_since: Option<f64>,
 }
 
 impl PlayingScreen {
@@ -433,6 +590,10 @@ impl PlayingScreen {
             autosave_pending: false,
             choice_focus: Focus::default(),
             stage: Stage::default(),
+            hidden: false,
+            skipping: false,
+            last_skip: 0.0,
+            ready_since: None,
         }
     }
 
@@ -454,6 +615,11 @@ impl PlayingScreen {
     }
 
     fn advance(&mut self, ctx: &mut GameContext) -> Option<ScreenState> {
+        if let Some(key) = ctx.story.line_key() {
+            ctx.seen.insert(key);
+        }
+        ctx.audio.stop_voice();
+        self.ready_since = None;
         loop {
             match ctx.story.advance() {
                 Event::Call { command, args } => {
@@ -473,6 +639,7 @@ impl PlayingScreen {
                     self.stage.apply(&event, ctx.story, &self.config, now);
                 }
                 Event::Sound { id } => ctx.play_sound(&id),
+                Event::Voice { id } => ctx.audio.play_voice(&id),
                 Event::SceneEnter { scene } => {
                     self.autosave_pending = true;
                     if let Some(next) = ctx.run_scene_hooks(&scene) {
@@ -480,9 +647,16 @@ impl PlayingScreen {
                     }
                 }
                 event if event.is_blocking() => {
+                    if let Event::Say { speaker, text } = &event {
+                        ctx.log.push(LogEntry::Line {
+                            speaker: speaker.clone(),
+                            text: text.clone(),
+                        });
+                    }
                     let typed = (ctx.settings.values.text_speed, ctx.rl.get_time());
                     self.show(event, Some(typed));
-                    ctx.rollback.record(ctx.story, ctx.state);
+                    ctx.rollback
+                        .record_with_log(ctx.story, ctx.state, Some(ctx.log.len()));
                     if std::mem::take(&mut self.autosave_pending) {
                         ctx.autosave();
                     }
@@ -497,7 +671,8 @@ impl PlayingScreen {
         match ctx.story.current() {
             Some(event) => {
                 self.show(event.clone(), None);
-                ctx.rollback.record(ctx.story, ctx.state);
+                ctx.rollback
+                    .record_with_log(ctx.story, ctx.state, Some(ctx.log.len()));
                 None
             }
             None => self.advance(ctx),
@@ -533,8 +708,32 @@ impl PlayingScreen {
             self.current = ctx.story.current().cloned();
             self.typewriter = None;
             self.stage.reset(ctx.story, &self.config);
+            if let Some(len) = ctx.rollback.log_len() {
+                ctx.log.show(len);
+            }
+            ctx.audio.stop_voice();
+            ctx.modes.skip = false;
         }
         back || forward
+    }
+
+    fn auto_advance(&mut self, ctx: &mut GameContext, now: f64) -> Option<ScreenState> {
+        let Some(Event::Say { text, .. }) = &self.current else {
+            return None;
+        };
+        let waiting = self.typing(now) || self.stage.is_animating() || ctx.audio.voice_playing();
+        if !ctx.modes.auto || waiting {
+            self.ready_since = None;
+            return None;
+        }
+
+        let delay = self.config.auto_delay(&ctx.settings.values, text);
+        let since = *self.ready_since.get_or_insert(now);
+        if now - since >= delay {
+            self.advance(ctx)
+        } else {
+            None
+        }
     }
 
     fn shows_hud(&self) -> bool {
@@ -580,13 +779,72 @@ impl Screen for PlayingScreen {
         ]
         .map(pressed);
 
+        let keys = &self.config.keys;
+        let any = |list: &[KeyboardKey]| list.iter().any(|&key| rl.is_key_pressed(key));
+        let held = |list: &[KeyboardKey]| list.iter().any(|&key| rl.is_key_down(key));
+        let middle = self.config.keys.middle_click_hides
+            && rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_MIDDLE);
+        let right = self.config.keys.right_click_pauses
+            && rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_RIGHT);
+        let hide = any(&keys.hide) || middle || ctx.nav.hide;
+        let log = any(&keys.log) || ctx.nav.log;
+        let screenshot = any(&keys.screenshot);
+        let fullscreen = any(&keys.fullscreen);
+        let skip_toggle = any(&keys.skip_toggle);
+        let skip_hold = held(&keys.skip_hold) || ctx.nav.skip_held;
+        let auto = any(&keys.auto);
+
         if menu {
             return Some(ScreenState::MainMenu);
         }
 
-        if pause || ctx.nav.pause {
+        if pause || ctx.nav.pause || right {
+            self.hidden = false;
+            ctx.modes.skip = false;
             ctx.open_overlay(self.config.pause_overlay.clone());
             return None;
+        }
+
+        if self.hidden {
+            let wake = hide
+                || rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
+                || ctx.nav.accept
+                || ctx.nav.any_key()
+                || self
+                    .config
+                    .advance_keys
+                    .iter()
+                    .any(|&key| rl.is_key_pressed(key));
+            if wake {
+                self.hidden = false;
+            }
+            return None;
+        }
+
+        if screenshot {
+            ctx.screenshot();
+        }
+        if fullscreen {
+            ctx.settings.update(|s| s.fullscreen = !s.fullscreen);
+        }
+
+        if self.current.is_some() && hide {
+            self.hidden = true;
+            return None;
+        }
+
+        if self.current.is_some() && log {
+            ctx.modes.skip = false;
+            ctx.open_overlay(self.config.log_overlay.clone());
+            return None;
+        }
+
+        let saying = matches!(self.current, Some(Event::Say { .. }));
+        if saying && skip_toggle {
+            ctx.modes.skip = !ctx.modes.skip;
+        }
+        if auto {
+            ctx.modes.auto = !ctx.modes.auto;
         }
 
         if self.current.is_some() && self.roll(&mut ctx) {
@@ -653,6 +911,7 @@ impl Screen for PlayingScreen {
                             eprintln!("⚠️ {}", e);
                             return None;
                         }
+                        ctx.log.push(LogEntry::Choice { text: text.clone() });
                         if !ctx.rollback.config().through_choices {
                             ctx.rollback.mark_barrier();
                         }
@@ -664,13 +923,33 @@ impl Screen for PlayingScreen {
                     None => None,
                 }
             }
-            Some(Event::End) => self
-                .continue_pressed(ctx.rl, &ctx.nav)
-                .then(|| self.config.after_end.clone()),
+            Some(Event::End) => {
+                ctx.modes.skip = false;
+                self.continue_pressed(ctx.rl, &ctx.nav)
+                    .then(|| self.config.after_end.clone())
+            }
             Some(_) => {
                 let now = ctx.rl.get_time();
-                if !self.continue_pressed(ctx.rl, &ctx.nav) {
-                    None
+                let skipping = ctx.modes.skip || skip_hold;
+                let seen = ctx
+                    .story
+                    .line_key()
+                    .is_some_and(|key| ctx.seen.contains(key));
+                let may_skip = seen || ctx.settings.values.skip_unseen;
+                if skipping && !may_skip {
+                    ctx.modes.skip = false;
+                }
+
+                if skipping && may_skip {
+                    if now - self.last_skip >= self.config.skip_interval {
+                        self.last_skip = now;
+                        self.stage.finish();
+                        self.advance(&mut ctx)
+                    } else {
+                        None
+                    }
+                } else if !self.continue_pressed(ctx.rl, &ctx.nav) {
+                    self.auto_advance(&mut ctx, now)
                 } else if self.typing(now) || self.stage.is_animating() {
                     if let Some(typewriter) = &mut self.typewriter {
                         typewriter.finish();
@@ -682,6 +961,11 @@ impl Screen for PlayingScreen {
                 }
             }
         };
+
+        if matches!(self.current, Some(Event::Choice { .. })) {
+            ctx.modes.skip = false;
+        }
+        self.skipping = ctx.modes.skip || skip_hold;
 
         let now = ctx.rl.get_time();
         self.visible = self
@@ -714,6 +998,9 @@ impl Screen for PlayingScreen {
 
         let now = d.get_time();
         self.stage.draw(d, ctx.resources, ctx.story, config, now);
+        if self.hidden {
+            return;
+        }
 
         let fonts = ctx.fonts();
 
@@ -721,8 +1008,30 @@ impl Screen for PlayingScreen {
             for (index, (button, rect)) in
                 config.hud.iter().zip(config.hud_rects(screen)).enumerate()
             {
-                ui::draw_button(d, ctx, rect, &button.label, &config.hud_style(index));
+                let active = match button.action {
+                    Action::ToggleAuto => ctx.modes.auto,
+                    Action::ToggleSkip => self.skipping,
+                    _ => false,
+                };
+                ui::Button::new(&button.label, &config.hud_style(index))
+                    .active(active)
+                    .draw(d, ctx, rect);
             }
+        }
+
+        let labels: Vec<&str> = [
+            (self.skipping, config.skip_label.as_str()),
+            (ctx.modes.auto && !self.skipping, config.auto_label.as_str()),
+        ]
+        .into_iter()
+        .filter_map(|(on, label)| on.then_some(label))
+        .collect();
+        if let Some(label) = labels.first() {
+            let style = &config.indicator_text;
+            let size = fonts.measure(style.font, label, style.size);
+            let panel = Rectangle::new(16.0, 16.0, size.x + 24.0, size.y + 12.0);
+            d.draw_rectangle_rounded(panel, 0.3, 6, config.indicator_color);
+            ui::draw_text(d, fonts, label, Vector2::new(28.0, 22.0), style);
         }
 
         match &self.current {

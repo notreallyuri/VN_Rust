@@ -10,6 +10,7 @@ use vn_script::{
     Diagnostic, Instruction, SCHEMA_FILE_NAME, Schema, SchemaFile, StoryVm, VariableDef,
 };
 
+use crate::SeenLines;
 use crate::screens::{
     CONFIRM_OVERLAY, ConfirmConfig, ConfirmDialog, LOAD_OVERLAY, MainMenuConfig, MainMenuScreen,
     PAUSE_OVERLAY, PauseMenu, PauseMenuConfig, PlayingConfig, PlayingScreen, SAVE_OVERLAY,
@@ -17,6 +18,7 @@ use crate::screens::{
     SettingsConfig, SettingsOverlay, SettingsScreen, StartScreen, StartScreenConfig,
     TextInputConfig, TextInputScreen,
 };
+use crate::screens::{LOG_OVERLAY, LogConfig, LogOverlay};
 use crate::{
     Audio, AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, FontRole, FromArgs,
     GameContext, GameState, Hooks, Navigation, NavigationConfig, Overlay, Rollback, RollbackConfig,
@@ -50,6 +52,7 @@ pub struct VnApp {
     autosave: bool,
     audio: AudioConfig,
     tooltips: TooltipConfig,
+    log: LogConfig,
     navigation: NavigationConfig,
     save_menu: SaveMenuConfig,
     text_input: TextInputConfig,
@@ -137,6 +140,7 @@ impl VnApp {
             autosave: true,
             audio: AudioConfig::default(),
             tooltips: TooltipConfig::default(),
+            log: LogConfig::default(),
             navigation: NavigationConfig::default(),
             save_menu: SaveMenuConfig::default(),
             text_input: TextInputConfig::default(),
@@ -264,6 +268,11 @@ impl VnApp {
 
     pub fn navigation(mut self, config: impl FnOnce(NavigationConfig) -> NavigationConfig) -> Self {
         self.navigation = config(self.navigation);
+        self
+    }
+
+    pub fn log(mut self, config: impl FnOnce(LogConfig) -> LogConfig) -> Self {
+        self.log = config(self.log);
         self
     }
 
@@ -472,6 +481,7 @@ impl VnApp {
             pause_menu: Rc::new(self.pause_menu),
             confirm_dialog: Rc::new(self.confirm_dialog),
             settings: Rc::new(self.settings),
+            log: Rc::new(self.log),
             start: Rc::new(self.start),
             menu: Rc::new(self.menu),
             playing: Rc::new(self.playing),
@@ -500,6 +510,7 @@ impl VnApp {
         manager.close_confirmation = self.close_confirmation;
         manager.tooltip_config = self.tooltips;
         manager.navigation = Navigation::new(self.navigation);
+        manager.seen = SeenLines::load(manager.saves.dir().join(crate::SEEN_FILE_NAME));
         manager.audio = Audio::new(manager.resources.root().to_path_buf(), self.audio);
 
         for (role, file) in &self.fonts {
@@ -542,6 +553,7 @@ impl VnApp {
         }
 
         manager.autosave();
+        manager.seen.save();
         Ok(())
     }
 }
@@ -556,6 +568,7 @@ pub struct DefaultScreens {
     pub pause_menu: Rc<PauseMenuConfig>,
     pub confirm_dialog: Rc<ConfirmConfig>,
     pub settings: Rc<SettingsConfig>,
+    pub log: Rc<LogConfig>,
     pub overrides: HashMap<ScreenState, ScreenBuilder>,
     pub overlays: HashMap<String, OverlayBuilder>,
 }
@@ -596,6 +609,7 @@ impl ScreenFactory for DefaultScreens {
             PAUSE_OVERLAY => Some(Box::new(PauseMenu::new(self.pause_menu.clone()))),
             CONFIRM_OVERLAY => Some(Box::new(ConfirmDialog::new(self.confirm_dialog.clone()))),
             SETTINGS_OVERLAY => Some(Box::new(SettingsOverlay::new(self.settings.clone()))),
+            LOG_OVERLAY => Some(Box::new(LogOverlay::new(self.log.clone()))),
             SAVE_OVERLAY => Some(Box::new(SaveMenuOverlay::new(
                 self.save_menu.clone(),
                 SaveMenuMode::Save,
@@ -630,6 +644,9 @@ pub(crate) fn missing_art(story: &StoryVm, assets: &Path) -> Vec<Diagnostic> {
                 }
                 Instruction::Sound { id } if crate::sound_path(assets, id).is_none() => {
                     format!("sounds/{}.ogg", id)
+                }
+                Instruction::Voice { id } if crate::voice_path(assets, id).is_none() => {
+                    format!("voice/{}.ogg", id)
                 }
                 _ => return None,
             };

@@ -14,6 +14,9 @@ pub struct NavInput {
     pub alt: bool,
     pub page_back: bool,
     pub page_forward: bool,
+    pub hide: bool,
+    pub log: bool,
+    pub skip_held: bool,
     pub pointer: bool,
 }
 
@@ -49,6 +52,8 @@ impl NavInput {
             || self.alt
             || self.page_back
             || self.page_forward
+            || self.hide
+            || self.log
     }
 }
 
@@ -266,6 +271,10 @@ impl Navigation {
             input.pause |= pressed(GAMEPAD_BUTTON_MIDDLE_RIGHT);
             input.page_back |= pressed(GAMEPAD_BUTTON_LEFT_TRIGGER_1);
             input.page_forward |= pressed(GAMEPAD_BUTTON_RIGHT_TRIGGER_1);
+            input.hide |= pressed(GAMEPAD_BUTTON_MIDDLE_LEFT);
+            input.log |= pressed(GAMEPAD_BUTTON_RIGHT_FACE_UP);
+            input.skip_held = down(GAMEPAD_BUTTON_RIGHT_TRIGGER_2)
+                || rl.get_gamepad_axis_movement(pad, GamepadAxis::GAMEPAD_AXIS_RIGHT_TRIGGER) > 0.5;
         }
 
         let mouse_used = rl.get_mouse_delta() != Vector2::zero()

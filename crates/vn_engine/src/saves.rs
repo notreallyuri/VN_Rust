@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use vn_script::{Event, RestoreOutcome, StorySnapshot, StoryVm, VmError};
 
-use crate::{Checkpoint, GameState, Rollback, StateError};
+use crate::{Checkpoint, GameState, LogEntry, Rollback, StateError};
 
 pub const SAVE_FORMAT_VERSION: u32 = 1;
 pub const QUICK_SLOT: &str = "quick";
@@ -27,6 +27,8 @@ pub struct SaveFile {
     pub state: BTreeMap<String, Json>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub rollback: Vec<Checkpoint>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub log: Vec<LogEntry>,
 }
 
 #[derive(Debug)]
@@ -247,6 +249,7 @@ impl Saves {
             story: story.snapshot(),
             state: state.to_json().map_err(SaveError::State)?,
             rollback: Vec::new(),
+            log: Vec::new(),
         })
     }
 
@@ -367,16 +370,25 @@ impl Saves {
     }
 }
 
-pub(crate) fn save_game(
-    saves: &Saves,
-    slot: &str,
-    story: &StoryVm,
-    state: &GameState,
-    rollback: &Rollback,
-    thumbnail: Option<&Image>,
-) -> Result<(), SaveError> {
+pub(crate) struct SaveParts<'a> {
+    pub story: &'a StoryVm,
+    pub state: &'a GameState,
+    pub rollback: &'a Rollback,
+    pub log: &'a [LogEntry],
+    pub thumbnail: Option<&'a Image>,
+}
+
+pub(crate) fn save_game(saves: &Saves, slot: &str, parts: SaveParts) -> Result<(), SaveError> {
+    let SaveParts {
+        story,
+        state,
+        rollback,
+        log,
+        thumbnail,
+    } = parts;
     let mut file = saves.capture(story, state)?;
     file.rollback = rollback.history();
+    file.log = log.to_vec();
     saves.write(slot, &file)?;
     if let Err(e) = saves.write_thumbnail(slot, thumbnail) {
         eprintln!("⚠️ Thumbnail for '{}' not saved: {}", slot, e);
@@ -384,17 +396,11 @@ pub(crate) fn save_game(
     Ok(())
 }
 
-pub(crate) fn autosave(
-    saves: &Saves,
-    story: &StoryVm,
-    state: &GameState,
-    rollback: &Rollback,
-    thumbnail: Option<&Image>,
-) {
-    if !saves.autosaves() || matches!(story.current(), None | Some(Event::End)) {
+pub(crate) fn autosave(saves: &Saves, parts: SaveParts) {
+    if !saves.autosaves() || matches!(parts.story.current(), None | Some(Event::End)) {
         return;
     }
-    if let Err(e) = save_game(saves, AUTO_SLOT, story, state, rollback, thumbnail) {
+    if let Err(e) = save_game(saves, AUTO_SLOT, parts) {
         eprintln!("⚠️ Autosave failed: {}", e);
     }
 }

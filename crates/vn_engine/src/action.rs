@@ -16,6 +16,8 @@ pub enum Action {
     Resume,
     QuickSave,
     QuickLoad,
+    ToggleAuto,
+    ToggleSkip,
     Quit,
     Confirm(Box<Confirm>),
     Custom(CustomAction),
@@ -37,6 +39,8 @@ impl Action {
     pub fn run(&self, ctx: &mut GameContext) -> Option<ScreenState> {
         match self {
             Action::NewGame => {
+                ctx.log.clear();
+                *ctx.modes = crate::PlayModes::default();
                 ctx.story.reset();
                 ctx.state.reset();
                 ctx.rollback.clear();
@@ -89,6 +93,14 @@ impl Action {
                     None
                 }
             },
+            Action::ToggleAuto => {
+                ctx.modes.auto = !ctx.modes.auto;
+                None
+            }
+            Action::ToggleSkip => {
+                ctx.modes.skip = !ctx.modes.skip;
+                None
+            }
             Action::Quit => Some(ScreenState::Quit),
             Action::Confirm(confirm) => {
                 ctx.confirm((**confirm).clone());
@@ -109,6 +121,8 @@ impl fmt::Debug for Action {
             Action::Resume => write!(f, "Resume"),
             Action::QuickSave => write!(f, "QuickSave"),
             Action::QuickLoad => write!(f, "QuickLoad"),
+            Action::ToggleAuto => write!(f, "ToggleAuto"),
+            Action::ToggleSkip => write!(f, "ToggleSkip"),
             Action::Quit => write!(f, "Quit"),
             Action::Confirm(confirm) => {
                 write!(f, "Confirm({:?}, {:?})", confirm.message, confirm.action)

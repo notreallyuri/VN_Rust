@@ -13,6 +13,7 @@ use crate::{
     SCRIPT_ERRORS_KEY, Saves, Screen, ScreenState, ScriptErrors, SettingsStore, THUMBNAIL_WIDTH,
     TextRequest, Toast, ToastConfig, TooltipConfig, TooltipTimer,
 };
+use crate::{PlayModes, SeenLines, SessionLog};
 
 pub const CLOSE_MESSAGE: &str = "Quit the game? Unsaved progress will be lost.";
 
@@ -62,6 +63,10 @@ pub struct ScreenStateManager {
     pub tooltip_config: TooltipConfig,
     pub navigation: Navigation,
     nav: NavInput,
+    pub log: SessionLog,
+    pub modes: PlayModes,
+    pub seen: SeenLines,
+    screenshot_request: bool,
     tooltip_timer: TooltipTimer,
     overlays: Vec<(String, Box<dyn Overlay>)>,
     quit_requested: bool,
@@ -126,6 +131,10 @@ impl ScreenStateManager {
             tooltip_config: TooltipConfig::default(),
             navigation: Navigation::default(),
             nav: NavInput::default(),
+            log: SessionLog::default(),
+            modes: PlayModes::default(),
+            seen: SeenLines::in_memory(),
+            screenshot_request: false,
             tooltip_timer: TooltipTimer::default(),
             overlays: Vec::new(),
             quit_requested: false,
@@ -163,6 +172,10 @@ impl ScreenStateManager {
             audio: &mut self.audio,
             tooltip: &mut tooltip,
             nav: self.nav,
+            log: &mut self.log,
+            modes: &mut self.modes,
+            seen: &mut self.seen,
+            screenshot_request: &mut self.screenshot_request,
         };
 
         let next_state = match self.overlays.last_mut() {
@@ -241,6 +254,7 @@ impl ScreenStateManager {
         let settings = &self.settings.values;
         self.audio
             .set_volumes(settings.music_gain(), settings.sound_gain());
+        self.audio.set_voice_volume(settings.voice_gain());
         self.audio.play_music(wanted.as_deref());
         self.audio.update(dt);
     }
@@ -271,6 +285,9 @@ impl ScreenStateManager {
     pub fn draw(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
         self.current_screen
             .draw(d, &self.draw_context(self.overlays.is_empty()));
+        if std::mem::take(&mut self.screenshot_request) {
+            self.take_screenshot(d, thread);
+        }
         if std::mem::take(&mut self.autosave_request) {
             self.thumbnail_at = None;
             self.capture_thumbnail(d, thread);
@@ -328,11 +345,30 @@ impl ScreenStateManager {
     pub fn autosave(&self) {
         crate::saves::autosave(
             &self.saves,
-            &self.story,
-            &self.state,
-            &self.rollback,
-            self.thumbnail.as_ref(),
+            crate::saves::SaveParts {
+                story: &self.story,
+                state: &self.state,
+                rollback: &self.rollback,
+                log: self.log.entries(),
+                thumbnail: self.thumbnail.as_ref(),
+            },
         );
+    }
+
+    fn take_screenshot(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
+        let image = d.load_image_from_screen(thread);
+        let dir = self.saves.dir().join("screenshots");
+        let path = dir.join(format!("screenshot-{}.png", crate::saves::now()));
+        let written = std::fs::create_dir_all(&dir).is_ok() && {
+            image.export_image(&path.to_string_lossy());
+            path.exists()
+        };
+        if written {
+            println!("Screenshot: {}", path.display());
+            self.notify(Toast::info("Screenshot saved"));
+        } else {
+            self.notify(Toast::error("Could not save the screenshot"));
+        }
     }
 
     fn draw_context(&self, interactive: bool) -> DrawContext<'_> {
@@ -345,6 +381,8 @@ impl ScreenStateManager {
             settings: &self.settings.values,
             interactive,
             focus_visible: !self.nav.pointer,
+            log: &self.log,
+            modes: self.modes,
         }
     }
 
@@ -430,6 +468,7 @@ impl ScreenStateManager {
         match self.factory.create_screen(&next_state) {
             Some(screen) => {
                 println!("Transitioning to: {:?}", next_state);
+                self.modes.skip = false;
                 self.thumbnail_at = None;
                 self.current_screen = screen;
                 let previous = std::mem::replace(&mut self.current_state, next_state);

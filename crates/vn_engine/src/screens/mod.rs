@@ -1,4 +1,5 @@
 pub mod confirm;
+pub mod log;
 pub mod main_menu;
 pub mod pause_menu;
 pub mod playing;
@@ -8,6 +9,7 @@ pub mod start;
 pub mod text_input;
 
 pub use confirm::*;
+pub use log::*;
 pub use main_menu::*;
 pub use pause_menu::*;
 pub use playing::*;

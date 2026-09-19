@@ -12,6 +12,7 @@ use crate::{
 pub const SETTINGS_OVERLAY: &str = "settings";
 
 const PREVIEW_PAUSE: f64 = 1.5;
+const ROWS_TOP: f32 = 110.0;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SettingsRow {
@@ -19,13 +20,20 @@ pub enum SettingsRow {
     TextSpeed,
     MusicVolume,
     SoundVolume,
+    VoiceVolume,
+    AutoDelay,
+    SkipUnseen,
 }
 
 impl SettingsRow {
     pub fn is_slider(self) -> bool {
-        self != SettingsRow::Display
+        !matches!(self, SettingsRow::Display | SettingsRow::SkipUnseen)
     }
 }
+
+pub const AUTO_DELAY_MIN: u32 = 500;
+pub const AUTO_DELAY_MAX: u32 = 5000;
+pub const AUTO_DELAY_STEP: u32 = 500;
 
 #[derive(Clone, Debug)]
 pub struct SettingsConfig {
@@ -44,6 +52,16 @@ pub struct SettingsConfig {
     pub text_speed_label: String,
     pub text_speeds: Vec<(String, u32)>,
     pub audio_rows: bool,
+    pub voice_row: bool,
+    pub play_rows: bool,
+    pub voice_volume_label: String,
+    pub auto_delay_label: String,
+    pub skip_label: String,
+    pub skip_seen_label: String,
+    pub skip_all_label: String,
+    pub voice_volume_tooltip: Option<String>,
+    pub auto_delay_tooltip: Option<String>,
+    pub skip_tooltip: Option<String>,
     pub sample_sound: Option<String>,
     pub music_volume_label: String,
     pub sound_volume_label: String,
@@ -68,12 +86,12 @@ impl Default for SettingsConfig {
             title: "Settings".to_string(),
             title_text: TextStyle::new(FontRole::Title, 44.0, Color::RAYWHITE),
             label_text: TextStyle::new(FontRole::Menu, 24.0, Color::RAYWHITE),
-            value_button: ButtonStyle::default().size(260.0, 46.0).font_size(20.0),
+            value_button: ButtonStyle::default().size(260.0, 40.0).font_size(19.0),
             value_text: TextStyle::new(FontRole::Menu, 18.0, Color::LIGHTGRAY),
             slider: SliderStyle::default(),
             focus_color: Color::new(255, 255, 255, 22),
             row_width: 600.0,
-            row_spacing: 16.0,
+            row_spacing: 10.0,
             display_label: "Display".to_string(),
             windowed_label: "Windowed".to_string(),
             fullscreen_label: "Fullscreen".to_string(),
@@ -85,6 +103,20 @@ impl Default for SettingsConfig {
                 ("Instant".to_string(), 0),
             ],
             audio_rows: true,
+            voice_row: true,
+            play_rows: true,
+            voice_volume_label: "Voice volume".to_string(),
+            auto_delay_label: "Auto-forward".to_string(),
+            skip_label: "Skip".to_string(),
+            skip_seen_label: "Seen text".to_string(),
+            skip_all_label: "All text".to_string(),
+            voice_volume_tooltip: Some("Voiced lines. Drag, or hover and press ←/→".to_string()),
+            auto_delay_tooltip: Some(
+                "How long Auto waits after a line (longer lines wait a little more)".to_string(),
+            ),
+            skip_tooltip: Some(
+                "What Skip passes over: only lines you've read, or everything".to_string(),
+            ),
             sample_sound: None,
             music_volume_label: "Music volume".to_string(),
             sound_volume_label: "Sound volume".to_string(),
@@ -171,6 +203,20 @@ impl SettingsConfig {
         self
     }
 
+    pub fn voice_row(mut self, show: bool) -> Self {
+        self.voice_row = show;
+        self
+    }
+
+    pub fn play_rows(mut self, show: bool) -> Self {
+        self.play_rows = show;
+        self
+    }
+
+    pub fn auto_delay_name(millis: u32) -> String {
+        format!("{:.1} s", millis as f32 / 1000.0)
+    }
+
     pub fn sample_sound(mut self, id: impl Into<String>) -> Self {
         self.sample_sound = Some(id.into());
         self
@@ -188,6 +234,9 @@ impl SettingsConfig {
             SettingsRow::TextSpeed => self.text_speed_tooltip = text,
             SettingsRow::MusicVolume => self.music_volume_tooltip = text,
             SettingsRow::SoundVolume => self.sound_volume_tooltip = text,
+            SettingsRow::VoiceVolume => self.voice_volume_tooltip = text,
+            SettingsRow::AutoDelay => self.auto_delay_tooltip = text,
+            SettingsRow::SkipUnseen => self.skip_tooltip = text,
         }
         self
     }
@@ -276,6 +325,12 @@ impl SettingsConfig {
         let mut rows = vec![SettingsRow::Display, SettingsRow::TextSpeed];
         if self.audio_rows {
             rows.extend([SettingsRow::MusicVolume, SettingsRow::SoundVolume]);
+            if self.voice_row {
+                rows.push(SettingsRow::VoiceVolume);
+            }
+        }
+        if self.play_rows {
+            rows.extend([SettingsRow::AutoDelay, SettingsRow::SkipUnseen]);
         }
         rows
     }
@@ -286,6 +341,13 @@ impl SettingsConfig {
             SettingsRow::TextSpeed => self.text_speed_fraction(settings.text_speed),
             SettingsRow::MusicVolume => settings.music_gain(),
             SettingsRow::SoundVolume => settings.sound_gain(),
+            SettingsRow::VoiceVolume => settings.voice_gain(),
+            SettingsRow::AutoDelay => {
+                let span = (AUTO_DELAY_MAX - AUTO_DELAY_MIN) as f32;
+                (settings.auto_delay.clamp(AUTO_DELAY_MIN, AUTO_DELAY_MAX) - AUTO_DELAY_MIN) as f32
+                    / span
+            }
+            SettingsRow::SkipUnseen => f32::from(u8::from(settings.skip_unseen)),
         }
     }
 
@@ -299,12 +361,27 @@ impl SettingsConfig {
             }
             SettingsRow::MusicVolume => settings.music_volume = self.volume_at(fraction),
             SettingsRow::SoundVolume => settings.sound_volume = self.volume_at(fraction),
+            SettingsRow::VoiceVolume => settings.voice_volume = self.volume_at(fraction),
+            SettingsRow::AutoDelay => {
+                let steps = (AUTO_DELAY_MAX - AUTO_DELAY_MIN) / AUTO_DELAY_STEP;
+                let step = ui::slider_step(fraction, steps as usize + 1) as u32;
+                settings.auto_delay = AUTO_DELAY_MIN + step * AUTO_DELAY_STEP;
+            }
+            SettingsRow::SkipUnseen => settings.skip_unseen = fraction >= 0.5,
         }
     }
 
     pub fn step(&self, row: SettingsRow, settings: &mut Settings, delta: i32) {
         match row {
             SettingsRow::Display => settings.fullscreen = !settings.fullscreen,
+            SettingsRow::SkipUnseen => settings.skip_unseen = !settings.skip_unseen,
+            SettingsRow::AutoDelay => {
+                let snapped =
+                    (settings.auto_delay + AUTO_DELAY_STEP / 2) / AUTO_DELAY_STEP * AUTO_DELAY_STEP;
+                let next = snapped as i64 + delta as i64 * AUTO_DELAY_STEP as i64;
+                settings.auto_delay =
+                    next.clamp(AUTO_DELAY_MIN as i64, AUTO_DELAY_MAX as i64) as u32;
+            }
             SettingsRow::TextSpeed => {
                 let count = self.text_speeds.len() as i32;
                 let current = self
@@ -317,11 +394,11 @@ impl SettingsConfig {
                     settings.text_speed = *speed;
                 }
             }
-            SettingsRow::MusicVolume | SettingsRow::SoundVolume => {
-                let volume = if row == SettingsRow::MusicVolume {
-                    &mut settings.music_volume
-                } else {
-                    &mut settings.sound_volume
+            SettingsRow::MusicVolume | SettingsRow::SoundVolume | SettingsRow::VoiceVolume => {
+                let volume = match row {
+                    SettingsRow::MusicVolume => &mut settings.music_volume,
+                    SettingsRow::SoundVolume => &mut settings.sound_volume,
+                    _ => &mut settings.voice_volume,
                 };
                 let step = self.volume_step.max(1) as i32;
                 let snapped = (*volume as i32 + step / 2) / step * step;
@@ -337,6 +414,10 @@ impl SettingsConfig {
             SettingsRow::TextSpeed => self.text_speed_name(settings.text_speed),
             SettingsRow::MusicVolume => Self::volume_name(settings.music_volume),
             SettingsRow::SoundVolume => Self::volume_name(settings.sound_volume),
+            SettingsRow::VoiceVolume => Self::volume_name(settings.voice_volume),
+            SettingsRow::AutoDelay => Self::auto_delay_name(settings.auto_delay),
+            SettingsRow::SkipUnseen if settings.skip_unseen => self.skip_all_label.clone(),
+            SettingsRow::SkipUnseen => self.skip_seen_label.clone(),
         }
     }
 
@@ -346,6 +427,9 @@ impl SettingsConfig {
             SettingsRow::TextSpeed => &self.text_speed_label,
             SettingsRow::MusicVolume => &self.music_volume_label,
             SettingsRow::SoundVolume => &self.sound_volume_label,
+            SettingsRow::VoiceVolume => &self.voice_volume_label,
+            SettingsRow::AutoDelay => &self.auto_delay_label,
+            SettingsRow::SkipUnseen => &self.skip_label,
         }
     }
 
@@ -355,12 +439,18 @@ impl SettingsConfig {
             SettingsRow::TextSpeed => self.text_speed_tooltip.as_deref(),
             SettingsRow::MusicVolume => self.music_volume_tooltip.as_deref(),
             SettingsRow::SoundVolume => self.sound_volume_tooltip.as_deref(),
+            SettingsRow::VoiceVolume => self.voice_volume_tooltip.as_deref(),
+            SettingsRow::AutoDelay => self.auto_delay_tooltip.as_deref(),
+            SettingsRow::SkipUnseen => self.skip_tooltip.as_deref(),
         }
     }
 
     fn steps(&self, row: SettingsRow) -> Option<usize> {
         match row {
             SettingsRow::TextSpeed => Some(self.text_speeds.len()),
+            SettingsRow::AutoDelay => {
+                Some(((AUTO_DELAY_MAX - AUTO_DELAY_MIN) / AUTO_DELAY_STEP) as usize + 1)
+            }
             _ => None,
         }
     }
@@ -372,7 +462,7 @@ impl SettingsConfig {
             .map(|i| {
                 Rectangle::new(
                     right - button.width,
-                    150.0 + i as f32 * (button.height + self.row_spacing),
+                    ROWS_TOP + i as f32 * (button.height + self.row_spacing),
                     button.width,
                     button.height,
                 )
@@ -402,12 +492,12 @@ impl SettingsConfig {
 
     fn sample_rect(&self, screen: Vector2) -> Rectangle {
         let rows = self.control_rects(screen);
-        let top = rows.last().map_or(150.0, |r| r.y + r.height) + 40.0;
+        let top = rows.last().map_or(ROWS_TOP, |r| r.y + r.height) + 24.0;
         Rectangle::new(
             (screen.x - self.row_width) / 2.0,
             top,
             self.row_width,
-            self.sample_text_style.size * 1.3 * 3.0 + 32.0,
+            self.sample_text_style.size * 1.3 * 2.0 + 24.0,
         )
     }
 
@@ -475,8 +565,9 @@ impl SettingsMenu {
         };
         match self.focus.update(&vertical_only, &targets, &[], pointed) {
             Some(index) if index == rows.len() => return Outcome::Back,
-            Some(index) if rows[index] == SettingsRow::Display => {
-                ctx.settings.update(|s| s.fullscreen = !s.fullscreen);
+            Some(index) if index < rows.len() && !rows[index].is_slider() => {
+                let row = rows[index];
+                ctx.settings.update(|s| config.step(row, s, 1));
             }
             _ => {}
         }
@@ -503,7 +594,7 @@ impl SettingsMenu {
 
             if !row.is_slider() {
                 if ui::button_clicked(ctx, control, &config.value_button) {
-                    ctx.settings.update(|s| s.fullscreen = !s.fullscreen);
+                    ctx.settings.update(|s| config.step(row, s, 1));
                 }
                 continue;
             }

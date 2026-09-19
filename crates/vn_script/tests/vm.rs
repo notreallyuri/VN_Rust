@@ -813,6 +813,35 @@ fn scenes_without_transitions_compile_as_before() {
 }
 
 #[test]
+fn voice_clips_are_events_and_lines_have_stable_keys() {
+    let source = "scene a:\n  voice mary_1\n  mary \"Hello.\"\n  \"Hello.\"\n  choice:\n    \"Go\":\n      \"x\"\n";
+    let mut vm = StoryVm::from_source(source);
+    assert_eq!(vm.line_key(), None);
+    assert_eq!(
+        vm.advance(),
+        Event::Voice {
+            id: "mary_1".into()
+        }
+    );
+    assert!(matches!(vm.advance(), Event::Say { .. }));
+    let first = vm.line_key().expect("a line");
+
+    let mut again = StoryVm::from_source(source);
+    again.advance_until_blocking();
+    assert_eq!(again.line_key(), Some(first), "the same line, the same key");
+
+    let mut restored = StoryVm::from_source(source);
+    restored.restore(&vm.snapshot()).unwrap();
+    assert_eq!(restored.line_key(), Some(first), "and after a load");
+
+    vm.advance();
+    let narration = vm.line_key().unwrap();
+    assert_ne!(narration, first, "the speaker is part of the key");
+    vm.advance();
+    assert_eq!(vm.line_key(), None, "choices have no key");
+}
+
+#[test]
 fn a_show_without_a_position_serializes_as_before() {
     let show = vn_script::Instruction::Show {
         char_id: "mary".into(),

@@ -585,6 +585,17 @@ def icon_save(d, s):
     )
 
 
+def icon_log(d, s):
+    w = s // 14
+    d.rectangle([s * 0.2, s * 0.1, s * 0.8, s * 0.9], outline="white", width=w)
+    for y in (0.32, 0.5, 0.68):
+        d.line([(s * 0.32, s * y), (s * 0.68, s * y)], fill="white", width=w)
+
+
+def icon_auto(d, s):
+    d.polygon([(s * 0.3, s * 0.18), (s * 0.3, s * 0.82), (s * 0.82, s * 0.5)], fill="white")
+
+
 def icon_menu(d, s):
     w = s // 11
     for y in (0.28, 0.5, 0.72):
@@ -598,6 +609,8 @@ UI = {
     "icon_case_file": lambda: ui_icon(icon_case_file),
     "icon_save": lambda: ui_icon(icon_save),
     "icon_menu": lambda: ui_icon(icon_menu),
+    "icon_log": lambda: ui_icon(icon_log),
+    "icon_auto": lambda: ui_icon(icon_auto),
 }
 
 

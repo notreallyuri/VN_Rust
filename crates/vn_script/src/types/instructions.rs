@@ -208,6 +208,9 @@ pub enum Instruction {
     Sound {
         id: String,
     },
+    Voice {
+        id: String,
+    },
     Hide {
         char_id: String,
     },
@@ -358,7 +361,7 @@ impl Instruction {
     }
 }
 
-fn fnv1a(bytes: &[u8]) -> u64 {
+pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf29ce484222325, |hash, &byte| {
         (hash ^ byte as u64).wrapping_mul(0x100000001b3)
     })

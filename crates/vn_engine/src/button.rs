@@ -750,6 +750,7 @@ pub struct Button<'a> {
     style: &'a ButtonStyle,
     disabled: bool,
     focused: bool,
+    active: bool,
 }
 
 impl<'a> Button<'a> {
@@ -759,7 +760,13 @@ impl<'a> Button<'a> {
             style,
             disabled: false,
             focused: false,
+            active: false,
         }
+    }
+
+    pub fn active(mut self, active: bool) -> Self {
+        self.active = active;
+        self
     }
 
     pub fn disabled(mut self, disabled: bool) -> Self {
@@ -779,7 +786,9 @@ impl<'a> Button<'a> {
         let held = d.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT);
         let target = StateAmounts {
             hover: f32::from(u8::from(hovered)),
-            press: f32::from(u8::from(hovered && held)),
+            press: f32::from(u8::from(
+                (hovered && held) || (self.active && !self.disabled),
+            )),
             focus: f32::from(u8::from(self.focused && !self.disabled)),
             disabled: self.disabled,
         };

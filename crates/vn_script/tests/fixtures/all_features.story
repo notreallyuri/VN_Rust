@@ -13,6 +13,7 @@ scene start:
   remove mary with slide_left 0.8
 
   # Dialogue and narration (SCRIPT.md 3)
+  voice gabriel_format
   gabriel "This is a really interesting format."
   mary "Is the parser working?"
   "The room goes quiet."

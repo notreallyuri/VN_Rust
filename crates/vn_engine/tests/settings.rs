@@ -174,12 +174,31 @@ fn rows_and_old_settings_files() {
 
     assert_eq!(
         SettingsConfig::default().rows(),
+        [
+            Display,
+            TextSpeed,
+            MusicVolume,
+            SoundVolume,
+            VoiceVolume,
+            AutoDelay,
+            SkipUnseen
+        ]
+    );
+    assert_eq!(
+        SettingsConfig::default()
+            .voice_row(false)
+            .play_rows(false)
+            .rows(),
         [Display, TextSpeed, MusicVolume, SoundVolume]
     );
     assert_eq!(
-        SettingsConfig::default().audio_rows(false).rows(),
+        SettingsConfig::default()
+            .audio_rows(false)
+            .play_rows(false)
+            .rows(),
         [Display, TextSpeed]
     );
+    assert!(!SkipUnseen.is_slider() && AutoDelay.is_slider());
     assert!(TextSpeed.is_slider() && !Display.is_slider());
 
     let old: Settings =
@@ -187,6 +206,9 @@ fn rows_and_old_settings_files() {
     assert_eq!(old.music_volume, 70);
     assert_eq!(old.sound_volume, 80);
     assert_eq!(old.music_gain(), 0.7);
+    assert_eq!(old.voice_volume, 100);
+    assert_eq!(old.auto_delay, 1500);
+    assert!(!old.skip_unseen);
     let loud = Settings {
         music_volume: 250,
         ..Settings::default()
@@ -244,4 +266,30 @@ fn tooltips_wait_for_the_delay_and_hide_on_click() {
 
     timer.update(None, 12.3, false);
     assert_eq!(timer.visible(20.0, 0.5), None);
+}
+
+#[test]
+fn auto_delay_and_skip_rows() {
+    use vn_engine::SettingsRow::*;
+
+    let config = SettingsConfig::default();
+    let mut settings = Settings::default();
+
+    assert_eq!(config.fraction(AutoDelay, &settings), 2.0 / 9.0);
+    config.set_fraction(AutoDelay, &mut settings, 1.0);
+    assert_eq!(settings.auto_delay, 5000);
+    config.set_fraction(AutoDelay, &mut settings, 0.45);
+    assert_eq!(settings.auto_delay, 2500);
+    assert_eq!(config.value_name(AutoDelay, &settings), "2.5 s");
+    config.step(AutoDelay, &mut settings, -9);
+    assert_eq!(settings.auto_delay, 500, "stops at the shortest");
+
+    assert_eq!(config.value_name(SkipUnseen, &settings), "Seen text");
+    config.step(SkipUnseen, &mut settings, 1);
+    assert!(settings.skip_unseen);
+    assert_eq!(config.value_name(SkipUnseen, &settings), "All text");
+
+    config.set_fraction(VoiceVolume, &mut settings, 0.33);
+    assert_eq!(settings.voice_volume, 35);
+    assert_eq!(settings.voice_gain(), 0.35);
 }

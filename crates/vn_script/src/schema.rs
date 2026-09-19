@@ -365,6 +365,7 @@ impl<'a> Checker<'a> {
             | Instruction::Background { .. }
             | Instruction::Music { .. }
             | Instruction::Sound { .. }
+            | Instruction::Voice { .. }
             | Instruction::Commit
             | Instruction::With(_)
             | Instruction::Pause

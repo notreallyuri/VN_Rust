@@ -58,6 +58,7 @@ fn main() -> std::io::Result<()> {
 | `confirm_on_close(Option<&str>)` | "Quit the game? Unsaved progress will be lost." | Message shown when the window's close button is clicked during a game; `None` quits right away (see [Closing the window](#closing-the-window)) |
 | `toast(\|t\| ...)` | | Configure notifications (see [Notifications](#notifications)) |
 | `tooltips(\|t\| ...)` | on | Configure tooltips (see [Tooltips](#tooltips)) |
+| `log(\|l\| ...)` | | Configure the log overlay (see [Log](#log)) |
 | `navigation(\|n\| ...)` | on | Configure keyboard and gamepad navigation (see [Keyboard and gamepad](#keyboard-and-gamepad)) |
 | `exit_key(Option<key>)` | `None` | A key that closes the window. Off by default, so Esc can open the pause menu |
 | `state(value)` | | Register game state (see [Game state](#game-state)) |
@@ -170,7 +171,11 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 | `background(bg)` | none; drawn when the story has no `background` |
 | `position(Position, x)` | `far_left` 0.15, `left` 0.3, `center` 0.5, `right` 0.7, `far_right` 0.85 of the window width (the character's center) |
 | `character_height(Option<fraction>)` | `Some(0.8)`: sprites are scaled to 80% of the window height, keeping their aspect ratio. `None` draws them at their pixel size |
-| `hud_button(label, action)`, `hud_item(HudButton::new(label, action).tooltip(text))` | none |
+| `hud_button(label, action)`, `hud_item(HudButton::new(label, action).tooltip(text))` | Log, Auto, Skip (the first call replaces them) |
+| `keys(\|k\| ...)` | see [Playing controls](#playing-controls) |
+| `skip_interval(s)`, `auto_per_character(s)` | 0.05 (a line every 3 frames while skipping), 0.02 (added to the auto-forward delay per character) |
+| `skip_label`, `auto_label`, `indicator_text`, `indicator_color` | "Skip »", "Auto", Menu 18 px on translucent black (top-left while skipping or in auto mode) |
+| `log_overlay(name)` | `LOG_OVERLAY` |
 | `quick_save_key(Option<key>)`, `quick_load_key(Option<key>)` | `Some(F5)`, `Some(F9)` (the `quick` slot) |
 | `hud_button_style(\|b\| ...)`, `hud_margin(px)`, `hud_spacing(px)` | 130×40, dark translucent, 18 px text; 16; 10 |
 | `hud_layout(\|l\| ...)` | a row anchored top-right, inside `hud_margin` |
@@ -457,15 +462,22 @@ their default, so new settings don't break old files.
   at startup and whenever it changes.
 - **Text speed:** characters per second for the typewriter on the playing screen; `0` is
   instant.
-- **Music volume**, **Sound volume:** percentages (defaults 70 and 80); `music_gain()` and
-  `sound_gain()` give them as 0.0–1.0. See [Audio](#audio).
+- **Music volume**, **Sound volume**, **Voice volume:** percentages (defaults 70, 80 and
+  100); `music_gain()`, `sound_gain()` and `voice_gain()` give them as 0.0–1.0. See
+  [Audio](#audio).
+- **Auto-forward:** `auto_delay` in milliseconds (default 1500, 0.5–5 s in 0.5 s steps),
+  how long [auto mode](#playing-controls) waits after a line.
+- **Skip:** `skip_unseen` (default off): whether skipping passes lines the player hasn't
+  read yet.
 
 The default settings screen shows one row per setting (`SettingsRow::Display`,
-`TextSpeed`, `MusicVolume`, `SoundVolume`). Display is a button that toggles windowed and
-fullscreen; the others are sliders: drag the knob or click anywhere on the track, or hover
+`TextSpeed`, `MusicVolume`, `SoundVolume`, `VoiceVolume`, `AutoDelay`, `SkipUnseen`).
+`audio_rows(false)` hides the three volumes, `voice_row(false)` only the voice (for games
+without voice clips), `play_rows(false)` Auto-forward and Skip. Display and Skip are
+buttons that toggle; the others are sliders: drag the knob or click anywhere on the track, or hover
 the row and press ←/→ for one step. Text speed stops at each entry of `text_speeds`
 (Slow → Normal → Fast → Instant); the volumes move in `volume_step` steps, with the value
-("Normal", "70%", "Off") to the right. Each row has a [tooltip](#tooltips). There is also and a sample line that types out at the chosen speed. It exists as a screen
+("Normal", "70%", "Off") to the right. Each row has a [tooltip](#tooltips). Below the rows is a sample line that types out at the chosen speed. It exists as a screen
 (`ScreenState::Settings`, in the default main menu) and as an overlay
 (`SETTINGS_OVERLAY`, in the pause menu). Back, Esc or Backspace return to where it was
 opened from.
@@ -545,6 +557,58 @@ the story).
 every screen and overlay (quick save/load use them). `ToastConfig` (`.toast(|t| ...)`):
 `text(style)`, `error_text(style)`, `background(color)`, `seconds(s)` (2.5),
 `margin(px)` (16).
+
+## Playing controls
+
+Ren'Py's defaults, on the playing screen:
+
+| Input | Action |
+| --- | --- |
+| Click, Space, Enter, gamepad A | Advance (finishing the typewriter and transitions first) |
+| Mouse wheel, Page Up / Down, LB / RB | Roll back / forward |
+| H, middle click, gamepad Select | Hide the dialogue box, choices and HUD to look at the scene; any click or key shows them again |
+| Ctrl (held), right trigger (held) | Skip while held |
+| Tab | Toggle skip mode |
+| A | Toggle auto mode |
+| L, gamepad Y | Open the [log](#log) |
+| S | Screenshot, saved as `screenshots/screenshot-<time>.png` in the saves directory |
+| F | Toggle fullscreen |
+| Esc, right click, gamepad Start | Pause menu |
+| F5 / F9 | Quick save / quick load |
+
+`PlayingKeys` (`.playing(|p| p.keys(|k| ...))`) changes them: `hide`, `skip_toggle`,
+`skip_hold`, `auto`, `log`, `screenshot`, `fullscreen` take key lists (empty turns one
+off), and `middle_click_hides(bool)` / `right_click_pauses(bool)` the mouse buttons.
+
+**Skip** advances one line every `skip_interval`, instantly, through lines the player has
+already read. It stops at an unread line (unless the Skip setting is "All text"), at a
+choice, at the end, and when a menu opens. Read lines are remembered across sessions in
+`seen.json` in the saves directory (`SeenLines`), keyed by `StoryVm::line_key()`: the
+scene, speaker and text as written, so editing a line makes it unread again.
+
+**Auto mode** advances by itself once the line has finished typing, its transitions are
+done and its [voice clip](#audio) has finished, after the Auto-forward delay plus
+`auto_per_character` per character. It stays on across choices (waiting for the player)
+until toggled off. `ctx.modes` holds both modes (`PlayModes { auto, skip }`); the
+`Action::ToggleAuto` and `Action::ToggleSkip` HUD buttons show their pressed look while on.
+
+## Log
+
+Every line the player sees and every choice they make is kept in the session log
+(`ctx.log`, a `SessionLog` of `LogEntry::Line { speaker, text }` and
+`LogEntry::Choice { text }`, the last 300). The log is part of the game: rolling back
+rewinds it (and rolling forward restores it), saves store it (`SaveFile::log`) and
+loading brings it back, New Game clears it.
+
+The default HUD's Log button, L or gamepad Y open `LOG_OVERLAY`: a scrollable panel, newest
+at the bottom, with speaker names in their character colors and choices marked. The wheel,
+↑/↓, Page Up / Down, Home / End and the D-pad scroll; Esc, L, Backspace, right click, B or
+Back close it.
+
+`LogConfig` (`.log(|l| ...)`): `title`, `title_text`, `speaker_text`, `line_text`,
+`narration_text`, `choice_text`, `choice_prefix` ("» "), `empty_label`, `panel_width`
+(900), `entry_spacing`, `panel_color`, `backdrop`, `back_button`, `back_label`,
+`close_keys`.
 
 ## Keyboard and gamepad
 
@@ -1094,6 +1158,9 @@ SCRIPT.md 2.7); the engine plays them.
   reload all switch to the right music with no extra code.
 - Sounds play once, when the story reaches them. Rolling back or loading doesn't replay
   them.
+- Voice clips (`voice <id>`, from `<assets>/voice/<id>`) play with the next line and stop
+  when the player moves on (or rolls back). Auto mode waits for them to finish.
+  `ctx.audio`'s `voice_playing()` tells whether one is still speaking.
 - Volumes come from the [settings](#settings).
 - If no audio device can be opened, a warning is printed and the game runs silently.
 
@@ -1215,6 +1282,7 @@ The tests run without a window; drawing and input are checked by playing the exa
 | --- | --- |
 | `tests/app.rs` | `VnApp::check` (validation, missing art, story directories, errors with their file), entry scene, typed command arguments, schema export, hook registration |
 | `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history, thumbnails (scaled, replaced, deleted with the slot), autosave switch, save directory names |
+| `tests/session.rs` | The session log (limit, rewinding and forwarding, a new branch after a rollback, replacing), seen lines on disk, log lengths in checkpoints (and older checkpoints), the log in save files, the default HUD, the auto-forward delay |
 | `tests/stage.rs` | Which events start which animations (entrances, expression changes, moves, exits, `clear`, backgrounds), lengths and expiry, textures kept for fading images, finishing and resetting, the character layout |
 | `tests/navigation.rs` | Spatial navigation in columns and grids (wrapping, disabled items), focus (first press, Tab, following the mouse, keyboard-mode focus, stale focus), key repeat timing |
 | `tests/button.rs` | Transforms (round trips, rotated and skewed hit tests), state blending and defaults, image switching and listed paths, transition steps, per-button HUD and choice styles, disabled menu items and `can_continue` |

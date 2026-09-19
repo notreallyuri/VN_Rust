@@ -13,6 +13,7 @@ fn fixture_covers_every_token_kind() {
         TokenKind::Background,
         TokenKind::Music,
         TokenKind::Sound,
+        TokenKind::Voice,
         TokenKind::Remove,
         TokenKind::Clear,
         TokenKind::Dialogue,

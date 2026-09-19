@@ -124,6 +124,9 @@ Three levels of control, each optional:
 - [x] Settings screen (see M3): a display toggle, and sliders for text speed, music and sound volume
 - [x] Tooltips (`MenuItem::tooltip`, `HudButton::tooltip`, `ctx.tooltip(rect, text)`), on by default in the settings rows and save slots
 - [x] Clean exit (`ScreenState::Quit`)
+- [x] Ren'Py playing controls: hide (H, middle click), skip (Ctrl held, Tab; read lines only unless set otherwise, remembered in `seen.json`), auto mode (A; waits for typing, transitions and voice), log (L, HUD button), screenshot (S), fullscreen (F), right click for the menu; gamepad equivalents
+- [x] Session log overlay (lines and choices; rolled back with the story, kept in saves)
+- [x] `voice <id>` clips with a voice volume setting
 - [x] Audio: `music <track>` / `music none` / `sound <id>` (SCRIPT.md 2.7); looping music with crossfades, part of the story state (saves, rollback, hot reload); menu music; volumes in settings
 
 ## M6: Save/load and tooling (save/load started early)

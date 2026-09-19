@@ -13,6 +13,10 @@ pub fn sound_path(assets: &Path, id: &str) -> Option<PathBuf> {
     find_audio(assets, "sounds", id)
 }
 
+pub fn voice_path(assets: &Path, id: &str) -> Option<PathBuf> {
+    find_audio(assets, "voice", id)
+}
+
 fn find_audio(assets: &Path, dir: &str, id: &str) -> Option<PathBuf> {
     AUDIO_EXTENSIONS
         .iter()
@@ -100,8 +104,10 @@ pub struct Audio {
     fading: Vec<Track>,
     wanted: Option<String>,
     sounds: HashMap<String, Option<Sound<'static>>>,
+    voice: Option<(String, Sound<'static>)>,
     music_volume: f32,
     sound_volume: f32,
+    voice_volume: f32,
 }
 
 impl Audio {
@@ -114,8 +120,10 @@ impl Audio {
             fading: Vec::new(),
             wanted: None,
             sounds: HashMap::new(),
+            voice: None,
             music_volume: 1.0,
             sound_volume: 1.0,
+            voice_volume: 1.0,
         }
     }
 
@@ -155,6 +163,52 @@ impl Audio {
     pub fn set_volumes(&mut self, music: f32, sound: f32) {
         self.music_volume = music.clamp(0.0, 1.0);
         self.sound_volume = sound.clamp(0.0, 1.0);
+    }
+
+    pub fn set_voice_volume(&mut self, volume: f32) {
+        self.voice_volume = volume.clamp(0.0, 1.0);
+        if let Some((_, voice)) = &self.voice {
+            voice.set_volume(self.voice_volume);
+        }
+    }
+
+    pub fn play_voice(&mut self, id: &str) {
+        self.stop_voice();
+        let Some(device) = self.device else {
+            return;
+        };
+        let Some(path) = voice_path(&self.root, id) else {
+            eprintln!(
+                "⚠️ No voice file for '{}' in {}",
+                id,
+                self.root.join("voice").display()
+            );
+            return;
+        };
+        match device.new_sound(&path.to_string_lossy()) {
+            Ok(sound) => {
+                sound.set_volume(self.voice_volume);
+                sound.play();
+                self.voice = Some((id.to_string(), sound));
+            }
+            Err(e) => eprintln!("⚠️ Could not load {}: {}", path.display(), e),
+        }
+    }
+
+    pub fn stop_voice(&mut self) {
+        if let Some((_, voice)) = self.voice.take() {
+            voice.stop();
+        }
+    }
+
+    pub fn voice_playing(&self) -> bool {
+        self.voice
+            .as_ref()
+            .is_some_and(|(_, voice)| voice.is_playing())
+    }
+
+    pub fn voice(&self) -> Option<&str> {
+        self.voice.as_ref().map(|(id, _)| id.as_str())
     }
 
     pub fn play_music(&mut self, track: Option<&str>) {

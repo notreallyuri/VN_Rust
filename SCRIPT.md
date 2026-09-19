@@ -123,6 +123,7 @@ background <image_id> with <transition> [seconds]
 music <track_id>
 music none
 sound <sound_id>
+voice <voice_id>
 ```
 
 - `music` starts a looping track, replacing the one playing (the default engine crossfades);
@@ -130,8 +131,10 @@ sound <sound_id>
 - Like the background, the music stays across `jump`s and scenes, and is saved and rolled
   back with the story. A `music` line naming the track that is already playing does nothing
 - `sound` plays a one-shot effect. It isn't saved, and it isn't replayed on rollback or load
+- `voice` plays a voice clip for the next line of dialogue; it stops when the player moves
+  on. Auto mode waits for it
 - The engine decides where files live (for the default engine, `assets/music/<track_id>` and
-  `assets/sounds/<sound_id>`, as `.ogg`, `.mp3`, `.wav` or `.flac`); a missing file is a
+  `assets/sounds/<sound_id>` and `assets/voice/<voice_id>`, as `.ogg`, `.mp3`, `.wav` or `.flac`); a missing file is a
   warning, and the game stays silent there
 
 ```story
@@ -286,7 +289,7 @@ jump <scene_id>
 A character_id can't be a keyword, because a line's first word decides what it is
 (`show "Hi"` is a broken `show`, not dialogue). The keywords are:
 
-`scene` `show` `background` `music` `sound` `remove` `clear` `choice` `commit` `jump` `if` `else` `call` `set` `add`
+`scene` `show` `background` `music` `sound` `voice` `remove` `clear` `choice` `commit` `jump` `if` `else` `call` `set` `add`
 
 This guarantees:
 

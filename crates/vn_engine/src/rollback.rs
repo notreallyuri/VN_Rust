@@ -81,6 +81,8 @@ pub struct Checkpoint {
     pub story: StorySnapshot,
     pub state: BTreeMap<String, Json>,
     pub barrier: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub log_len: Option<usize>,
 }
 
 #[derive(Debug, Default)]
@@ -150,6 +152,16 @@ impl Rollback {
     }
 
     pub fn record(&mut self, story: &StoryVm, state: &GameState) {
+        self.record_with_log(story, state, None);
+    }
+
+    pub fn log_len(&self) -> Option<usize> {
+        self.history
+            .back()
+            .and_then(|checkpoint| checkpoint.log_len)
+    }
+
+    pub fn record_with_log(&mut self, story: &StoryVm, state: &GameState, log_len: Option<usize>) {
         if !self.config.enabled {
             return;
         }
@@ -184,6 +196,7 @@ impl Rollback {
             story: snapshot,
             state,
             barrier,
+            log_len,
         });
 
         while self.history.len() > self.config.max_steps + 1 {

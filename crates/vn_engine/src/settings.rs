@@ -13,6 +13,9 @@ pub struct Settings {
     pub text_speed: u32,
     pub music_volume: u32,
     pub sound_volume: u32,
+    pub voice_volume: u32,
+    pub auto_delay: u32,
+    pub skip_unseen: bool,
 }
 
 impl Default for Settings {
@@ -22,6 +25,9 @@ impl Default for Settings {
             text_speed: 40,
             music_volume: 70,
             sound_volume: 80,
+            voice_volume: 100,
+            auto_delay: 1500,
+            skip_unseen: false,
         }
     }
 }
@@ -33,6 +39,14 @@ impl Settings {
 
     pub fn sound_gain(&self) -> f32 {
         self.sound_volume.min(100) as f32 / 100.0
+    }
+
+    pub fn voice_gain(&self) -> f32 {
+        self.voice_volume.min(100) as f32 / 100.0
+    }
+
+    pub fn auto_seconds(&self) -> f64 {
+        self.auto_delay as f64 / 1000.0
     }
 
     pub fn load(path: &Path) -> Self {

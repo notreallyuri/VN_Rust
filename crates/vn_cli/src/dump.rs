@@ -76,6 +76,7 @@ pub fn dump(file_path: &str) -> ExitCode {
                 format!("MUSIC {}", track.as_deref().unwrap_or("none"))
             }
             Instruction::Sound { id } => format!("SOUND {}", id),
+            Instruction::Voice { id } => format!("VOICE {}", id),
             Instruction::Jump { scene_id } => format!("JUMP_SCENE '{}'", scene_id),
             Instruction::End => "END".to_string(),
             Instruction::Commit => "COMMIT".to_string(),

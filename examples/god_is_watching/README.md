@@ -74,6 +74,7 @@ Where each feature is used, so the example can be read as a reference.
 | Settings | From the main menu and the pause menu, with sliders in the palette (`style::slider`); the text speed preview types one of Adelaide's lines |
 | Buttons | `src/style.rs`: every button has a border that brightens on hover and a press scale, with a 0.12 s transition; menu buttons slide right on hover and click with `page_turn`; Exit skews on hover; choices use a nine-slice paper image (`ui/choice.png`, swapped for `choice_hover.png` on hover), left-aligned wrapped text; HUD buttons have icons (`ui/icon_*.png`) and a shadow; Continue is disabled until there is something to continue |
 | Keyboard and gamepad | Every screen, including the example's Evidence, Credits and Case file (B closes them); `style.rs` gives every button a `focused` look matching its hover look |
+| Playing controls | Ren'Py's keys (H, Ctrl, Tab, A, L, S, F, middle and right click); the HUD has Log and Auto with icons; the log is styled like the rest (`Decided:` before choices); the voice row is hidden (`voice_row(false)`), since the story has no voice clips |
 | Tooltips | On the HUD buttons (`HudButton::tooltip`), the menu's Continue (`MenuItem::tooltip`), the settings rows and the Delete button, styled with `.tooltips(...)` |
 | Typewriter text | Every line, at the player's text speed |
 | Layouts | Main menu `rows_of([1, 2, 2, 1])` with `Stretch`; pause menu and save slots as 2-column grids |

@@ -1,8 +1,8 @@
 use std::process::ExitCode;
 
 use vn_engine::{
-    Action, Align, FontRole, GameContext, HudButton, MenuItem, PAUSE_OVERLAY, ScreenState,
-    TextRequest, TextStyle, VnApp,
+    Action, Align, FontRole, GameContext, HudButton, LOG_OVERLAY, MenuItem, PAUSE_OVERLAY,
+    ScreenState, TextRequest, TextStyle, VnApp,
 };
 
 mod cast;
@@ -128,6 +128,16 @@ fn main() -> ExitCode {
                         .tooltip("Your notes, your decisions and what the Archive knows"),
                 )
                 .hud_item(
+                    HudButton::new("Log", Action::overlay(LOG_OVERLAY))
+                        .style(|b| b.icon(style::icon("icon_log")))
+                        .tooltip("Everything read and decided so far (L)"),
+                )
+                .hud_item(
+                    HudButton::new("Auto", Action::ToggleAuto)
+                        .style(|b| b.icon(style::icon("icon_auto")))
+                        .tooltip("Turn the pages on their own (A). Tab or Ctrl skips read pages"),
+                )
+                .hud_item(
                     HudButton::new("Menu", Action::overlay(PAUSE_OVERLAY))
                         .style(|b| b.icon(style::icon("icon_menu")))
                         .tooltip("Pause (Esc)"),
@@ -168,6 +178,7 @@ fn main() -> ExitCode {
                 .slider(style::slider)
                 .sample_text("\"Your hot water, miss. Miss? Are you unwell?\"")
                 .sample_sound("page_turn")
+                .voice_row(false)
                 .back_button(|b| style::button(b.size(200.0, 48.0)))
         })
         .text_input(|t| {
@@ -178,6 +189,18 @@ fn main() -> ExitCode {
                 .box_border(style::PARCHMENT)
                 .hint("Type your name, then press Enter to sign")
                 .hint_text(style::label(16.0))
+        })
+        .log(|l| {
+            l.title_text(heading(40.0))
+                .panel_color(style::PANEL)
+                .backdrop(style::BACKDROP)
+                .speaker_text(TextStyle::new(FontRole::Speaker, 20.0, style::PARCHMENT))
+                .line_text(style::body(19.0))
+                .narration_text(style::body(19.0).color(style::MUTED))
+                .choice_text(TextStyle::new(FontRole::Menu, 18.0, style::PARCHMENT))
+                .choice_prefix("Decided: ")
+                .empty_label("The page is blank.")
+                .back_button(|b| style::button(b.size(200.0, 46.0)))
         })
         .tooltips(|t| {
             t.background(style::PANEL)

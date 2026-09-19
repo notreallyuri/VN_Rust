@@ -301,6 +301,7 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `Background { image, transition }` | no | Already applied to `background()`; `None` for `background none` |
 | `Music { track }` | no | Already applied to `music()`; `None` for `music none` |
 | `Sound { id }` | no | A one-shot sound for the frontend to play; not part of the state |
+| `Voice { id }` | no | A voice clip for the next line; not part of the state |
 | `Hide { character, transition }` | no | Already applied |
 | `Clear { transition }` | no | Already applied |
 | `Call { command, args }` | no | For the game to handle |
@@ -329,6 +330,7 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `position(character)` | The `Position` (`FarLeft`, `Left`, `Center`, `Right`, `FarRight`) given with `at`, if any. Kept when the character is shown again without `at`; forgotten by `remove` and `clear` |
 | `background()` | The current background image id, if any. `clear` doesn't touch it |
 | `music()` | The current music track id, if any |
+| `line_key()` | A stable id for the line on screen (a hash of the scene, speaker and text as written), for "read" tracking; `None` unless a line is showing |
 | `variables()`, `variable(id)`, `variable_type(id)` | Story variables |
 | `set_variable(id, value) -> Result<(), VmError>` | Set from Rust. With registered variables, unknown names and wrong types are errors |
 | `program()` | The compiled program |

@@ -184,6 +184,9 @@ impl Compiler {
             Node::Sound { id } => {
                 self.emit(Instruction::Sound { id });
             }
+            Node::Voice { id } => {
+                self.emit(Instruction::Voice { id });
+            }
             Node::Remove {
                 character,
                 transition,

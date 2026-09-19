@@ -400,6 +400,17 @@ fn parse_statement(token: &Token) -> Result<Node, Diagnostic> {
             ))),
         },
 
+        TokenKind::Voice => match words(&token.payload)[..] {
+            [id] => Ok(Node::Voice {
+                id: identifier(id, "voice id", line)?,
+            }),
+            [] => Err(error("`voice` needs a clip: `voice <id>`".into())),
+            [_, ref extra @ ..] => Err(error(format!(
+                "`voice` takes one clip; unexpected `{}`",
+                extra.join(" ")
+            ))),
+        },
+
         TokenKind::Remove => {
             let (words, transition) = split_with(&token.payload, line)?;
             match words[..] {

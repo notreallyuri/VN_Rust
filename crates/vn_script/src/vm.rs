@@ -37,6 +37,9 @@ pub enum Event {
     Sound {
         id: String,
     },
+    Voice {
+        id: String,
+    },
     Hide {
         character: String,
         transition: Option<Transition>,
@@ -337,6 +340,11 @@ impl StoryVm {
                     self.ip += 1;
                     return event;
                 }
+                Instruction::Voice { id } => {
+                    let event = Event::Voice { id: id.clone() };
+                    self.ip += 1;
+                    return event;
+                }
                 Instruction::Hide { char_id } => {
                     let event = Event::Hide {
                         character: char_id.clone(),
@@ -471,6 +479,20 @@ impl StoryVm {
 
     pub fn background(&self) -> Option<&str> {
         self.background.as_deref()
+    }
+
+    pub fn line_key(&self) -> Option<u64> {
+        if !matches!(self.current, Some(Event::Say { .. })) {
+            return None;
+        }
+        let scene = self.current_scene.as_deref()?;
+        let Some(Instruction::Say { char_id, text }) =
+            self.program.instructions.get(self.ip.checked_sub(1)?)
+        else {
+            return None;
+        };
+        let key = format!("{}\0{}\0{}", scene, char_id.as_deref().unwrap_or(""), text);
+        Some(crate::types::instructions::fnv1a(key.as_bytes()))
     }
 
     pub fn music(&self) -> Option<&str> {

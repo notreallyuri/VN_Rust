@@ -12,6 +12,7 @@ use crate::{
     OverlayRequest, ResourceManager, Rollback, SaveError, Saves, ScreenState, Settings,
     SettingsStore, TextRequest, Toast,
 };
+use crate::{PlayModes, SeenLines, SessionLog};
 
 pub struct GameContext<'a> {
     pub rl: &'a mut RaylibHandle,
@@ -34,6 +35,10 @@ pub struct GameContext<'a> {
     pub(crate) audio: &'a mut Audio,
     pub(crate) tooltip: &'a mut Option<String>,
     pub nav: NavInput,
+    pub log: &'a mut SessionLog,
+    pub modes: &'a mut PlayModes,
+    pub seen: &'a mut SeenLines,
+    pub(crate) screenshot_request: &'a mut bool,
 }
 
 impl GameContext<'_> {
@@ -91,11 +96,18 @@ impl GameContext<'_> {
         crate::saves::save_game(
             self.saves,
             slot,
-            self.story,
-            self.state,
-            self.rollback,
-            self.thumbnail,
+            crate::saves::SaveParts {
+                story: self.story,
+                state: self.state,
+                rollback: self.rollback,
+                log: self.log.entries(),
+                thumbnail: self.thumbnail,
+            },
         )
+    }
+
+    pub fn screenshot(&mut self) {
+        *self.screenshot_request = true;
     }
 
     pub fn view(&self) -> GameView<'_> {
@@ -130,6 +142,8 @@ impl GameContext<'_> {
     pub fn load(&mut self, slot: &str) -> Result<LoadReport, SaveError> {
         let file = self.saves.read(slot)?;
         let report = crate::saves::apply(&file, self.story, self.state)?;
+        self.log.replace(file.log.clone());
+        self.modes.skip = false;
 
         let restarted = report
             .warnings
@@ -179,6 +193,8 @@ pub struct DrawContext<'a> {
     pub settings: &'a Settings,
     pub interactive: bool,
     pub focus_visible: bool,
+    pub log: &'a SessionLog,
+    pub modes: PlayModes,
 }
 
 impl DrawContext<'_> {

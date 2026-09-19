@@ -586,6 +586,10 @@ fn audio_statements() {
         )
     );
     assert_eq!(
+        one_error(&in_scene("voice")),
+        (2, "`voice` needs a clip: `voice <id>`".into())
+    );
+    assert_eq!(
         one_error(&in_scene("sound")),
         (2, "`sound` needs a sound: `sound <id>`".into())
     );

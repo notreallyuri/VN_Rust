@@ -7,6 +7,7 @@ pub enum TokenKind {
     Background,
     Music,
     Sound,
+    Voice,
     Remove,
     Clear,
     Commit,
@@ -63,6 +64,9 @@ pub enum Node {
         track: Option<String>,
     },
     Sound {
+        id: String,
+    },
+    Voice {
         id: String,
     },
     Remove {
