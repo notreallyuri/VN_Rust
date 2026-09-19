@@ -165,6 +165,6 @@ Three levels of control, each optional:
 
 ## Ongoing
 
-- [ ] Tests: golden tests over the SCRIPT.md examples (lexer, parser and VM done in `crates/vn_script/tests/`)
+- [x] Tests: golden tests over the SCRIPT.md examples (`crates/vn_script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `vn dump`
 - [x] SCRIPT.md §8.3 typo: `-+` → `-=`
 - [x] SCRIPT.md: specify audio (backgrounds, positions and string escaping done)

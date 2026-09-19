@@ -89,8 +89,11 @@ Compilation rules:
 - An `if` compiles to `JumpIfFalse { condition, else_start }` + then-branch + `Goto`
   over the else-branch. The VM evaluates the whole condition.
 
-`vn dump <file.story>` prints a compiled program with scene headers, plus any
-diagnostics that don't need a registry (unknown jump targets, duplicate scenes).
+`Instruction` implements `Display` (`SHOW mary tired AT left`, `JUMP_IF_FALSE trust >= 3
+(goto 12)`, ...), and `Program::listing()` prints the whole program with an absolute index
+per instruction and a header per scene (`scene start:  (file:line)`). `vn dump
+<file.story>` prints that listing, plus any diagnostics that don't need a registry
+(unknown jump targets, duplicate scenes); the SCRIPT.md golden test stores it too.
 
 ## Variables and conditions
 
@@ -416,4 +419,12 @@ cargo test -p vn_script
 | `tests/snapshot.rs` | Snapshot round trips (mid-scene, at a choice, JSON), edits to other scenes, edits to the saved scene, missing scenes |
 | `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example story directory, `prepare`, schema files (round trip, unchanged writes, missing fields, newer formats) |
 | `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, music state and sound events (and music in snapshots), the fixture playing through, the example playing through all three chapters, `story_files` (recursive, sorted, `.story` only) |
+| `tests/spec.rs` | Every example in SCRIPT.md: it must compile without diagnostics, and its compiled instructions and the events the VM produces (first option of every choice) must match `tests/golden/script_md.txt`. Blocks with `<placeholders>` are syntax templates and skipped; fragments are wrapped in a scene and `...` lines become narration |
 | `tests/fixtures/all_features.story` | Golden input covering every construct in SCRIPT.md |
+
+When SCRIPT.md or the compiler changes on purpose, regenerate the golden file and review
+its diff:
+
+```sh
+UPDATE_GOLDEN=1 cargo test -p vn_script --test spec
+```

@@ -372,3 +372,92 @@ pub struct SceneInstruction {
     pub id: String,
     pub instructions: Vec<Instruction>,
 }
+
+impl std::fmt::Display for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Instruction::Choice { options } => {
+                let options: Vec<String> = options
+                    .iter()
+                    .map(|(text, index)| format!("'{}'->{}", text, index))
+                    .collect();
+                write!(f, "CHOICE [{}]", options.join(", "))
+            }
+            Instruction::JumpIfFalse {
+                condition,
+                jump_to_index,
+            } => write!(f, "JUMP_IF_FALSE {} (goto {})", condition, jump_to_index),
+            Instruction::Goto(index) => write!(f, "GOTO {}", index),
+            Instruction::Pause => write!(f, "PAUSE"),
+            Instruction::Say {
+                char_id: Some(name),
+                text,
+            } => write!(f, "SAY [{}]: \"{}\"", name, text),
+            Instruction::Say {
+                char_id: None,
+                text,
+            } => write!(f, "SAY [NARRATOR]: \"{}\"", text),
+            Instruction::Show {
+                char_id,
+                img_id,
+                position: Some(position),
+            } => write!(f, "SHOW {} {} AT {}", char_id, img_id, position),
+            Instruction::Show {
+                char_id, img_id, ..
+            } => write!(f, "SHOW {} {}", char_id, img_id),
+            Instruction::Background { image } => {
+                write!(f, "BACKGROUND {}", image.as_deref().unwrap_or("none"))
+            }
+            Instruction::Music { track } => {
+                write!(f, "MUSIC {}", track.as_deref().unwrap_or("none"))
+            }
+            Instruction::Sound { id } => write!(f, "SOUND {}", id),
+            Instruction::Voice { id } => write!(f, "VOICE {}", id),
+            Instruction::Jump { scene_id } => write!(f, "JUMP_SCENE '{}'", scene_id),
+            Instruction::End => write!(f, "END"),
+            Instruction::Commit => write!(f, "COMMIT"),
+            Instruction::With(transition) => write!(f, "WITH {}", transition),
+            Instruction::Hide { char_id } => write!(f, "HIDE {}", char_id),
+            Instruction::Clear => write!(f, "CLEAR"),
+            Instruction::Set { var_id, value } => {
+                write!(f, "SET {} = {}", var_id, value.literal())
+            }
+            Instruction::Add { var_id, amount } => write!(f, "ADD {} {:+}", var_id, amount),
+            Instruction::Call { command, args } => {
+                write!(f, "CALL {} {}", command, args.join(" "))
+            }
+        }
+    }
+}
+
+impl Program {
+    pub fn listing(&self) -> String {
+        let scene_starts: HashMap<usize, &str> = self
+            .scenes
+            .iter()
+            .map(|(id, &start)| (start, id.as_str()))
+            .collect();
+
+        let mut out = String::new();
+        for (index, instruction) in self.instructions.iter().enumerate() {
+            if let Some(scene) = scene_starts.get(&index) {
+                let location = self
+                    .scene_locations
+                    .get(*scene)
+                    .copied()
+                    .unwrap_or_default();
+                match self.file_name(location.file).filter(|f| !f.is_empty()) {
+                    Some(file) => out.push_str(&format!(
+                        "\nscene {}:  ({}:{})\n",
+                        scene, file, location.line
+                    )),
+                    None => {
+                        out.push_str(&format!("\nscene {}:  (line {})\n", scene, location.line))
+                    }
+                }
+            }
+            out.push_str(&format!("{:03}: {}\n", index, instruction));
+        }
+        out
+    }
+}
