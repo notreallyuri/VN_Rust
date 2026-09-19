@@ -164,6 +164,19 @@ Three levels of control, each optional:
 - [x] Cinematic title and menu: `Scenery` (background motion, vignette, sliding letterbox) on the start screen and main menu, a title card on the start screen, menu buttons in the letterbox bar with diamond separators and an intro fade, `TextStyle::spacing`, `ButtonLook::underline`, `Button::opacity`; HUD groups (`HudButton::group`, `hud_group`)
 - [x] UI overhaul: one visual system in `style.rs` taken from the art (warm ink, brass, parchment, oxblood for irreversible actions), scooped frames on every panel, beveled buttons with hover changes limited to fill and rule, a sidebar main menu, a framed dialogue box with a name plate and the HUD as a row beneath it, panels on the custom screens
 
+## M8: Localization
+
+Worth doing before the engine grows further: it touches the DSL, every default screen,
+fonts and saves at once, and each of those is cheaper to change now than later.
+
+- [ ] `vn translate <lang>`: extract every translatable string (dialogue, narration, choice options, and the display names in `schema.json`) into a per-language table keyed by file and a hash of the source text, so edits show up as stale entries instead of silently keeping the old translation
+- [ ] Look translations up at runtime through the VM's `Say`/`Choice` events, falling back to the source text when one is missing
+- [ ] A language setting in `settings.json`, changed from the settings screen without restarting
+- [ ] Translatable UI labels: the default screens ship their English strings as a table a game can replace or extend
+- [ ] Fonts per language with a fallback chain, and wrapping for scripts without spaces (CJK)
+- [ ] `vn check` reports missing and stale translations for a language
+- [ ] Saves stay language-independent: store ids, not translated text, so the session log and save slots re-render in whatever language is active
+
 ## Ongoing
 
 - [x] Tests: golden tests over the SCRIPT.md examples (`crates/vn_script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `vn dump`
