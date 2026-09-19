@@ -8,12 +8,15 @@ use vn_script::{Event, RestoreOutcome, StoryVm};
 
 use crate::screens::{CONFIRM_OVERLAY, Confirm};
 use crate::{
-    Action, Characters, Commands, DrawContext, GameContext, GameState, Hooks, Overlay,
-    OverlayAction, OverlayRequest, ResourceManager, Rollback, Saves, Screen, ScreenState,
-    SettingsStore, TextRequest, Toast, ToastConfig,
+    Action, Audio, Characters, Commands, DrawContext, GameContext, GameState, Hooks, Overlay,
+    OverlayAction, OverlayRequest, ResourceManager, Rollback, SCRIPT_ERRORS_KEY, Saves, Screen,
+    ScreenState, ScriptErrors, SettingsStore, THUMBNAIL_WIDTH, TextRequest, Toast, ToastConfig,
+    TooltipConfig, TooltipTimer,
 };
 
 pub const CLOSE_MESSAGE: &str = "Quit the game? Unsaved progress will be lost.";
+
+const THUMBNAIL_INTERVAL: f64 = 1.0;
 
 pub fn close_needs_confirmation(state: &ScreenState, story: &StoryVm) -> bool {
     let ended = matches!(story.current(), Some(Event::End));
@@ -51,6 +54,13 @@ pub struct ScreenStateManager {
     confirm_request: Option<Confirm>,
     pub toast_config: ToastConfig,
     toast: Option<Toast>,
+    script_errors: Option<ScriptErrors>,
+    thumbnail: Option<Image>,
+    thumbnail_at: Option<f64>,
+    autosave_request: bool,
+    pub audio: Audio,
+    pub tooltip_config: TooltipConfig,
+    tooltip_timer: TooltipTimer,
     overlays: Vec<(String, Box<dyn Overlay>)>,
     quit_requested: bool,
     closing: bool,
@@ -106,6 +116,13 @@ impl ScreenStateManager {
             confirm_request: None,
             toast_config: ToastConfig::default(),
             toast: None,
+            script_errors: None,
+            thumbnail: None,
+            thumbnail_at: None,
+            autosave_request: false,
+            audio: Audio::silent(),
+            tooltip_config: TooltipConfig::default(),
+            tooltip_timer: TooltipTimer::default(),
             overlays: Vec::new(),
             quit_requested: false,
             closing: false,
@@ -115,8 +132,10 @@ impl ScreenStateManager {
 
     pub fn update(&mut self, rl: &mut RaylibHandle, thread: &RaylibThread) {
         let now = rl.get_time();
+        self.resources.load_requested(rl, thread);
         let mut overlay_requests = Vec::new();
         let mut toast = None;
+        let mut tooltip = None;
 
         let ctx = GameContext {
             rl,
@@ -134,6 +153,10 @@ impl ScreenStateManager {
             toast: &mut toast,
             text_request: &mut self.text_request,
             confirm_request: &mut self.confirm_request,
+            thumbnail: self.thumbnail.as_ref(),
+            autosave_request: &mut self.autosave_request,
+            audio: &mut self.audio,
+            tooltip: &mut tooltip,
         };
 
         let next_state = match self.overlays.last_mut() {
@@ -151,6 +174,9 @@ impl ScreenStateManager {
             },
             None => self.current_screen.update(ctx),
         };
+
+        let clicked = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
+        self.tooltip_timer.update(tooltip, now, clicked);
 
         for request in overlay_requests {
             match request {
@@ -183,10 +209,34 @@ impl ScreenStateManager {
             self.closing = false;
         }
 
+        self.update_music(rl.get_frame_time());
+
+        if let Some(errors) = &mut self.script_errors
+            && rl.is_key_pressed(SCRIPT_ERRORS_KEY)
+        {
+            errors.toggle();
+        }
+
         if self.settings.values.fullscreen != self.fullscreen {
             rl.toggle_borderless_windowed();
             self.fullscreen = self.settings.values.fullscreen;
         }
+    }
+
+    fn update_music(&mut self, dt: f32) {
+        let wanted = match self.current_state {
+            ScreenState::StartScreen | ScreenState::MainMenu => {
+                self.audio.config().menu_music.clone()
+            }
+            ScreenState::Playing | ScreenState::TextInput => self.story.music().map(str::to_string),
+            _ => self.audio.music().map(str::to_string),
+        };
+
+        let settings = &self.settings.values;
+        self.audio
+            .set_volumes(settings.music_gain(), settings.sound_gain());
+        self.audio.play_music(wanted.as_deref());
+        self.audio.update(dt);
     }
 
     pub fn request_close(&mut self) {
@@ -212,28 +262,99 @@ impl ScreenStateManager {
         self.confirm(Confirm::new(message, Action::Quit).confirm_label("Quit"));
     }
 
-    pub fn draw(&mut self, d: &mut RaylibDrawHandle) {
-        let ctx = DrawContext {
+    pub fn draw(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
+        self.current_screen
+            .draw(d, &self.draw_context(self.overlays.is_empty()));
+        if std::mem::take(&mut self.autosave_request) {
+            self.thumbnail_at = None;
+            self.capture_thumbnail(d, thread);
+            self.autosave();
+        } else {
+            self.capture_thumbnail(d, thread);
+        }
+
+        let top = self.overlays.len().saturating_sub(1);
+        for (index, (_, overlay)) in self.overlays.iter().enumerate() {
+            overlay.draw(d, &self.draw_context(index == top));
+        }
+
+        let ctx = self.draw_context(false);
+
+        if let Some(errors) = &self.script_errors {
+            errors.draw(d, ctx.fonts());
+        }
+
+        if let Some(toast) = &self.toast {
+            toast.draw(d, ctx.fonts(), &self.toast_config);
+        }
+
+        let config = &self.tooltip_config;
+        if config.enabled
+            && let Some(text) = self.tooltip_timer.visible(d.get_time(), config.delay)
+        {
+            crate::draw_tooltip(d, ctx.fonts(), text, config);
+        }
+    }
+
+    fn capture_thumbnail(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
+        let now = d.get_time();
+        let due = self
+            .thumbnail_at
+            .is_none_or(|at| now - at >= THUMBNAIL_INTERVAL);
+        let in_game = self.current_state == ScreenState::Playing
+            && self.overlays.is_empty()
+            && self.story.current().is_some();
+        if !due || !in_game {
+            return;
+        }
+
+        let mut image = d.load_image_from_screen(thread);
+        let height = THUMBNAIL_WIDTH * image.height().max(1) / image.width().max(1);
+        image.resize(THUMBNAIL_WIDTH, height.max(1));
+        self.thumbnail = Some(image);
+        self.thumbnail_at = Some(now);
+    }
+
+    pub fn thumbnail(&self) -> Option<&Image> {
+        self.thumbnail.as_ref()
+    }
+
+    pub fn autosave(&self) {
+        crate::saves::autosave(
+            &self.saves,
+            &self.story,
+            &self.state,
+            &self.rollback,
+            self.thumbnail.as_ref(),
+        );
+    }
+
+    fn draw_context(&self, interactive: bool) -> DrawContext<'_> {
+        DrawContext {
             resources: &self.resources,
             story: &self.story,
             state: &self.state,
             saves: &self.saves,
             characters: &self.characters,
             settings: &self.settings.values,
-        };
-
-        self.current_screen.draw(d, &ctx);
-
-        for (_, overlay) in &self.overlays {
-            overlay.draw(d, &ctx);
-        }
-
-        if let Some(toast) = &self.toast {
-            toast.draw(d, ctx.fonts(), &self.toast_config);
+            interactive,
         }
     }
 
+    pub fn show_script_errors(&mut self, errors: ScriptErrors) {
+        let collapsed = self.script_errors.as_ref().is_some_and(|e| e.collapsed);
+        self.script_errors = Some(ScriptErrors {
+            collapsed,
+            ..errors
+        });
+    }
+
+    pub fn script_errors(&self) -> Option<&ScriptErrors> {
+        self.script_errors.as_ref()
+    }
+
     pub fn reload_story(&mut self, story: StoryVm) {
+        self.script_errors = None;
         match crate::swap_story(&mut self.story, story, &mut self.rollback) {
             Ok(RestoreOutcome::Exact) => self.notify(Toast::info("Story reloaded")),
             Ok(RestoreOutcome::SceneRestarted { scene }) => self.notify(Toast::info(format!(
@@ -302,6 +423,7 @@ impl ScreenStateManager {
         match self.factory.create_screen(&next_state) {
             Some(screen) => {
                 println!("Transitioning to: {:?}", next_state);
+                self.thumbnail_at = None;
                 self.current_screen = screen;
                 let previous = std::mem::replace(&mut self.current_state, next_state);
                 self.previous_state = Some(previous);

@@ -6,7 +6,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use serde::{Deserialize, Serialize};
 use vn_engine::saves::time_ago;
 use vn_engine::script::{Event, StoryVm, Value, VmError};
-use vn_engine::{GameState, LoadWarning, SAVE_FORMAT_VERSION, SaveError, Saves};
+use vn_engine::{
+    AUTO_SLOT, GameState, LoadWarning, SAVE_FORMAT_VERSION, SaveError, Saves, THUMBNAIL_WIDTH,
+    default_saves_dir, slug,
+};
 
 const STORY: &str = r#"
 scene intro:
@@ -426,4 +429,60 @@ fn saves_without_history_still_load() {
         "empty history isn't written"
     );
     assert!(saves.read("1").unwrap().rollback.is_empty());
+}
+
+#[test]
+fn thumbnails_are_written_scaled_and_removed_with_their_slot() {
+    use vn_engine::raylib::prelude::{Color, Image};
+
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let (vm, state) = played_game();
+    saves.save("1", &vm, &state).unwrap();
+
+    let screen = Image::gen_image_color(1280, 720, Color::RED);
+    saves.write_thumbnail("1", Some(&screen)).unwrap();
+    let path = saves.thumbnail_path("1").unwrap();
+    assert_eq!(path, dir.0.join("1.png"));
+    let written = Image::load_image(&path.to_string_lossy()).unwrap();
+    assert_eq!(
+        (written.width(), written.height()),
+        (THUMBNAIL_WIDTH, THUMBNAIL_WIDTH * 9 / 16)
+    );
+
+    saves.write_thumbnail("1", None).unwrap();
+    assert!(
+        !path.exists(),
+        "a save without a screenshot drops the old one"
+    );
+
+    saves.write_thumbnail("1", Some(&screen)).unwrap();
+    let before = saves.generation();
+    saves.delete("1").unwrap();
+    assert!(!path.exists());
+    assert!(!dir.0.join("1.json").exists());
+    assert!(saves.generation() > before);
+    saves.delete("1").unwrap();
+}
+
+#[test]
+fn autosave_is_opt_in_on_saves() {
+    assert!(!Saves::new("saves", "Test Game").autosaves());
+    assert!(
+        Saves::new("saves", "Test Game")
+            .with_autosave(true)
+            .autosaves()
+    );
+    assert_eq!(AUTO_SLOT, "auto");
+}
+
+#[test]
+fn slugs_name_the_platform_save_directory() {
+    assert_eq!(slug("God Is Watching"), "god_is_watching");
+    assert_eq!(slug("  Ren'Py -- Test!  "), "ren_py_test");
+    assert_eq!(slug("Café 2"), "café_2");
+    assert_eq!(slug("!!!"), "game");
+
+    let dir = default_saves_dir("God Is Watching");
+    assert!(dir.ends_with("god_is_watching"), "{}", dir.display());
 }

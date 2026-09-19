@@ -22,7 +22,7 @@ A story is usually a directory of `.story` files (one per chapter or POV):
 
 - `story_files(dir)` lists every `*.story` file under `dir`, recursively, sorted by
   path. Other files are ignored. Name files so they sort in reading order
-  (`01_mary.story`, `02_moriarty.story`, ...).
+  (`00_archive.story`, `01_box_14.story`, ...).
 - `read_sources(&paths)` reads them into `(path, source)` pairs for `compile_sources`.
 - `StoryVm::from_dir(dir)` does both. `StoryVm::from_file(path)` is the one-file case.
 
@@ -76,7 +76,8 @@ Compilation rules:
 - `show <c> <i> at <position>` compiles to `Show { char_id, img_id, position: Some(..) }`;
   without `at`, `position` is `None` and isn't serialized, so scene fingerprints (and
   saves) from before positions existed stay valid. `background <id>` / `background none`
-  compile to `Background { image }`.
+  compile to `Background { image }`, `music <id>` / `music none` to `Music { track }`, and
+  `sound <id>` to `Sound { id }`.
 - `commit` compiles to `Commit`; `choice final:` compiles like `choice:` with a `Commit`
   at the start of every option's body (SCRIPT.md 10).
 - An `if` compiles to `JumpIfFalse { condition, else_start }` + then-branch + `Goto`
@@ -174,6 +175,11 @@ The parser (a `Parser` struct that collects diagnostics) recovers this way:
 | `choice:` with no options, or a non-option line inside one | Error; that line and its nested lines are skipped |
 | A scene with no lines | Warning only |
 
+A line that doesn't start with a keyword and isn't valid dialogue gets a hint when its
+first word is close to a keyword: `remoe hugo` ends with "did you mean `remove`?". The hint
+is appended to the usual message, so an unrelated guess (`and` → `add`) still reads
+sensibly.
+
 Rules checked here rather than in the schema: `scene`, `if` and `choice` headers end with
 `:`; `else` is exactly `else:`; `show` has exactly a character and an image; `remove` and
 `jump` take one identifier; `clear` and `commit` take nothing; choice option text isn't
@@ -222,9 +228,9 @@ file (in compile order) and line, including compile diagnostics and unknown `jum
 targets (always checked):
 
 ```text
-story/01_mary.story:12: error: unknown variable 'curiosty'
-story/01_mary.story:30: error: `set route`: 'great' is not one of good | bad | neutral
-story/01_mary.story:41: error: `call give_item` argument 2 should be a non-negative integer, got `many`
+story/04_santa_ilde.story:12: error: unknown variable 'trsut'
+story/01_box_14.story:30: error: `set route`: 'great' is not one of good | bad | neutral
+story/00_archive.story:41: error: `call give_item` argument 2 should be a non-negative integer, got `many`
 ```
 
 `Diagnostic { severity, file, line, message }`: `Display` gives `path:N: error: ...` (the
@@ -232,6 +238,18 @@ form above) when `file` is set, `line N: error: ...` when it isn't, and leaves o
 line when it is 0 (problems not tied to a line, like a missing entry scene).
 `with_file(Option<&str>)` sets the file. A speaker written as
 `{variable}` isn't checked against characters, only the variable is.
+
+Unknown scenes, characters, images, variables, commands and entry scenes end with a
+suggestion when a known name is close:
+
+```text
+story/02_notebook.story:4: error: speaker: unknown character 'marry'; did you mean 'mary'?
+```
+
+The helpers are public in `suggest`: `edit_distance(a, b)` (insertions, deletions,
+substitutions and swaps of neighbours each cost 1), `closest(word, candidates)` (the
+nearest candidate within a third of the word's length, at least 1) and
+`did_you_mean(word, candidates)` (the `; did you mean '...'?` suffix, or nothing).
 
 ### Schema files
 
@@ -244,7 +262,7 @@ so tools can validate stories without running the game (`vn check`, and later th
   "game": "God Is Watching",
   "story_dir": "story",
   "entry_scene": "start",
-  "variables": { "curiosity": { "ty": "Int", "default": { "Int": 0 } } },
+  "variables": { "trust": { "ty": "Int", "default": { "Int": 0 } } },
   "characters": { "mary": { "name": "Mary", "images": ["tired"] } },
   "commands": { "give_item": { "required": ["Word"], "optional": ["UInt"], "rest": null } }
 }
@@ -275,6 +293,8 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `End` | yes | The story is over; `advance` keeps returning `End` until `reset` |
 | `Show { character, image, position }` | no | Already applied to `active_characters()` (and `position()` when `at` was used) |
 | `Background { image }` | no | Already applied to `background()`; `None` for `background none` |
+| `Music { track }` | no | Already applied to `music()`; `None` for `music none` |
+| `Sound { id }` | no | A one-shot sound for the frontend to play; not part of the state |
 | `Hide { character }` | no | Already applied |
 | `Clear` | no | Already applied |
 | `Call { command, args }` | no | For the game to handle |
@@ -302,6 +322,7 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `active_characters()` | Character id → image id for everyone on screen |
 | `position(character)` | The `Position` (`FarLeft`, `Left`, `Center`, `Right`, `FarRight`) given with `at`, if any. Kept when the character is shown again without `at`; forgotten by `remove` and `clear` |
 | `background()` | The current background image id, if any. `clear` doesn't touch it |
+| `music()` | The current music track id, if any |
 | `variables()`, `variable(id)`, `variable_type(id)` | Story variables |
 | `set_variable(id, value) -> Result<(), VmError>` | Set from Rust. With registered variables, unknown names and wrong types are errors |
 | `program()` | The compiled program |
@@ -342,6 +363,7 @@ state but not returned.
 | `pending_choice`, `current` | Whether a choice is waiting, and the event on screen |
 | `variables`, `active_characters` | Sorted maps, so save files are stable |
 | `positions`, `background` | Character spots and the background (both missing in older snapshots, which restore with none) |
+| `music` | The music track; left out of the JSON when there is none, and missing in older snapshots |
 
 `restore(&snapshot) -> Result<RestoreOutcome, VmError>`:
 
@@ -381,8 +403,9 @@ cargo test -p vn_script
 | `tests/lexer.rs` | Every token kind, comment and blank-line skipping |
 | `tests/parser.rs` | Conditions (every operator, `&&`/` | | ` precedence, enum and string literals, operators inside strings), `set`/`add`, interpolated speakers, `choice final:`, and the fixture compiling |
 | `tests/diagnostics.rs` | Every parse error with its exact line and message, recovery (no follow-on errors, empty blocks don't swallow siblings, tabs), string escapes, file names in multi-file diagnostics |
+| `tests/suggest.rs` | Edit distance, `closest` limits, keyword hints, suggestions for unknown scenes, images and entry scenes |
 | `tests/template.rs` | Interpolation of every value type, unset variables, `{{`/`}}`, malformed braces |
 | `tests/snapshot.rs` | Snapshot round trips (mid-scene, at a choice, JSON), edits to other scenes, edits to the saved scene, missing scenes |
 | `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example story directory, `prepare`, schema files (round trip, unchanged writes, missing fields, newer formats) |
-| `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, the fixture playing through, the example playing through all three chapters, `story_files` (recursive, sorted, `.story` only) |
+| `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, music state and sound events (and music in snapshots), the fixture playing through, the example playing through all three chapters, `story_files` (recursive, sorted, `.story` only) |
 | `tests/fixtures/all_features.story` | Golden input covering every construct in SCRIPT.md |

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Comparison, Condition, Diagnostic, Instruction, Position, Program, Schema, Value, VarType,
-    compile_source, compile_sources, interpolate, read_sources, story_files,
+    compile_source, compile_sources, did_you_mean, interpolate, read_sources, story_files,
 };
 
 const MAX_SILENT_STEPS: usize = 100_000;
@@ -28,6 +28,12 @@ pub enum Event {
     },
     Background {
         image: Option<String>,
+    },
+    Music {
+        track: Option<String>,
+    },
+    Sound {
+        id: String,
     },
     Hide {
         character: String,
@@ -90,6 +96,8 @@ pub struct StorySnapshot {
     pub positions: BTreeMap<String, Position>,
     #[serde(default)]
     pub background: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub music: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,6 +115,7 @@ pub struct StoryVm {
     active_characters: HashMap<String, String>,
     positions: HashMap<String, Position>,
     background: Option<String>,
+    music: Option<String>,
     pending_choice: Option<usize>,
     current: Option<Event>,
     schema: Schema,
@@ -139,6 +148,7 @@ impl StoryVm {
             active_characters: HashMap::new(),
             positions: HashMap::new(),
             background: None,
+            music: None,
             pending_choice: None,
             current: None,
             schema: Schema::default(),
@@ -165,13 +175,22 @@ impl StoryVm {
         if let Some(entry) = &self.entry
             && !self.program.scenes.contains_key(entry)
         {
-            diagnostics.insert(
-                0,
-                Diagnostic::error(0, format!("entry scene '{}' does not exist", entry)),
-            );
+            diagnostics.insert(0, self.missing_entry(entry));
         }
 
         diagnostics
+    }
+
+    fn missing_entry(&self, scene: &str) -> Diagnostic {
+        let scenes = self.program.scene_order.iter().map(String::as_str);
+        Diagnostic::error(
+            0,
+            format!(
+                "entry scene '{}' does not exist{}",
+                scene,
+                did_you_mean(scene, scenes)
+            ),
+        )
     }
 
     pub fn prepare(&mut self, schema: Schema, entry_scene: Option<&str>) -> Vec<Diagnostic> {
@@ -181,10 +200,7 @@ impl StoryVm {
         if let Some(scene) = entry_scene
             && self.set_entry_scene(scene).is_err()
         {
-            diagnostics.push(Diagnostic::error(
-                0,
-                format!("entry scene '{}' does not exist", scene),
-            ));
+            diagnostics.push(self.missing_entry(scene));
         }
 
         diagnostics.extend(self.validate());
@@ -211,6 +227,7 @@ impl StoryVm {
         self.active_characters.clear();
         self.positions.clear();
         self.background = None;
+        self.music = None;
         self.pending_choice = None;
         self.current = None;
         self.entered = false;
@@ -294,6 +311,19 @@ impl StoryVm {
                         image: image.clone(),
                     };
                     self.background = image.clone();
+                    self.ip += 1;
+                    return event;
+                }
+                Instruction::Music { track } => {
+                    let event = Event::Music {
+                        track: track.clone(),
+                    };
+                    self.music = track.clone();
+                    self.ip += 1;
+                    return event;
+                }
+                Instruction::Sound { id } => {
+                    let event = Event::Sound { id: id.clone() };
                     self.ip += 1;
                     return event;
                 }
@@ -426,6 +456,10 @@ impl StoryVm {
         self.background.as_deref()
     }
 
+    pub fn music(&self) -> Option<&str> {
+        self.music.as_deref()
+    }
+
     pub fn variables(&self) -> &HashMap<String, Value> {
         &self.variables
     }
@@ -493,6 +527,7 @@ impl StoryVm {
                 .map(|(k, v)| (k.clone(), *v))
                 .collect(),
             background: self.background.clone(),
+            music: self.music.clone(),
         }
     }
 
@@ -534,6 +569,7 @@ impl StoryVm {
         self.active_characters = snapshot.active_characters.clone().into_iter().collect();
         self.positions = snapshot.positions.clone().into_iter().collect();
         self.background = snapshot.background.clone();
+        self.music = snapshot.music.clone();
         self.pending_choice = None;
         self.current = None;
 

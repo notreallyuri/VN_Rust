@@ -3,16 +3,20 @@ use std::rc::Rc;
 use raylib::prelude::*;
 
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
-use crate::{Action, DrawContext, FontRole, GameContext, Screen, ScreenState};
+use crate::{
+    Action, DrawContext, FontRole, GameContext, GameView, Screen, ScreenState, StyleOverride,
+};
 use crate::{Anchor, Layout};
 
-type StyleOverride = Rc<dyn Fn(ButtonStyle) -> ButtonStyle>;
+type EnabledCheck = Rc<dyn Fn(&GameView) -> bool>;
 
 #[derive(Clone)]
 pub struct MenuItem {
     pub label: String,
     pub action: Action,
+    pub tooltip: Option<String>,
     style: Option<StyleOverride>,
+    enabled: Option<EnabledCheck>,
 }
 
 impl MenuItem {
@@ -20,18 +24,34 @@ impl MenuItem {
         Self {
             label: label.into(),
             action,
+            tooltip: None,
             style: None,
+            enabled: None,
         }
     }
 
+    pub fn enabled_if(mut self, check: impl Fn(&GameView) -> bool + 'static) -> Self {
+        self.enabled = Some(Rc::new(check));
+        self
+    }
+
+    pub fn is_enabled(&self, view: &GameView) -> bool {
+        self.enabled.as_ref().is_none_or(|check| check(view))
+    }
+
+    pub fn tooltip(mut self, text: impl Into<String>) -> Self {
+        self.tooltip = Some(text.into());
+        self
+    }
+
     pub fn style(mut self, style: impl Fn(ButtonStyle) -> ButtonStyle + 'static) -> Self {
-        self.style = Some(Rc::new(style));
+        self.style = Some(StyleOverride::new(style));
         self
     }
 
     pub(crate) fn resolve_style(&self, base: &ButtonStyle) -> ButtonStyle {
         match &self.style {
-            Some(style) => style(base.clone()),
+            Some(style) => style.apply(base),
             None => base.clone(),
         }
     }
@@ -59,6 +79,7 @@ impl Default for MainMenuConfig {
             title_y: 0.25,
             items: vec![
                 MenuItem::new("New Game", Action::NewGame),
+                MenuItem::new("Continue", Action::Continue).enabled_if(can_continue),
                 MenuItem::new("Load", Action::Goto(ScreenState::Load)),
                 MenuItem::new("Settings", Action::Goto(ScreenState::Settings)),
                 MenuItem::new("Quit", Action::Quit),
@@ -168,6 +189,54 @@ impl MainMenuConfig {
     }
 }
 
+pub fn can_continue(view: &GameView) -> bool {
+    view.story.current().is_some() || view.saves.has_any()
+}
+
+pub(crate) fn clicked_item(
+    ctx: &mut GameContext,
+    items: &[MenuItem],
+    placement: &[(Rectangle, ButtonStyle)],
+) -> Option<usize> {
+    let enabled: Vec<bool> = items
+        .iter()
+        .map(|item| item.is_enabled(&ctx.view()))
+        .collect();
+    let mut clicked = None;
+    for (index, (rect, style)) in placement.iter().enumerate() {
+        if enabled[index] && ui::button_clicked(ctx, *rect, style) && clicked.is_none() {
+            clicked = Some(index);
+        }
+    }
+    clicked
+}
+
+pub(crate) fn draw_items(
+    d: &mut RaylibDrawHandle,
+    ctx: &DrawContext,
+    items: &[MenuItem],
+    placement: Vec<(Rectangle, ButtonStyle)>,
+) {
+    let view = ctx.view();
+    for (item, (rect, style)) in items.iter().zip(placement) {
+        ui::Button::new(&item.label, &style)
+            .disabled(!item.is_enabled(&view))
+            .draw(d, ctx, rect);
+    }
+}
+
+pub(crate) fn register_tooltips(
+    ctx: &mut GameContext,
+    items: &[MenuItem],
+    rects: impl Iterator<Item = Rectangle>,
+) {
+    for (item, rect) in items.iter().zip(rects) {
+        if let Some(text) = &item.tooltip {
+            ctx.tooltip(rect, text.clone());
+        }
+    }
+}
+
 pub struct MainMenuScreen {
     config: Rc<MainMenuConfig>,
     title: String,
@@ -188,10 +257,12 @@ impl Screen for MainMenuScreen {
         ui::load_background(&mut ctx, self.config.background.as_ref());
 
         let layout = self.config.placement(ui::screen_size(ctx.rl));
-        let clicked = layout
-            .iter()
-            .position(|(rect, _)| ui::is_clicked(ctx.rl, *rect))?;
-
+        register_tooltips(
+            &mut ctx,
+            &self.config.items,
+            layout.iter().map(|(rect, _)| *rect),
+        );
+        let clicked = clicked_item(&mut ctx, &self.config.items, &layout)?;
         self.config.items[clicked].action.run(&mut ctx)
     }
 
@@ -210,8 +281,6 @@ impl Screen for MainMenuScreen {
             &config.title_text,
         );
 
-        for (item, (rect, style)) in config.items.iter().zip(config.placement(screen)) {
-            ui::draw_button(d, fonts, rect, &item.label, &style);
-        }
+        draw_items(d, ctx, &config.items, config.placement(screen));
     }
 }

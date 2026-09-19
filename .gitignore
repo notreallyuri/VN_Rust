@@ -3,3 +3,5 @@
 /assets/
 # Player save files written while running the examples.
 /examples/*/saves/
+
+__pycache__/

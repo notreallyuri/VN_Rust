@@ -1,7 +1,7 @@
+mod case_file;
 mod credits;
-mod inventory;
-mod stats;
+mod evidence;
 
+pub use case_file::CaseFileOverlay;
 pub use credits::CreditsScreen;
-pub use inventory::InventoryScreen;
-pub use stats::StatsOverlay;
+pub use evidence::EvidenceScreen;

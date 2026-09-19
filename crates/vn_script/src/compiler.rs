@@ -169,6 +169,12 @@ impl Compiler {
             Node::Background { image } => {
                 self.emit(Instruction::Background { image });
             }
+            Node::Music { track } => {
+                self.emit(Instruction::Music { track });
+            }
+            Node::Sound { id } => {
+                self.emit(Instruction::Sound { id });
+            }
             Node::Remove { character } => {
                 self.emit(Instruction::Hide { char_id: character });
             }

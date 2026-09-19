@@ -5,6 +5,8 @@ pub enum TokenKind {
     Scene,
     Show,
     Background,
+    Music,
+    Sound,
     Remove,
     Clear,
     Commit,
@@ -54,6 +56,12 @@ pub enum Node {
     },
     Background {
         image: Option<String>,
+    },
+    Music {
+        track: Option<String>,
+    },
+    Sound {
+        id: String,
     },
     Remove {
         character: String,

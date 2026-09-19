@@ -212,9 +212,13 @@ impl Overlay for PauseMenu {
         }
 
         let (_, _, buttons) = self.config.placement(ui::screen_size(ctx.rl));
-        let Some(index) = buttons
-            .iter()
-            .position(|(rect, _)| ui::is_clicked(ctx.rl, *rect))
+        crate::screens::main_menu::register_tooltips(
+            &mut ctx,
+            &self.config.items,
+            buttons.iter().map(|(rect, _)| *rect),
+        );
+        let Some(index) =
+            crate::screens::main_menu::clicked_item(&mut ctx, &self.config.items, &buttons)
         else {
             return OverlayAction::Stay;
         };
@@ -246,8 +250,6 @@ impl Overlay for PauseMenu {
             &config.title_text,
         );
 
-        for (item, (rect, style)) in config.items.iter().zip(buttons) {
-            ui::draw_button(d, fonts, rect, &item.label, &style);
-        }
+        crate::screens::main_menu::draw_items(d, ctx, &config.items, buttons);
     }
 }

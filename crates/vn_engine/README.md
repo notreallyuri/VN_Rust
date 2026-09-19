@@ -11,7 +11,7 @@ A game is a `VnApp` built from defaults, with only the parts it wants changed:
 
 ```rust
 use vn_engine::raylib::prelude::*;
-use vn_engine::{FontRole, Action, MenuItem, ScreenState, TextStyle, VnApp};
+use vn_engine::{FontRole, Action, MenuItem, TextStyle, VnApp};
 
 fn main() -> std::io::Result<()> {
     VnApp::new("My Novel")
@@ -21,7 +21,7 @@ fn main() -> std::io::Result<()> {
         .main_menu(|m| {
             m.button_style(|b| b.size(260.0, 52.0).roundness(0.3))
                 .button("New Game", Action::NewGame)
-                .button("Continue", Action::Goto(ScreenState::Playing))
+                .button("Continue", Action::Continue)
                 .item(MenuItem::new("Quit", Action::Quit).style(|b| b.color(Color::MAROON)))
         })
         .playing(|p| p.dialogue_box(|b| b.height(180.0).color(Color::new(10, 10, 20, 220))))
@@ -57,18 +57,21 @@ fn main() -> std::io::Result<()> {
 | `settings(\|s\| ...)` | | Configure the settings screen (see [Settings](#settings)) |
 | `confirm_on_close(Option<&str>)` | "Quit the game? Unsaved progress will be lost." | Message shown when the window's close button is clicked during a game; `None` quits right away (see [Closing the window](#closing-the-window)) |
 | `toast(\|t\| ...)` | | Configure notifications (see [Notifications](#notifications)) |
+| `tooltips(\|t\| ...)` | on | Configure tooltips (see [Tooltips](#tooltips)) |
 | `exit_key(Option<key>)` | `None` | A key that closes the window. Off by default, so Esc can open the pause menu |
 | `state(value)` | | Register game state (see [Game state](#game-state)) |
 | `command(name, handler)` | | Handle `call <name> ...` from stories (see [Commands](#commands)) |
 | `variable(name, VariableDef)` | | Register a story variable (see [Registries and validation](#registries-and-validation)) |
 | `character(id, Character)` | | Register a character |
 | `entry_scene(id)` | first scene of the first file | Scene the story starts from |
-| `warn_missing_art(bool)` | `true` | Warn at startup about `show`s with no image file |
+| `warn_missing_art(bool)` | `true` | Warn at startup about `show`s, `background`s, `music` and `sound`s with no file |
+| `audio(\|a\| ...)` | on | Configure music and sound (see [Audio](#audio)) |
 | `on_scene_enter(\|ctx, scene\| ...)`, `on_choice(\|ctx, index, text\| ...)` | | Run Rust code when the story enters a scene or the player picks an option (see [Hooks](#hooks)) |
 | `hot_reload(bool)` | on in debug builds | Reload the story when a `.story` file changes (see [Hot reload](#hot-reload)) |
 | `schema_file(Option<&str>)` | `Some("schema.json")` | Where the schema is exported, relative to the assets (see [Schema export](#schema-export)); `None` turns the export off |
 | `text_input(\|t\| ...)` | | Configure the default text input screen |
-| `saves_dir(path)` | `saves` | Where save files go (see [Save and load](#save-and-load)) |
+| `saves_dir(path)` | the platform data directory | Where save files and settings go (see [Where saves live](#where-saves-live)); `saves_path()` returns the directory in use |
+| `autosave(bool)` | `true` | Save to the `auto` slot on entering a scene and on quitting (see [Autosave](#autosave)) |
 | `save_menu(\|s\| ...)` | | Configure the default Save/Load screens |
 
 Each configure closure receives the current config and returns the changed one, so calls
@@ -98,7 +101,7 @@ Any key or click goes to `next`.
 | Option | Default |
 |---|---|
 | `title(text)`, `title_text(style)`, `title_y(f)` | app title, Title font 64 px, 0.25 |
-| `button(label, action)`, `item(MenuItem)` | New Game, Load, Settings, Quit |
+| `button(label, action)`, `item(MenuItem)` | New Game, Continue, Load, Settings, Quit |
 | `button_style(\|b\| ...)` | `ButtonStyle::default()` (240×52) |
 | `buttons_y(f)` | 0.45: top of the button area, as a fraction of the window height |
 | `layout(\|l\| ...)`, `spacing(px)` | a column anchored at the top of the button area, 18 apart (see [Layouts](#layouts)) |
@@ -107,13 +110,14 @@ Any key or click goes to `next`.
 
 The first `button`/`item` call replaces the default list; later calls append.
 `MenuItem::new(label, action).style(|b| ...)` changes one button's style on top of
-`button_style`.
+`button_style`, and `.tooltip(text)` gives it a [tooltip](#tooltips) (main and pause menus).
 
 `Action` (shared by the main menu, the pause menu and HUD buttons):
 
 | Action | Behavior |
 |---|---|
 | `NewGame` | Reset the story and game state, then `Playing` |
+| `Continue` | Back to the game in progress; after a restart, load the most recent save (usually the [autosave](#autosave)). With neither, a notification says there is no saved game |
 | `Goto(state)` | Switch to `state` (closes any overlays). `Goto(Playing)` continues the current story |
 | `Action::overlay(name)` | Open an overlay on top of the current screen (e.g. `PAUSE_OVERLAY`, `SAVE_OVERLAY`, `LOAD_OVERLAY`) |
 | `Resume` | Close every open overlay |
@@ -165,7 +169,7 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 | `background(bg)` | none; drawn when the story has no `background` |
 | `position(Position, x)` | `far_left` 0.15, `left` 0.3, `center` 0.5, `right` 0.7, `far_right` 0.85 of the window width (the character's center) |
 | `character_height(Option<fraction>)` | `Some(0.8)`: sprites are scaled to 80% of the window height, keeping their aspect ratio. `None` draws them at their pixel size |
-| `hud_button(label, action)` | none |
+| `hud_button(label, action)`, `hud_item(HudButton::new(label, action).tooltip(text))` | none |
 | `quick_save_key(Option<key>)`, `quick_load_key(Option<key>)` | `Some(F5)`, `Some(F9)` (the `quick` slot) |
 | `hud_button_style(\|b\| ...)`, `hud_margin(px)`, `hud_spacing(px)` | 130×40, dark translucent, 18 px text; 16; 10 |
 | `hud_layout(\|l\| ...)` | a row anchored top-right, inside `hud_margin` |
@@ -177,9 +181,113 @@ raylib's "Esc closes the window" is turned off (see `VnApp::exit_key`).
 | Type | Fields / builder methods |
 |---|---|
 | `TextStyle::new(font, size, color)` | `.font()`, `.size()`, `.color()` |
-| `ButtonStyle::default()` | `.size(w, h)`, `.color(c)` (hover becomes a lighter shade), `.hover_color(c)`, `.roundness(0..1)`, `.text(style)`, `.font(role)`, `.font_size(px)`, `.text_color(c)` |
+| `ButtonStyle::default()` | See [Buttons](#buttons) |
+| `SliderStyle::default()` | `.track_height()`, `.knob_radius()`, `.track_color()`, `.fill_color()`, `.knob_color()`, `.step_marks(bool)` |
 | `DialogueBoxStyle::default()` | `.height()`, `.margin()`, `.padding()`, `.color()`, `.roundness()` |
 | `Background` | `Color(color)` fills the screen; `Image(path)` covers it with an asset (scaled, cropping the edges if the aspect ratio differs) |
+
+## Buttons
+
+Every button the engine draws (menus, HUD, choices, dialogs, settings, save screens)
+takes a `ButtonStyle`. Custom screens draw with the same function.
+
+```rust
+ButtonStyle::default()
+    .size(260.0, 52.0)
+    .color(Color::new(38, 33, 42, 240))
+    .roundness(0.18)
+    .border(1.0, Color::new(110, 100, 86, 255))
+    .shadow(0.0, 3.0, Color::new(0, 0, 0, 120))
+    .icon(ButtonIcon::new("ui/icon_save.png").size(16.0))
+    .hovered(|l| l.border(1.5, PARCHMENT).transform(|t| t.offset(6.0, 0.0)))
+    .pressed(|l| l.transform(|t| t.scale(0.97)))
+    .transition(0.12)
+    .click_sound("page_turn")
+```
+
+**Base look**
+
+| Builder | Default | Meaning |
+| --- | --- | --- |
+| `size(w, h)` | 240×52 | |
+| `color(c)` | dark blue | Fill. Also sets the hovered fill to a lighter shade and the pressed fill back to `c` |
+| `hover_color(c)`, `pressed_color(c)` | | Fill in those states |
+| `roundness(0..1)` | 0 | Rounded corners (fill, border and shadow) |
+| `text(style)`, `font(role)`, `font_size(px)`, `text_color(c)`, `hover_text_color(c)` | Button font 22 px white | Label |
+| `align(TextAlign)` | `Center` | `Left`, `Center` or `Right` inside the padding |
+| `padding(x, y)` | 12, 6 | Space between the edge and the label/icon |
+| `overflow(TextOverflow)` | `Ellipsis` | A label wider than the button: `Overflow` (draw past the edge), `Ellipsis` (cut with …), `Shrink` (smaller font, down to 8 px), `Wrap` (several lines, centered vertically) |
+| `border(width, c)`, `no_border()` | none | An outline |
+| `shadow(x, y, c)` | none | A copy of the shape, offset and drawn behind |
+| `image(ButtonImage)` | none | A texture instead of the fill (see below) |
+| `icon(ButtonIcon)` | none | An image next to the label (see below) |
+| `transform(\|t\| ...)`, `skew(x°, y°)`, `rotate(°)`, `scale(f)` | identity | See Transforms |
+
+**States.** `hovered`, `pressed`, `focused` and `disabled` are each a `ButtonLook`, a
+list of overrides on top of the base: `fill`, `text_color`, `border(width, c)`,
+`shadow(x, y, c)`, `image(..)`, `transform(|t| ...)` and `opacity(0..1)`. Unset fields keep
+the base value. They stack in the order focused → hovered → pressed → disabled.
+
+| State | When | Default |
+| --- | --- | --- |
+| `hovered(\|l\| ...)` | The pointer is over the button | a lighter fill |
+| `pressed(\|l\| ...)` | The left button is held on it | the base fill |
+| `focused(\|l\| ...)` | `Button::focused(true)` (for keyboard navigation) | a 2 px white border |
+| `disabled(\|l\| ...)` | `Button::disabled(true)`, or a `MenuItem` whose `enabled_if` is false | 45% opacity; it ignores the pointer |
+
+`transition(seconds)` animates between states: colors, border width, shadow, transform
+and opacity blend, and the image switches halfway. 0 (the default) switches at once.
+
+**Images.** `ButtonImage::new(path)` (relative to the assets) replaces the fill. It is
+stretched to the button, or cut into nine pieces with `.nine_slice(left, top, right,
+bottom)` / `.slice_all(px)` so the corners keep their size. `.tint(c)` colors it. A state
+can swap the image (`hovered(|l| l.image(ButtonImage::new("ui/hover.png")))`). Images load
+the first time a button is drawn; a missing file shows the usual placeholder.
+
+**Icons.** `ButtonIcon::new(path)`: `.size(height)` (width follows the image's aspect),
+`.side(IconSide::Left | Right)`, `.gap(px)`, `.tint(c)` (default: the label color, so it
+follows state colors; draw icons white). With an empty label the icon is centered alone.
+
+**Transforms.** `Transform` has `scale` (`scale(f)` / `scale_xy(x, y)`), `rotate(degrees)`,
+`skew(x°, y°)` (x leans the top to the left for positive values), `offset(x, y)` in pixels and
+`origin(fx, fy)`, the pivot as a fraction of the button (default the center). Everything
+drawn for the button, including its label, goes through it. Clicks follow the base
+transform: a rotated or skewed button responds where it is drawn. State transforms
+(a hover offset, a press scale) don't move the click area, so a button can't slide away
+from the pointer.
+
+**Sounds.** `hover_sound(id)` plays when the pointer enters the button, `click_sound(id)`
+on a click (see [Audio](#audio) for where sounds live).
+
+**Clicks** happen on release: press on the button, then release on it. Pressing and
+dragging off cancels, like a desktop button.
+
+**Per-button styles.** `MenuItem::style`, `HudButton::style` and
+`PlayingConfig::choice_button_for(|index, text, style| ...)` change one button on top of the
+group's style (the example marks options starting with `[` differently). Each HUD button
+is laid out at its own size. `MenuItem::enabled_if(|view| ...)` disables an item: it
+draws with the disabled look and can't be clicked, but its tooltip still shows. The
+default main menu's Continue uses `can_continue` (a story in progress, or any save).
+`GameView` (`ctx.view()` from either context) is the read-only story, state, saves and
+settings these checks receive.
+
+**In a custom screen:**
+
+```rust
+// update
+if ui::button_clicked(&mut ctx, rect, &style) { /* ... */ }
+// draw
+ui::draw_button(d, ctx, rect, "Back", &style);
+ui::Button::new("Gallery", &style).disabled(locked).focused(selected).draw(d, ctx, rect);
+```
+
+`ui::button_hovered(rl, rect, &style)` is the hit test on its own. Only the layer that
+receives input shows hover and pressed looks: a screen under an overlay, or a pause menu
+under the settings overlay, draws its buttons at rest. Custom drawing that reacts to the
+pointer should use `ctx.pointer_over(d, rect)` rather than `ui::is_hovered` for the same
+reason. Resolving a look
+(`style.look(StateAmounts { hover, press, focus, disabled })`), `Transform::apply` /
+`invert` / `contains` and `step_amount` are public for custom widgets and tests.
 
 ## Layouts
 
@@ -236,8 +344,8 @@ time the screen is entered. A custom screen implements `Screen`:
 |---|---|
 | `ScreenState` | `StartScreen`, `MainMenu`, `Playing`, `Save`, `Load`, `TextInput`, `Settings`, `Custom(String)`, `Quit` |
 | `Screen` | `update(ctx) -> Option<ScreenState>` returns the next state; `draw(d, &DrawContext)` |
-| `GameContext` | What `update` gets: `rl`, `thread`, `resources`, `story`, `state`, `saves`, `rollback`, `settings`, `previous` (the screen before this one); plus `open_overlay(name)`, `run_command(name, args)`, `ask_text(request)`, `save(slot)` and `load(slot)` |
-| `DrawContext` | What `draw` gets: `resources`, `story`, `state`, `saves`, `characters`, `settings`, and `fonts()` |
+| `GameContext` | What `update` gets: `rl`, `thread`, `resources`, `story`, `state`, `saves`, `rollback`, `settings`, `previous` (the screen before this one); plus `open_overlay(name)`, `run_command(name, args)`, `ask_text(request)`, `save(slot)`, `load(slot)`, `tooltip(rect, text)`, `play_sound(id)` and `view()` |
+| `DrawContext` | What `draw` gets: `resources`, `story`, `state`, `saves`, `characters`, `settings`, `fonts()` and `view()`; `interactive` is true only for the layer that receives input (the top overlay, or the screen when no overlay is open), and `pointer_over(d, rect)` is a hover test that is false on the other layers |
 
 Switching to a state with no screen logs a warning and stays on the current one.
 
@@ -245,15 +353,18 @@ The `ui` module has the pieces the default screens use, for custom screens to re
 
 | Function | Purpose |
 |---|---|
-| `draw_button(d, fonts, rect, label, &ButtonStyle)` | Button with hover color and centered label |
-| `is_clicked(rl, rect)`, `is_hovered(rl, rect)` | Mouse hit tests |
+| `draw_button(d, ctx, rect, label, &ButtonStyle)`, `Button::new(label, &style)` | A button with every state, image, icon and transform (see [Buttons](#buttons)) |
+| `button_clicked(&mut ctx, rect, &style)`, `button_hovered(rl, rect, &style)` | Button hit tests that follow the transform; `button_clicked` fires on release and plays the style's sounds |
+| `is_clicked(rl, rect)`, `is_hovered(rl, rect)` | Plain rectangle hit tests (on press) |
+| `draw_slider(d, area, fraction, steps, highlighted, &SliderStyle)`, `slider_fraction`, `slider_step` | The settings sliders |
+| `fit_text(fonts, style, text, width)` | Cut text with … to fit a width |
 | `draw_text`, `draw_text_centered`, `draw_text_wrapped` | Text with a `TextStyle`; wrapped returns the height used |
 | `draw_text_wrapped_visible(.., visible)` | Wrapped text showing only the first `visible` characters (the typewriter) |
 | `screen_size(rl)` | Window size as a `Vector2` |
 | `load_background(ctx, bg)`, `draw_background(d, resources, bg)` | `Background` support (load in `update`, draw in `draw`) |
 | `draw_texture_cover(d, texture, rect)` | Draw a texture covering `rect`, cropping to keep its aspect ratio |
 
-See `examples/god_is_watching/src/screens/credits.rs` and `inventory.rs`.
+See `examples/god_is_watching/src/screens/credits.rs` and `evidence.rs`.
 
 ## Pause menu
 
@@ -335,7 +446,7 @@ through `window_should_close()` for a single frame, so the loop hands it to
 
 ## Settings
 
-Player preferences, separate from saves: `Settings { fullscreen, text_speed }`, stored as
+Player preferences, separate from saves: `Settings { fullscreen, text_speed, music_volume, sound_volume }`, stored as
 `settings.json` in the saves directory and written as soon as something changes (via a
 temporary file, like saves). A missing or unreadable file gives the defaults (windowed,
 40 characters per second), with a warning for an unreadable one; missing fields take
@@ -345,9 +456,15 @@ their default, so new settings don't break old files.
   at startup and whenever it changes.
 - **Text speed:** characters per second for the typewriter on the playing screen; `0` is
   instant.
+- **Music volume**, **Sound volume:** percentages (defaults 70 and 80); `music_gain()` and
+  `sound_gain()` give them as 0.0–1.0. See [Audio](#audio).
 
-The default settings screen shows one row per setting, whose button cycles through the
-values, and a sample line that types out at the chosen speed. It exists as a screen
+The default settings screen shows one row per setting (`SettingsRow::Display`,
+`TextSpeed`, `MusicVolume`, `SoundVolume`). Display is a button that toggles windowed and
+fullscreen; the others are sliders: drag the knob or click anywhere on the track, or hover
+the row and press ←/→ for one step. Text speed stops at each entry of `text_speeds`
+(Slow → Normal → Fast → Instant); the volumes move in `volume_step` steps, with the value
+("Normal", "70%", "Off") to the right. Each row has a [tooltip](#tooltips). There is also and a sample line that types out at the chosen speed. It exists as a screen
 (`ScreenState::Settings`, in the default main menu) and as an overlay
 (`SETTINGS_OVERLAY`, in the pause menu). Back, Esc or Backspace return to where it was
 opened from.
@@ -358,16 +475,25 @@ opened from.
 | --- | --- |
 | `title(text)`, `title_text(style)` | "Settings", Title font 44 px |
 | `label_text(style)` | Menu font 24 px |
-| `value_button(\|b\| ...)` | 220×46, 20 px text |
-| `row_width(px)`, `row_spacing(px)` | 560, 16 |
+| `value_button(\|b\| ...)` | 260×46, 20 px text; also the size of every row's control |
+| `value_text(style)` | Menu font 18 px light gray: the value next to a slider |
+| `slider(\|s\| ...)` | `SliderStyle::default()`: a 6 px track, a 10 px knob, dots at each stop when there are 12 or fewer |
+| `row_width(px)`, `row_spacing(px)` | 600, 16 |
 | `text_speeds([(label, chars_per_second)])` | Slow 20, Normal 40, Fast 80, Instant 0 (a value not in the list shows as "N chars/s") |
+| `audio_rows(bool)` | `true`: show the two volume rows |
+| `volume_step(percent)` | 5 |
+| `sample_sound(id)` | none: a sound played when the sound slider is released (or stepped with the keys), so the player hears the new volume |
+| `tooltip(row, Option<&str>)` | a short description per row; `None` removes it |
 | `sample_text(text)`, `sample_text_style(style)` | "This is how fast the story's text appears.", Dialogue font 22 px |
 | `back_button(\|b\| ...)`, `back_label(text)`, `back_keys(keys)` | 200×48, "Back", Esc and Backspace |
 | `backdrop(c)` | black at 200 alpha, behind the overlay |
 | `background(bg)` | none, behind the screen |
 
-Labels (`display_label`, `windowed_label`, `fullscreen_label`, `text_speed_label`) are
-public fields. From code, `ctx.settings.values` reads the settings and
+Labels (`display_label`, `windowed_label`, `fullscreen_label`, `text_speed_label`,
+`music_volume_label`, `sound_volume_label`) are
+public fields. `set_fraction(row, &mut settings, 0.0..=1.0)`, `fraction(row, &settings)`,
+`step(row, &mut settings, ±1)` and `value_name(row, &settings)` are the mapping the sliders
+use, public for custom settings screens. From code, `ctx.settings.values` reads the settings and
 `ctx.settings.update(|s| ...)` changes and saves them; `DrawContext::settings` is the
 read-only view. `Typewriter::start(text, chars_per_second, now)` / `visible(now)` /
 `finish()` is the timing the playing screen and the preview use.
@@ -418,6 +544,41 @@ the story).
 every screen and overlay (quick save/load use them). `ToastConfig` (`.toast(|t| ...)`):
 `text(style)`, `error_text(style)`, `background(color)`, `seconds(s)` (2.5),
 `margin(px)` (16).
+
+## Tooltips
+
+Hovering a control for `delay` seconds shows a small box of text next to the pointer. It
+moves to the other side near the window's edges, wraps at `max_width`, and hides on click
+until the pointer leaves and comes back.
+
+Built in: the settings rows, the save slots' Delete button, `MenuItem::tooltip` in the
+main and pause menus, and HUD buttons:
+
+```rust
+.playing(|p| p.hud_item(HudButton::new("Save", Action::overlay(SAVE_OVERLAY)).tooltip("F5 quick saves")))
+```
+
+A custom screen or overlay registers one in `update`:
+
+```rust
+ctx.tooltip(rect, "Everything you have filed so far");
+```
+
+It only counts while the pointer is over `rect`, and the last one registered in a frame
+wins. The manager draws it on top of everything.
+
+`TooltipConfig` (`.tooltips(|t| ...)`):
+
+| Option | Default |
+| --- | --- |
+| `enabled(bool)` | `true` |
+| `delay(seconds)` | 0.5 |
+| `text(style)` | Menu font 16 px white |
+| `background(c)`, `border(Option<c>)` | near-black, a gray 1 px border |
+| `padding(px)`, `max_width(px)`, `offset(x, y)` | 8, 360, (14, 20) from the pointer |
+
+`TooltipTimer` is the timing on its own (`update(hovered, now, clicked)`,
+`visible(now, delay)`), and `draw_tooltip(d, fonts, text, config)` draws one.
 
 ## Overlays
 
@@ -561,7 +722,15 @@ into it the way a save loads:
 | Other scenes | The same line stays on screen; rollback history in unchanged scenes is kept. Notification: "Story reloaded" |
 | The current scene | The scene restarts from its top, keeping variables, characters and game state; rollback history is cleared. Notification: "Story reloaded; scene '…' restarted" |
 | The current scene was deleted | Nothing changes; the error is shown as a notification |
-| Errors in the story | Nothing changes; the diagnostics go to the console and a notification says so |
+| Errors in the story | Nothing changes; the diagnostics go to the console and to a red panel at the top of the window (below) |
+
+The error panel lists every diagnostic as `file:line: error: message`, with paths
+relative to the story directory, under "Story not reloaded: N errors (still running the
+previous version)". It stays until a reload succeeds; F2 (`SCRIPT_ERRORS_KEY`) collapses it
+to its title and back. Lines that don't fit in 60% of the window end with "... and N more
+lines". The game keeps running the previous story underneath. `ScriptErrors::from_error(&error,
+story_dir)` builds it and `ScreenStateManager::show_script_errors` shows it, for custom
+loops.
 
 `.hot_reload(false)` turns it off; `.hot_reload(true)` turns it on in release builds too.
 The pieces are public for custom loops: `StoryLoader` (what `VnApp::loader()` returns:
@@ -597,8 +766,8 @@ errors; nothing in the script can make the game panic at startup:
 
 ```text
 ❌ .../assets/story has 2 errors:
-  .../story/01_mary.story:12: error: unknown variable 'curiosty'
-  .../story/02_moriarty.story:40: error: speaker: unknown character 'marry'
+  .../story/04_santa_ilde.story:12: error: unknown variable 'trsut'
+  .../story/01_box_14.story:40: error: speaker: unknown character 'marry'
 ```
 
 Warnings (currently: a `show` or `background` whose image file doesn't exist; a
@@ -660,8 +829,21 @@ characters on screen, and every registered [game state](#game-state) value.
 
 ### Where saves live
 
-One JSON file per slot in `saves_dir` (default `./saves`): `1.json` … `6.json` for the
-numbered slots and `quick.json` for quick save. Slot names may only contain ASCII
+By default saves go to the platform's data directory, in a folder named after the game
+title (`slug("God Is Watching")` is `god_is_watching`):
+
+| Platform | Directory |
+| --- | --- |
+| Linux | `$XDG_DATA_HOME/<game>`, or `~/.local/share/<game>` |
+| macOS | `~/Library/Application Support/<game>` |
+| Windows | `%APPDATA%\<game>` |
+
+`default_saves_dir(title)` computes it (falling back to `./saves` when no home directory
+is set), `.saves_dir(path)` picks another directory, and debug builds print the directory
+in use at startup. `settings.json` lives in the same directory.
+
+One JSON file per slot: `1.json` … `6.json` for the numbered slots, `quick.json` for quick
+save and `auto.json` for the autosave, each with an optional `<slot>.png` thumbnail. Slot names may only contain ASCII
 letters, digits, `_` and `-`, so a slot can't point outside the directory. Files are
 written to `<slot>.json.tmp` and then renamed, so a crash or full disk mid-save leaves the
 previous save intact.
@@ -678,12 +860,34 @@ previous save intact.
     "scene_fingerprint": 1234567890,
     "pending_choice": false,
     "current": { "Say": { "speaker": "mary", "text": "..." } },
-    "variables": { "curiosity": { "Int": 2 } },
+    "variables": { "trust": { "Int": 2 } },
     "active_characters": { "hugo": "neutral" }
   },
   "state": { "Inventory": { "items": { "verlaine_letter": 1 } } }
 }
 ```
+
+### Autosave
+
+With `.autosave(true)` (the default) the engine saves to the `auto` slot (`AUTO_SLOT`):
+
+- when the story enters a scene, once its first line is on screen (so the thumbnail and
+  the summary show the new scene), and
+- when the game closes, if a story is in progress (not before it starts, not at the end).
+
+Autosaves are silent; failures are only logged. They include the rollback history like
+any other save. `ctx.autosave()` requests one from a command or screen; it's written
+during that frame's draw, after the thumbnail is taken. The Load screen lists the
+autosave at the top, and `Action::Continue` loads the newest save, which is usually it.
+
+### Thumbnails
+
+While the playing screen is showing with no overlay open, the engine grabs the frame at
+most once a second, scaled down to `THUMBNAIL_WIDTH` (320) pixels wide. Every save writes
+that picture to `<slot>.png` next to the JSON, so saving from the pause menu shows the
+game, not the menu. A save made with no picture yet removes the old one, so a slot never
+shows a stale thumbnail. `Saves::write_thumbnail(slot, Option<&Image>)` and
+`thumbnail_path(slot)` are public; `Saves::delete` removes both files.
 
 ### Story position
 
@@ -749,7 +953,9 @@ Non-fatal issues are returned as `LoadReport::warnings` (and printed by `ctx.loa
 - **Save** and **Load**, as full screens (`ScreenState::Save` / `Load`) or as overlays over
   the game (`SAVE_OVERLAY` / `LOAD_OVERLAY`, opened from the pause menu): a list of slots showing
   how long ago each was saved and the line that was on screen, "Empty", or the error in
-  red for unreadable files. Load also lists the quick save when there is one. Saving over
+  red for unreadable files, with the slot's thumbnail on the left. Load also lists the
+  autosave and the quick save when they exist. Hovering a used slot shows a **Delete**
+  button (the Delete key works too), which asks first. Saving over
   a used slot and loading during play ask first (see [Confirmation
   dialogs](#confirmation-dialogs)); results and errors show as notifications; a successful
   load goes to `Playing`. The list refreshes whenever a save is written. Back (or Esc / Backspace) returns to the previous
@@ -769,6 +975,9 @@ Non-fatal issues are returned as `LoadReport::warnings` (and printed by `ctx.loa
 | `slot_layout(\|l\| ...)` | a column at the top (see [Layouts](#layouts)) |
 | `slot_title_text`, `slot_summary_text`, `error_text` | Menu 20 px, Dialogue 17 px gray, Menu 17 px red |
 | `confirm_overwrite(bool)`, `confirm_load_in_game(bool)` | `true`, `true` |
+| `thumbnails(bool)`, `thumbnail_color(c)` | `true`, near-black behind a slot with no picture |
+| `allow_delete(bool)`, `confirm_delete(bool)` | `true`, `true` |
+| `delete_button(\|b\| ...)`, `delete_label(text)`, `delete_keys(keys)` | 76×26 dark red, "Delete", the Delete key |
 | `empty_label(text)` | "Empty" |
 | `back_button(\|b\| ...)`, `back_label(text)`, `back_keys(keys)` | 200×46, "Back", Esc and Backspace |
 | `backdrop(c)` | near-black at 235 alpha (overlay version only) |
@@ -780,13 +989,45 @@ Non-fatal issues are returned as `LoadReport::warnings` (and printed by `ctx.loa
 ctx.save("1")?;                          // in a screen, overlay or command
 let report = ctx.load("quick")?;         // Err(SaveError), or Ok with warnings
 ctx.saves.slot("2")                      // SlotInfo { slot, save: Result<SaveFile, SaveError> }
-ctx.saves.latest()                       // most recent readable save, e.g. for "Continue"
+ctx.saves.latest()                       // most recent readable save (what Action::Continue loads)
+ctx.autosave();                          // write the auto slot this frame (when autosave is on)
 ctx.saves.delete("3")?;
 ```
 
 `Saves` doesn't need a window, so it can also be used from tools and tests
 (`Saves::new(dir, title).save(slot, &story, &state)`). The VM part is
 `StoryVm::snapshot()` / `restore()` in `vn_script`.
+
+## Audio
+
+Stories choose the music and sounds (`music <track>`, `music none`, `sound <id>`, see
+SCRIPT.md 2.6); the engine plays them.
+
+- Files live in `<assets>/music/<track>` and `<assets>/sounds/<id>`, as `.ogg`, `.mp3`,
+  `.wav` or `.flac` (tried in that order; `music_path` and `sound_path` find them). A
+  missing file is a startup warning and the game stays silent there.
+- Music loops. A new track crossfades with the old one, and `music none` fades out.
+- The music follows the screen: the start screen and main menu play the menu music (if
+  any); the playing screen and text input play the story's track (`StoryVm::music()`);
+  other screens (Save, Load, Settings, custom screens) keep whatever was playing. Since
+  the track is part of the story's state, loading a save, rolling back, New Game and hot
+  reload all switch to the right music with no extra code.
+- Sounds play once, when the story reaches them. Rolling back or loading doesn't replay
+  them.
+- Volumes come from the [settings](#settings).
+- If no audio device can be opened, a warning is printed and the game runs silently.
+
+`AudioConfig` (`.audio(|a| ...)`):
+
+| Option | Default |
+| --- | --- |
+| `menu_music(track)` | none |
+| `fade_seconds(s)` | 1.0; 0 switches tracks at once |
+| `enabled(bool)` | `true`; `false` never opens the audio device |
+
+From code, `ctx.play_sound(id)` plays a sound (from a command, say) and `ctx.music()` is the
+track playing. `Audio` holds the device, streams and cached sounds; the audio device is
+opened once and kept for the whole program.
 
 ## Lower level: ScreenStateManager
 
@@ -802,8 +1043,9 @@ while !manager.quit_requested() {
     }
     manager.update(&mut rl, &thread);
     let mut d = rl.begin_drawing(&thread);
-    manager.draw(&mut d);
+    manager.draw(&mut d, &thread);
 }
+manager.autosave();
 ```
 
 `factory` is any `ScreenFactory` (`create_screen(&state) -> Option<Box<dyn Screen>>`, and
@@ -813,7 +1055,10 @@ optionally `create_overlay(name)`); `DefaultScreens` is the one `VnApp` uses. Th
 directly, `rollback` holds the history, and `hooks` holds the [hooks](#hooks).
 `reload_story(story)` swaps in a reloaded story (see [Hot reload](#hot-reload)). `settings` starts in memory
 (`SettingsStore::in_memory()`, never written); use `SettingsStore::load(path)` to keep
-them in a file. `close_confirmation` is the message for `request_close()`. Textures and fonts live on the GPU, so the
+them in a file. `close_confirmation` is the message for `request_close()`. `audio` starts silent
+(`Audio::silent()`); set `Audio::new(assets, AudioConfig::default())` to hear the story.
+`draw` needs the thread to take [thumbnails](#thumbnails), and `autosave()` writes the
+auto slot (what `VnApp` does on quit). Textures and fonts live on the GPU, so the
 manager must be created after the window, and dropped before it (declare it after `rl`).
 
 ## Resources
@@ -828,6 +1073,10 @@ unreadable file logs a warning and is replaced by a generated placeholder: a
 300×500 card labeled with the path, with a color derived from the path so each
 character/expression keeps the same color between runs, or, for a background, a dark
 1280×720 image labeled with the path. A story can be played before its art exists.
+
+`texture(path)` returns a loaded texture without loading anything (it works from `draw`),
+and remembers the paths it didn't find; the manager loads those at the start of the next
+update (`load_requested`). Button images and icons load this way.
 
 Story art lives at `character_path(character, image)` (`characters/<id>/<image>.png`) and
 `background_path(image)` (`backgrounds/<image>.png`), relative to the assets.
@@ -868,7 +1117,8 @@ Behavior:
 - Glyphs are rasterized once at 64 px and scaled when drawn, with mipmaps and trilinear
   filtering so small sizes stay smooth.
 - Glyph coverage: ASCII, Latin-1, Latin Extended-A, general punctuation
-  (U+2010–U+2027: dashes, curly quotes, ellipsis) and €. Other characters draw as `?`.
+  (U+2010–U+2027: dashes, curly quotes, ellipsis), € and the arrows ← ↑ → ↓. Other
+  characters draw as `?`.
 - Fonts are loaded through raylib's C `LoadFontFromMemory` rather than raylib-rs'
   wrapper. The wrapper passes the glyph string's byte length as the codepoint count,
   which reads out of bounds for non-ASCII glyphs.
@@ -884,8 +1134,10 @@ The tests run without a window; drawing and input are checked by playing the exa
 | File | Covers |
 | --- | --- |
 | `tests/app.rs` | `VnApp::check` (validation, missing art, story directories, errors with their file), entry scene, typed command arguments, schema export, hook registration |
-| `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history |
+| `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history, thumbnails (scaled, replaced, deleted with the slot), autosave switch, save directory names |
+| `tests/button.rs` | Transforms (round trips, rotated and skewed hit tests), state blending and defaults, image switching and listed paths, transition steps, per-button HUD and choice styles, disabled menu items and `can_continue` |
+| `tests/audio.rs` | Finding audio files by extension, fades, the music a silent `Audio` tracks, `AudioConfig` |
 | `tests/rollback.rs` | Back/forward, barriers (`commit`, final choices, blocked commands, `through_choices`), history limits, history across a save and load |
-| `tests/settings.rs` | Settings files, the typewriter, text speeds, when closing the window asks |
+| `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
 | `tests/layout.rs` | Every layout arrangement, anchor and alignment, fitting, and the default screens' positions |
-| `tests/hot_reload.rs` | The file watcher, swapping in a reloaded story, the story loader |
+| `tests/hot_reload.rs` | The file watcher, swapping in a reloaded story, the story loader, the error panel's lines |

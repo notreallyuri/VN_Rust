@@ -137,6 +137,12 @@ pub enum Instruction {
     Background {
         image: Option<String>,
     },
+    Music {
+        track: Option<String>,
+    },
+    Sound {
+        id: String,
+    },
     Hide {
         char_id: String,
     },

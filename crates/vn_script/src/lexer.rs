@@ -1,10 +1,12 @@
 use crate::diagnostics::Diagnostic;
 use crate::types::{Token, TokenKind};
 
-const KEYWORDS: [(&str, TokenKind); 13] = [
+const KEYWORDS: [(&str, TokenKind); 15] = [
     ("scene", TokenKind::Scene),
     ("show", TokenKind::Show),
     ("background", TokenKind::Background),
+    ("music", TokenKind::Music),
+    ("sound", TokenKind::Sound),
     ("remove", TokenKind::Remove),
     ("clear", TokenKind::Clear),
     ("choice", TokenKind::ChoiceBlock),
@@ -29,6 +31,10 @@ pub fn keyword_name(kind: TokenKind) -> Option<&'static str> {
         .iter()
         .find(|(_, k)| *k == kind)
         .map(|&(name, _)| name)
+}
+
+pub fn keywords() -> impl Iterator<Item = &'static str> {
+    KEYWORDS.iter().map(|&(name, _)| name)
 }
 
 pub fn is_keyword(word: &str) -> bool {

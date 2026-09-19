@@ -95,11 +95,23 @@ scene start:
     assert_eq!(
         messages(source),
         [
-            (3, "unknown variable 'afection'".into()),
-            (4, "speaker: unknown character 'maryy'".into()),
-            (5, "`show`: unknown character 'hugh'".into()),
+            (
+                3,
+                "unknown variable 'afection'; did you mean 'affection'?".into()
+            ),
+            (
+                4,
+                "speaker: unknown character 'maryy'; did you mean 'mary'?".into()
+            ),
+            (
+                5,
+                "`show`: unknown character 'hugh'; did you mean 'hugo'?".into()
+            ),
             (6, "unknown variable 'plyer'".into()),
-            (7, "unknown command 'give_itm'".into()),
+            (
+                7,
+                "unknown command 'give_itm'; did you mean 'give_item'?".into()
+            ),
             (8, "`jump nowhere`: no scene with that name".into()),
         ]
     );
@@ -323,7 +335,7 @@ fn enum_default_must_be_a_member() {
 #[test]
 fn every_example_story_is_valid_without_registries() {
     let vm = StoryVm::from_dir("../../examples/god_is_watching/assets/story").unwrap();
-    assert_eq!(vm.program().files.len(), 3);
+    assert_eq!(vm.program().files.len(), 6);
     assert_eq!(vm.validate(), []);
 }
 

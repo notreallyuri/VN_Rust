@@ -3,7 +3,8 @@ use raylib::{
     color::Color,
     texture::{Image, Texture2D},
 };
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::{FontRole, Fonts};
@@ -25,6 +26,7 @@ pub struct ResourceManager {
     root: PathBuf,
     pub textures: HashMap<String, Texture2D>,
     pub fonts: Fonts,
+    requested: RefCell<HashSet<String>>,
 }
 
 impl ResourceManager {
@@ -33,6 +35,7 @@ impl ResourceManager {
             root: root.into(),
             textures: HashMap::new(),
             fonts: Fonts::new(rl, thread),
+            requested: RefCell::new(HashSet::new()),
         }
     }
 
@@ -53,6 +56,21 @@ impl ResourceManager {
 
     pub fn path(&self, relative: impl AsRef<Path>) -> PathBuf {
         self.root.join(relative)
+    }
+
+    pub fn texture(&self, path: &str) -> Option<&Texture2D> {
+        let texture = self.textures.get(path);
+        if texture.is_none() {
+            self.requested.borrow_mut().insert(path.to_string());
+        }
+        texture
+    }
+
+    pub fn load_requested(&mut self, rl: &mut RaylibHandle, thread: &RaylibThread) {
+        let requested: Vec<String> = self.requested.borrow_mut().drain().collect();
+        for path in requested {
+            self.get_or_load(&path, rl, thread);
+        }
     }
 
     pub fn get_or_load(

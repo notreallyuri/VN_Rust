@@ -1,5 +1,6 @@
 use raylib::prelude::*;
 
+pub use crate::button::*;
 use crate::{FontRole, Fonts, GameContext, ResourceManager};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,71 +32,121 @@ impl TextStyle {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ButtonStyle {
-    pub width: f32,
-    pub height: f32,
-    pub color: Color,
-    pub hover_color: Color,
-    pub roundness: f32,
-    pub text: TextStyle,
+pub struct SliderStyle {
+    pub track_height: f32,
+    pub knob_radius: f32,
+    pub track_color: Color,
+    pub fill_color: Color,
+    pub knob_color: Color,
+    pub knob_hover_color: Color,
+    pub step_marks: bool,
 }
 
-impl Default for ButtonStyle {
+impl Default for SliderStyle {
     fn default() -> Self {
-        let color = Color::new(40, 40, 60, 255);
         Self {
-            width: 240.0,
-            height: 52.0,
-            color,
-            hover_color: lighten(color),
-            roundness: 0.0,
-            text: TextStyle::new(FontRole::Button, 22.0, Color::WHITE),
+            track_height: 6.0,
+            knob_radius: 10.0,
+            track_color: Color::new(60, 60, 80, 255),
+            fill_color: Color::new(150, 150, 200, 255),
+            knob_color: Color::new(225, 225, 235, 255),
+            knob_hover_color: Color::WHITE,
+            step_marks: true,
         }
     }
 }
 
-impl ButtonStyle {
-    pub fn size(mut self, width: f32, height: f32) -> Self {
-        self.width = width;
-        self.height = height;
+impl SliderStyle {
+    pub fn track_height(mut self, height: f32) -> Self {
+        self.track_height = height;
         self
     }
 
-    pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
-        self.hover_color = lighten(color);
+    pub fn knob_radius(mut self, radius: f32) -> Self {
+        self.knob_radius = radius;
         self
     }
 
-    pub fn hover_color(mut self, color: Color) -> Self {
-        self.hover_color = color;
+    pub fn track_color(mut self, color: Color) -> Self {
+        self.track_color = color;
         self
     }
 
-    pub fn roundness(mut self, roundness: f32) -> Self {
-        self.roundness = roundness.clamp(0.0, 1.0);
+    pub fn fill_color(mut self, color: Color) -> Self {
+        self.fill_color = color;
         self
     }
 
-    pub fn text(mut self, text: TextStyle) -> Self {
-        self.text = text;
+    pub fn knob_color(mut self, color: Color) -> Self {
+        self.knob_color = color;
+        self.knob_hover_color = lighten(color);
         self
     }
 
-    pub fn font(mut self, font: FontRole) -> Self {
-        self.text.font = font;
+    pub fn step_marks(mut self, show: bool) -> Self {
+        self.step_marks = show;
         self
+    }
+}
+
+pub fn slider_fraction(area: Rectangle, x: f32) -> f32 {
+    if area.width <= 0.0 {
+        return 0.0;
+    }
+    ((x - area.x) / area.width).clamp(0.0, 1.0)
+}
+
+pub fn slider_step(fraction: f32, steps: usize) -> usize {
+    if steps <= 1 {
+        return 0;
+    }
+    (fraction.clamp(0.0, 1.0) * (steps - 1) as f32).round() as usize
+}
+
+pub fn draw_slider(
+    d: &mut RaylibDrawHandle,
+    area: Rectangle,
+    fraction: f32,
+    steps: Option<usize>,
+    highlighted: bool,
+    style: &SliderStyle,
+) {
+    let fraction = fraction.clamp(0.0, 1.0);
+    let center_y = area.y + area.height / 2.0;
+    let track = Rectangle::new(
+        area.x,
+        center_y - style.track_height / 2.0,
+        area.width,
+        style.track_height,
+    );
+    let filled = Rectangle::new(track.x, track.y, track.width * fraction, track.height);
+
+    d.draw_rectangle_rounded(track, 1.0, 6, style.track_color);
+    if filled.width > 0.0 {
+        d.draw_rectangle_rounded(filled, 1.0, 6, style.fill_color);
     }
 
-    pub fn font_size(mut self, size: f32) -> Self {
-        self.text.size = size;
-        self
+    if style.step_marks
+        && let Some(steps) = steps.filter(|&n| n > 1 && n <= 12)
+    {
+        for i in 0..steps {
+            let x = area.x + area.width * i as f32 / (steps - 1) as f32;
+            let color = if (i as f32) / ((steps - 1) as f32) <= fraction {
+                style.fill_color
+            } else {
+                style.track_color
+            };
+            d.draw_circle_v(Vector2::new(x, center_y), style.track_height * 0.9, color);
+        }
     }
 
-    pub fn text_color(mut self, color: Color) -> Self {
-        self.text.color = color;
-        self
-    }
+    let knob = Vector2::new(area.x + area.width * fraction, center_y);
+    let color = if highlighted {
+        style.knob_hover_color
+    } else {
+        style.knob_color
+    };
+    d.draw_circle_v(knob, style.knob_radius, color);
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -115,33 +166,6 @@ pub fn is_hovered(rl: &RaylibHandle, rect: Rectangle) -> bool {
 
 pub fn is_clicked(rl: &RaylibHandle, rect: Rectangle) -> bool {
     is_hovered(rl, rect) && rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
-}
-
-pub fn draw_button(
-    d: &mut RaylibDrawHandle,
-    fonts: &Fonts,
-    rect: Rectangle,
-    label: &str,
-    style: &ButtonStyle,
-) {
-    let color = if is_hovered(d, rect) {
-        style.hover_color
-    } else {
-        style.color
-    };
-
-    if style.roundness > 0.0 {
-        d.draw_rectangle_rounded(rect, style.roundness, 8, color);
-    } else {
-        d.draw_rectangle_rec(rect, color);
-    }
-
-    let text_size = fonts.measure(style.text.font, label, style.text.size);
-    let position = Vector2::new(
-        rect.x + (rect.width - text_size.x) / 2.0,
-        rect.y + (rect.height - text_size.y) / 2.0,
-    );
-    draw_text(d, fonts, label, position, &style.text);
 }
 
 pub fn draw_text(
@@ -209,6 +233,28 @@ pub fn draw_text_wrapped_visible(
     }
 
     lines.len() as f32 * line_height
+}
+
+pub fn fit_text(fonts: &Fonts, style: &TextStyle, text: &str, max_width: f32) -> String {
+    let fits = |candidate: &str| fonts.measure(style.font, candidate, style.size).x <= max_width;
+    if fits(text) {
+        return text.to_string();
+    }
+
+    let chars: Vec<char> = text.chars().collect();
+    let (mut low, mut high) = (0, chars.len());
+    while low < high {
+        let mid = (low + high).div_ceil(2);
+        let candidate: String = chars[..mid].iter().collect();
+        if fits(&format!("{}…", candidate.trim_end())) {
+            low = mid;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    let kept: String = chars[..low].iter().collect();
+    format!("{}…", kept.trim_end())
 }
 
 pub fn screen_size(rl: &RaylibHandle) -> Vector2 {

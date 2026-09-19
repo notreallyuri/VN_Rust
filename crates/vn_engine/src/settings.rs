@@ -11,6 +11,8 @@ pub const SETTINGS_FILE_NAME: &str = "settings.json";
 pub struct Settings {
     pub fullscreen: bool,
     pub text_speed: u32,
+    pub music_volume: u32,
+    pub sound_volume: u32,
 }
 
 impl Default for Settings {
@@ -18,11 +20,21 @@ impl Default for Settings {
         Self {
             fullscreen: false,
             text_speed: 40,
+            music_volume: 70,
+            sound_volume: 80,
         }
     }
 }
 
 impl Settings {
+    pub fn music_gain(&self) -> f32 {
+        self.music_volume.min(100) as f32 / 100.0
+    }
+
+    pub fn sound_gain(&self) -> f32 {
+        self.sound_volume.min(100) as f32 / 100.0
+    }
+
     pub fn load(path: &Path) -> Self {
         match fs::read_to_string(path) {
             Ok(json) => serde_json::from_str(&json).unwrap_or_else(|e| {

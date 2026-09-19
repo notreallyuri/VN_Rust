@@ -7,7 +7,7 @@ use crate::screens::PAUSE_OVERLAY;
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
     Action, Anchor, DrawContext, FontRole, GameContext, Layout, ResourceManager, Screen,
-    ScreenState, background_path, character_path,
+    ScreenState, StyleOverride, background_path, character_path,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -71,6 +71,40 @@ impl DialogueBoxStyle {
 pub struct HudButton {
     pub label: String,
     pub action: Action,
+    pub tooltip: Option<String>,
+    pub style: Option<StyleOverride>,
+}
+
+type ChoiceStyleFn = Rc<dyn Fn(usize, &str, ButtonStyle) -> ButtonStyle>;
+
+#[derive(Clone)]
+pub struct ChoiceStyle(ChoiceStyleFn);
+
+impl std::fmt::Debug for ChoiceStyle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ChoiceStyle(..)")
+    }
+}
+
+impl HudButton {
+    pub fn new(label: impl Into<String>, action: Action) -> Self {
+        Self {
+            label: label.into(),
+            action,
+            tooltip: None,
+            style: None,
+        }
+    }
+
+    pub fn style(mut self, style: impl Fn(ButtonStyle) -> ButtonStyle + 'static) -> Self {
+        self.style = Some(StyleOverride::new(style));
+        self
+    }
+
+    pub fn tooltip(mut self, text: impl Into<String>) -> Self {
+        self.tooltip = Some(text.into());
+        self
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -79,6 +113,7 @@ pub struct PlayingConfig {
     pub speaker_text: TextStyle,
     pub dialogue_text: TextStyle,
     pub choice_button: ButtonStyle,
+    pub choice_style: Option<ChoiceStyle>,
     pub choice_layout: Layout,
     pub end_title: String,
     pub end_title_text: TextStyle,
@@ -110,6 +145,7 @@ impl Default for PlayingConfig {
                 .size(720.0, 56.0)
                 .color(Color::new(30, 30, 45, 230))
                 .font(FontRole::Choice),
+            choice_style: None,
             choice_layout: Layout::default().spacing(16.0),
             end_title: "The End".to_string(),
             end_title_text: TextStyle::new(FontRole::Title, 56.0, Color::RAYWHITE),
@@ -161,6 +197,28 @@ impl PlayingConfig {
     pub fn choice_button(mut self, style: impl FnOnce(ButtonStyle) -> ButtonStyle) -> Self {
         self.choice_button = style(self.choice_button);
         self
+    }
+
+    pub fn choice_button_for(
+        mut self,
+        style: impl Fn(usize, &str, ButtonStyle) -> ButtonStyle + 'static,
+    ) -> Self {
+        self.choice_style = Some(ChoiceStyle(Rc::new(style)));
+        self
+    }
+
+    pub fn choice_style_for(&self, index: usize, text: &str) -> ButtonStyle {
+        match &self.choice_style {
+            Some(ChoiceStyle(style)) => style(index, text, self.choice_button.clone()),
+            None => self.choice_button.clone(),
+        }
+    }
+
+    pub fn hud_style(&self, index: usize) -> ButtonStyle {
+        match self.hud.get(index).and_then(|button| button.style.as_ref()) {
+            Some(style) => style.apply(&self.hud_button),
+            None => self.hud_button.clone(),
+        }
     }
 
     pub fn choice_spacing(mut self, spacing: f32) -> Self {
@@ -227,11 +285,12 @@ impl PlayingConfig {
         self
     }
 
-    pub fn hud_button(mut self, label: impl Into<String>, action: Action) -> Self {
-        self.hud.push(HudButton {
-            label: label.into(),
-            action,
-        });
+    pub fn hud_button(self, label: impl Into<String>, action: Action) -> Self {
+        self.hud_item(HudButton::new(label, action))
+    }
+
+    pub fn hud_item(mut self, button: HudButton) -> Self {
+        self.hud.push(button);
         self
     }
 
@@ -276,8 +335,12 @@ impl PlayingConfig {
     }
 
     pub fn hud_rects(&self, screen: Vector2) -> Vec<Rectangle> {
-        let button = &self.hud_button;
-        let sizes = vec![Vector2::new(button.width, button.height); self.hud.len()];
+        let sizes: Vec<Vector2> = (0..self.hud.len())
+            .map(|i| {
+                let style = self.hud_style(i);
+                Vector2::new(style.width, style.height)
+            })
+            .collect();
         self.hud_layout
             .place(inset(screen, self.hud_margin), &sizes)
     }
@@ -355,6 +418,7 @@ pub struct PlayingScreen {
     current: Option<Event>,
     typewriter: Option<Typewriter>,
     visible: Option<usize>,
+    autosave_pending: bool,
 }
 
 impl PlayingScreen {
@@ -364,6 +428,7 @@ impl PlayingScreen {
             current: None,
             typewriter: None,
             visible: None,
+            autosave_pending: false,
         }
     }
 
@@ -395,7 +460,9 @@ impl PlayingScreen {
                     }
                 }
                 Event::Commit => ctx.rollback.mark_barrier(),
+                Event::Sound { id } => ctx.play_sound(&id),
                 Event::SceneEnter { scene } => {
+                    self.autosave_pending = true;
                     if let Some(next) = ctx.run_scene_hooks(&scene) {
                         return Some(next);
                     }
@@ -404,6 +471,9 @@ impl PlayingScreen {
                     let typed = (ctx.settings.values.text_speed, ctx.rl.get_time());
                     self.show(event, Some(typed));
                     ctx.rollback.record(ctx.story, ctx.state);
+                    if std::mem::take(&mut self.autosave_pending) {
+                        ctx.autosave();
+                    }
                     return None;
                 }
                 _ => {}
@@ -455,8 +525,18 @@ impl PlayingScreen {
         !matches!(self.current, Some(Event::End))
     }
 
+    fn over_hud(&self, rl: &RaylibHandle) -> bool {
+        self.shows_hud()
+            && self
+                .config
+                .hud_rects(ui::screen_size(rl))
+                .iter()
+                .enumerate()
+                .any(|(i, rect)| ui::button_hovered(rl, *rect, &self.config.hud_style(i)))
+    }
+
     fn continue_pressed(&self, rl: &RaylibHandle) -> bool {
-        rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
+        (rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) && !self.over_hud(rl))
             || self
                 .config
                 .advance_keys
@@ -503,7 +583,19 @@ impl Screen for PlayingScreen {
 
         if self.shows_hud() {
             let hud = self.config.hud_rects(ui::screen_size(ctx.rl));
-            if let Some(index) = hud.iter().position(|rect| ui::is_clicked(ctx.rl, *rect)) {
+            for (button, rect) in self.config.hud.iter().zip(&hud) {
+                if let Some(text) = &button.tooltip {
+                    ctx.tooltip(*rect, text.clone());
+                }
+            }
+            let mut clicked = None;
+            for (index, rect) in hud.iter().enumerate() {
+                let style = self.config.hud_style(index);
+                if ui::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
+                    clicked = Some(index);
+                }
+            }
+            if let Some(index) = clicked {
                 let action = self.config.hud[index].action.clone();
                 return action.run(&mut ctx);
             }
@@ -516,7 +608,15 @@ impl Screen for PlayingScreen {
                     .config
                     .choice_rects(options.len(), ui::screen_size(ctx.rl));
 
-                match rects.iter().position(|rect| ui::is_clicked(ctx.rl, *rect)) {
+                let mut clicked = None;
+                for (index, (rect, option)) in rects.iter().zip(options).enumerate() {
+                    let style = self.config.choice_style_for(index, option);
+                    if ui::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
+                        clicked = Some(index);
+                    }
+                }
+
+                match clicked {
                     Some(index) => {
                         let text = options[index].clone();
                         if let Err(e) = ctx.story.choose(index) {
@@ -592,8 +692,10 @@ impl Screen for PlayingScreen {
         let fonts = ctx.fonts();
 
         if self.shows_hud() {
-            for (button, rect) in config.hud.iter().zip(config.hud_rects(screen)) {
-                ui::draw_button(d, fonts, rect, &button.label, &config.hud_button);
+            for (index, (button, rect)) in
+                config.hud.iter().zip(config.hud_rects(screen)).enumerate()
+            {
+                ui::draw_button(d, ctx, rect, &button.label, &config.hud_style(index));
             }
         }
 
@@ -634,8 +736,9 @@ impl Screen for PlayingScreen {
             }
             Some(Event::Choice { options }) => {
                 let rects = config.choice_rects(options.len(), screen);
-                for (option, rect) in options.iter().zip(rects) {
-                    ui::draw_button(d, fonts, rect, option, &config.choice_button);
+                for (index, (option, rect)) in options.iter().zip(rects).enumerate() {
+                    let style = config.choice_style_for(index, option);
+                    ui::draw_button(d, ctx, rect, option, &style);
                 }
             }
             Some(Event::End) => {

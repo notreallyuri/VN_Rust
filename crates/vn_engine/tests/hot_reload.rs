@@ -4,7 +4,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, SystemTime};
 
 use vn_engine::script::{Event, RestoreOutcome, Schema, StoryVm, VariableDef};
-use vn_engine::{AppError, GameState, Rollback, StoryLoader, StoryWatcher, swap_story};
+use vn_engine::{
+    AppError, GameState, Rollback, ScriptErrors, StoryLoader, StoryWatcher, swap_story,
+};
 
 struct Dir(PathBuf);
 
@@ -166,4 +168,55 @@ fn the_loader_validates_like_startup() {
         panic!("expected script errors");
     };
     assert_eq!(errors[0].message, "unknown variable 'nope'");
+}
+
+#[test]
+fn failed_reloads_list_their_errors_relative_to_the_story_dir() {
+    let dir = Dir::new();
+    dir.write("01.story", "scene a:\n  remoe hugo\n  jump bb\n", 0);
+    let loader = StoryLoader {
+        assets: dir.0.clone(),
+        story_dir: PathBuf::from("story"),
+        schema: Schema::default(),
+        entry_scene: None,
+        warn_missing_art: false,
+    };
+
+    let error = loader.load().unwrap_err();
+    let errors = ScriptErrors::from_error(&error, &loader.path());
+
+    assert_eq!(
+        errors.title,
+        "Story not reloaded: 2 errors (still running the previous version)"
+    );
+    assert_eq!(errors.lines.len(), 2);
+    assert!(
+        errors.lines[0].starts_with("01.story:2: error: expected dialogue"),
+        "{}",
+        errors.lines[0]
+    );
+    assert!(errors.lines[0].ends_with("did you mean `remove`?"));
+    assert_eq!(
+        errors.lines[1],
+        "01.story:3: error: `jump bb`: no scene with that name"
+    );
+    assert!(!errors.collapsed);
+}
+
+#[test]
+fn a_missing_story_dir_is_one_line() {
+    let dir = Dir::new();
+    fs::remove_dir_all(dir.0.join("story")).unwrap();
+    let loader = StoryLoader {
+        assets: dir.0.clone(),
+        story_dir: PathBuf::from("story"),
+        schema: Schema::default(),
+        entry_scene: None,
+        warn_missing_art: false,
+    };
+
+    let errors = ScriptErrors::from_error(&loader.load().unwrap_err(), &loader.path());
+    assert_eq!(errors.lines.len(), 1);
+    assert!(errors.lines[0].starts_with("could not load the story"));
+    assert!(errors.title.contains("1 error "));
 }

@@ -16,9 +16,13 @@ cargo run -p vn_cli -- check examples/god_is_watching/assets
 ```
 
 ```text
-examples/god_is_watching/assets/story/02_moriarty.story:185: error: unknown variable 'curiosty'
-3 files, 28 scenes checked against examples/god_is_watching/assets/schema.json: 1 error, 0 warnings
+examples/god_is_watching/assets/story/04_santa_ilde.story:12: error: unknown variable 'trsut'
+examples/god_is_watching/assets/story/02_notebook.story:30: error: speaker: unknown character 'francs'; did you mean 'francis'?
+6 files, 30 scenes checked against examples/god_is_watching/assets/schema.json: 2 errors, 0 warnings
 ```
+
+A misspelled keyword or a name close to a registered one ends with a "did you mean"
+suggestion (see vn_script's README, "Schema and validation").
 
 The schema is the `schema.json` a game exports (see vn_engine's README, "Schema export").
 What gets checked depends on `path`:
@@ -47,14 +51,16 @@ cargo run -p vn_cli -- dump examples/god_is_watching/assets/story
 ```
 
 ```text
-3 files, 28 scenes, 434 instructions
+6 files, 30 scenes, 503 instructions
 
-scene mary_breakfast:  (examples/god_is_watching/assets/story/01_mary.story:45)
-034: SAY [NARRATOR]: "Two days later, ..."
-036: SHOW hugo
-037: CHOICE ['Ask about the candles'->38, 'Ask about the letters'->43]
-038: ADD curiosity +1
-042: GOTO 49
+scene box_the_letter:  (examples/god_is_watching/assets/story/01_box_14.story:24)
+055: BACKGROUND archive_office
+056: MUSIC archive
+059: CHOICE ['Break the seal'->60, 'Leave it sealed'->68]
+060: SET read_letter = true
+061: SOUND page_turn
+062: CALL give_item verlaine_letter
+067: GOTO 70
 ```
 
 Planned: `new`, `run`, `lsp`, `fmt` (see TODO.md).

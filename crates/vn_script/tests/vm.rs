@@ -179,27 +179,88 @@ fn empty_source_ends_immediately() {
     assert_eq!(vm.advance(), Event::End);
 }
 
-#[test]
-fn the_example_plays_through_every_chapter() {
-    let mut vm = StoryVm::from_dir("../../examples/god_is_watching/assets/story").unwrap();
-    assert!(vm.program().unknown_jump_targets().is_empty());
+const EXAMPLE: &str = "../../examples/god_is_watching/assets";
 
+fn example() -> StoryVm {
+    let mut vm = StoryVm::from_dir(format!("{}/story", EXAMPLE)).unwrap();
+    let schema = vn_script::SchemaFile::read(format!("{}/schema.json", EXAMPLE)).unwrap();
+    assert_eq!(vm.prepare(schema.schema, schema.entry_scene.as_deref()), []);
+    vm
+}
+
+fn play_to_the_end(vm: &mut StoryVm, last_choice: usize) -> std::collections::BTreeSet<String> {
     let mut scenes = std::collections::BTreeSet::new();
     let mut lines = 0;
     loop {
         scenes.extend(vm.current_scene().map(str::to_string));
         match vm.advance_until_blocking() {
-            Event::End => break,
-            Event::Choice { .. } => vm.choose(0).unwrap(),
+            Event::End => return scenes,
+            Event::Choice { options } => {
+                let last = options
+                    .iter()
+                    .any(|o| o.starts_with("\"A boy with a blessing"));
+                vm.choose(if last { last_choice } else { 0 }).unwrap();
+            }
             _ => lines += 1,
         }
         assert!(lines < 10_000, "the story never ends");
     }
+}
 
-    for first in ["mary_start", "moriarty_start", "post_start"] {
+#[test]
+fn the_example_plays_through_every_chapter() {
+    let mut vm = example();
+    assert!(vm.program().unknown_jump_targets().is_empty());
+
+    let scenes = play_to_the_end(&mut vm, 0);
+    for first in [
+        "archive_start",
+        "box_start",
+        "notebook_start",
+        "reports_start",
+        "ilde_start",
+        "report_start",
+    ] {
         assert!(scenes.contains(first), "never reached {}", first);
     }
-    assert_eq!(vm.current_scene(), Some("post_last"));
+}
+
+#[test]
+fn every_ending_of_the_example_is_reachable() {
+    for (choice, ending) in [(0, "report"), (1, "silence"), (2, "keeper")] {
+        let mut vm = example();
+        let scenes = play_to_the_end(&mut vm, choice);
+        assert!(scenes.contains(&format!("ending_{}", ending)), "{}", ending);
+        assert_eq!(vm.variable("ending"), Some(&Value::Enum(ending.into())));
+        assert_eq!(vm.variable("recognized_clara"), Some(&Value::Bool(true)));
+        assert!(matches!(vm.variable("trust"), Some(Value::Int(n)) if *n >= 2));
+    }
+}
+
+#[test]
+fn the_hidden_ending_needs_the_clues() {
+    let mut vm = example();
+    let mut offered = 0;
+    loop {
+        match vm.advance_until_blocking() {
+            Event::End => break,
+            Event::Choice { options } => {
+                offered = options.len();
+                let index = options.iter().position(|o| {
+                    o.starts_with("Leave it")
+                        || o.starts_with("Let the margin")
+                        || o.starts_with("Thank her")
+                });
+                vm.choose(index.unwrap_or(0)).unwrap();
+            }
+            _ => {}
+        }
+    }
+    assert_eq!(
+        offered, 2,
+        "without the clues the final report has two options"
+    );
+    assert_eq!(vm.variable("recognized_clara"), Some(&Value::Bool(false)));
 }
 
 #[test]
@@ -602,6 +663,65 @@ fn snapshots_keep_positions_and_the_background() {
     let old: vn_script::StorySnapshot = serde_json::from_value(old).unwrap();
     assert!(old.positions.is_empty());
     assert_eq!(old.background, None);
+}
+
+const SOUNDTRACK: &str = r#"
+scene a:
+  music hall_theme
+  sound knock
+  "one"
+  music storm
+  "two"
+  music none
+  "three"
+"#;
+
+#[test]
+fn music_is_state_and_sounds_are_events() {
+    let mut vm = StoryVm::from_source(SOUNDTRACK);
+    assert_eq!(vm.music(), None);
+    assert_eq!(
+        vm.advance(),
+        Event::Music {
+            track: Some("hall_theme".into())
+        }
+    );
+    assert_eq!(vm.music(), Some("hall_theme"));
+    assert_eq!(vm.advance(), Event::Sound { id: "knock".into() });
+    assert!(matches!(vm.advance(), Event::Say { .. }));
+
+    next_line(&mut vm);
+    assert_eq!(vm.music(), Some("storm"));
+    next_line(&mut vm);
+    assert_eq!(vm.music(), None);
+
+    vm.reset();
+    next_line(&mut vm);
+    assert_eq!(vm.music(), Some("hall_theme"));
+    vm.reset();
+    assert_eq!(vm.music(), None);
+}
+
+#[test]
+fn snapshots_keep_the_music() {
+    let mut vm = StoryVm::from_source(SOUNDTRACK);
+    next_line(&mut vm);
+    next_line(&mut vm);
+    let snapshot = vm.snapshot();
+    assert_eq!(snapshot.music.as_deref(), Some("storm"));
+
+    let mut restored = StoryVm::from_source(SOUNDTRACK);
+    restored.restore(&snapshot).unwrap();
+    assert_eq!(restored.music(), Some("storm"));
+
+    let mut silent = StoryVm::from_source(SOUNDTRACK);
+    next_line(&mut silent);
+    next_line(&mut silent);
+    next_line(&mut silent);
+    let json = serde_json::to_value(silent.snapshot()).unwrap();
+    assert!(json.get("music").is_none(), "no music, no field");
+    let old: vn_script::StorySnapshot = serde_json::from_value(json).unwrap();
+    assert_eq!(old.music, None);
 }
 
 #[test]

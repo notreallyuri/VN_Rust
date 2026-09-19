@@ -6,6 +6,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::suggest::did_you_mean;
 use crate::template::referenced_variables;
 use crate::{Condition, Diagnostic, Instruction, Program, Value};
 
@@ -273,7 +274,14 @@ impl<'a> Checker<'a> {
                 if !self.program.scenes.contains_key(scene_id) {
                     self.error(
                         line,
-                        format!("`jump {}`: no scene with that name", scene_id),
+                        format!(
+                            "`jump {}`: no scene with that name{}",
+                            scene_id,
+                            did_you_mean(
+                                scene_id,
+                                self.program.scene_order.iter().map(String::as_str)
+                            )
+                        ),
                     );
                 }
             }
@@ -319,12 +327,13 @@ impl<'a> Checker<'a> {
                     self.error(
                         line,
                         format!(
-                            "`show {} {}`: '{}' has no image '{}' (images: {})",
+                            "`show {} {}`: '{}' has no image '{}' (images: {}){}",
                             char_id,
                             img_id,
                             char_id,
                             img_id,
-                            def.images.join(", ")
+                            def.images.join(", "),
+                            did_you_mean(img_id, def.images.iter().map(String::as_str))
                         ),
                     );
                 }
@@ -342,11 +351,20 @@ impl<'a> Checker<'a> {
                             self.error(line, e);
                         }
                     }
-                    None => self.error(line, format!("unknown command '{}'", command)),
+                    None => self.error(
+                        line,
+                        format!(
+                            "unknown command '{}'{}",
+                            command,
+                            did_you_mean(command, self.schema.commands.keys().map(String::as_str))
+                        ),
+                    ),
                 }
             }
             Instruction::Clear
             | Instruction::Background { .. }
+            | Instruction::Music { .. }
+            | Instruction::Sound { .. }
             | Instruction::Commit
             | Instruction::Pause
             | Instruction::Goto(_)
@@ -361,7 +379,14 @@ impl<'a> Checker<'a> {
         let schema: &'a Schema = self.schema;
         let def = schema.variables.get(name);
         if def.is_none() {
-            self.error(line, format!("unknown variable '{}'", name));
+            self.error(
+                line,
+                format!(
+                    "unknown variable '{}'{}",
+                    name,
+                    did_you_mean(name, schema.variables.keys().map(String::as_str))
+                ),
+            );
         }
         def
     }
@@ -373,7 +398,15 @@ impl<'a> Checker<'a> {
         let schema: &'a Schema = self.schema;
         let def = schema.characters.get(id);
         if def.is_none() {
-            self.error(line, format!("{}: unknown character '{}'", context, id));
+            self.error(
+                line,
+                format!(
+                    "{}: unknown character '{}'{}",
+                    context,
+                    id,
+                    did_you_mean(id, schema.characters.keys().map(String::as_str))
+                ),
+            );
         }
         def
     }

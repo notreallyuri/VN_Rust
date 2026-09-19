@@ -85,6 +85,31 @@ scene the_study:
   "Father burns them in the study fireplace."
 ```
 
+### 2.6 Music and sound
+
+```story
+music <track_id>
+music none
+sound <sound_id>
+```
+
+- `music` starts a looping track, replacing the one playing (the default engine crossfades);
+  `music none` fades it out
+- Like the background, the music stays across `jump`s and scenes, and is saved and rolled
+  back with the story. A `music` line naming the track that is already playing does nothing
+- `sound` plays a one-shot effect. It isn't saved, and it isn't replayed on rollback or load
+- The engine decides where files live (for the default engine, `assets/music/<track_id>` and
+  `assets/sounds/<sound_id>`, as `.ogg`, `.mp3`, `.wav` or `.flac`); a missing file is a
+  warning, and the game stays silent there
+
+```story
+scene the_door:
+  background santa_ilde_door
+  music santa_ilde
+  sound door_open
+  "August 9th. A young woman came to the door after midnight."
+```
+
 ## 3. Dialogue & narration
 
 ### 3.1 Character Dialogue
@@ -222,13 +247,14 @@ jump <scene_id>
   - scene_id
   - character_id
   - image_id (characters and backgrounds)
+  - track_id and sound_id
   - variable_id, enum members
   - command_id
 
 A character_id can't be a keyword, because a line's first word decides what it is
 (`show "Hi"` is a broken `show`, not dialogue). The keywords are:
 
-`scene` `show` `background` `remove` `clear` `choice` `commit` `jump` `if` `else` `call` `set` `add`
+`scene` `show` `background` `music` `sound` `remove` `clear` `choice` `commit` `jump` `if` `else` `call` `set` `add`
 
 This guarantees:
 
@@ -253,6 +279,10 @@ This guarantees:
 
 Every mistake in a script is reported with its line number, and the game doesn't start
 until they are fixed. One broken line doesn't hide the errors after it.
+
+A name that is close to a known one gets a suggestion: a misspelled keyword
+(`remoe hugo` → did you mean `remove`?) and unknown scenes, characters, images,
+variables and commands (`marry` → did you mean `mary`?).
 
 ## 7. Full Minimal Example (Valid script)
 

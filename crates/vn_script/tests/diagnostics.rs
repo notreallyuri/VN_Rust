@@ -525,6 +525,41 @@ fn same_file_duplicates_name_the_line() {
 }
 
 #[test]
+fn audio_statements() {
+    assert_eq!(
+        one_error(&in_scene("music")),
+        (
+            2,
+            "`music` needs a track: `music <track>` or `music none`".into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("music hall loud")),
+        (2, "`music` takes one track; unexpected `loud`".into())
+    );
+    assert_eq!(
+        one_error(&in_scene("music Hall")),
+        (
+            2,
+            "invalid music track `Hall`: use lowercase letters, digits and `_`, not starting with a digit"
+                .into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("sound")),
+        (2, "`sound` needs a sound: `sound <id>`".into())
+    );
+    assert_eq!(
+        one_error(&in_scene("sound knock twice")),
+        (2, "`sound` takes one sound; unexpected `twice`".into())
+    );
+    assert_eq!(
+        one_error(&in_scene("music \"hi\"")),
+        (2, "`music` is a keyword and can't be a character id".into())
+    );
+}
+
+#[test]
 fn background_statements() {
     assert_eq!(
         one_error(&in_scene("background")),

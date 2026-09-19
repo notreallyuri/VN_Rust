@@ -39,7 +39,7 @@ Three levels of control, each optional:
 ## M1: Example game setup
 
 - [x] Commit an assets layout for the example: `examples/god_is_watching/assets/{story,characters,backgrounds}`. `.gitignore` now ignores only the root `/assets/`.
-- [x] Story adapted from the source documents: `01_mary`, `02_moriarty`, `03_field_post` (one POV each)
+- [x] Story adapted from the source documents (rewritten in M7)
 - [x] Sample story covering every DSL feature: `crates/vn_script/tests/fixtures/all_features.story` (lexer, parser and VM tests)
 - [x] Placeholder character art: generated, color-coded, labeled fallback texture in `ResourceManager`
 - [x] Fix: the engine passed the script **path** to `StoryVm::from_source`. Added `StoryVm::from_file`.
@@ -96,8 +96,8 @@ Three levels of control, each optional:
 - [x] `{variable}` in text must name a registered variable
 - [x] Export the registry as a schema file (`schema.json`, refreshed in debug builds, `--export-schema`) so `vn check` and the LSP can validate without running the game
 - [x] `vn check <path>`: whole story or one file in its project, schema found by walking up, exit code for CI
-- [ ] "Did you mean" suggestions: a first word close to a keyword (`remoe hugo` → `remove`), and unknown scenes, characters, images, variables and commands close to a known one (`marry` → `mary`)
-- [ ] Show script errors in the game (debug builds): an overlay listing `file:line: message` when a hot reload fails, instead of only the console
+- [x] "Did you mean" suggestions: a first word close to a keyword (`remoe hugo` → `remove`), and unknown scenes, characters, images, variables, commands and entry scenes close to a known one (`marry` → `mary`)
+- [x] Show script errors in the game (debug builds): a panel listing `file:line: message` when a hot reload fails (F2 collapses it), cleared by the next good reload
 - [x] Parser edge cases:
   - [x] narration ending in `:` is lexed as `ChoiceOption` and panics
   - [x] an empty `if`/`else`/option body swallows the following siblings
@@ -119,16 +119,18 @@ Three levels of control, each optional:
 - [x] Typewriter effect (text speed setting; click shows the whole line)
 - [x] Window-relative layout in the default screens
 - [x] Layouts for button lists (`Layout`: column, row, grid, rows_of, custom; anchors, alignment, fitted spacing) in the main menu, pause menu, choices, HUD and save slots
-- [ ] Keyboard/gamepad navigation between buttons (arrow keys, especially for grids)
-- [x] Settings screen (see M3); volume settings come with audio
+- [x] Button styling: borders, shadows, images (stretched or nine-slice), icons, alignment, padding, overflow (ellipsis, shrink, wrap), transforms (scale, rotate, skew, offset), hovered/pressed/focused/disabled looks with transitions, hover and click sounds, clicks on release, per-button HUD and choice styles, `MenuItem::enabled_if`
+- [ ] Keyboard/gamepad navigation between buttons (arrow keys, especially for grids); the `focused` look is ready for it
+- [x] Settings screen (see M3): a display toggle, and sliders for text speed, music and sound volume
+- [x] Tooltips (`MenuItem::tooltip`, `HudButton::tooltip`, `ctx.tooltip(rect, text)`), on by default in the settings rows and save slots
 - [x] Clean exit (`ScreenState::Quit`)
-- [ ] Audio: music and SFX (needs DSL syntax)
+- [x] Audio: `music <track>` / `music none` / `sound <id>` (SCRIPT.md 2.6); looping music with crossfades, part of the story state (saves, rollback, hot reload); menu music; volumes in settings
 
 ## M6: Save/load and tooling (save/load started early)
 
 - [x] Save/load: VM snapshot (scene + offset + scene fingerprint, variables, characters, current line), game state by type name, JSON slots with atomic writes, all-or-nothing loads, `SaveError` / `LoadWarning`, default Save/Load screens, quick save/load
-- [ ] Autosave (on scene change / on quit), save thumbnails, delete-slot and overwrite confirmation in the default screens
-- [ ] Platform save directory (e.g. `~/.local/share/<game>`) instead of `./saves`
+- [x] Autosave (on scene change / on quit), save thumbnails, delete-slot and overwrite confirmation in the default screens; `Action::Continue` loads the newest save
+- [x] Platform save directory (e.g. `~/.local/share/<game>`) instead of `./saves`
 - [ ] Save format migrations when `SAVE_FORMAT_VERSION` changes
 - [ ] `vn new` project template
 - [x] Multi-file projects: every `.story` under `story_dir` is one program; diagnostics name their file; the example's chapters jump into each other
@@ -139,19 +141,21 @@ Three levels of control, each optional:
   - [ ] LSP (`vn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type, go to scene definition, completion of scene/character/variable ids. Works in every editor
   - [ ] Formatter (`vn fmt`)
 
-## M7: Example overhaul (after M3 is finished)
+## M7: Example overhaul
 
-`examples/god_is_watching` becomes the showcase and the end-to-end test of every feature.
+`examples/god_is_watching` is the showcase and the end-to-end test of every feature.
 
-- [ ] Rework the plot. The story may be rewritten, e.g. an outside character as the player, or Mary as the MC.
-- [ ] Use every DSL feature at least once, in the story itself: scenes and cross-file `jump`s, `show`/`remove`/`clear`, dialogue, narration, `{variable}` in text and as the speaker, `choice` and `choice final:`, `commit`, `if`/`else` with `&&`/`||`, `set`/`add` for bool, int, enum and string variables, `call` with typed arguments, string escapes
-- [ ] Use every engine feature at least once: registries (variables of each type, characters with images and colors, commands), game state by type, text input (`ask_name`), overlays and HUD buttons, custom screens, save/load/quick save, rollback with barriers and blocked commands, settings, confirmation dialogs, layouts, hooks, hot reload
-- [ ] A consistent visual style for the UI: palette, fonts, backgrounds, button and panel styles across the start screen, main menu, playing screen, pause menu, save/load, settings and the custom screens
-- [ ] Character art and backgrounds (or better placeholders) so the art pipeline is exercised
-- [ ] A short "feature tour" section in the example README that maps each feature to where it appears
+- [x] Rework the plot: the player is an archivist of the House in 1903, reading the 1894 documents and going to Santa Ilde; three endings, one hidden
+- [x] Use every DSL feature in the story itself (see the example README's feature tour)
+- [x] Use every engine feature (registries, commands, state, text input, hooks, overlays, custom screens, saves, rollback barriers, settings, confirmations, layouts, backgrounds, positions, hot reload)
+- [x] A consistent visual style for the UI (`src/style.rs`, applied to every default screen)
+- [x] Generated art (`tools/generate_art.py`): 11 backgrounds, 23 portraits
+- [x] A feature tour in the example README
+- [ ] Real art to replace the generated placeholders
+- [x] Music and sound: 5 CC0 tracks and 7 CC0 sounds (`assets/AUDIO_CREDITS.md`)
 
 ## Ongoing
 
 - [ ] Tests: golden tests over the SCRIPT.md examples (lexer, parser and VM done in `crates/vn_script/tests/`)
 - [x] SCRIPT.md §8.3 typo: `-+` → `-=`
-- [ ] SCRIPT.md: specify audio (backgrounds, positions and string escaping done)
+- [x] SCRIPT.md: specify audio (backgrounds, positions and string escaping done)

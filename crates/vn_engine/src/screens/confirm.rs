@@ -231,11 +231,15 @@ impl Overlay for ConfirmDialog {
 
         let layout = self.layout(&ctx.resources.fonts, ui::screen_size(ctx.rl));
 
-        if cancel_key || ui::is_clicked(ctx.rl, layout.cancel) {
+        let config = Rc::clone(&self.config);
+        let cancel_clicked = ui::button_clicked(&mut ctx, layout.cancel, &config.cancel_button);
+        let confirm_clicked = ui::button_clicked(&mut ctx, layout.confirm, &config.confirm_button);
+
+        if cancel_key || cancel_clicked {
             return OverlayAction::Close;
         }
 
-        if confirm_key || ui::is_clicked(ctx.rl, layout.confirm) {
+        if confirm_key || confirm_clicked {
             let action = self.request.take().map(|r| r.action);
             ctx.close_overlay();
             if let Some(state) = action.and_then(|action| action.run(&mut ctx)) {
@@ -277,10 +281,10 @@ impl Overlay for ConfirmDialog {
             .as_deref()
             .unwrap_or(&config.cancel_label);
 
-        ui::draw_button(d, fonts, layout.cancel, cancel_label, &config.cancel_button);
+        ui::draw_button(d, ctx, layout.cancel, cancel_label, &config.cancel_button);
         ui::draw_button(
             d,
-            fonts,
+            ctx,
             layout.confirm,
             confirm_label,
             &config.confirm_button,

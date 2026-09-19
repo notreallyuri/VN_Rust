@@ -102,9 +102,9 @@ Its assets live in `examples/god_is_watching/assets/`:
 
 | Path | Contents |
 |---|---|
-| `story/` | Chapter scripts, all loaded as one story. Each chapter ends with a `jump` into the next, and the game starts from the first scene of `01_mary.story` |
+| `story/` | Chapter scripts, all loaded as one story. Each chapter ends with a `jump` into the next, and the game starts from the first scene of `00_archive.story` |
 | `characters/<character_id>/<image_id>.png` | Character art, as referenced by `show <character_id> <image_id>` |
-| `backgrounds/` | Reserved; backgrounds are not in the DSL yet |
+| `backgrounds/<image_id>.png` | Backgrounds, as referenced by `background <image_id>` |
 | `fonts/` | `.ttf`/`.otf` fonts, assigned to text roles with `VnApp::font` in `main.rs` |
 | `schema.json` | The game's registries, exported by the game in debug builds, for `vn check` |
 
@@ -148,16 +148,12 @@ This keeps stories:
 
 Work in progress
 
-Current focus:
+Working today: the story DSL with validation and "did you mean" diagnostics, the VM, the
+raylib engine (default screens, saves with autosave and thumbnails, rollback, settings,
+music and sound, hot reload), `vn check` / `vn dump`, and the example game.
 
-- Core engine systems
-- Story DSL parsing and validation
-- Runtime interpreter
-- Error diagnostics
+Planned (see TODO.md):
 
-Planned:
-
-- Tree-sitter grammar
-- Editor tooling (Neovim, VS Code, Zed)
-- Save/load integration
-- Example project
+- Transitions and keyboard/gamepad navigation
+- `vn new` and save format migrations
+- Tree-sitter grammar, editor support (Neovim, VS Code, Zed), an LSP and a formatter

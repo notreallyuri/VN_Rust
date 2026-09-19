@@ -4,6 +4,8 @@
 scene start:
   # Character presentation (SCRIPT.md 2)
   background study_night
+  music night_theme
+  sound door_knock
   show gabriel serious at left
   show mary neutral
   show gabriel worried
@@ -63,5 +65,6 @@ scene start:
 scene second_scene:
   clear
   background none
+  music none
   show gabriel worried
   "Things just got darker."

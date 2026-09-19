@@ -10,6 +10,7 @@ type CustomAction = Rc<dyn Fn(&mut GameContext) -> Option<ScreenState>>;
 #[derive(Clone)]
 pub enum Action {
     NewGame,
+    Continue,
     Goto(ScreenState),
     OpenOverlay(String),
     Resume,
@@ -40,6 +41,23 @@ impl Action {
                 ctx.state.reset();
                 ctx.rollback.clear();
                 Some(ScreenState::Playing)
+            }
+            Action::Continue => {
+                if ctx.story.current().is_some() {
+                    return Some(ScreenState::Playing);
+                }
+                let Some((slot, _)) = ctx.saves.latest() else {
+                    ctx.notify("No saved game yet");
+                    return None;
+                };
+                match ctx.load(&slot) {
+                    Ok(_) => Some(ScreenState::Playing),
+                    Err(e) => {
+                        eprintln!("⚠️ Continue failed ({}): {}", slot, e);
+                        ctx.notify_error(format!("Could not continue: {}", e.player_message()));
+                        None
+                    }
+                }
             }
             Action::Goto(state) => Some(state.clone()),
             Action::OpenOverlay(name) => {
@@ -85,6 +103,7 @@ impl fmt::Debug for Action {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Action::NewGame => write!(f, "NewGame"),
+            Action::Continue => write!(f, "Continue"),
             Action::Goto(state) => write!(f, "Goto({:?})", state),
             Action::OpenOverlay(name) => write!(f, "OpenOverlay({:?})", name),
             Action::Resume => write!(f, "Resume"),

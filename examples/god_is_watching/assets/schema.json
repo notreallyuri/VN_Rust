@@ -3,28 +3,83 @@
   "game": "God Is Watching",
   "story_dir": "story",
   "variables": {
-    "curiosity": {
-      "ty": "Int",
+    "approach": {
+      "ty": {
+        "Enum": [
+          "careful",
+          "bold"
+        ]
+      },
       "default": {
-        "Int": 0
+        "Enum": "careful"
       }
     },
-    "obedience": {
-      "ty": "Int",
+    "believed_moriarty": {
+      "ty": "Bool",
       "default": {
-        "Int": 0
+        "Bool": false
+      }
+    },
+    "ending": {
+      "ty": {
+        "Enum": [
+          "none",
+          "report",
+          "silence",
+          "keeper"
+        ]
+      },
+      "default": {
+        "Enum": "none"
       }
     },
     "player_name": {
       "ty": "String",
       "default": {
-        "String": "Reader"
+        "String": "Archivist"
+      }
+    },
+    "read_letter": {
+      "ty": "Bool",
+      "default": {
+        "Bool": false
+      }
+    },
+    "recognized_clara": {
+      "ty": "Bool",
+      "default": {
+        "Bool": false
+      }
+    },
+    "saw_torn_page": {
+      "ty": "Bool",
+      "default": {
+        "Bool": false
       }
     },
     "suspicion": {
       "ty": "Int",
       "default": {
         "Int": 0
+      }
+    },
+    "trust": {
+      "ty": "Int",
+      "default": {
+        "Int": 0
+      }
+    },
+    "verdict": {
+      "ty": {
+        "Enum": [
+          "unwritten",
+          "miracle",
+          "sin",
+          "unknown"
+        ]
+      },
+      "default": {
+        "Enum": "unwritten"
       }
     }
   },
@@ -37,9 +92,11 @@
       ]
     },
     "clara": {
-      "name": "Clara",
+      "name": "Sister Clara",
       "images": [
-        "neutral"
+        "neutral",
+        "guarded",
+        "unveiled"
       ]
     },
     "francis": {
@@ -48,8 +105,15 @@
         "neutral"
       ]
     },
+    "gabriel": {
+      "name": "Gabriel",
+      "images": [
+        "neutral",
+        "curious"
+      ]
+    },
     "guest": {
-      "name": "Guest",
+      "name": "The Guest",
       "images": [
         "neutral"
       ]
@@ -76,13 +140,24 @@
     "mary": {
       "name": "Mary",
       "images": [
-        "tired"
+        "tired",
+        "afraid",
+        "resolved"
       ]
     },
     "moriarty": {
       "name": "Moriarty",
       "images": [
-        "neutral"
+        "neutral",
+        "older",
+        "wary"
+      ]
+    },
+    "registrar": {
+      "name": "The Registrar",
+      "images": [
+        "neutral",
+        "stern"
       ]
     },
     "shadow": {
@@ -113,6 +188,20 @@
       "optional": [
         "UInt"
       ],
+      "rest": null
+    },
+    "note": {
+      "required": [
+        "Word"
+      ],
+      "optional": [],
+      "rest": null
+    },
+    "unlock": {
+      "required": [
+        "Word"
+      ],
+      "optional": [],
       "rest": null
     }
   }

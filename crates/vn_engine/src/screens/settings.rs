@@ -3,7 +3,7 @@ use std::rc::Rc;
 use raylib::prelude::*;
 
 use crate::screens::Typewriter;
-use crate::ui::{self, Background, ButtonStyle, TextStyle};
+use crate::ui::{self, Background, ButtonStyle, SliderStyle, TextStyle};
 use crate::{
     DrawContext, FontRole, GameContext, Overlay, OverlayAction, Screen, ScreenState, Settings,
 };
@@ -12,12 +12,28 @@ pub const SETTINGS_OVERLAY: &str = "settings";
 
 const PREVIEW_PAUSE: f64 = 1.5;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SettingsRow {
+    Display,
+    TextSpeed,
+    MusicVolume,
+    SoundVolume,
+}
+
+impl SettingsRow {
+    pub fn is_slider(self) -> bool {
+        self != SettingsRow::Display
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct SettingsConfig {
     pub title: String,
     pub title_text: TextStyle,
     pub label_text: TextStyle,
     pub value_button: ButtonStyle,
+    pub value_text: TextStyle,
+    pub slider: SliderStyle,
     pub row_width: f32,
     pub row_spacing: f32,
     pub display_label: String,
@@ -25,6 +41,15 @@ pub struct SettingsConfig {
     pub fullscreen_label: String,
     pub text_speed_label: String,
     pub text_speeds: Vec<(String, u32)>,
+    pub audio_rows: bool,
+    pub sample_sound: Option<String>,
+    pub music_volume_label: String,
+    pub sound_volume_label: String,
+    pub volume_step: u32,
+    pub display_tooltip: Option<String>,
+    pub text_speed_tooltip: Option<String>,
+    pub music_volume_tooltip: Option<String>,
+    pub sound_volume_tooltip: Option<String>,
     pub sample_text: String,
     pub sample_text_style: TextStyle,
     pub sample_box_color: Color,
@@ -41,8 +66,10 @@ impl Default for SettingsConfig {
             title: "Settings".to_string(),
             title_text: TextStyle::new(FontRole::Title, 44.0, Color::RAYWHITE),
             label_text: TextStyle::new(FontRole::Menu, 24.0, Color::RAYWHITE),
-            value_button: ButtonStyle::default().size(220.0, 46.0).font_size(20.0),
-            row_width: 560.0,
+            value_button: ButtonStyle::default().size(260.0, 46.0).font_size(20.0),
+            value_text: TextStyle::new(FontRole::Menu, 18.0, Color::LIGHTGRAY),
+            slider: SliderStyle::default(),
+            row_width: 600.0,
             row_spacing: 16.0,
             display_label: "Display".to_string(),
             windowed_label: "Windowed".to_string(),
@@ -54,6 +81,19 @@ impl Default for SettingsConfig {
                 ("Fast".to_string(), 80),
                 ("Instant".to_string(), 0),
             ],
+            audio_rows: true,
+            sample_sound: None,
+            music_volume_label: "Music volume".to_string(),
+            sound_volume_label: "Sound volume".to_string(),
+            volume_step: 5,
+            display_tooltip: Some("Play in a window, or fill the whole screen".to_string()),
+            text_speed_tooltip: Some(
+                "How fast lines appear. Clicking while a line types shows all of it".to_string(),
+            ),
+            music_volume_tooltip: Some(
+                "Background music. Drag, or hover and press ←/→".to_string(),
+            ),
+            sound_volume_tooltip: Some("Sound effects. Drag, or hover and press ←/→".to_string()),
             sample_text: "This is how fast the story's text appears.".to_string(),
             sample_text_style: TextStyle::new(FontRole::Dialogue, 22.0, Color::RAYWHITE),
             sample_box_color: Color::new(0, 0, 0, 170),
@@ -87,6 +127,16 @@ impl SettingsConfig {
         self
     }
 
+    pub fn value_text(mut self, style: TextStyle) -> Self {
+        self.value_text = style;
+        self
+    }
+
+    pub fn slider(mut self, style: impl FnOnce(SliderStyle) -> SliderStyle) -> Self {
+        self.slider = style(self.slider);
+        self
+    }
+
     pub fn row_width(mut self, width: f32) -> Self {
         self.row_width = width;
         self
@@ -105,6 +155,32 @@ impl SettingsConfig {
             .into_iter()
             .map(|(label, speed)| (label.into(), speed))
             .collect();
+        self
+    }
+
+    pub fn audio_rows(mut self, show: bool) -> Self {
+        self.audio_rows = show;
+        self
+    }
+
+    pub fn sample_sound(mut self, id: impl Into<String>) -> Self {
+        self.sample_sound = Some(id.into());
+        self
+    }
+
+    pub fn volume_step(mut self, percent: u32) -> Self {
+        self.volume_step = percent.clamp(1, 100);
+        self
+    }
+
+    pub fn tooltip(mut self, row: SettingsRow, text: Option<&str>) -> Self {
+        let text = text.map(str::to_string);
+        match row {
+            SettingsRow::Display => self.display_tooltip = text,
+            SettingsRow::TextSpeed => self.text_speed_tooltip = text,
+            SettingsRow::MusicVolume => self.music_volume_tooltip = text,
+            SettingsRow::SoundVolume => self.sound_volume_tooltip = text,
+        }
         self
     }
 
@@ -162,25 +238,129 @@ impl SettingsConfig {
             .map_or(speed, |(_, s)| *s)
     }
 
-    fn rows(&self, settings: &Settings) -> [(&str, String); 2] {
-        let display = if settings.fullscreen {
-            &self.fullscreen_label
-        } else {
-            &self.windowed_label
-        };
-        [
-            (self.display_label.as_str(), display.clone()),
-            (
-                self.text_speed_label.as_str(),
-                self.text_speed_name(settings.text_speed),
-            ),
-        ]
+    pub fn text_speed_fraction(&self, speed: u32) -> f32 {
+        let count = self.text_speeds.len();
+        match self.text_speeds.iter().position(|(_, s)| *s == speed) {
+            Some(index) if count > 1 => index as f32 / (count - 1) as f32,
+            _ => 0.0,
+        }
     }
 
-    fn value_rects(&self, screen: Vector2) -> Vec<Rectangle> {
+    pub fn text_speed_at(&self, fraction: f32) -> Option<u32> {
+        let index = ui::slider_step(fraction, self.text_speeds.len());
+        self.text_speeds.get(index).map(|(_, speed)| *speed)
+    }
+
+    pub fn volume_at(&self, fraction: f32) -> u32 {
+        let step = self.volume_step.max(1) as f32;
+        let percent = (fraction.clamp(0.0, 1.0) * 100.0 / step).round() * step;
+        (percent as u32).min(100)
+    }
+
+    pub fn volume_name(volume: u32) -> String {
+        match volume {
+            0 => "Off".to_string(),
+            v => format!("{}%", v.min(100)),
+        }
+    }
+
+    pub fn rows(&self) -> Vec<SettingsRow> {
+        let mut rows = vec![SettingsRow::Display, SettingsRow::TextSpeed];
+        if self.audio_rows {
+            rows.extend([SettingsRow::MusicVolume, SettingsRow::SoundVolume]);
+        }
+        rows
+    }
+
+    pub fn fraction(&self, row: SettingsRow, settings: &Settings) -> f32 {
+        match row {
+            SettingsRow::Display => f32::from(u8::from(settings.fullscreen)),
+            SettingsRow::TextSpeed => self.text_speed_fraction(settings.text_speed),
+            SettingsRow::MusicVolume => settings.music_gain(),
+            SettingsRow::SoundVolume => settings.sound_gain(),
+        }
+    }
+
+    pub fn set_fraction(&self, row: SettingsRow, settings: &mut Settings, fraction: f32) {
+        match row {
+            SettingsRow::Display => settings.fullscreen = fraction >= 0.5,
+            SettingsRow::TextSpeed => {
+                if let Some(speed) = self.text_speed_at(fraction) {
+                    settings.text_speed = speed;
+                }
+            }
+            SettingsRow::MusicVolume => settings.music_volume = self.volume_at(fraction),
+            SettingsRow::SoundVolume => settings.sound_volume = self.volume_at(fraction),
+        }
+    }
+
+    pub fn step(&self, row: SettingsRow, settings: &mut Settings, delta: i32) {
+        match row {
+            SettingsRow::Display => settings.fullscreen = !settings.fullscreen,
+            SettingsRow::TextSpeed => {
+                let count = self.text_speeds.len() as i32;
+                let current = self
+                    .text_speeds
+                    .iter()
+                    .position(|(_, s)| *s == settings.text_speed)
+                    .map_or(0, |i| i as i32);
+                let index = (current + delta).clamp(0, (count - 1).max(0));
+                if let Some((_, speed)) = self.text_speeds.get(index as usize) {
+                    settings.text_speed = *speed;
+                }
+            }
+            SettingsRow::MusicVolume | SettingsRow::SoundVolume => {
+                let volume = if row == SettingsRow::MusicVolume {
+                    &mut settings.music_volume
+                } else {
+                    &mut settings.sound_volume
+                };
+                let step = self.volume_step.max(1) as i32;
+                let snapped = (*volume as i32 + step / 2) / step * step;
+                *volume = (snapped + delta * step).clamp(0, 100) as u32;
+            }
+        }
+    }
+
+    pub fn value_name(&self, row: SettingsRow, settings: &Settings) -> String {
+        match row {
+            SettingsRow::Display if settings.fullscreen => self.fullscreen_label.clone(),
+            SettingsRow::Display => self.windowed_label.clone(),
+            SettingsRow::TextSpeed => self.text_speed_name(settings.text_speed),
+            SettingsRow::MusicVolume => Self::volume_name(settings.music_volume),
+            SettingsRow::SoundVolume => Self::volume_name(settings.sound_volume),
+        }
+    }
+
+    fn label(&self, row: SettingsRow) -> &str {
+        match row {
+            SettingsRow::Display => &self.display_label,
+            SettingsRow::TextSpeed => &self.text_speed_label,
+            SettingsRow::MusicVolume => &self.music_volume_label,
+            SettingsRow::SoundVolume => &self.sound_volume_label,
+        }
+    }
+
+    fn row_tooltip(&self, row: SettingsRow) -> Option<&str> {
+        match row {
+            SettingsRow::Display => self.display_tooltip.as_deref(),
+            SettingsRow::TextSpeed => self.text_speed_tooltip.as_deref(),
+            SettingsRow::MusicVolume => self.music_volume_tooltip.as_deref(),
+            SettingsRow::SoundVolume => self.sound_volume_tooltip.as_deref(),
+        }
+    }
+
+    fn steps(&self, row: SettingsRow) -> Option<usize> {
+        match row {
+            SettingsRow::TextSpeed => Some(self.text_speeds.len()),
+            _ => None,
+        }
+    }
+
+    pub fn control_rects(&self, screen: Vector2) -> Vec<Rectangle> {
         let button = &self.value_button;
         let right = (screen.x + self.row_width) / 2.0;
-        (0..2)
+        (0..self.rows().len())
             .map(|i| {
                 Rectangle::new(
                     right - button.width,
@@ -192,8 +372,28 @@ impl SettingsConfig {
             .collect()
     }
 
+    pub fn slider_area(&self, control: Rectangle) -> Rectangle {
+        let value_width = self.value_text.size * 4.0;
+        let inset = self.slider.knob_radius;
+        Rectangle::new(
+            control.x + inset,
+            control.y,
+            (control.width - value_width - inset * 2.0).max(0.0),
+            control.height,
+        )
+    }
+
+    fn row_rect(&self, control: Rectangle, screen: Vector2) -> Rectangle {
+        Rectangle::new(
+            (screen.x - self.row_width) / 2.0,
+            control.y,
+            self.row_width,
+            control.height,
+        )
+    }
+
     fn sample_rect(&self, screen: Vector2) -> Rectangle {
-        let rows = self.value_rects(screen);
+        let rows = self.control_rects(screen);
         let top = rows.last().map_or(150.0, |r| r.y + r.height) + 40.0;
         Rectangle::new(
             (screen.x - self.row_width) / 2.0,
@@ -223,6 +423,7 @@ struct SettingsMenu {
     config: Rc<SettingsConfig>,
     preview: Option<(Typewriter, u32)>,
     visible: usize,
+    dragging: Option<SettingsRow>,
 }
 
 impl SettingsMenu {
@@ -231,6 +432,7 @@ impl SettingsMenu {
             config,
             preview: None,
             visible: 0,
+            dragging: None,
         }
     }
 
@@ -239,17 +441,76 @@ impl SettingsMenu {
         let screen = ui::screen_size(ctx.rl);
 
         let back_key = config.back_keys.iter().any(|&k| ctx.rl.is_key_pressed(k));
-        if back_key || ui::is_clicked(ctx.rl, config.back_rect(screen)) {
+        if ui::button_clicked(ctx, config.back_rect(screen), &config.back_button) || back_key {
             return Outcome::Back;
         }
 
-        let rects = config.value_rects(screen);
-        if ui::is_clicked(ctx.rl, rects[0]) {
-            ctx.settings.update(|s| s.fullscreen = !s.fullscreen);
+        let rows = config.rows();
+        let controls = config.control_rects(screen);
+        let mouse = ctx.rl.get_mouse_position();
+        let pressed = ctx
+            .rl
+            .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
+        let held = ctx.rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT);
+        let mut sample = false;
+
+        for (&row, &control) in rows.iter().zip(&controls) {
+            let row_rect = config.row_rect(control, screen);
+            if let Some(text) = config.row_tooltip(row)
+                && self.dragging.is_none()
+            {
+                ctx.tooltip(row_rect, text);
+            }
+
+            if !row.is_slider() {
+                if ui::button_clicked(ctx, control, &config.value_button) {
+                    ctx.settings.update(|s| s.fullscreen = !s.fullscreen);
+                }
+                continue;
+            }
+
+            let area = config.slider_area(control);
+            let grab = Rectangle::new(
+                area.x - config.slider.knob_radius,
+                area.y,
+                area.width + config.slider.knob_radius * 2.0,
+                area.height,
+            );
+            if pressed && grab.check_collision_point_rec(mouse) {
+                self.dragging = Some(row);
+            }
+
+            if ui::is_hovered(ctx.rl, row_rect) {
+                let delta = match () {
+                    _ if ctx.rl.is_key_pressed(KeyboardKey::KEY_LEFT) => -1,
+                    _ if ctx.rl.is_key_pressed(KeyboardKey::KEY_RIGHT) => 1,
+                    _ => 0,
+                };
+                if delta != 0 {
+                    ctx.settings.update(|s| config.step(row, s, delta));
+                    sample |= row == SettingsRow::SoundVolume;
+                }
+            }
         }
-        if ui::is_clicked(ctx.rl, rects[1]) {
-            ctx.settings
-                .update(|s| s.text_speed = config.next_text_speed(s.text_speed));
+
+        if let Some(row) = self.dragging {
+            let index = rows.iter().position(|&r| r == row);
+            if let Some(control) = index.map(|i| controls[i]) {
+                let fraction = ui::slider_fraction(config.slider_area(control), mouse.x);
+                ctx.settings
+                    .update(|s| config.set_fraction(row, s, fraction));
+            }
+            if !held {
+                self.dragging = None;
+                sample |= row == SettingsRow::SoundVolume;
+            }
+        }
+
+        if sample && let Some(id) = &config.sample_sound {
+            let values = &ctx.settings.values;
+            ctx.audio
+                .set_volumes(values.music_gain(), values.sound_gain());
+            ctx.play_sound(id);
         }
 
         self.animate_preview(ctx.rl.get_time(), ctx.settings.values.text_speed);
@@ -287,20 +548,37 @@ impl SettingsMenu {
         );
 
         let left = (screen.x - config.row_width) / 2.0;
-        for ((label, value), rect) in config
-            .rows(ctx.settings)
-            .iter()
-            .zip(config.value_rects(screen))
-        {
-            let label_y = rect.y + (rect.height - config.label_text.size) / 2.0;
+        for (row, control) in config.rows().into_iter().zip(config.control_rects(screen)) {
+            let label_y = control.y + (control.height - config.label_text.size) / 2.0;
             ui::draw_text(
                 d,
                 fonts,
-                label,
+                config.label(row),
                 Vector2::new(left, label_y),
                 &config.label_text,
             );
-            ui::draw_button(d, fonts, rect, value, &config.value_button);
+
+            let value = config.value_name(row, ctx.settings);
+            if !row.is_slider() {
+                ui::draw_button(d, ctx, control, &value, &config.value_button);
+                continue;
+            }
+
+            let area = config.slider_area(control);
+            ui::draw_slider(
+                d,
+                area,
+                config.fraction(row, ctx.settings),
+                config.steps(row),
+                self.dragging == Some(row) || ctx.pointer_over(d, area),
+                &config.slider,
+            );
+
+            let style = &config.value_text;
+            let width = fonts.measure(style.font, &value, style.size).x;
+            let value_x = control.x + control.width - width;
+            let value_y = control.y + (control.height - style.size) / 2.0;
+            ui::draw_text(d, fonts, &value, Vector2::new(value_x, value_y), style);
         }
 
         let sample = config.sample_rect(screen);
@@ -317,7 +595,7 @@ impl SettingsMenu {
 
         ui::draw_button(
             d,
-            fonts,
+            ctx,
             config.back_rect(screen),
             &config.back_label,
             &config.back_button,

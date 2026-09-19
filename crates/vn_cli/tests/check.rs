@@ -115,8 +115,14 @@ fn registry_and_syntax_errors_fail_with_their_file() {
     assert!(!ok);
     assert_eq!(lines.len(), 4, "{:?}", lines);
     assert_eq!(file_name(&lines[0]), "01.story");
-    assert!(lines[0].ends_with(":2: error: unknown variable 'affecton'"));
-    assert!(lines[1].ends_with("02.story:2: error: speaker: unknown character 'marry'"));
+    assert!(
+        lines[0].ends_with(":2: error: unknown variable 'affecton'; did you mean 'affection'?")
+    );
+    assert!(
+        lines[1].ends_with(
+            "02.story:2: error: speaker: unknown character 'marry'; did you mean 'mary'?"
+        )
+    );
     assert!(
         lines[2].ends_with("02.story:3: error: `show mary` needs an image: `show mary <image>`")
     );

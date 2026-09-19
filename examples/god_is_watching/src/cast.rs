@@ -1,70 +1,77 @@
 use vn_engine::raylib::prelude::Color;
 use vn_engine::{Character, VariableDef, VnApp};
 
+fn person(name: &str, color: (u8, u8, u8), images: &[&str]) -> Character {
+    Character::new(name)
+        .color(Color::new(color.0, color.1, color.2, 255))
+        .images(images.iter().copied())
+}
+
 pub fn register(app: VnApp) -> VnApp {
     app.character(
+        "registrar",
+        person("The Registrar", (170, 182, 205), &["neutral", "stern"]),
+    )
+    .character(
         "mary",
-        Character::new("Mary")
-            .color(Color::new(222, 196, 140, 255))
-            .images(["tired"]),
+        person("Mary", (226, 200, 150), &["tired", "afraid", "resolved"]),
     )
     .character(
         "hugo",
-        Character::new("Hugo Von Lucis")
-            .color(Color::new(170, 190, 220, 255))
-            .images(["neutral", "tired"]),
+        person("Hugo Von Lucis", (170, 190, 220), &["neutral", "tired"]),
     )
     .character(
         "adelaide",
-        Character::new("Adelaide")
-            .color(Color::new(200, 170, 200, 255))
-            .images(["neutral", "afraid"]),
+        person("Adelaide", (205, 175, 205), &["neutral", "afraid"]),
     )
     .character(
         "clara",
-        Character::new("Clara")
-            .color(Color::new(190, 215, 180, 255))
-            .images(["neutral"]),
+        person(
+            "Sister Clara",
+            (180, 210, 170),
+            &["neutral", "guarded", "unveiled"],
+        ),
     )
-    .character(
-        "francis",
-        Character::new("Francis")
-            .color(Color::new(210, 180, 150, 255))
-            .images(["neutral"]),
-    )
+    .character("francis", person("Francis", (215, 180, 150), &["neutral"]))
     .character(
         "moriarty",
-        Character::new("Moriarty")
-            .color(Color::new(200, 120, 110, 255))
-            .images(["neutral"]),
+        person("Moriarty", (215, 135, 120), &["neutral", "older", "wary"]),
     )
     .character(
         "house_envoy",
-        Character::new("Envoy of the House")
-            .color(Color::new(180, 180, 180, 255))
-            .images(["neutral"]),
+        person("Envoy of the House", (185, 185, 190), &["neutral"]),
     )
     .character(
         "man_in_black",
-        Character::new("The Man in Black")
-            .color(Color::new(150, 150, 160, 255))
-            .images(["neutral"]),
+        person("The Man in Black", (150, 150, 165), &["neutral"]),
     )
-    .character(
-        "shadow",
-        Character::new("Shadow")
-            .color(Color::new(130, 120, 150, 255))
-            .images(["neutral"]),
-    )
+    .character("shadow", person("Shadow", (160, 148, 200), &["neutral"]))
     .character(
         "shadow_third",
-        Character::new("The Third Shadow")
-            .color(Color::new(130, 120, 150, 255))
-            .images(["neutral"]),
+        person("The Third Shadow", (160, 148, 200), &["neutral"]),
     )
-    .character("guest", Character::new("Guest").images(["neutral"]))
-    .variable("curiosity", VariableDef::int(0))
-    .variable("obedience", VariableDef::int(0))
+    .character("guest", person("The Guest", (160, 160, 160), &["neutral"]))
+    .character(
+        "gabriel",
+        person("Gabriel", (240, 210, 160), &["neutral", "curious"]),
+    )
+    .variable("player_name", VariableDef::string("Archivist"))
+    .variable(
+        "approach",
+        VariableDef::enumeration(["careful", "bold"], "careful"),
+    )
+    .variable(
+        "verdict",
+        VariableDef::enumeration(["unwritten", "miracle", "sin", "unknown"], "unwritten"),
+    )
+    .variable("trust", VariableDef::int(0))
     .variable("suspicion", VariableDef::int(0))
-    .variable("player_name", VariableDef::string("Reader"))
+    .variable("read_letter", VariableDef::bool(false))
+    .variable("saw_torn_page", VariableDef::bool(false))
+    .variable("believed_moriarty", VariableDef::bool(false))
+    .variable("recognized_clara", VariableDef::bool(false))
+    .variable(
+        "ending",
+        VariableDef::enumeration(["none", "report", "silence", "keeper"], "none"),
+    )
 }

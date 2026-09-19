@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::saves::{QUICK_SLOT, SaveError, SlotInfo, now, time_ago};
+use crate::saves::{AUTO_SLOT, QUICK_SLOT, SaveError, SlotInfo, now, time_ago};
 use crate::screens::Confirm;
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
@@ -36,6 +37,14 @@ pub struct SaveMenuConfig {
     pub back_keys: Vec<KeyboardKey>,
     pub confirm_overwrite: bool,
     pub confirm_load_in_game: bool,
+    pub thumbnails: bool,
+    pub thumbnail_color: Color,
+    pub allow_delete: bool,
+    pub confirm_delete: bool,
+    pub delete_button: ButtonStyle,
+    pub delete_label: String,
+    pub delete_tooltip: Option<String>,
+    pub delete_keys: Vec<KeyboardKey>,
     pub background: Option<Background>,
     pub backdrop: Color,
 }
@@ -61,6 +70,17 @@ impl Default for SaveMenuConfig {
             back_keys: vec![KeyboardKey::KEY_ESCAPE, KeyboardKey::KEY_BACKSPACE],
             confirm_overwrite: true,
             confirm_load_in_game: true,
+            thumbnails: true,
+            thumbnail_color: Color::new(10, 10, 16, 255),
+            allow_delete: true,
+            confirm_delete: true,
+            delete_button: ButtonStyle::default()
+                .size(76.0, 26.0)
+                .color(Color::new(90, 40, 40, 230))
+                .font_size(15.0),
+            delete_label: "Delete".to_string(),
+            delete_tooltip: Some("Delete this save for good (Delete key)".to_string()),
+            delete_keys: vec![KeyboardKey::KEY_DELETE],
             background: None,
             backdrop: Color::new(8, 8, 14, 235),
         }
@@ -155,9 +175,72 @@ impl SaveMenuConfig {
         self
     }
 
+    pub fn thumbnails(mut self, show: bool) -> Self {
+        self.thumbnails = show;
+        self
+    }
+
+    pub fn thumbnail_color(mut self, color: Color) -> Self {
+        self.thumbnail_color = color;
+        self
+    }
+
+    pub fn allow_delete(mut self, allow: bool) -> Self {
+        self.allow_delete = allow;
+        self
+    }
+
+    pub fn confirm_delete(mut self, confirm: bool) -> Self {
+        self.confirm_delete = confirm;
+        self
+    }
+
+    pub fn delete_button(mut self, style: impl FnOnce(ButtonStyle) -> ButtonStyle) -> Self {
+        self.delete_button = style(self.delete_button);
+        self
+    }
+
+    pub fn delete_label(mut self, text: impl Into<String>) -> Self {
+        self.delete_label = text.into();
+        self
+    }
+
+    pub fn delete_tooltip(mut self, text: Option<&str>) -> Self {
+        self.delete_tooltip = text.map(str::to_string);
+        self
+    }
+
+    pub fn delete_keys(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.delete_keys = keys.into_iter().collect();
+        self
+    }
+
     pub fn backdrop(mut self, color: Color) -> Self {
         self.backdrop = color;
         self
+    }
+
+    fn thumbnail_rect(&self, slot: Rectangle) -> Option<Rectangle> {
+        if !self.thumbnails {
+            return None;
+        }
+        let height = slot.height - 12.0;
+        Some(Rectangle::new(
+            slot.x + 6.0,
+            slot.y + 6.0,
+            height * 16.0 / 9.0,
+            height,
+        ))
+    }
+
+    fn delete_rect(&self, slot: Rectangle) -> Rectangle {
+        let style = &self.delete_button;
+        Rectangle::new(
+            slot.x + slot.width - style.width - 8.0,
+            slot.y + 8.0,
+            style.width,
+            style.height,
+        )
     }
 
     pub fn background(mut self, background: Background) -> Self {
@@ -177,6 +260,7 @@ struct SaveMenu {
     mode: SaveMenuMode,
     in_game: bool,
     slots: Option<Vec<SlotInfo>>,
+    thumbnails: HashMap<String, Texture2D>,
     seen_generation: u64,
 }
 
@@ -187,6 +271,7 @@ impl SaveMenu {
             mode,
             in_game,
             slots: None,
+            thumbnails: HashMap::new(),
             seen_generation: 0,
         }
     }
@@ -194,22 +279,68 @@ impl SaveMenu {
     fn slot_ids(&self, ctx: &GameContext) -> Vec<String> {
         let mut ids: Vec<String> = (1..=self.config.slots).map(|n| n.to_string()).collect();
 
-        let quick_exists = ctx.saves.path(QUICK_SLOT).is_ok_and(|path| path.exists());
-        if self.mode == SaveMenuMode::Load && quick_exists {
-            ids.insert(0, QUICK_SLOT.to_string());
+        if self.mode == SaveMenuMode::Load {
+            let exists = |slot| ctx.saves.path(slot).is_ok_and(|path| path.exists());
+            for slot in [QUICK_SLOT, AUTO_SLOT] {
+                if exists(slot) {
+                    ids.insert(0, slot.to_string());
+                }
+            }
         }
 
         ids
     }
 
-    fn refresh(&mut self, ctx: &GameContext) {
-        let slots = self
+    fn refresh(&mut self, ctx: &mut GameContext) {
+        let slots: Vec<SlotInfo> = self
             .slot_ids(ctx)
             .iter()
             .map(|id| ctx.saves.slot(id))
             .collect();
+
+        self.thumbnails.clear();
+        if self.config.thumbnails {
+            for info in slots.iter().filter(|info| info.save.is_ok()) {
+                let Ok(path) = ctx.saves.thumbnail_path(&info.slot) else {
+                    continue;
+                };
+                if path.exists()
+                    && let Ok(texture) = ctx.rl.load_texture(ctx.thread, &path.to_string_lossy())
+                {
+                    texture.set_texture_filter(ctx.thread, TextureFilter::TEXTURE_FILTER_BILINEAR);
+                    self.thumbnails.insert(info.slot.clone(), texture);
+                }
+            }
+        }
+
         self.slots = Some(slots);
         self.seen_generation = ctx.saves.generation();
+    }
+
+    fn delete(&self, ctx: &mut GameContext, index: usize) {
+        let Some(info) = self.slots.as_ref().and_then(|slots| slots.get(index)) else {
+            return;
+        };
+        if info.is_empty() {
+            return;
+        }
+
+        let slot = info.slot.clone();
+        let label = slot_label(&slot);
+        if self.config.confirm_delete {
+            ctx.confirm(
+                Confirm::new(
+                    format!("Delete {}? This can't be undone.", label),
+                    Action::custom(move |ctx| {
+                        delete_slot(ctx, &slot);
+                        None
+                    }),
+                )
+                .confirm_label("Delete"),
+            );
+        } else {
+            delete_slot(ctx, &slot);
+        }
     }
 
     fn slot_rects(&self, screen: Vector2) -> Vec<Rectangle> {
@@ -319,15 +450,32 @@ fn load_from(ctx: &mut GameContext, slot: &str) -> bool {
     }
 }
 
+fn delete_slot(ctx: &mut GameContext, slot: &str) {
+    match ctx.saves.delete(slot) {
+        Ok(()) => ctx.notify(format!("Deleted {}", slot_label(slot))),
+        Err(e) => {
+            eprintln!("⚠️ Delete failed ({}): {}", slot, e);
+            ctx.notify_error(format!("Delete failed: {}", e.player_message()));
+        }
+    }
+}
+
 fn slot_label(slot: &str) -> String {
-    if slot == QUICK_SLOT {
-        "Quick save".to_string()
-    } else {
-        format!("Slot {}", slot)
+    match slot {
+        QUICK_SLOT => "Quick save".to_string(),
+        AUTO_SLOT => "Autosave".to_string(),
+        _ => format!("Slot {}", slot),
     }
 }
 
 impl SaveMenu {
+    fn occupied(&self, index: usize) -> bool {
+        self.slots
+            .as_ref()
+            .and_then(|slots| slots.get(index))
+            .is_some_and(|info| !info.is_empty())
+    }
+
     fn update(&mut self, ctx: &mut GameContext) -> Outcome {
         if self.slots.is_none() || self.seen_generation != ctx.saves.generation() {
             self.refresh(ctx);
@@ -339,15 +487,35 @@ impl SaveMenu {
             .back_keys
             .iter()
             .any(|&key| ctx.rl.is_key_pressed(key));
-        if back_key || ui::is_clicked(ctx.rl, self.back_rect(screen)) {
+        let config = Rc::clone(&self.config);
+        let back_clicked = ui::button_clicked(ctx, self.back_rect(screen), &config.back_button);
+        if back_key || back_clicked {
             return Outcome::Back;
         }
 
-        match self
-            .slot_rects(screen)
-            .iter()
-            .position(|rect| ui::is_clicked(ctx.rl, *rect))
+        let rects = self.slot_rects(screen);
+        let hovered = rects.iter().position(|rect| ui::is_hovered(ctx.rl, *rect));
+
+        if self.config.allow_delete
+            && let Some(index) = hovered
+            && self.occupied(index)
         {
+            let delete = self.config.delete_rect(rects[index]);
+            if let Some(text) = &self.config.delete_tooltip {
+                ctx.tooltip(delete, text.clone());
+            }
+            let key = self
+                .config
+                .delete_keys
+                .iter()
+                .any(|&key| ctx.rl.is_key_pressed(key));
+            if ui::button_clicked(ctx, delete, &config.delete_button) || key {
+                self.delete(ctx, index);
+                return Outcome::Stay;
+            }
+        }
+
+        match rects.iter().position(|rect| ui::is_clicked(ctx.rl, *rect)) {
             Some(index) => self.pick(ctx, index),
             None => Outcome::Stay,
         }
@@ -372,8 +540,8 @@ impl SaveMenu {
         );
 
         let slots = self.slots.as_deref().unwrap_or_default();
-        for (info, rect) in slots.iter().zip(self.slot_rects(screen)) {
-            let hovered = ui::is_hovered(d, rect);
+        for (index, (info, rect)) in slots.iter().zip(self.slot_rects(screen)).enumerate() {
+            let hovered = ctx.pointer_over(d, rect);
             let color = if hovered {
                 config.slot_hover_color
             } else {
@@ -381,7 +549,23 @@ impl SaveMenu {
             };
             d.draw_rectangle_rec(rect, color);
 
-            let x = rect.x + 18.0;
+            let mut x = rect.x + 18.0;
+            if let Some(frame) = config.thumbnail_rect(rect) {
+                d.draw_rectangle_rec(frame, config.thumbnail_color);
+                if let Some(texture) = self.thumbnails.get(&info.slot) {
+                    ui::draw_texture_cover(d, texture, frame);
+                }
+                x = frame.x + frame.width + 14.0;
+            }
+
+            let deletable = config.allow_delete && hovered && self.occupied(index);
+            let delete = config.delete_rect(rect);
+            let right = if deletable {
+                delete.x - 10.0
+            } else {
+                rect.x + rect.width - 12.0
+            };
+
             let (heading, detail, detail_style) = match &info.save {
                 Ok(file) => (
                     format!(
@@ -404,6 +588,14 @@ impl SaveMenu {
                 ),
             };
 
+            let width = (right - x).max(0.0);
+            let heading = ui::fit_text(fonts, &config.slot_title_text, &heading, width);
+            let lines = fonts.wrap(detail_style.font, &detail, detail_style.size, width);
+            let title_bottom = rect.y + 12.0 + config.slot_title_text.size;
+            let line_height = detail_style.size * 1.25;
+            let room =
+                (((rect.y + rect.height - 6.0 - title_bottom) / line_height) as usize).max(1);
+
             ui::draw_text(
                 d,
                 fonts,
@@ -411,18 +603,29 @@ impl SaveMenu {
                 Vector2::new(x, rect.y + 10.0),
                 &config.slot_title_text,
             );
-            ui::draw_text(
-                d,
-                fonts,
-                &detail,
-                Vector2::new(x, rect.y + 12.0 + config.slot_title_text.size),
-                detail_style,
-            );
+            for (i, line) in lines.iter().take(room).enumerate() {
+                let line = if i + 1 == room && lines.len() > room {
+                    ui::fit_text(fonts, detail_style, &format!("{}…", line), width)
+                } else {
+                    line.clone()
+                };
+                ui::draw_text(
+                    d,
+                    fonts,
+                    &line,
+                    Vector2::new(x, title_bottom + i as f32 * line_height),
+                    detail_style,
+                );
+            }
+
+            if deletable {
+                ui::draw_button(d, ctx, delete, &config.delete_label, &config.delete_button);
+            }
         }
 
         ui::draw_button(
             d,
-            fonts,
+            ctx,
             self.back_rect(screen),
             &config.back_label,
             &config.back_button,

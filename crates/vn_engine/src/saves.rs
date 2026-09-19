@@ -5,14 +5,17 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use raylib::texture::Image;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use vn_script::{Event, RestoreOutcome, StorySnapshot, StoryVm, VmError};
 
-use crate::{Checkpoint, GameState, StateError};
+use crate::{Checkpoint, GameState, Rollback, StateError};
 
 pub const SAVE_FORMAT_VERSION: u32 = 1;
 pub const QUICK_SLOT: &str = "quick";
+pub const AUTO_SLOT: &str = "auto";
+pub const THUMBNAIL_WIDTH: i32 = 320;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SaveFile {
@@ -158,7 +161,9 @@ impl SlotInfo {
 pub struct Saves {
     dir: PathBuf,
     game: String,
+    autosave: bool,
     generation: std::cell::Cell<u64>,
+    any_cache: std::cell::Cell<Option<(u64, bool)>>,
 }
 
 impl Saves {
@@ -166,8 +171,19 @@ impl Saves {
         Self {
             dir: dir.into(),
             game: game.into(),
+            autosave: false,
             generation: std::cell::Cell::new(0),
+            any_cache: std::cell::Cell::new(None),
         }
+    }
+
+    pub fn with_autosave(mut self, enabled: bool) -> Self {
+        self.autosave = enabled;
+        self
+    }
+
+    pub fn autosaves(&self) -> bool {
+        self.autosave
     }
 
     pub fn generation(&self) -> u64 {
@@ -193,6 +209,33 @@ impl Saves {
         }
 
         Ok(self.dir.join(format!("{}.json", slot)))
+    }
+
+    pub fn thumbnail_path(&self, slot: &str) -> Result<PathBuf, SaveError> {
+        Ok(self.path(slot)?.with_extension("png"))
+    }
+
+    pub fn write_thumbnail(&self, slot: &str, image: Option<&Image>) -> Result<(), SaveError> {
+        let path = self.thumbnail_path(slot)?;
+        let Some(image) = image else {
+            return remove_if_present(&path);
+        };
+
+        let mut thumbnail = image.clone();
+        let height = THUMBNAIL_WIDTH * image.height().max(1) / image.width().max(1);
+        thumbnail.resize(THUMBNAIL_WIDTH, height.max(1));
+
+        let temp = path.with_extension("tmp.png");
+        thumbnail.export_image(&temp.to_string_lossy());
+        if !temp.exists() {
+            return Err(SaveError::Io {
+                path: temp,
+                source: io::Error::other("the image could not be written"),
+            });
+        }
+        fs::rename(&temp, &path).map_err(|source| SaveError::Io { path, source })?;
+        self.bump();
+        Ok(())
     }
 
     pub fn capture(&self, story: &StoryVm, state: &GameState) -> Result<SaveFile, SaveError> {
@@ -282,15 +325,10 @@ impl Saves {
     }
 
     pub fn delete(&self, slot: &str) -> Result<(), SaveError> {
-        let path = self.path(slot)?;
-        match fs::remove_file(&path) {
-            Ok(()) => {
-                self.bump();
-                Ok(())
-            }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
-            Err(source) => Err(SaveError::Io { path, source }),
-        }
+        remove_if_present(&self.path(slot)?)?;
+        remove_if_present(&self.thumbnail_path(slot)?)?;
+        self.bump();
+        Ok(())
     }
 
     pub fn slot(&self, slot: &str) -> SlotInfo {
@@ -298,6 +336,18 @@ impl Saves {
             slot: slot.to_string(),
             save: self.read(slot),
         }
+    }
+
+    pub fn has_any(&self) -> bool {
+        let generation = self.generation();
+        if let Some((seen, any)) = self.any_cache.get()
+            && seen == generation
+        {
+            return any;
+        }
+        let any = self.latest().is_some();
+        self.any_cache.set(Some((generation, any)));
+        any
     }
 
     pub fn latest(&self) -> Option<(String, SaveFile)> {
@@ -314,6 +364,89 @@ impl Saves {
                 Some((slot, file))
             })
             .max_by_key(|(_, file)| file.saved_at)
+    }
+}
+
+pub(crate) fn save_game(
+    saves: &Saves,
+    slot: &str,
+    story: &StoryVm,
+    state: &GameState,
+    rollback: &Rollback,
+    thumbnail: Option<&Image>,
+) -> Result<(), SaveError> {
+    let mut file = saves.capture(story, state)?;
+    file.rollback = rollback.history();
+    saves.write(slot, &file)?;
+    if let Err(e) = saves.write_thumbnail(slot, thumbnail) {
+        eprintln!("⚠️ Thumbnail for '{}' not saved: {}", slot, e);
+    }
+    Ok(())
+}
+
+pub(crate) fn autosave(
+    saves: &Saves,
+    story: &StoryVm,
+    state: &GameState,
+    rollback: &Rollback,
+    thumbnail: Option<&Image>,
+) {
+    if !saves.autosaves() || matches!(story.current(), None | Some(Event::End)) {
+        return;
+    }
+    if let Err(e) = save_game(saves, AUTO_SLOT, story, state, rollback, thumbnail) {
+        eprintln!("⚠️ Autosave failed: {}", e);
+    }
+}
+
+fn remove_if_present(path: &Path) -> Result<(), SaveError> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(source) => Err(SaveError::Io {
+            path: path.to_path_buf(),
+            source,
+        }),
+    }
+}
+
+pub fn default_saves_dir(game: &str) -> PathBuf {
+    match platform_data_dir() {
+        Some(base) => base.join(slug(game)),
+        None => PathBuf::from("saves"),
+    }
+}
+
+fn platform_data_dir() -> Option<PathBuf> {
+    let env_dir = |name: &str| {
+        std::env::var_os(name)
+            .map(PathBuf::from)
+            .filter(|path| path.is_absolute())
+    };
+
+    if cfg!(windows) {
+        env_dir("APPDATA")
+    } else if cfg!(target_os = "macos") {
+        env_dir("HOME").map(|home| home.join("Library/Application Support"))
+    } else {
+        env_dir("XDG_DATA_HOME").or_else(|| env_dir("HOME").map(|home| home.join(".local/share")))
+    }
+}
+
+pub fn slug(title: &str) -> String {
+    let mut slug = String::new();
+    for c in title.chars() {
+        if c.is_alphanumeric() {
+            slug.extend(c.to_lowercase());
+        } else if !slug.is_empty() && !slug.ends_with('_') {
+            slug.push('_');
+        }
+    }
+    let slug = slug.trim_end_matches('_');
+    if slug.is_empty() {
+        "game".to_string()
+    } else {
+        slug.to_string()
     }
 }
 

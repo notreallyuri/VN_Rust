@@ -1,5 +1,6 @@
 use crate::diagnostics::Diagnostic;
-use crate::lexer::{is_keyword, keyword_name, scan_string};
+use crate::lexer::{is_keyword, keyword_name, keywords, scan_string};
+use crate::suggest::closest;
 use crate::types::parser::{ChoiceOption, Node, Stmt, Token, TokenKind};
 use crate::types::{Position, Value};
 
@@ -356,6 +357,31 @@ fn parse_statement(token: &Token) -> Result<Node, Diagnostic> {
             ))),
         },
 
+        TokenKind::Music => match words(&token.payload)[..] {
+            ["none"] => Ok(Node::Music { track: None }),
+            [track] => Ok(Node::Music {
+                track: Some(identifier(track, "music track", line)?),
+            }),
+            [] => Err(error(
+                "`music` needs a track: `music <track>` or `music none`".into(),
+            )),
+            [_, ref extra @ ..] => Err(error(format!(
+                "`music` takes one track; unexpected `{}`",
+                extra.join(" ")
+            ))),
+        },
+
+        TokenKind::Sound => match words(&token.payload)[..] {
+            [id] => Ok(Node::Sound {
+                id: identifier(id, "sound id", line)?,
+            }),
+            [] => Err(error("`sound` needs a sound: `sound <id>`".into())),
+            [_, ref extra @ ..] => Err(error(format!(
+                "`sound` takes one sound; unexpected `{}`",
+                extra.join(" ")
+            ))),
+        },
+
         TokenKind::Remove => match words(&token.payload)[..] {
             [character] => Ok(Node::Remove {
                 character: character_id(character, line)?,
@@ -427,16 +453,21 @@ fn position_names() -> String {
 pub fn parse_dialogue(payload: &str, line: usize) -> Result<(Option<String>, String), Diagnostic> {
     let error = |message: String| Diagnostic::error(line, message);
 
+    let hint = keyword_hint(payload);
+
     let Some(quote) = payload.find('"') else {
         return Err(error(format!(
-            "expected dialogue (`<character> \"<text>\"`) or a keyword, found `{}`",
-            payload
+            "expected dialogue (`<character> \"<text>\"`) or a keyword, found `{}`{}",
+            payload, hint
         )));
     };
 
     let speaker = match payload[..quote].trim() {
         "" => None,
-        speaker => Some(speaker_id(speaker, line)?),
+        speaker => Some(speaker_id(speaker, line).map_err(|mut d| {
+            d.message.push_str(&hint);
+            d
+        })?),
     };
 
     let (text, used) = scan_string(&payload[quote..]).map_err(error)?;
@@ -449,6 +480,23 @@ pub fn parse_dialogue(payload: &str, line: usize) -> Result<(Option<String>, Str
     }
 
     Ok((speaker, text))
+}
+
+fn keyword_hint(payload: &str) -> String {
+    let before_text = payload.find('"').map_or(payload, |quote| &payload[..quote]);
+    let mut words = before_text.split_whitespace();
+    let Some(first) = words.next() else {
+        return String::new();
+    };
+    if payload.contains('"') && words.next().is_none() {
+        return String::new();
+    }
+
+    let word = first.strip_suffix(':').unwrap_or(first);
+    match closest(word, keywords()) {
+        Some(keyword) => format!("; did you mean `{}`?", keyword),
+        None => String::new(),
+    }
 }
 
 fn speaker_id(speaker: &str, line: usize) -> Result<String, Diagnostic> {

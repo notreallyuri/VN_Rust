@@ -1,12 +1,14 @@
 use std::rc::Rc;
 
+use raylib::math::Rectangle;
+use raylib::texture::Image;
 use raylib::{RaylibHandle, RaylibThread};
 
 use vn_script::StoryVm;
 
 use crate::screens::{CONFIRM_OVERLAY, Confirm};
 use crate::{
-    Characters, Commands, Fonts, GameState, Hooks, LoadReport, LoadWarning, OverlayRequest,
+    Audio, Characters, Commands, Fonts, GameState, Hooks, LoadReport, LoadWarning, OverlayRequest,
     ResourceManager, Rollback, SaveError, Saves, ScreenState, Settings, SettingsStore, TextRequest,
     Toast,
 };
@@ -27,6 +29,10 @@ pub struct GameContext<'a> {
     pub(crate) toast: &'a mut Option<Toast>,
     pub(crate) text_request: &'a mut Option<TextRequest>,
     pub(crate) confirm_request: &'a mut Option<Confirm>,
+    pub(crate) thumbnail: Option<&'a Image>,
+    pub(crate) autosave_request: &'a mut bool,
+    pub(crate) audio: &'a mut Audio,
+    pub(crate) tooltip: &'a mut Option<String>,
 }
 
 impl GameContext<'_> {
@@ -81,9 +87,43 @@ impl GameContext<'_> {
     }
 
     pub fn save(&mut self, slot: &str) -> Result<(), SaveError> {
-        let mut file = self.saves.capture(self.story, self.state)?;
-        file.rollback = self.rollback.history();
-        self.saves.write(slot, &file)
+        crate::saves::save_game(
+            self.saves,
+            slot,
+            self.story,
+            self.state,
+            self.rollback,
+            self.thumbnail,
+        )
+    }
+
+    pub fn view(&self) -> GameView<'_> {
+        GameView {
+            story: self.story,
+            state: self.state,
+            saves: self.saves,
+            settings: &self.settings.values,
+        }
+    }
+
+    pub fn tooltip(&mut self, rect: Rectangle, text: impl Into<String>) {
+        if crate::ui::is_hovered(self.rl, rect) {
+            *self.tooltip = Some(text.into());
+        }
+    }
+
+    pub fn play_sound(&mut self, id: &str) {
+        self.audio.play_sound(id);
+    }
+
+    pub fn music(&self) -> Option<&str> {
+        self.audio.music()
+    }
+
+    pub fn autosave(&mut self) {
+        if self.saves.autosaves() {
+            *self.autosave_request = true;
+        }
     }
 
     pub fn load(&mut self, slot: &str) -> Result<LoadReport, SaveError> {
@@ -122,6 +162,13 @@ impl GameContext<'_> {
     }
 }
 
+pub struct GameView<'a> {
+    pub story: &'a StoryVm,
+    pub state: &'a GameState,
+    pub saves: &'a Saves,
+    pub settings: &'a Settings,
+}
+
 pub struct DrawContext<'a> {
     pub resources: &'a ResourceManager,
     pub story: &'a StoryVm,
@@ -129,10 +176,24 @@ pub struct DrawContext<'a> {
     pub saves: &'a Saves,
     pub characters: &'a Characters,
     pub settings: &'a Settings,
+    pub interactive: bool,
 }
 
 impl DrawContext<'_> {
+    pub fn pointer_over(&self, rl: &RaylibHandle, rect: Rectangle) -> bool {
+        self.interactive && crate::ui::is_hovered(rl, rect)
+    }
+
     pub fn fonts(&self) -> &Fonts {
         &self.resources.fonts
+    }
+
+    pub fn view(&self) -> GameView<'_> {
+        GameView {
+            story: self.story,
+            state: self.state,
+            saves: self.saves,
+            settings: self.settings,
+        }
     }
 }

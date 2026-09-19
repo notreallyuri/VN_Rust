@@ -18,9 +18,10 @@ use crate::screens::{
     TextInputConfig, TextInputScreen,
 };
 use crate::{
-    CLOSE_MESSAGE, Character, Characters, Commands, FontRole, FromArgs, GameContext, GameState,
-    Hooks, Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, Saves, Screen, ScreenFactory,
-    ScreenState, ScreenStateManager, SettingsStore, StoryLoader, StoryWatcher, Toast, ToastConfig,
+    Audio, AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, FontRole, FromArgs,
+    GameContext, GameState, Hooks, Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, Saves,
+    Screen, ScreenFactory, ScreenState, ScreenStateManager, ScriptErrors, SettingsStore,
+    StoryLoader, StoryWatcher, ToastConfig, TooltipConfig,
 };
 
 type ScreenBuilder = Box<dyn Fn() -> Box<dyn Screen>>;
@@ -45,7 +46,10 @@ pub struct VnApp {
     state: GameState,
     commands: Commands,
     hooks: Hooks,
-    saves_dir: PathBuf,
+    saves_dir: Option<PathBuf>,
+    autosave: bool,
+    audio: AudioConfig,
+    tooltips: TooltipConfig,
     save_menu: SaveMenuConfig,
     text_input: TextInputConfig,
     pause_menu: PauseMenuConfig,
@@ -128,7 +132,10 @@ impl VnApp {
             state: GameState::default(),
             commands: Commands::default(),
             hooks: Hooks::default(),
-            saves_dir: PathBuf::from("saves"),
+            saves_dir: None,
+            autosave: true,
+            audio: AudioConfig::default(),
+            tooltips: TooltipConfig::default(),
             save_menu: SaveMenuConfig::default(),
             text_input: TextInputConfig::default(),
             pause_menu: PauseMenuConfig::default(),
@@ -238,7 +245,28 @@ impl VnApp {
     }
 
     pub fn saves_dir(mut self, dir: impl Into<PathBuf>) -> Self {
-        self.saves_dir = dir.into();
+        self.saves_dir = Some(dir.into());
+        self
+    }
+
+    pub fn saves_path(&self) -> PathBuf {
+        self.saves_dir
+            .clone()
+            .unwrap_or_else(|| crate::default_saves_dir(&self.title))
+    }
+
+    pub fn audio(mut self, config: impl FnOnce(AudioConfig) -> AudioConfig) -> Self {
+        self.audio = config(self.audio);
+        self
+    }
+
+    pub fn tooltips(mut self, config: impl FnOnce(TooltipConfig) -> TooltipConfig) -> Self {
+        self.tooltips = config(self.tooltips);
+        self
+    }
+
+    pub fn autosave(mut self, enabled: bool) -> Self {
+        self.autosave = enabled;
         self
     }
 
@@ -423,8 +451,12 @@ impl VnApp {
         rl.set_target_fps(self.target_fps);
         rl.set_exit_key(self.exit_key);
 
-        let settings = SettingsStore::load(self.saves_dir.join(SETTINGS_FILE_NAME));
-        let saves = Saves::new(self.saves_dir, self.title.clone());
+        let saves_dir = self.saves_path();
+        if cfg!(debug_assertions) {
+            println!("Saves: {}", saves_dir.display());
+        }
+        let settings = SettingsStore::load(saves_dir.join(SETTINGS_FILE_NAME));
+        let saves = Saves::new(saves_dir, self.title.clone()).with_autosave(self.autosave);
 
         let factory = DefaultScreens {
             title: self.title,
@@ -459,6 +491,8 @@ impl VnApp {
         manager.rollback = Rollback::new(self.rollback);
         manager.settings = settings;
         manager.close_confirmation = self.close_confirmation;
+        manager.tooltip_config = self.tooltips;
+        manager.audio = Audio::new(manager.resources.root().to_path_buf(), self.audio);
 
         for (role, file) in &self.fonts {
             manager.resources.set_font(&mut rl, &thread, *role, file);
@@ -480,7 +514,7 @@ impl VnApp {
                     }
                     Err(e) => {
                         eprintln!("❌ Story not reloaded: {}", e);
-                        manager.notify(Toast::error("Story has errors; see the console"));
+                        manager.show_script_errors(ScriptErrors::from_error(&e, &loader.path()));
                     }
                 }
             }
@@ -496,9 +530,10 @@ impl VnApp {
 
             let mut d = rl.begin_drawing(&thread);
             d.clear_background(self.clear_color);
-            manager.draw(&mut d);
+            manager.draw(&mut d, &thread);
         }
 
+        manager.autosave();
         Ok(())
     }
 }
@@ -580,13 +615,28 @@ pub(crate) fn missing_art(story: &StoryVm, assets: &Path) -> Vec<Diagnostic> {
                     char_id, img_id, ..
                 } => crate::character_path(char_id, img_id),
                 Instruction::Background { image: Some(image) } => crate::background_path(image),
+                Instruction::Music { track: Some(track) }
+                    if crate::music_path(assets, track).is_none() =>
+                {
+                    format!("music/{}.ogg", track)
+                }
+                Instruction::Sound { id } if crate::sound_path(assets, id).is_none() => {
+                    format!("sounds/{}.ogg", id)
+                }
                 _ => return None,
             };
             let missing = !assets.join(&relative).exists() && seen.insert(relative.clone());
             missing.then(|| {
                 Diagnostic::warning(
                     program.line(index),
-                    format!("missing {} (a placeholder will be drawn)", relative),
+                    if relative.ends_with(".png") {
+                        format!("missing {} (a placeholder will be drawn)", relative)
+                    } else {
+                        format!(
+                            "missing {} (or .mp3, .wav, .flac); it will be silent",
+                            relative
+                        )
+                    },
                 )
                 .with_file(program.file(index))
             })
