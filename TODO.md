@@ -221,6 +221,22 @@ else draws through, so it is cheaper now; the rest is additive.
 - [ ] Readability options: text outline or a dimmed backdrop behind dialogue over bright backgrounds
 - [ ] A self-voicing hook (the engine hands the current line to a game-provided reader)
 
+## M10: Authoring and dev tools
+
+Not a visual UI editor: the point of the project is that logic stays in Rust and is
+debugged with Rust tooling, and a WYSIWYG editor is what Godot and Unity already do
+better. Ren'Py reached the same conclusion, and answers it with hot reload plus live dev
+tools instead, which is what this milestone copies. Everything here is debug-build only
+and sits beside the existing hot reload (`VnApp::hot_reload`, on by default in debug
+builds), F1 (controls) and F2 (script errors).
+
+- [ ] Debug overlay on F3: layout rectangles, focus order, the style and rect of the widget under the cursor, and frame timing. The equivalent of Ren'Py's inspector, and the fastest way to find a layout bug
+- [ ] Live style tweaking: hot-reload the style values a game defines (the example keeps them in `src/style.rs`), or edit them in an overlay with sliders and colour pickers that writes the tweaked values back out as Rust to paste. This is the part of a UI editor people actually want
+- [ ] Position picker: drag a sprite in the running game and get the `at` position, or exact coordinates, to paste into the `.story` line. Ren'Py's image location picker
+- [ ] Director: while playing, pick `show`, `background`, `music`, `sound` or `voice` from a menu, see it applied live, and write the line into the `.story` file at the current point. `.story` is line-oriented and `vn fmt` normalizes whatever a tool writes, so generated lines can't drift from hand-written style
+- [ ] Scene jump: a debug menu listing every scene, to jump straight to one with its variables set, instead of replaying to reach it
+- [ ] A screenshot and GIF capture key for bug reports and devlogs, writing next to the existing screenshot key
+
 ## Ongoing
 
 - [x] Tests: golden tests over the SCRIPT.md examples (`crates/vn_script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `vn dump`
