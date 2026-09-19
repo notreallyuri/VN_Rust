@@ -201,6 +201,12 @@ else draws through, so it is cheaper now; the rest is additive.
 - [ ] Dialogue box variants: a speaker portrait bust inside the box, and a per-character box style
 - [ ] Choice presentation: images, disabled options with a reason, and hover previews
 - [ ] A custom mouse cursor, and prompts that show keyboard or gamepad glyphs depending on the last input used
+- [ ] Video playback (openings, endings, in-scene cutscenes): raylib has no decoder, so this needs ffmpeg or a pure-Rust decoder feeding frames into a texture, behind an optional feature so a game that doesn't use it doesn't pay for it
+
+### Interaction
+
+- [ ] Image maps / point-and-click scenes: named hotspots over a background, each with a hover look and an action, used for examining a room or picking a destination
+- [ ] Drag and drop: draggable items with drop targets and a validity rule, for inventory puzzles and minigames; needs the same hit-testing as image maps, so the two share a base
 
 ### Extras
 
