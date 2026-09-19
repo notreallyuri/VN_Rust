@@ -88,7 +88,51 @@ parent directory), `--engine-git`, or by default the `vn_engine` next to the `vn
 was built, falling back to the GitHub repository. The directory may exist, but must be
 empty.
 
-Planned: `run`, `lsp`, `fmt` (see TODO.md).
+### `vn lsp`
+
+A language server for `.story` files over stdin/stdout, for any editor with LSP support.
+Install the binary once (`cargo install --path crates/vn_cli`), then point the editor at
+`vn lsp` for `*.story` files.
+
+| Feature | Behavior |
+| --- | --- |
+| Diagnostics | On open, change, save and close, for every file of the project, using the text of unsaved buffers: syntax errors, registries, unknown scenes, "did you mean" hints. The same checks as `vn check` |
+| Completion | By context: keywords and characters at the start of a line; scenes after `jump`; characters after `show`/`remove` and their images after `show <character>`; `at`/`with`, positions and transitions; background, music, sound and voice ids from the asset folders (and `none`); variables after `set`, `add` (ints only), `if`, `&&`, `||` and inside `{` in a string; `true`/`false` or enum members after `set x =` and `x ==`; operators; commands after `call`, with their usage |
+| Go to definition | On a scene name (in a `jump` or anywhere): the `scene` line, in whichever file |
+| Hover | Characters (display name, images), variables (type and default), commands (usage), scenes (file and line) |
+| Document symbols | The scenes of the file (an outline) |
+
+The project is found like `vn check` does: the nearest `schema.json` above the file, and
+its `story_dir`. A file outside the story directory is checked alone against the
+schema's registries; a file with no schema above it is checked with the other `.story`
+files in its folder, for syntax and jumps only.
+
+Neovim (0.11+):
+
+```lua
+vim.filetype.add({ extension = { story = "story" } })
+vim.lsp.config("vn", { cmd = { "vn", "lsp" }, filetypes = { "story" }, root_markers = { "schema.json" } })
+vim.lsp.enable("vn")
+```
+
+Helix (`languages.toml`):
+
+```toml
+[language-server.vn]
+command = "vn"
+args = ["lsp"]
+
+[[language]]
+name = "story"
+scope = "source.story"
+file-types = ["story"]
+roots = ["schema.json"]
+language-servers = ["vn"]
+```
+
+VS Code and Zed need a small extension to start it (planned, see TODO.md).
+
+Planned: `run`, `fmt` (see TODO.md).
 
 ## Tests
 
@@ -103,3 +147,7 @@ project, the schema's entry scene, files outside the story directory, no schema,
 the files it writes pass `vn check`, the package name and engine path, `--title` and
 `--engine-git` (with quotes in the title), non-empty directories, names that aren't crate
 names, and bad arguments.
+`tests/lsp.rs` runs `vn lsp` over pipes like an editor: diagnostics following unsaved
+edits (and clearing), a scene defined in an unsaved file, completion in every context,
+definition across files, hover, symbols, a file with no project, unknown requests, and
+shutdown.

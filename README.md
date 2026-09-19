@@ -82,7 +82,7 @@ It may only:
 | [`crates/vn_script`](crates/vn_script/README.md) | Story DSL: lexer, parser, compiler and VM. No rendering dependencies |
 | [`crates/vn_engine`](crates/vn_engine/README.md) | raylib-based engine: `VnApp` builder, configurable default screens, UI helpers, resources, fonts. Re-exports `raylib` and `vn_script` |
 | [`crates/vn_build`](crates/vn_build/README.md) | Build-script helper (no dependencies) that embeds a game's assets in release builds |
-| [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn new <dir>`, `vn check <path>`, `vn dump <file.story | dir>`) |
+| [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn new <dir>`, `vn check <path>`, `vn dump <file.story | dir>`, `vn lsp`) |
 | [`examples/god_is_watching`](examples/god_is_watching/README.md) | Reference game built on `vn_engine` |
 
 Each crate documents its API and behavior in its own README.
@@ -168,8 +168,10 @@ Work in progress
 Working today: the story DSL with validation and "did you mean" diagnostics, the VM, the
 raylib engine (default screens, transitions, keyboard/gamepad navigation, saves with
 autosave, thumbnails and migrations, rollback, settings, music, sound and voice, hot
-reload), `vn new` / `vn check` / `vn dump`, and the example game.
+reload, release builds with embedded assets), `vn new` / `vn check` / `vn dump` / `vn lsp`
+(a language server for any editor), and the example game.
 
 Planned (see TODO.md):
 
-- Tree-sitter grammar, editor support (Neovim, VS Code, Zed), an LSP and a formatter
+- Tree-sitter grammar, syntax highlighting and extensions for Neovim, VS Code and Zed, and
+  a formatter

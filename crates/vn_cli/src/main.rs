@@ -1,5 +1,6 @@
 mod check;
 mod dump;
+mod lsp;
 mod new;
 
 use std::io;
@@ -11,6 +12,7 @@ use vn_script::{read_sources, story_files};
 const USAGE: &str = "usage:
   vn check <path> [--schema <schema.json>]
   vn dump <file.story | directory>
+  vn lsp
   vn new <directory> [--title <title>] [--engine-path <dir> | --engine-git <url>]";
 
 fn main() -> ExitCode {
@@ -18,6 +20,7 @@ fn main() -> ExitCode {
 
     match args.as_slice() {
         [cmd, path] if cmd == "dump" => dump::dump(path),
+        [cmd] if cmd == "lsp" => lsp::lsp(),
         [cmd, path] if cmd == "check" => check::check(path, None),
         [cmd, path, flag, schema] if cmd == "check" && flag == "--schema" => {
             check::check(path, Some(schema))

@@ -23,7 +23,7 @@ Three levels of control, each optional:
 | `crates/vn_script` | DSL lexer, parser, compiler, VM. **No rendering deps**, reusable by CLI/LSP |
 | `crates/vn_engine` | raylib engine: screens, resources, game loop. Re-exports `raylib` and `vn_script` (as `script`) |
 | `crates/vn_build` | Build-script helper: embeds a game's assets in release builds |
-| `crates/vn_cli` | `vn` binary: `vn new`, `vn check`, `vn dump`; later `run`, `lsp`, `fmt` |
+| `crates/vn_cli` | `vn` binary: `vn new`, `vn check`, `vn dump`, `vn lsp`; later `run`, `fmt` |
 | `examples/god_is_watching` | The reference game, and the first real consumer of the engine API |
 
 ---
@@ -145,7 +145,7 @@ Three levels of control, each optional:
   - [ ] `tree-sitter-story` grammar, with an external scanner for indentation (INDENT/DEDENT, like tree-sitter-python); corpus tests from `all_features.story`
   - [ ] Neovim: filetype detection, `highlights.scm`, `folds.scm`, `indents.scm` (registered through nvim-treesitter). Zed and Helix reuse the same grammar and queries
   - [ ] VS Code: a TextMate grammar for highlighting (VS Code doesn't highlight with tree-sitter), packaged as an extension
-  - [ ] LSP (`vn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type, go to scene definition, completion of scene/character/variable ids. Works in every editor
+  - [x] LSP (`vn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type (unsaved buffers included), go to scene definition, completion of scenes, characters, images, variables, values, commands, positions, transitions and asset ids, hover, scene outline. Setup for Neovim and Helix in vn_cli's README
   - [ ] Formatter (`vn fmt`)
 
 ## M7: Example overhaul
