@@ -64,6 +64,34 @@ scene box_the_letter:  (examples/god_is_watching/assets/story/01_box_14.story:24
 077: GOTO 80
 ```
 
+### `vn fmt <path> [--check]`
+
+Formats a file, or every `.story` file under a directory, in place. `--check` writes
+nothing and only lists what would change, exiting with a failure code if anything would
+(for CI and pre-commit hooks).
+
+```sh
+cargo run -p vn_cli -- fmt examples/god_is_watching/assets/story --check
+```
+
+```text
+6 files, 0 to reformat
+```
+
+The rules:
+
+| | |
+| --- | --- |
+| Indentation | Two spaces per level, taken from the nesting the file already has, not from how deep each line is written |
+| Spacing | One space between words; `=`, `+=`, `-=` and the comparison operators in `if`, `set` and `add` get a space on each side |
+| Comments | Kept as written and indented like the line below them |
+| Blank lines | At most one in a row, exactly one before each `scene`, none at the start or end of the file |
+| Strings | Never touched, including the spaces, `#`, `:` and `{variable}` inside them |
+
+A file is only rewritten when it compiles and when the result compiles to the same
+program, so formatting can't change what a story does; a file with errors is reported
+and left alone.
+
 ### `vn new <directory> [--title <title>] [--engine-path <dir> | --engine-git <url>]`
 
 Creates a game project that runs with `cargo run`:

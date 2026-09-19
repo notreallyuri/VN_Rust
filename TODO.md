@@ -142,11 +142,12 @@ Three levels of control, each optional:
 - [x] `vn new` project template (Cargo.toml, `main.rs`, a two-scene story, a matching `schema.json`)
 - [x] Multi-file projects: every `.story` under `story_dir` is one program; diagnostics name their file; the example's chapters jump into each other
 - [ ] Editor support for `.story` files:
-  - [ ] `tree-sitter-story` grammar, with an external scanner for indentation (INDENT/DEDENT, like tree-sitter-python); corpus tests from `all_features.story`
-  - [ ] Neovim: filetype detection, `highlights.scm`, `folds.scm`, `indents.scm` (registered through nvim-treesitter). Zed and Helix reuse the same grammar and queries
-  - [ ] VS Code: a TextMate grammar for highlighting (VS Code doesn't highlight with tree-sitter), packaged as an extension
+  - [x] `tree-sitter-story` grammar (`editors/tree-sitter-story`), with an external scanner for indentation (INDENT/DEDENT, like tree-sitter-python), `highlights.scm` and `folds.scm`
+  - [ ] Corpus tests from `all_features.story` (`test/corpus/` is still empty; they would have caught the EOF loop that made parsing run out of memory)
+  - [x] Neovim (`editors/nvim`): filetype detection, the grammar and queries through nvim-treesitter, folds, and indentation as an `indentexpr` (tree-sitter indent queries don't work well while typing in an indentation-sensitive grammar)
+  - [ ] Zed, Helix and VS Code: not a focus for now. Zed and Helix reuse the grammar and queries; VS Code needs a TextMate grammar
   - [x] LSP (`vn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type (unsaved buffers included), go to scene definition, completion of scenes, characters, images, variables, values, commands, positions, transitions and asset ids, hover, scene outline. Setup for Neovim and Helix in vn_cli's README
-  - [ ] Formatter (`vn fmt`)
+  - [x] Formatter (`vn fmt <path> [--check]`, `vn_script::format`): two-space indentation, spacing around operators, comments and blank lines normalized, strings untouched; only rewrites a file when the result compiles to the same program
 
 ## M7: Example overhaul
 
