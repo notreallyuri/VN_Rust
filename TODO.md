@@ -177,6 +177,44 @@ fonts and saves at once, and each of those is cheaper to change now than later.
 - [ ] `vn check` reports missing and stale translations for a language
 - [ ] Saves stay language-independent: store ids, not translated text, so the session log and save slots re-render in whatever language is active
 
+## M9: UI and presentation
+
+Split by what gets harder to add later. The first group changes code that everything
+else draws through, so it is cheaper now; the rest is additive.
+
+### Foundations
+
+- [ ] Inline text markup (`{b}`, `{i}`, `{color=...}`, `{size=...}`, `{w}` waits, ruby text for furigana), parsed into styled spans in `vn_script` so `vn check` validates tags. Touches `Fonts::wrap`, `ui::draw_text_wrapped`, the typewriter (reveal across spans) and the log at once, and translated lines carry the same tags, so it belongs with M8
+- [ ] Draw the game to a `RenderTexture` instead of straight to the screen. Nothing does this today, and it is what the next three items need
+- [ ] Screen transitions: `ScreenManager::transition_to` swaps instantly; crossfade, fade through black and slide between screens, reusing the transition kinds stories already have
+- [ ] A shared easing/tween helper (`stage.rs` has a private `ease`, buttons roll their own), used by sprites, buttons, screen transitions and scenery
+- [ ] A reusable scroll container (wheel, drag, scrollbar, keyboard and gamepad through `navigation.rs`), today only inside the log screen; needed by settings, keybindings, save lists and a gallery
+- [ ] Resolution independence: design at one size, letterbox or pillarbox the render target on other aspect ratios (ultrawide included)
+- [ ] Remove the debug `println!` on every screen change (`screen_manager.rs:491`)
+
+### Presentation
+
+- [ ] Screen shake and flash, as `with shake` / `with flash` on story lines
+- [ ] Shader passes over the render target: blur behind panels, grain or CRT for flashbacks, a desaturation pass for endings
+- [ ] Weather and particle overlays (rain, snow, dust motes) as part of `Scenery`
+- [ ] NVL mode: full-screen text pages instead of the dialogue box, chosen per scene
+- [ ] Dialogue box variants: a speaker portrait bust inside the box, and a per-character box style
+- [ ] Choice presentation: images, disabled options with a reason, and hover previews
+- [ ] A custom mouse cursor, and prompts that show keyboard or gamepad glyphs depending on the last input used
+
+### Extras
+
+- [ ] Persistent data across playthroughs, next to the existing `seen.json`: unlocked endings, CG and tracks
+- [ ] A CG gallery and a music room, as default screens a game can enable
+- [ ] Achievements with a toast on unlock, reusing `ScreenManager::notify`
+
+### Accessibility
+
+- [ ] A UI scale and text size setting, applied through the style system
+- [ ] A reduce-motion setting: skip transitions, hold scenery still, no shake
+- [ ] Readability options: text outline or a dimmed backdrop behind dialogue over bright backgrounds
+- [ ] A self-voicing hook (the engine hands the current line to a game-provided reader)
+
 ## Ongoing
 
 - [x] Tests: golden tests over the SCRIPT.md examples (`crates/vn_script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `vn dump`
