@@ -59,6 +59,7 @@ fn main() -> std::io::Result<()> {
 | `toast(\|t\| ...)` | | Configure notifications (see [Notifications](#notifications)) |
 | `tooltips(\|t\| ...)` | on | Configure tooltips (see [Tooltips](#tooltips)) |
 | `log(\|l\| ...)` | | Configure the log overlay (see [Log](#log)) |
+| `keybinds(\|k\| ...)` | F1 | Configure the controls overlay (see [Controls overlay](#controls-overlay)) |
 | `navigation(\|n\| ...)` | on | Configure keyboard and gamepad navigation (see [Keyboard and gamepad](#keyboard-and-gamepad)) |
 | `exit_key(Option<key>)` | `None` | A key that closes the window. Off by default, so Esc can open the pause menu |
 | `state(value)` | | Register game state (see [Game state](#game-state)) |
@@ -571,6 +572,7 @@ Ren'Py's defaults, on the playing screen:
 | Tab | Toggle skip mode |
 | A | Toggle auto mode |
 | L, gamepad Y | Open the [log](#log) |
+| F1 | The [controls overlay](#controls-overlay) (on every screen) |
 | S | Screenshot, saved as `screenshots/screenshot-<time>.png` in the saves directory |
 | F | Toggle fullscreen |
 | Esc, right click, gamepad Start | Pause menu |
@@ -591,6 +593,27 @@ done and its [voice clip](#audio) has finished, after the Auto-forward delay plu
 `auto_per_character` per character. It stays on across choices (waiting for the player)
 until toggled off. `ctx.modes` holds both modes (`PlayModes { auto, skip }`); the
 `Action::ToggleAuto` and `Action::ToggleSkip` HUD buttons show their pressed look while on.
+
+## Controls overlay
+
+F1 opens `KEYBINDS_OVERLAY` from any screen except text input (where the player is
+typing): a two-column list of every control with its keyboard/mouse input, gamepad button
+and action. F1, Esc, Backspace, right click, B or Back close it.
+
+The list is generated from the game's configuration (`default_keybinds(playing, rollback,
+navigation)`), so rebinding a key or turning a feature off changes it: unbound actions
+disappear, and the gamepad column is empty when the gamepad is off. `key_name(key)` and
+`key_list(keys)` give readable names ("Ctrl", "Page Up", "Arrow keys").
+
+`KeybindsConfig` (`.keybinds(|k| ...)`):
+
+| Option | Default |
+| --- | --- |
+| `section(KeySection::new(title).row(keys, gamepad, action))` | adds a section for the game's own controls (after the engine's) |
+| `sections([..])` | replaces the generated list |
+| `open_keys(keys)`, `close_keys(keys)` | F1; F1, Esc, Backspace (no open keys: F1 does nothing and the "Anywhere" row goes away) |
+| `title`, `title_text`, `section_text`, `key_text`, `action_text`, `header_text` | "Controls", Title 38 px, gold Menu 20 px, Menu 16 px |
+| `panel_color`, `backdrop`, `back_button`, `back_label` | |
 
 ## Log
 
@@ -1264,8 +1287,8 @@ Behavior:
 - Glyphs are rasterized once at 64 px and scaled when drawn, with mipmaps and trilinear
   filtering so small sizes stay smooth.
 - Glyph coverage: ASCII, Latin-1, Latin Extended-A, general punctuation
-  (U+2010–U+2027: dashes, curly quotes, ellipsis), € and the arrows ← ↑ → ↓. Other
-  characters draw as `?`.
+  (U+2010–U+2027: dashes, curly quotes, ellipsis) and €. Other characters draw as `?`
+  (the bundled Noto Sans has no arrow symbols, so on-screen text spells out "Left/Right").
 - Fonts are loaded through raylib's C `LoadFontFromMemory` rather than raylib-rs'
   wrapper. The wrapper passes the glyph string's byte length as the codepoint count,
   which reads out of bounds for non-ASCII glyphs.
@@ -1282,6 +1305,7 @@ The tests run without a window; drawing and input are checked by playing the exa
 | --- | --- |
 | `tests/app.rs` | `VnApp::check` (validation, missing art, story directories, errors with their file), entry scene, typed command arguments, schema export, hook registration |
 | `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history, thumbnails (scaled, replaced, deleted with the slot), autosave switch, save directory names |
+| `tests/keybinds.rs` | Key names, the generated list following rebinding and disabled features, extra and replaced sections |
 | `tests/session.rs` | The session log (limit, rewinding and forwarding, a new branch after a rollback, replacing), seen lines on disk, log lengths in checkpoints (and older checkpoints), the log in save files, the default HUD, the auto-forward delay |
 | `tests/stage.rs` | Which events start which animations (entrances, expression changes, moves, exits, `clear`, backgrounds), lengths and expiry, textures kept for fading images, finishing and resetting, the character layout |
 | `tests/navigation.rs` | Spatial navigation in columns and grids (wrapping, disabled items), focus (first press, Tab, following the mouse, keyboard-mode focus, stale focus), key repeat timing |

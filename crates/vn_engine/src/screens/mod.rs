@@ -1,4 +1,5 @@
 pub mod confirm;
+pub mod keybinds;
 pub mod log;
 pub mod main_menu;
 pub mod pause_menu;
@@ -9,6 +10,7 @@ pub mod start;
 pub mod text_input;
 
 pub use confirm::*;
+pub use keybinds::*;
 pub use log::*;
 pub use main_menu::*;
 pub use pause_menu::*;

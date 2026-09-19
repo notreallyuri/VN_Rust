@@ -6,7 +6,7 @@ use raylib::prelude::*;
 
 use vn_script::{Event, RestoreOutcome, StoryVm};
 
-use crate::screens::{CONFIRM_OVERLAY, Confirm};
+use crate::screens::{CONFIRM_OVERLAY, Confirm, KEYBINDS_OVERLAY};
 use crate::{
     Action, Audio, Characters, Commands, DrawContext, GameContext, GameState, Hooks, NavInput,
     Navigation, Overlay, OverlayAction, OverlayRequest, ResourceManager, Rollback,
@@ -67,6 +67,7 @@ pub struct ScreenStateManager {
     pub modes: PlayModes,
     pub seen: SeenLines,
     screenshot_request: bool,
+    pub keybind_keys: Vec<KeyboardKey>,
     tooltip_timer: TooltipTimer,
     overlays: Vec<(String, Box<dyn Overlay>)>,
     quit_requested: bool,
@@ -135,6 +136,7 @@ impl ScreenStateManager {
             modes: PlayModes::default(),
             seen: SeenLines::in_memory(),
             screenshot_request: false,
+            keybind_keys: vec![KeyboardKey::KEY_F1],
             tooltip_timer: TooltipTimer::default(),
             overlays: Vec::new(),
             quit_requested: false,
@@ -145,6 +147,7 @@ impl ScreenStateManager {
 
     pub fn update(&mut self, rl: &mut RaylibHandle, thread: &RaylibThread) {
         let now = rl.get_time();
+        let keybinds_open = self.overlay_name() == Some(KEYBINDS_OVERLAY);
         self.resources.load_requested(rl, thread);
         self.nav = self.navigation.read(rl);
         let mut overlay_requests = Vec::new();
@@ -193,6 +196,14 @@ impl ScreenStateManager {
             },
             None => self.current_screen.update(ctx),
         };
+
+        let wants_keybinds = !keybinds_open
+            && self.current_state != ScreenState::TextInput
+            && self.keybind_keys.iter().any(|&key| rl.is_key_pressed(key));
+        if wants_keybinds {
+            self.modes.skip = false;
+            self.open_overlay(KEYBINDS_OVERLAY);
+        }
 
         let clicked = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
         self.tooltip_timer.update(tooltip, now, clicked);

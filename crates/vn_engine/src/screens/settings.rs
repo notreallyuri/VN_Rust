@@ -110,7 +110,9 @@ impl Default for SettingsConfig {
             skip_label: "Skip".to_string(),
             skip_seen_label: "Seen text".to_string(),
             skip_all_label: "All text".to_string(),
-            voice_volume_tooltip: Some("Voiced lines. Drag, or hover and press ←/→".to_string()),
+            voice_volume_tooltip: Some(
+                "Voiced lines. Drag, or hover and press Left/Right".to_string(),
+            ),
             auto_delay_tooltip: Some(
                 "How long Auto waits after a line (longer lines wait a little more)".to_string(),
             ),
@@ -126,9 +128,11 @@ impl Default for SettingsConfig {
                 "How fast lines appear. Clicking while a line types shows all of it".to_string(),
             ),
             music_volume_tooltip: Some(
-                "Background music. Drag, or hover and press ←/→".to_string(),
+                "Background music. Drag, or hover and press Left/Right".to_string(),
             ),
-            sound_volume_tooltip: Some("Sound effects. Drag, or hover and press ←/→".to_string()),
+            sound_volume_tooltip: Some(
+                "Sound effects. Drag, or hover and press Left/Right".to_string(),
+            ),
             sample_text: "This is how fast the story's text appears.".to_string(),
             sample_text_style: TextStyle::new(FontRole::Dialogue, 22.0, Color::RAYWHITE),
             sample_box_color: Color::new(0, 0, 0, 170),

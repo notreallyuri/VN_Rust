@@ -18,7 +18,10 @@ use crate::screens::{
     SettingsConfig, SettingsOverlay, SettingsScreen, StartScreen, StartScreenConfig,
     TextInputConfig, TextInputScreen,
 };
-use crate::screens::{LOG_OVERLAY, LogConfig, LogOverlay};
+use crate::screens::{
+    KEYBINDS_OVERLAY, KeybindsConfig, KeybindsOverlay, LOG_OVERLAY, LogConfig, LogOverlay,
+    default_keybinds,
+};
 use crate::{
     Audio, AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, FontRole, FromArgs,
     GameContext, GameState, Hooks, Navigation, NavigationConfig, Overlay, Rollback, RollbackConfig,
@@ -53,6 +56,7 @@ pub struct VnApp {
     audio: AudioConfig,
     tooltips: TooltipConfig,
     log: LogConfig,
+    keybinds: KeybindsConfig,
     navigation: NavigationConfig,
     save_menu: SaveMenuConfig,
     text_input: TextInputConfig,
@@ -141,6 +145,7 @@ impl VnApp {
             audio: AudioConfig::default(),
             tooltips: TooltipConfig::default(),
             log: LogConfig::default(),
+            keybinds: KeybindsConfig::default(),
             navigation: NavigationConfig::default(),
             save_menu: SaveMenuConfig::default(),
             text_input: TextInputConfig::default(),
@@ -268,6 +273,11 @@ impl VnApp {
 
     pub fn navigation(mut self, config: impl FnOnce(NavigationConfig) -> NavigationConfig) -> Self {
         self.navigation = config(self.navigation);
+        self
+    }
+
+    pub fn keybinds(mut self, config: impl FnOnce(KeybindsConfig) -> KeybindsConfig) -> Self {
+        self.keybinds = config(self.keybinds);
         self
     }
 
@@ -482,6 +492,9 @@ impl VnApp {
             confirm_dialog: Rc::new(self.confirm_dialog),
             settings: Rc::new(self.settings),
             log: Rc::new(self.log),
+            keybinds: Rc::new(self.keybinds.clone()),
+            rollback: self.rollback.clone(),
+            navigation: self.navigation.clone(),
             start: Rc::new(self.start),
             menu: Rc::new(self.menu),
             playing: Rc::new(self.playing),
@@ -509,6 +522,7 @@ impl VnApp {
         manager.settings = settings;
         manager.close_confirmation = self.close_confirmation;
         manager.tooltip_config = self.tooltips;
+        manager.keybind_keys = self.keybinds.open_keys.clone();
         manager.navigation = Navigation::new(self.navigation);
         manager.seen = SeenLines::load(manager.saves.dir().join(crate::SEEN_FILE_NAME));
         manager.audio = Audio::new(manager.resources.root().to_path_buf(), self.audio);
@@ -569,6 +583,9 @@ pub struct DefaultScreens {
     pub confirm_dialog: Rc<ConfirmConfig>,
     pub settings: Rc<SettingsConfig>,
     pub log: Rc<LogConfig>,
+    pub keybinds: Rc<KeybindsConfig>,
+    pub rollback: RollbackConfig,
+    pub navigation: NavigationConfig,
     pub overrides: HashMap<ScreenState, ScreenBuilder>,
     pub overlays: HashMap<String, OverlayBuilder>,
 }
@@ -610,6 +627,10 @@ impl ScreenFactory for DefaultScreens {
             CONFIRM_OVERLAY => Some(Box::new(ConfirmDialog::new(self.confirm_dialog.clone()))),
             SETTINGS_OVERLAY => Some(Box::new(SettingsOverlay::new(self.settings.clone()))),
             LOG_OVERLAY => Some(Box::new(LogOverlay::new(self.log.clone()))),
+            KEYBINDS_OVERLAY => Some(Box::new(KeybindsOverlay::new(
+                self.keybinds.clone(),
+                default_keybinds(&self.playing, &self.rollback, &self.navigation),
+            ))),
             SAVE_OVERLAY => Some(Box::new(SaveMenuOverlay::new(
                 self.save_menu.clone(),
                 SaveMenuMode::Save,

@@ -19,7 +19,6 @@ const GLYPH_RANGES: &[(i32, i32)] = &[
     (0xA0, 0x17F),
     (0x2010, 0x2027),
     (0x20AC, 0x20AC),
-    (0x2190, 0x2193),
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

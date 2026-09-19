@@ -1,8 +1,8 @@
 use std::process::ExitCode;
 
 use vn_engine::{
-    Action, Align, FontRole, GameContext, HudButton, LOG_OVERLAY, MenuItem, PAUSE_OVERLAY,
-    ScreenState, TextRequest, TextStyle, VnApp,
+    Action, Align, FontRole, GameContext, HudButton, KeySection, LOG_OVERLAY, MenuItem,
+    PAUSE_OVERLAY, ScreenState, TextRequest, TextStyle, VnApp,
 };
 
 mod cast;
@@ -189,6 +189,21 @@ fn main() -> ExitCode {
                 .box_border(style::PARCHMENT)
                 .hint("Type your name, then press Enter to sign")
                 .hint_text(style::label(16.0))
+        })
+        .keybinds(|k| {
+            k.title_text(heading(38.0))
+                .panel_color(style::PANEL)
+                .backdrop(style::BACKDROP)
+                .section_text(TextStyle::new(FontRole::Menu, 20.0, style::PARCHMENT))
+                .key_text(TextStyle::new(FontRole::Menu, 16.0, style::TEXT))
+                .action_text(style::label(16.0))
+                .header_text(style::label(13.0))
+                .back_button(|b| style::button(b.size(200.0, 44.0)))
+                .section(
+                    KeySection::new("In the Archive")
+                        .row("E, Esc", "B", "Close the evidence")
+                        .row("Tab, Esc", "B", "Close the case file"),
+                )
         })
         .log(|l| {
             l.title_text(heading(40.0))
