@@ -1,0 +1,31 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "story",
+      "camelcase": "Story",
+      "title": "Story",
+      "scope": "source.story",
+      "file-types": ["story"],
+      "highlights": "queries/highlights.scm",
+      "injection-regex": "^story$"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Story scripts for the VN_Rust visual novel engine",
+    "links": {
+      "repository": "https://github.com/notreallyuri/VN_Rust"
+    }
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "node": false,
+    "python": false,
+    "rust": false,
+    "swift": false,
+    "zig": false
+  }
+}
