@@ -293,6 +293,25 @@ edges stay sharp.
 `cargo run -p vn_engine --example corner_shapes` shows every shape with a border, a
 double rule, a shadow and a gradient.
 
+## Render target
+
+Every frame is drawn into a `RenderTexture2D` and then blitted to the window, instead of
+straight to the screen. `RenderTarget` (`target.rs`) owns that texture and recreates it
+when the window size changes; if the GPU refuses to create one, the engine says so once
+and draws to the screen as before, so nothing breaks.
+
+`target::destination` computes where the frame lands: it scales to fit and centres,
+which letterboxes or pillarboxes when the window's aspect ratio doesn't match the
+target's. Today the target always matches the window size, so it fills it exactly.
+
+This is what screen transitions, shader passes, screen shake and resolution independence
+need, since each of them has to treat the finished frame as a texture before it reaches
+the screen.
+
+Screenshots and save thumbnails capture while the target is still bound, so they keep
+reading the game image (`tests/target.rs` covers this with a windowed test, run with
+`--include-ignored`).
+
 ## Scenery
 
 `Scenery` frames a full-screen background like a film shot. The start screen and the main

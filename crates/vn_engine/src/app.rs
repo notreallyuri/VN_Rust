@@ -22,6 +22,7 @@ use crate::screens::{
     KEYBINDS_OVERLAY, KeybindsConfig, KeybindsOverlay, LOG_OVERLAY, LogConfig, LogOverlay,
     default_keybinds,
 };
+use crate::target::RenderTarget;
 use crate::{
     Assets, Audio, AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, EmbeddedFile,
     FontRole, FromArgs, GameContext, GameState, Hooks, Migrations, Navigation, NavigationConfig,
@@ -585,6 +586,8 @@ impl VnApp {
             manager.resources.set_font(&mut rl, &thread, *role, file);
         }
 
+        let mut target = RenderTarget::new();
+
         let mut watcher = loader
             .watch_dir()
             .filter(|_| self.hot_reload)
@@ -618,9 +621,34 @@ impl VnApp {
 
             manager.update(&mut rl, &thread);
 
+            let screen = (rl.get_screen_width(), rl.get_screen_height());
+            target.resize(&mut rl, &thread, screen);
+
+            let source = target.source();
+            let destination = crate::target::destination(target.size(), screen);
             let mut d = rl.begin_drawing(&thread);
-            d.clear_background(self.clear_color);
-            manager.draw(&mut d, &thread);
+            match target.frame_mut() {
+                Some(frame) => {
+                    {
+                        let mut t = d.begin_texture_mode(&thread, frame);
+                        t.clear_background(self.clear_color);
+                        manager.draw(&mut t, &thread);
+                    }
+                    d.clear_background(Color::BLACK);
+                    d.draw_texture_pro(
+                        frame.texture(),
+                        source,
+                        destination,
+                        Vector2::zero(),
+                        0.0,
+                        Color::WHITE,
+                    );
+                }
+                None => {
+                    d.clear_background(self.clear_color);
+                    manager.draw(&mut d, &thread);
+                }
+            }
         }
 
         manager.autosave();

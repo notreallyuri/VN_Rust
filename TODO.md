@@ -185,12 +185,12 @@ else draws through, so it is cheaper now; the rest is additive.
 ### Foundations
 
 - [ ] Inline text markup (`{b}`, `{i}`, `{color=...}`, `{size=...}`, `{w}` waits, ruby text for furigana), parsed into styled spans in `vn_script` so `vn check` validates tags. Touches `Fonts::wrap`, `ui::draw_text_wrapped`, the typewriter (reveal across spans) and the log at once, and translated lines carry the same tags, so it belongs with M8
-- [ ] Draw the game to a `RenderTexture` instead of straight to the screen. Nothing does this today, and it is what the next three items need
+- [x] Draw the game to a `RenderTexture` instead of straight to the screen (`RenderTarget` in `target.rs`), recreated on resize, with a fallback to drawing to the screen; screenshots and thumbnails still capture the game image
 - [ ] Screen transitions: `ScreenManager::transition_to` swaps instantly; crossfade, fade through black and slide between screens, reusing the transition kinds stories already have
 - [ ] A shared easing/tween helper (`stage.rs` has a private `ease`, buttons roll their own), used by sprites, buttons, screen transitions and scenery
 - [ ] A reusable scroll container (wheel, drag, scrollbar, keyboard and gamepad through `navigation.rs`), today only inside the log screen; needed by settings, keybindings, save lists and a gallery
 - [ ] Resolution independence: design at one size, letterbox or pillarbox the render target on other aspect ratios (ultrawide included)
-- [ ] Remove the debug `println!` on every screen change (`screen_manager.rs:491`)
+- [x] Remove the debug `println!` on every screen change
 
 ### Presentation
 

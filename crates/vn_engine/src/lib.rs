@@ -25,6 +25,7 @@ pub mod settings;
 pub mod shape;
 pub mod stage;
 pub mod state;
+pub mod target;
 pub mod toast;
 pub mod tooltip;
 pub mod ui;

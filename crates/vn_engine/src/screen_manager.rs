@@ -486,7 +486,6 @@ impl ScreenStateManager {
 
         match self.factory.create_screen(&next_state) {
             Some(screen) => {
-                println!("Transitioning to: {:?}", next_state);
                 self.modes.skip = false;
                 self.thumbnail_at = None;
                 self.current_screen = screen;
