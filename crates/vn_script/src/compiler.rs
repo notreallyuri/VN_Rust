@@ -153,20 +153,29 @@ impl Compiler {
         self.instructions.len() - 1
     }
 
+    fn emit_transition(&mut self, transition: Option<crate::Transition>) {
+        if let Some(transition) = transition {
+            self.emit(Instruction::With(transition));
+        }
+    }
+
     fn compile_node(&mut self, node: Node) {
         match node {
             Node::Show {
                 character,
                 image,
                 position,
+                transition,
             } => {
+                self.emit_transition(transition);
                 self.emit(Instruction::Show {
                     char_id: character,
                     img_id: image,
                     position,
                 });
             }
-            Node::Background { image } => {
+            Node::Background { image, transition } => {
+                self.emit_transition(transition);
                 self.emit(Instruction::Background { image });
             }
             Node::Music { track } => {
@@ -175,10 +184,15 @@ impl Compiler {
             Node::Sound { id } => {
                 self.emit(Instruction::Sound { id });
             }
-            Node::Remove { character } => {
+            Node::Remove {
+                character,
+                transition,
+            } => {
+                self.emit_transition(transition);
                 self.emit(Instruction::Hide { char_id: character });
             }
-            Node::Clear => {
+            Node::Clear { transition } => {
+                self.emit_transition(transition);
                 self.emit(Instruction::Clear);
             }
             Node::Commit => {

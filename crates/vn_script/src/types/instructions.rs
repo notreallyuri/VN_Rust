@@ -70,6 +70,71 @@ impl std::fmt::Display for Position {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransitionKind {
+    Dissolve,
+    Fade,
+    SlideLeft,
+    SlideRight,
+}
+
+impl TransitionKind {
+    pub const ALL: [TransitionKind; 4] = [
+        TransitionKind::Dissolve,
+        TransitionKind::Fade,
+        TransitionKind::SlideLeft,
+        TransitionKind::SlideRight,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            TransitionKind::Dissolve => "dissolve",
+            TransitionKind::Fade => "fade",
+            TransitionKind::SlideLeft => "slide_left",
+            TransitionKind::SlideRight => "slide_right",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|kind| kind.name() == name)
+    }
+
+    pub fn default_millis(self) -> u32 {
+        match self {
+            TransitionKind::Dissolve => 500,
+            TransitionKind::Fade => 1000,
+            TransitionKind::SlideLeft | TransitionKind::SlideRight => 600,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Transition {
+    pub kind: TransitionKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub millis: Option<u32>,
+}
+
+impl Transition {
+    pub fn new(kind: TransitionKind) -> Self {
+        Self { kind, millis: None }
+    }
+
+    pub fn seconds(&self) -> f32 {
+        self.millis.unwrap_or_else(|| self.kind.default_millis()) as f32 / 1000.0
+    }
+}
+
+impl std::fmt::Display for Transition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.millis {
+            Some(millis) => write!(f, "{} {}", self.kind.name(), millis as f32 / 1000.0),
+            None => write!(f, "{}", self.kind.name()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Comparison {
     Equal,
@@ -175,6 +240,7 @@ pub enum Instruction {
     },
     Pause,
     Commit,
+    With(Transition),
     Goto(usize),
     End,
 }

@@ -2,11 +2,11 @@
 # J. Moriarty's notebook (Santa Ilde, 1894) and the 1901 conversation, from Francis's copy.
 
 scene notebook_start:
-  background archive_office
+  background archive_office with fade
   music archive
   "Report two hundred and fourteen has an annex: a copy of the administrator's notebook, made by our man Francis in one night."
   call give_item notebook_copy
-  background santa_ilde_office
+  background santa_ilde_office with dissolve
   music santa_ilde
   "July 12th, 1894. Santa Ilde. Lately I have begun to forget things."
   "It's all been signed since May. I leave Santa Ilde on my birthday and go to live with my sister."
@@ -18,48 +18,48 @@ scene notebook_start:
 
 scene notebook_the_guest:
   "July 14th. I am writing down what the guest looks like, because tomorrow I may not."
-  show guest neutral at center
+  show guest neutral at center with dissolve
   "He is a tall man in a dark frock coat, thin enough to pity. He speaks little. He eats less."
   "..."
   "I read that back and it isn't right. He is broad in the shoulders. The coat is grey."
   "He eats normally, at the sisters' table."
-  remove guest
+  remove guest with dissolve
   "July 23rd. The guest left two days ago. Nobody can tell me how long he stayed."
-  show clara neutral at right
-  show moriarty neutral at left
+  show clara neutral at right with dissolve
+  show moriarty neutral at left with dissolve
   moriarty "Sister Clara, the guest. How long was he with us?"
   clara "What guest, Mr. Moriarty?"
   moriarty "The man in the coat. At your table."
   clara "No guest stayed here this year."
-  clear
+  clear with dissolve
   "Sister Clara served him dinner every night."
   jump notebook_the_lady
 
 scene notebook_the_lady:
-  background santa_ilde_door
+  background santa_ilde_door with dissolve
   sound door_open
   "August 9th. A young woman came to the door after midnight, soaked through."
-  show mary resolved at left
-  show moriarty neutral at right
+  show mary resolved at left with dissolve
+  show moriarty neutral at right with dissolve
   "She did not ask for discretion. She did not offer money. She did not cry."
   moriarty "What is his name?"
   mary "Gabriel."
   moriarty "And his family name?"
   "She looked at the door."
   mary "Don't let anyone come looking for me."
-  clear
+  clear with dissolve
   "I decided to take him in."
   jump notebook_the_men
 
 scene notebook_the_men:
-  background santa_ilde_office
+  background santa_ilde_office with dissolve
   "August 11th. Men came this morning. Three of them, in black, polite in a way that makes you cold."
-  show man_in_black neutral at right
-  show moriarty neutral at left
+  show man_in_black neutral at right with dissolve
+  show moriarty neutral at left with dissolve
   man_in_black "Good morning. Has a new child come in this week?"
   moriarty "No. No one new."
   man_in_black "Thank you for your time."
-  clear
+  clear with dissolve
   "I lied to an armed man before breakfast, and I do not recognise myself."
   "Afterwards I unwrapped the boy's cloths to change him, and there was"
   "..."
@@ -67,7 +67,7 @@ scene notebook_the_men:
   jump notebook_the_page
 
 scene notebook_the_page:
-  background archive_office
+  background archive_office with dissolve
   music archive
   "The Archive. Francis copied the notebook faithfully, down to the torn page. He copied the indentations too."
   "Whoever wrote on the missing page pressed hard enough to mark the next one."
@@ -85,11 +85,11 @@ scene notebook_the_page:
   jump notebook_1901
 
 scene notebook_1901:
-  background santa_ilde_office
+  background santa_ilde_office with dissolve
   music santa_ilde
   "Part II of the annex. A conversation in the administrator's office, 1901, written down by Francis."
-  show moriarty neutral at left
-  show francis neutral at right
+  show moriarty neutral at left with dissolve
+  show francis neutral at right with dissolve
   moriarty "Read it. Then you'll understand why I talk about that half-year the way I do."
   francis "Then why did you stay? After everything in there?"
   moriarty "I grew attached. To my colleagues. To Gabriel."
@@ -99,8 +99,8 @@ scene notebook_1901:
   "The only quick answer of the night. It had been ready for years."
   moriarty "And Francis. Whoever it is you write to at night, tell them this."
   moriarty "There's no family here. There's a boy."
-  clear
-  background archive_office
+  clear with dissolve
+  background archive_office with dissolve
   music archive
   "In Francis's copy, somebody at the field post wrote in the margin: \"A diversion. Not to be treated as information.\""
 

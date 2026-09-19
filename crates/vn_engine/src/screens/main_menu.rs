@@ -4,7 +4,7 @@ use raylib::prelude::*;
 
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
-    Action, DrawContext, FontRole, GameContext, GameView, Screen, ScreenState, StyleOverride,
+    Action, DrawContext, Focus, FontRole, GameContext, GameView, Screen, ScreenState, StyleOverride,
 };
 use crate::{Anchor, Layout};
 
@@ -197,18 +197,25 @@ pub(crate) fn clicked_item(
     ctx: &mut GameContext,
     items: &[MenuItem],
     placement: &[(Rectangle, ButtonStyle)],
+    focus: &mut Focus,
 ) -> Option<usize> {
     let enabled: Vec<bool> = items
         .iter()
         .map(|item| item.is_enabled(&ctx.view()))
         .collect();
+    let rects: Vec<Rectangle> = placement.iter().map(|(rect, _)| *rect).collect();
+    let hovered = placement
+        .iter()
+        .position(|(rect, style)| ui::button_hovered(ctx.rl, *rect, style));
+
     let mut clicked = None;
     for (index, (rect, style)) in placement.iter().enumerate() {
         if enabled[index] && ui::button_clicked(ctx, *rect, style) && clicked.is_none() {
             clicked = Some(index);
         }
     }
-    clicked
+    let accepted = focus.update(&ctx.nav, &rects, &enabled, hovered);
+    clicked.or(accepted)
 }
 
 pub(crate) fn draw_items(
@@ -216,11 +223,13 @@ pub(crate) fn draw_items(
     ctx: &DrawContext,
     items: &[MenuItem],
     placement: Vec<(Rectangle, ButtonStyle)>,
+    focus: &Focus,
 ) {
     let view = ctx.view();
-    for (item, (rect, style)) in items.iter().zip(placement) {
+    for (index, (item, (rect, style))) in items.iter().zip(placement).enumerate() {
         ui::Button::new(&item.label, &style)
             .disabled(!item.is_enabled(&view))
+            .focused(ctx.shows_focus(focus, index))
             .draw(d, ctx, rect);
     }
 }
@@ -240,6 +249,7 @@ pub(crate) fn register_tooltips(
 pub struct MainMenuScreen {
     config: Rc<MainMenuConfig>,
     title: String,
+    focus: Focus,
 }
 
 impl MainMenuScreen {
@@ -248,7 +258,11 @@ impl MainMenuScreen {
             .title
             .clone()
             .unwrap_or_else(|| app_title.to_string());
-        Self { config, title }
+        Self {
+            config,
+            title,
+            focus: Focus::default(),
+        }
     }
 }
 
@@ -262,7 +276,7 @@ impl Screen for MainMenuScreen {
             &self.config.items,
             layout.iter().map(|(rect, _)| *rect),
         );
-        let clicked = clicked_item(&mut ctx, &self.config.items, &layout)?;
+        let clicked = clicked_item(&mut ctx, &self.config.items, &layout, &mut self.focus)?;
         self.config.items[clicked].action.run(&mut ctx)
     }
 
@@ -281,6 +295,6 @@ impl Screen for MainMenuScreen {
             &config.title_text,
         );
 
-        draw_items(d, ctx, &config.items, config.placement(screen));
+        draw_items(d, ctx, &config.items, config.placement(screen), &self.focus);
     }
 }

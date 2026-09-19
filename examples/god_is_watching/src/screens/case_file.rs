@@ -47,7 +47,8 @@ impl Overlay for CaseFileOverlay {
                 KeyboardKey::KEY_BACKSPACE,
             ]
             .into_iter()
-            .any(|key| ctx.rl.is_key_pressed(key));
+            .any(|key| ctx.rl.is_key_pressed(key))
+            || ctx.nav.back;
 
         if close {
             OverlayAction::Close

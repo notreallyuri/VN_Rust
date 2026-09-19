@@ -78,6 +78,12 @@ Compilation rules:
   saves) from before positions existed stay valid. `background <id>` / `background none`
   compile to `Background { image }`, `music <id>` / `music none` to `Music { track }`, and
   `sound <id>` to `Sound { id }`.
+- `with <transition> [seconds]` on `show`, `background`, `remove` or `clear` compiles to a
+  `With(Transition { kind, millis })` instruction just before the one it applies to. The
+  other instructions keep their shape, so scenes without `with` compile (and fingerprint)
+  exactly as before. `TransitionKind` is `Dissolve`, `Fade`, `SlideLeft` or `SlideRight`;
+  `millis` is `None` for the default length (`default_millis()`: 500, 1000, 600, 600) and
+  `Transition::seconds()` resolves it.
 - `commit` compiles to `Commit`; `choice final:` compiles like `choice:` with a `Commit`
   at the start of every option's body (SCRIPT.md 10).
 - An `if` compiles to `JumpIfFalse { condition, else_start }` + then-branch + `Goto`
@@ -291,12 +297,12 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `Say { speaker, text }` | yes | A line of dialogue (`speaker: None` is narration) |
 | `Choice { options }` | yes | Waits for `choose(index)`; `advance` returns the same choice until then |
 | `End` | yes | The story is over; `advance` keeps returning `End` until `reset` |
-| `Show { character, image, position }` | no | Already applied to `active_characters()` (and `position()` when `at` was used) |
-| `Background { image }` | no | Already applied to `background()`; `None` for `background none` |
+| `Show { character, image, position, transition }` | no | Already applied to `active_characters()` (and `position()` when `at` was used). `transition` is the `with` of that line, if any |
+| `Background { image, transition }` | no | Already applied to `background()`; `None` for `background none` |
 | `Music { track }` | no | Already applied to `music()`; `None` for `music none` |
 | `Sound { id }` | no | A one-shot sound for the frontend to play; not part of the state |
-| `Hide { character }` | no | Already applied |
-| `Clear` | no | Already applied |
+| `Hide { character, transition }` | no | Already applied |
+| `Clear { transition }` | no | Already applied |
 | `Call { command, args }` | no | For the game to handle |
 | `Commit` | no | A `commit` (or the start of a `choice final:` option): a rollback barrier, for the frontend |
 | `SceneEnter { scene }` | no | The story entered a scene: at the start, on every `jump`, or when a restore restarted an edited scene. Only with `set_scene_events(true)` (off by default, so simple frontends never see it); not emitted when a restore returns to the exact position |

@@ -5,7 +5,8 @@ use raylib::prelude::*;
 use crate::screens::Typewriter;
 use crate::ui::{self, Background, ButtonStyle, SliderStyle, TextStyle};
 use crate::{
-    DrawContext, FontRole, GameContext, Overlay, OverlayAction, Screen, ScreenState, Settings,
+    DrawContext, Focus, FontRole, GameContext, NavInput, Overlay, OverlayAction, Screen,
+    ScreenState, Settings,
 };
 
 pub const SETTINGS_OVERLAY: &str = "settings";
@@ -34,6 +35,7 @@ pub struct SettingsConfig {
     pub value_button: ButtonStyle,
     pub value_text: TextStyle,
     pub slider: SliderStyle,
+    pub focus_color: Color,
     pub row_width: f32,
     pub row_spacing: f32,
     pub display_label: String,
@@ -69,6 +71,7 @@ impl Default for SettingsConfig {
             value_button: ButtonStyle::default().size(260.0, 46.0).font_size(20.0),
             value_text: TextStyle::new(FontRole::Menu, 18.0, Color::LIGHTGRAY),
             slider: SliderStyle::default(),
+            focus_color: Color::new(255, 255, 255, 22),
             row_width: 600.0,
             row_spacing: 16.0,
             display_label: "Display".to_string(),
@@ -134,6 +137,11 @@ impl SettingsConfig {
 
     pub fn slider(mut self, style: impl FnOnce(SliderStyle) -> SliderStyle) -> Self {
         self.slider = style(self.slider);
+        self
+    }
+
+    pub fn focus_color(mut self, color: Color) -> Self {
+        self.focus_color = color;
         self
     }
 
@@ -424,6 +432,7 @@ struct SettingsMenu {
     preview: Option<(Typewriter, u32)>,
     visible: usize,
     dragging: Option<SettingsRow>,
+    focus: Focus,
 }
 
 impl SettingsMenu {
@@ -433,6 +442,7 @@ impl SettingsMenu {
             preview: None,
             visible: 0,
             dragging: None,
+            focus: Focus::default(),
         }
     }
 
@@ -441,18 +451,47 @@ impl SettingsMenu {
         let screen = ui::screen_size(ctx.rl);
 
         let back_key = config.back_keys.iter().any(|&k| ctx.rl.is_key_pressed(k));
-        if ui::button_clicked(ctx, config.back_rect(screen), &config.back_button) || back_key {
+        let back = config.back_rect(screen);
+        if ui::button_clicked(ctx, back, &config.back_button) || back_key || ctx.nav.back {
             return Outcome::Back;
         }
 
         let rows = config.rows();
         let controls = config.control_rects(screen);
+
+        let mut targets: Vec<Rectangle> = controls
+            .iter()
+            .map(|&control| config.row_rect(control, screen))
+            .collect();
+        targets.push(back);
+        let pointed = targets
+            .iter()
+            .position(|rect| ui::is_hovered(ctx.rl, *rect));
+        let horizontal = ctx.nav.horizontal();
+        let vertical_only = NavInput {
+            left: false,
+            right: false,
+            ..ctx.nav
+        };
+        match self.focus.update(&vertical_only, &targets, &[], pointed) {
+            Some(index) if index == rows.len() => return Outcome::Back,
+            Some(index) if rows[index] == SettingsRow::Display => {
+                ctx.settings.update(|s| s.fullscreen = !s.fullscreen);
+            }
+            _ => {}
+        }
+        let mut sample = false;
+        if horizontal != 0
+            && let Some(&row) = self.focus.index().and_then(|i| rows.get(i))
+        {
+            ctx.settings.update(|s| config.step(row, s, horizontal));
+            sample |= row == SettingsRow::SoundVolume;
+        }
         let mouse = ctx.rl.get_mouse_position();
         let pressed = ctx
             .rl
             .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
         let held = ctx.rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT);
-        let mut sample = false;
 
         for (&row, &control) in rows.iter().zip(&controls) {
             let row_rect = config.row_rect(control, screen);
@@ -478,18 +517,6 @@ impl SettingsMenu {
             );
             if pressed && grab.check_collision_point_rec(mouse) {
                 self.dragging = Some(row);
-            }
-
-            if ui::is_hovered(ctx.rl, row_rect) {
-                let delta = match () {
-                    _ if ctx.rl.is_key_pressed(KeyboardKey::KEY_LEFT) => -1,
-                    _ if ctx.rl.is_key_pressed(KeyboardKey::KEY_RIGHT) => 1,
-                    _ => 0,
-                };
-                if delta != 0 {
-                    ctx.settings.update(|s| config.step(row, s, delta));
-                    sample |= row == SettingsRow::SoundVolume;
-                }
             }
         }
 
@@ -548,7 +575,23 @@ impl SettingsMenu {
         );
 
         let left = (screen.x - config.row_width) / 2.0;
-        for (row, control) in config.rows().into_iter().zip(config.control_rects(screen)) {
+        for (index, (row, control)) in config
+            .rows()
+            .into_iter()
+            .zip(config.control_rects(screen))
+            .enumerate()
+        {
+            let focused = ctx.shows_focus(&self.focus, index);
+            if focused {
+                let row_rect = config.row_rect(control, screen);
+                let band = Rectangle::new(
+                    row_rect.x - 12.0,
+                    row_rect.y - 4.0,
+                    row_rect.width + 24.0,
+                    row_rect.height + 8.0,
+                );
+                d.draw_rectangle_rounded(band, 0.2, 6, config.focus_color);
+            }
             let label_y = control.y + (control.height - config.label_text.size) / 2.0;
             ui::draw_text(
                 d,
@@ -560,7 +603,9 @@ impl SettingsMenu {
 
             let value = config.value_name(row, ctx.settings);
             if !row.is_slider() {
-                ui::draw_button(d, ctx, control, &value, &config.value_button);
+                ui::Button::new(&value, &config.value_button)
+                    .focused(focused)
+                    .draw(d, ctx, control);
                 continue;
             }
 
@@ -570,7 +615,7 @@ impl SettingsMenu {
                 area,
                 config.fraction(row, ctx.settings),
                 config.steps(row),
-                self.dragging == Some(row) || ctx.pointer_over(d, area),
+                focused || self.dragging == Some(row) || ctx.pointer_over(d, area),
                 &config.slider,
             );
 
@@ -593,13 +638,10 @@ impl SettingsMenu {
             self.visible,
         );
 
-        ui::draw_button(
-            d,
-            ctx,
-            config.back_rect(screen),
-            &config.back_label,
-            &config.back_button,
-        );
+        let back_index = config.rows().len();
+        ui::Button::new(&config.back_label, &config.back_button)
+            .focused(ctx.shows_focus(&self.focus, back_index))
+            .draw(d, ctx, config.back_rect(screen));
     }
 }
 

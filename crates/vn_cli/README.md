@@ -51,16 +51,17 @@ cargo run -p vn_cli -- dump examples/god_is_watching/assets/story
 ```
 
 ```text
-6 files, 30 scenes, 503 instructions
+6 files, 30 scenes, 591 instructions
 
 scene box_the_letter:  (examples/god_is_watching/assets/story/01_box_14.story:24)
-055: BACKGROUND archive_office
-056: MUSIC archive
-059: CHOICE ['Break the seal'->60, 'Leave it sealed'->68]
-060: SET read_letter = true
-061: SOUND page_turn
-062: CALL give_item verlaine_letter
-067: GOTO 70
+064: WITH dissolve
+065: BACKGROUND archive_office
+066: MUSIC archive
+069: CHOICE ['Break the seal'->70, 'Leave it sealed'->78]
+070: SET read_letter = true
+071: SOUND page_turn
+072: CALL give_item verlaine_letter
+077: GOTO 80
 ```
 
 Planned: `new`, `run`, `lsp`, `fmt` (see TODO.md).

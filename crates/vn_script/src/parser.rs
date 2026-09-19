@@ -2,7 +2,7 @@ use crate::diagnostics::Diagnostic;
 use crate::lexer::{is_keyword, keyword_name, keywords, scan_string};
 use crate::suggest::closest;
 use crate::types::parser::{ChoiceOption, Node, Stmt, Token, TokenKind};
-use crate::types::{Position, Value};
+use crate::types::{Position, Transition, TransitionKind, Value};
 
 pub use crate::condition::parse_condition;
 
@@ -315,47 +315,65 @@ fn parse_statement(token: &Token) -> Result<Node, Diagnostic> {
     let error = |message: String| Diagnostic::error(line, message);
 
     match token.kind {
-        TokenKind::Show => match words(&token.payload)[..] {
-            [character, image] => Ok(Node::Show {
+        TokenKind::Show => {
+            let (words, transition) = split_with(&token.payload, line)?;
+            let (character, image, position) = match words[..] {
+                [character, image] => (character, image, None),
+                [character, image, "at", position] => {
+                    (character, image, Some(parse_position(position, line)?))
+                }
+                [_, _, "at"] => {
+                    return Err(error(format!(
+                        "`at` needs a position: {}",
+                        position_names()
+                    )));
+                }
+                [] => {
+                    return Err(error(
+                        "`show` needs a character and an image: `show <character> <image>`".into(),
+                    ));
+                }
+                [character] => {
+                    return Err(error(format!(
+                        "`show {}` needs an image: `show {} <image>`",
+                        character, character
+                    )));
+                }
+                [_, _, ref extra @ ..] => {
+                    return Err(error(format!(
+                        "`show` takes a character, an image and optionally `at <position>` and `with <transition>`; unexpected `{}`",
+                        extra.join(" ")
+                    )));
+                }
+            };
+            Ok(Node::Show {
                 character: character_id(character, line)?,
                 image: identifier(image, "image id", line)?,
-                position: None,
-            }),
-            [character, image, "at", position] => Ok(Node::Show {
-                character: character_id(character, line)?,
-                image: identifier(image, "image id", line)?,
-                position: Some(parse_position(position, line)?),
-            }),
-            [_, _, "at"] => Err(error(format!(
-                "`at` needs a position: {}",
-                position_names()
-            ))),
-            [] => Err(error(
-                "`show` needs a character and an image: `show <character> <image>`".into(),
-            )),
-            [character] => Err(error(format!(
-                "`show {}` needs an image: `show {} <image>`",
-                character, character
-            ))),
-            [_, _, ref extra @ ..] => Err(error(format!(
-                "`show` takes a character, an image and optionally `at <position>`; unexpected `{}`",
-                extra.join(" ")
-            ))),
-        },
+                position,
+                transition,
+            })
+        }
 
-        TokenKind::Background => match words(&token.payload)[..] {
-            ["none"] => Ok(Node::Background { image: None }),
-            [image] => Ok(Node::Background {
-                image: Some(identifier(image, "background id", line)?),
-            }),
-            [] => Err(error(
-                "`background` needs an image: `background <image>` or `background none`".into(),
-            )),
-            [_, ref extra @ ..] => Err(error(format!(
-                "`background` takes one image; unexpected `{}`",
-                extra.join(" ")
-            ))),
-        },
+        TokenKind::Background => {
+            let (words, transition) = split_with(&token.payload, line)?;
+            let image = match words[..] {
+                ["none"] => None,
+                [image] => Some(identifier(image, "background id", line)?),
+                [] => {
+                    return Err(error(
+                        "`background` needs an image: `background <image>` or `background none`"
+                            .into(),
+                    ));
+                }
+                [_, ref extra @ ..] => {
+                    return Err(error(format!(
+                        "`background` takes one image; unexpected `{}`",
+                        extra.join(" ")
+                    )));
+                }
+            };
+            Ok(Node::Background { image, transition })
+        }
 
         TokenKind::Music => match words(&token.payload)[..] {
             ["none"] => Ok(Node::Music { track: None }),
@@ -382,19 +400,30 @@ fn parse_statement(token: &Token) -> Result<Node, Diagnostic> {
             ))),
         },
 
-        TokenKind::Remove => match words(&token.payload)[..] {
-            [character] => Ok(Node::Remove {
-                character: character_id(character, line)?,
-            }),
-            _ => Err(error(
-                "`remove` takes one character: `remove <character>`".into(),
-            )),
-        },
+        TokenKind::Remove => {
+            let (words, transition) = split_with(&token.payload, line)?;
+            match words[..] {
+                [character] => Ok(Node::Remove {
+                    character: character_id(character, line)?,
+                    transition,
+                }),
+                _ => Err(error(
+                    "`remove` takes one character: `remove <character>`".into(),
+                )),
+            }
+        }
 
-        TokenKind::Clear if token.payload.is_empty() => Ok(Node::Clear),
-        TokenKind::Clear => Err(error(
-            "`clear` takes no arguments (use `remove <character>` for one character)".into(),
-        )),
+        TokenKind::Clear => {
+            let (words, transition) = split_with(&token.payload, line)?;
+            if words.is_empty() {
+                Ok(Node::Clear { transition })
+            } else {
+                Err(error(
+                    "`clear` takes no arguments (use `remove <character>` for one character)"
+                        .into(),
+                ))
+            }
+        }
 
         TokenKind::Commit if token.payload.is_empty() => Ok(Node::Commit),
         TokenKind::Commit => Err(error("`commit` takes no arguments".into())),
@@ -431,6 +460,59 @@ fn parse_statement(token: &Token) -> Result<Node, Diagnostic> {
         | TokenKind::If
         | TokenKind::Else => unreachable!("block tokens are parsed by the block parser"),
     }
+}
+
+fn split_with(payload: &str, line: usize) -> Result<(Vec<&str>, Option<Transition>), Diagnostic> {
+    let all = words(payload);
+    let Some(at) = all.iter().position(|&word| word == "with") else {
+        return Ok((all, None));
+    };
+
+    let error = |message: String| Diagnostic::error(line, message);
+    let names = || TransitionKind::ALL.map(TransitionKind::name).join(", ");
+    let transition = match all[at + 1..] {
+        [] => return Err(error(format!("`with` needs a transition: {}", names()))),
+        [name] => parse_transition(name, None, line)?,
+        [name, seconds] => parse_transition(name, Some(seconds), line)?,
+        [_, _, ref extra @ ..] => {
+            return Err(error(format!(
+                "`with` takes a transition and optionally its length in seconds; unexpected `{}`",
+                extra.join(" ")
+            )));
+        }
+    };
+    Ok((all[..at].to_vec(), Some(transition)))
+}
+
+fn parse_transition(
+    name: &str,
+    seconds: Option<&str>,
+    line: usize,
+) -> Result<Transition, Diagnostic> {
+    let error = |message: String| Diagnostic::error(line, message);
+    let kind = TransitionKind::from_name(name).ok_or_else(|| {
+        let names = TransitionKind::ALL.map(TransitionKind::name);
+        error(format!(
+            "unknown transition `{}` (expected {}){}",
+            name,
+            names.join(", "),
+            crate::did_you_mean(name, names)
+        ))
+    })?;
+
+    let millis = match seconds {
+        None => None,
+        Some(text) => match text.parse::<f32>() {
+            Ok(value) if value > 0.0 && value <= 30.0 => Some((value * 1000.0).round() as u32),
+            _ => {
+                return Err(error(format!(
+                    "transition length must be a number of seconds between 0 and 30, got `{}`",
+                    text
+                )));
+            }
+        },
+    };
+    Ok(Transition { kind, millis })
 }
 
 fn parse_position(name: &str, line: usize) -> Result<Position, Diagnostic> {

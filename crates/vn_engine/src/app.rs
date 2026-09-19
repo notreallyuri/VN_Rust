@@ -19,9 +19,9 @@ use crate::screens::{
 };
 use crate::{
     Audio, AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, FontRole, FromArgs,
-    GameContext, GameState, Hooks, Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, Saves,
-    Screen, ScreenFactory, ScreenState, ScreenStateManager, ScriptErrors, SettingsStore,
-    StoryLoader, StoryWatcher, ToastConfig, TooltipConfig,
+    GameContext, GameState, Hooks, Navigation, NavigationConfig, Overlay, Rollback, RollbackConfig,
+    SETTINGS_FILE_NAME, Saves, Screen, ScreenFactory, ScreenState, ScreenStateManager,
+    ScriptErrors, SettingsStore, StoryLoader, StoryWatcher, ToastConfig, TooltipConfig,
 };
 
 type ScreenBuilder = Box<dyn Fn() -> Box<dyn Screen>>;
@@ -50,6 +50,7 @@ pub struct VnApp {
     autosave: bool,
     audio: AudioConfig,
     tooltips: TooltipConfig,
+    navigation: NavigationConfig,
     save_menu: SaveMenuConfig,
     text_input: TextInputConfig,
     pause_menu: PauseMenuConfig,
@@ -136,6 +137,7 @@ impl VnApp {
             autosave: true,
             audio: AudioConfig::default(),
             tooltips: TooltipConfig::default(),
+            navigation: NavigationConfig::default(),
             save_menu: SaveMenuConfig::default(),
             text_input: TextInputConfig::default(),
             pause_menu: PauseMenuConfig::default(),
@@ -257,6 +259,11 @@ impl VnApp {
 
     pub fn audio(mut self, config: impl FnOnce(AudioConfig) -> AudioConfig) -> Self {
         self.audio = config(self.audio);
+        self
+    }
+
+    pub fn navigation(mut self, config: impl FnOnce(NavigationConfig) -> NavigationConfig) -> Self {
+        self.navigation = config(self.navigation);
         self
     }
 
@@ -492,6 +499,7 @@ impl VnApp {
         manager.settings = settings;
         manager.close_confirmation = self.close_confirmation;
         manager.tooltip_config = self.tooltips;
+        manager.navigation = Navigation::new(self.navigation);
         manager.audio = Audio::new(manager.resources.root().to_path_buf(), self.audio);
 
         for (role, file) in &self.fonts {

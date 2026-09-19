@@ -6,8 +6,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Comparison, Condition, Diagnostic, Instruction, Position, Program, Schema, Value, VarType,
-    compile_source, compile_sources, did_you_mean, interpolate, read_sources, story_files,
+    Comparison, Condition, Diagnostic, Instruction, Position, Program, Schema, Transition, Value,
+    VarType, compile_source, compile_sources, did_you_mean, interpolate, read_sources, story_files,
 };
 
 const MAX_SILENT_STEPS: usize = 100_000;
@@ -25,9 +25,11 @@ pub enum Event {
         character: String,
         image: String,
         position: Option<Position>,
+        transition: Option<Transition>,
     },
     Background {
         image: Option<String>,
+        transition: Option<Transition>,
     },
     Music {
         track: Option<String>,
@@ -37,8 +39,11 @@ pub enum Event {
     },
     Hide {
         character: String,
+        transition: Option<Transition>,
     },
-    Clear,
+    Clear {
+        transition: Option<Transition>,
+    },
     Call {
         command: String,
         args: Vec<String>,
@@ -116,6 +121,7 @@ pub struct StoryVm {
     positions: HashMap<String, Position>,
     background: Option<String>,
     music: Option<String>,
+    pending_transition: Option<Transition>,
     pending_choice: Option<usize>,
     current: Option<Event>,
     schema: Schema,
@@ -149,6 +155,7 @@ impl StoryVm {
             positions: HashMap::new(),
             background: None,
             music: None,
+            pending_transition: None,
             pending_choice: None,
             current: None,
             schema: Schema::default(),
@@ -228,6 +235,7 @@ impl StoryVm {
         self.positions.clear();
         self.background = None;
         self.music = None;
+        self.pending_transition = None;
         self.pending_choice = None;
         self.current = None;
         self.entered = false;
@@ -297,6 +305,7 @@ impl StoryVm {
                         character: char_id.clone(),
                         image: img_id.clone(),
                         position: *position,
+                        transition: self.pending_transition.take(),
                     };
                     self.active_characters
                         .insert(char_id.clone(), img_id.clone());
@@ -309,6 +318,7 @@ impl StoryVm {
                 Instruction::Background { image } => {
                     let event = Event::Background {
                         image: image.clone(),
+                        transition: self.pending_transition.take(),
                     };
                     self.background = image.clone();
                     self.ip += 1;
@@ -330,6 +340,7 @@ impl StoryVm {
                 Instruction::Hide { char_id } => {
                     let event = Event::Hide {
                         character: char_id.clone(),
+                        transition: self.pending_transition.take(),
                     };
                     self.active_characters.remove(char_id);
                     self.positions.remove(char_id);
@@ -340,7 +351,9 @@ impl StoryVm {
                     self.active_characters.clear();
                     self.positions.clear();
                     self.ip += 1;
-                    return Event::Clear;
+                    return Event::Clear {
+                        transition: self.pending_transition.take(),
+                    };
                 }
                 Instruction::Call { command, args } => {
                     let event = Event::Call {
@@ -390,6 +403,10 @@ impl StoryVm {
                     self.ip += 1;
                 }
                 Instruction::Pause => self.ip += 1,
+                Instruction::With(transition) => {
+                    self.pending_transition = Some(*transition);
+                    self.ip += 1;
+                }
                 Instruction::Commit => {
                     self.ip += 1;
                     return Event::Commit;
@@ -570,6 +587,7 @@ impl StoryVm {
         self.positions = snapshot.positions.clone().into_iter().collect();
         self.background = snapshot.background.clone();
         self.music = snapshot.music.clone();
+        self.pending_transition = None;
         self.pending_choice = None;
         self.current = None;
 

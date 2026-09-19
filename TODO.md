@@ -113,18 +113,18 @@ Three levels of control, each optional:
 
 - [x] Character positions: `show mary happy at left` (five spots; unpositioned characters are spread evenly), sprites scaled to the window height
 - [x] Backgrounds: `background <id>` / `background none`, drawn to cover the window, saved and rolled back with the story
-- [ ] Transitions (`background hall with fade`, dissolves between expressions)
+- [x] Transitions: `with dissolve | fade | slide_left | slide_right [seconds]` on `show`, `background`, `remove`, `clear`; expression crossfades and position glides; non-blocking, a click finishes them
 - [x] Fonts: built-in Noto Sans default, per-role fonts (`FontRole`) loaded from `assets/fonts/`
 - [x] Text wrapping (`Fonts::wrap`, `ui::draw_text_wrapped`)
 - [x] Typewriter effect (text speed setting; click shows the whole line)
 - [x] Window-relative layout in the default screens
 - [x] Layouts for button lists (`Layout`: column, row, grid, rows_of, custom; anchors, alignment, fitted spacing) in the main menu, pause menu, choices, HUD and save slots
 - [x] Button styling: borders, shadows, images (stretched or nine-slice), icons, alignment, padding, overflow (ellipsis, shrink, wrap), transforms (scale, rotate, skew, offset), hovered/pressed/focused/disabled looks with transitions, hover and click sounds, clicks on release, per-button HUD and choice styles, `MenuItem::enabled_if`
-- [ ] Keyboard/gamepad navigation between buttons (arrow keys, especially for grids); the `focused` look is ready for it
+- [x] Keyboard/gamepad navigation: spatial focus (columns, rows, grids, wrapping), Tab, key and stick repeat, focus that follows the mouse, gamepad A/B/X/Start/LB/RB, in every default screen
 - [x] Settings screen (see M3): a display toggle, and sliders for text speed, music and sound volume
 - [x] Tooltips (`MenuItem::tooltip`, `HudButton::tooltip`, `ctx.tooltip(rect, text)`), on by default in the settings rows and save slots
 - [x] Clean exit (`ScreenState::Quit`)
-- [x] Audio: `music <track>` / `music none` / `sound <id>` (SCRIPT.md 2.6); looping music with crossfades, part of the story state (saves, rollback, hot reload); menu music; volumes in settings
+- [x] Audio: `music <track>` / `music none` / `sound <id>` (SCRIPT.md 2.7); looping music with crossfades, part of the story state (saves, rollback, hot reload); menu music; volumes in settings
 
 ## M6: Save/load and tooling (save/load started early)
 

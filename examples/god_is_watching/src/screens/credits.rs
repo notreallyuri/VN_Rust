@@ -50,7 +50,9 @@ impl Screen for CreditsScreen {
             .into_iter()
             .any(|key| ctx.rl.is_key_pressed(key));
 
-        (ui::button_clicked(&mut ctx, back, &self.back) || key).then_some(ScreenState::MainMenu)
+        let nav = ctx.nav.back || ctx.nav.accept;
+        (ui::button_clicked(&mut ctx, back, &self.back) || key || nav)
+            .then_some(ScreenState::MainMenu)
     }
 
     fn draw(&self, d: &mut RaylibDrawHandle, ctx: &DrawContext) {
@@ -118,6 +120,8 @@ impl Screen for CreditsScreen {
             }
         }
 
-        ui::draw_button(d, ctx, self.back_rect(screen), "Back", &self.back);
+        ui::Button::new("Back", &self.back)
+            .focused(ctx.interactive && ctx.focus_visible)
+            .draw(d, ctx, self.back_rect(screen));
     }
 }

@@ -1,4 +1,4 @@
-use super::instructions::{Condition, Position, Value};
+use super::instructions::{Condition, Position, Transition, Value};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TokenKind {
@@ -53,9 +53,11 @@ pub enum Node {
         character: String,
         image: String,
         position: Option<Position>,
+        transition: Option<Transition>,
     },
     Background {
         image: Option<String>,
+        transition: Option<Transition>,
     },
     Music {
         track: Option<String>,
@@ -65,8 +67,11 @@ pub enum Node {
     },
     Remove {
         character: String,
+        transition: Option<Transition>,
     },
-    Clear,
+    Clear {
+        transition: Option<Transition>,
+    },
     Commit,
     Dialogue {
         speaker: Option<String>,

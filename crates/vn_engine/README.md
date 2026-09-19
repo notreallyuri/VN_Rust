@@ -58,6 +58,7 @@ fn main() -> std::io::Result<()> {
 | `confirm_on_close(Option<&str>)` | "Quit the game? Unsaved progress will be lost." | Message shown when the window's close button is clicked during a game; `None` quits right away (see [Closing the window](#closing-the-window)) |
 | `toast(\|t\| ...)` | | Configure notifications (see [Notifications](#notifications)) |
 | `tooltips(\|t\| ...)` | on | Configure tooltips (see [Tooltips](#tooltips)) |
+| `navigation(\|n\| ...)` | on | Configure keyboard and gamepad navigation (see [Keyboard and gamepad](#keyboard-and-gamepad)) |
 | `exit_key(Option<key>)` | `None` | A key that closes the window. Off by default, so Esc can open the pause menu |
 | `state(value)` | | Register game state (see [Game state](#game-state)) |
 | `command(name, handler)` | | Handle `call <name> ...` from stories (see [Commands](#commands)) |
@@ -545,6 +546,62 @@ every screen and overlay (quick save/load use them). `ToastConfig` (`.toast(|t| 
 `text(style)`, `error_text(style)`, `background(color)`, `seconds(s)` (2.5),
 `margin(px)` (16).
 
+## Keyboard and gamepad
+
+Every default screen works without a mouse.
+
+| Input | Keyboard | Gamepad |
+| --- | --- | --- |
+| Move focus | arrow keys (with key repeat), Tab / Shift+Tab | D-pad or left stick (repeats while held) |
+| Activate | Enter, Space | A |
+| Back / close | each screen's back keys (Esc, Backspace) | B |
+| Pause | Esc | Start |
+| Delete a save | Delete | X |
+| Roll back / forward | Page Up / Page Down, mouse wheel | LB / RB |
+| Advance the dialogue | Space, Enter, click | A |
+
+**Focus.** Pressing a direction moves focus to the nearest button that way, so columns,
+rows and grids (the example's main menu, the 2-column pause menu and save slots) need no
+extra setup; the ends wrap around. The focused button draws with its style's `focused`
+look. Focus only shows once a key or gamepad button is used; moving the mouse goes back to
+hover, and the focus follows the hovered button so the keys continue from there. A
+screen opened while the player uses the keyboard focuses its first usable button right
+away (Cancel in confirmation dialogs). Disabled items are skipped.
+
+Per screen: the main and pause menus, choices, confirmation dialogs, Save/Load (slots,
+then Back; X or Delete deletes the focused slot, and its Delete button shows) and
+Settings (up/down pick a row, left/right change the value, Enter toggles Display; the
+focused row gets a light band, `focus_color`). The start screen accepts any key or
+gamepad button. HUD buttons are for the mouse; the pause menu covers the same actions.
+Text input needs a keyboard.
+
+`NavigationConfig` (`.navigation(|n| ...)`):
+
+| Option | Default |
+| --- | --- |
+| `enabled(bool)`, `gamepad(bool)` | `true`, `true` (the first connected gamepad) |
+| `up_keys`, `down_keys`, `left_keys`, `right_keys` | the arrow keys |
+| `accept_keys`, `back_keys`, `alt_keys` | Enter, keypad Enter, Space; none (screens have their own); Delete |
+| `stick_deadzone(f)` | 0.5 |
+| `repeat(delay, interval)` | 0.4 s, 0.12 s for held gamepad directions |
+
+**In a custom screen.** `ctx.nav` is this frame's `NavInput` (`up`, `down`, `left`,
+`right`, `next`, `previous`, `accept`, `back`, `pause`, `alt`, `page_back`, `page_forward`,
+and `pointer`: whether the mouse is in use). Keep a `Focus` in the screen:
+
+```rust
+// update
+let hovered = rects.iter().position(|r| ui::button_hovered(ctx.rl, *r, &style));
+if let Some(index) = self.focus.update(&ctx.nav, &rects, &enabled, hovered) {
+    // Enter / A on the focused button
+}
+// draw
+ui::Button::new(label, &style).focused(ctx.shows_focus(&self.focus, index)).draw(d, ctx, rect);
+```
+
+`navigate(rects, enabled, from, direction, wrap)` is the spatial search on its own, and
+`DrawContext::focus_visible` tells whether keyboard focus is showing.
+
 ## Tooltips
 
 Hovering a control for `delay` seconds shows a small box of text next to the pointer. It
@@ -998,10 +1055,33 @@ ctx.saves.delete("3")?;
 (`Saves::new(dir, title).save(slot, &story, &state)`). The VM part is
 `StoryVm::snapshot()` / `restore()` in `vn_script`.
 
+## Transitions
+
+The playing screen animates `with` transitions (SCRIPT.md 2.6):
+
+- A background change dissolves, fades through black (over the characters too), or
+  slides; a missing old or new background shows the playing screen's own `background`.
+- Characters fade or slide in and out. An expression change crossfades (the old image
+  stays nearly opaque until the end, so the character never looks see-through), and a new
+  `at` position glides there (eased). Other characters that move because someone entered
+  or left the unplaced spots jump.
+- Transitions run alongside the story: the next line types while they play, and the
+  click that would finish the typewriter also finishes them. Several transitions from the
+  same run of lines play together.
+- Rollback, loads, hot reloads and returning from another screen show the final state.
+
+`Stage` is the bookkeeping behind it, public for custom playing screens: `sync(story,
+config)` records what's on screen, `apply(&event, story, config, now)` starts the
+animation for a `Show`/`Hide`/`Clear`/`Background` event (call it for every event from
+`advance()`), `expire(now)`, `finish()`, `reset(..)`, `texture_paths()` (images the
+animations still need loaded) and `draw(d, resources, story, config, now)`.
+`stage_layout(story, config)` is where each character stands, as a fraction of the window
+width.
+
 ## Audio
 
 Stories choose the music and sounds (`music <track>`, `music none`, `sound <id>`, see
-SCRIPT.md 2.6); the engine plays them.
+SCRIPT.md 2.7); the engine plays them.
 
 - Files live in `<assets>/music/<track>` and `<assets>/sounds/<id>`, as `.ogg`, `.mp3`,
   `.wav` or `.flac` (tried in that order; `music_path` and `sound_path` find them). A
@@ -1135,6 +1215,8 @@ The tests run without a window; drawing and input are checked by playing the exa
 | --- | --- |
 | `tests/app.rs` | `VnApp::check` (validation, missing art, story directories, errors with their file), entry scene, typed command arguments, schema export, hook registration |
 | `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history, thumbnails (scaled, replaced, deleted with the slot), autosave switch, save directory names |
+| `tests/stage.rs` | Which events start which animations (entrances, expression changes, moves, exits, `clear`, backgrounds), lengths and expiry, textures kept for fading images, finishing and resetting, the character layout |
+| `tests/navigation.rs` | Spatial navigation in columns and grids (wrapping, disabled items), focus (first press, Tab, following the mouse, keyboard-mode focus, stale focus), key repeat timing |
 | `tests/button.rs` | Transforms (round trips, rotated and skewed hit tests), state blending and defaults, image switching and listed paths, transition steps, per-button HUD and choice styles, disabled menu items and `can_continue` |
 | `tests/audio.rs` | Finding audio files by extension, fades, the music a silent `Audio` tracks, `AudioConfig` |
 | `tests/rollback.rs` | Back/forward, barriers (`commit`, final choices, blocked commands, `through_choices`), history limits, history across a save and load |

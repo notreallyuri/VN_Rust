@@ -8,9 +8,9 @@ use vn_script::StoryVm;
 
 use crate::screens::{CONFIRM_OVERLAY, Confirm};
 use crate::{
-    Audio, Characters, Commands, Fonts, GameState, Hooks, LoadReport, LoadWarning, OverlayRequest,
-    ResourceManager, Rollback, SaveError, Saves, ScreenState, Settings, SettingsStore, TextRequest,
-    Toast,
+    Audio, Characters, Commands, Focus, Fonts, GameState, Hooks, LoadReport, LoadWarning, NavInput,
+    OverlayRequest, ResourceManager, Rollback, SaveError, Saves, ScreenState, Settings,
+    SettingsStore, TextRequest, Toast,
 };
 
 pub struct GameContext<'a> {
@@ -33,6 +33,7 @@ pub struct GameContext<'a> {
     pub(crate) autosave_request: &'a mut bool,
     pub(crate) audio: &'a mut Audio,
     pub(crate) tooltip: &'a mut Option<String>,
+    pub nav: NavInput,
 }
 
 impl GameContext<'_> {
@@ -177,11 +178,16 @@ pub struct DrawContext<'a> {
     pub characters: &'a Characters,
     pub settings: &'a Settings,
     pub interactive: bool,
+    pub focus_visible: bool,
 }
 
 impl DrawContext<'_> {
     pub fn pointer_over(&self, rl: &RaylibHandle, rect: Rectangle) -> bool {
         self.interactive && crate::ui::is_hovered(rl, rect)
+    }
+
+    pub fn shows_focus(&self, focus: &Focus, index: usize) -> bool {
+        self.interactive && self.focus_visible && focus.is(index)
     }
 
     pub fn fonts(&self) -> &Fonts {

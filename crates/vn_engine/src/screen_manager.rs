@@ -8,10 +8,10 @@ use vn_script::{Event, RestoreOutcome, StoryVm};
 
 use crate::screens::{CONFIRM_OVERLAY, Confirm};
 use crate::{
-    Action, Audio, Characters, Commands, DrawContext, GameContext, GameState, Hooks, Overlay,
-    OverlayAction, OverlayRequest, ResourceManager, Rollback, SCRIPT_ERRORS_KEY, Saves, Screen,
-    ScreenState, ScriptErrors, SettingsStore, THUMBNAIL_WIDTH, TextRequest, Toast, ToastConfig,
-    TooltipConfig, TooltipTimer,
+    Action, Audio, Characters, Commands, DrawContext, GameContext, GameState, Hooks, NavInput,
+    Navigation, Overlay, OverlayAction, OverlayRequest, ResourceManager, Rollback,
+    SCRIPT_ERRORS_KEY, Saves, Screen, ScreenState, ScriptErrors, SettingsStore, THUMBNAIL_WIDTH,
+    TextRequest, Toast, ToastConfig, TooltipConfig, TooltipTimer,
 };
 
 pub const CLOSE_MESSAGE: &str = "Quit the game? Unsaved progress will be lost.";
@@ -60,6 +60,8 @@ pub struct ScreenStateManager {
     autosave_request: bool,
     pub audio: Audio,
     pub tooltip_config: TooltipConfig,
+    pub navigation: Navigation,
+    nav: NavInput,
     tooltip_timer: TooltipTimer,
     overlays: Vec<(String, Box<dyn Overlay>)>,
     quit_requested: bool,
@@ -122,6 +124,8 @@ impl ScreenStateManager {
             autosave_request: false,
             audio: Audio::silent(),
             tooltip_config: TooltipConfig::default(),
+            navigation: Navigation::default(),
+            nav: NavInput::default(),
             tooltip_timer: TooltipTimer::default(),
             overlays: Vec::new(),
             quit_requested: false,
@@ -133,6 +137,7 @@ impl ScreenStateManager {
     pub fn update(&mut self, rl: &mut RaylibHandle, thread: &RaylibThread) {
         let now = rl.get_time();
         self.resources.load_requested(rl, thread);
+        self.nav = self.navigation.read(rl);
         let mut overlay_requests = Vec::new();
         let mut toast = None;
         let mut tooltip = None;
@@ -157,6 +162,7 @@ impl ScreenStateManager {
             autosave_request: &mut self.autosave_request,
             audio: &mut self.audio,
             tooltip: &mut tooltip,
+            nav: self.nav,
         };
 
         let next_state = match self.overlays.last_mut() {
@@ -338,6 +344,7 @@ impl ScreenStateManager {
             characters: &self.characters,
             settings: &self.settings.values,
             interactive,
+            focus_visible: !self.nav.pointer,
         }
     }
 

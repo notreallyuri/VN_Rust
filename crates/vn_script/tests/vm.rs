@@ -45,6 +45,7 @@ fn jump_enters_the_target_scene() {
             character: "mary".into(),
             image: "neutral".into(),
             position: None,
+            transition: None,
         }
     );
     assert_eq!(vm.current_scene(), Some("second"));
@@ -532,6 +533,7 @@ fn scene_events_mark_the_start_and_every_jump() {
                 character: "mary".into(),
                 image: "neutral".into(),
                 position: None,
+                transition: None,
             }
         ]
     );
@@ -630,7 +632,8 @@ fn show_and_background_events() {
     assert_eq!(
         vm.advance(),
         Event::Background {
-            image: Some("hall".into())
+            image: Some("hall".into()),
+            transition: None,
         }
     );
     assert_eq!(
@@ -639,6 +642,7 @@ fn show_and_background_events() {
             character: "mary".into(),
             image: "tired".into(),
             position: Some(vn_script::Position::Left),
+            transition: None,
         }
     );
 }
@@ -722,6 +726,90 @@ fn snapshots_keep_the_music() {
     assert!(json.get("music").is_none(), "no music, no field");
     let old: vn_script::StorySnapshot = serde_json::from_value(json).unwrap();
     assert_eq!(old.music, None);
+}
+
+const TRANSITIONS: &str = r#"
+scene a:
+  background hall with fade
+  show mary happy at left with dissolve 0.25
+  show hugo neutral
+  "one"
+  remove mary with slide_left
+  clear with dissolve
+  background none with dissolve
+  "two"
+"#;
+
+#[test]
+fn transitions_ride_on_the_next_event() {
+    use vn_script::{Transition, TransitionKind::*};
+    let mut vm = StoryVm::from_source(TRANSITIONS);
+
+    let fade = Some(Transition::new(Fade));
+    assert_eq!(
+        vm.advance(),
+        Event::Background {
+            image: Some("hall".into()),
+            transition: fade,
+        }
+    );
+    match vm.advance() {
+        Event::Show { transition, .. } => {
+            let transition = transition.unwrap();
+            assert_eq!(transition.kind, Dissolve);
+            assert_eq!(transition.seconds(), 0.25);
+        }
+        other => panic!("{:?}", other),
+    }
+    assert!(
+        matches!(
+            vm.advance(),
+            Event::Show {
+                transition: None,
+                ..
+            }
+        ),
+        "a transition applies to one statement"
+    );
+    assert!(matches!(vm.advance(), Event::Say { .. }));
+    assert_eq!(
+        vm.advance(),
+        Event::Hide {
+            character: "mary".into(),
+            transition: Some(Transition::new(SlideLeft)),
+        }
+    );
+    assert_eq!(
+        vm.advance(),
+        Event::Clear {
+            transition: Some(Transition::new(Dissolve)),
+        }
+    );
+    assert!(matches!(
+        vm.advance(),
+        Event::Background {
+            image: None,
+            transition: Some(_)
+        }
+    ));
+    assert_eq!(Transition::new(Fade).seconds(), 1.0);
+    assert_eq!(Transition::new(SlideRight).to_string(), "slide_right");
+}
+
+#[test]
+fn scenes_without_transitions_compile_as_before() {
+    let plain = StoryVm::from_source("scene a:\n  show mary happy\n  \"hi\"\n");
+    let with = StoryVm::from_source("scene a:\n  show mary happy with dissolve\n  \"hi\"\n");
+    assert_eq!(plain.program().instructions.len(), 3);
+    assert_eq!(
+        with.program().instructions.len(),
+        4,
+        "one extra `With` instruction"
+    );
+    assert!(matches!(
+        with.program().instructions[0],
+        vn_script::Instruction::With(_)
+    ));
 }
 
 #[test]

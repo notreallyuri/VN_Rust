@@ -85,7 +85,39 @@ scene the_study:
   "Father burns them in the study fireplace."
 ```
 
-### 2.6 Music and sound
+### 2.6 Transitions
+
+```story
+show <character_id> <image_id> [at <position>] with <transition> [seconds]
+remove <character_id> with <transition> [seconds]
+clear with <transition> [seconds]
+background <image_id> with <transition> [seconds]
+```
+
+| Transition | Characters | Backgrounds | Default length |
+| --- | --- | --- | --- |
+| `dissolve` | fade in, fade out, crossfade between expressions | crossfade | 0.5 s |
+| `fade` | like `dissolve` | through black | 1 s |
+| `slide_left` | enter from the right edge, leave to the left edge | the new one pushes the old one out to the left | 0.6 s |
+| `slide_right` | enter from the left edge, leave to the right edge | pushed out to the right | 0.6 s |
+
+- `with` goes last on the line; the length is in seconds (above 0, up to 30)
+- Showing a character who is already on screen with a new expression and `with` crossfades
+  the two; with a new `at` position, the character also moves there
+- Without `with`, the change is instant (as before)
+- Transitions don't pause the story: the next line starts while they play, and a click
+  finishes them. Rollback and loading a save show the end result at once
+- `with` can't be used as a character or image id
+
+```story
+  background santa_ilde_courtyard with fade
+  show moriarty older at right with dissolve
+  show moriarty wary with dissolve
+  show moriarty wary at left with dissolve 0.8
+  remove moriarty with slide_left
+```
+
+### 2.7 Music and sound
 
 ```story
 music <track_id>

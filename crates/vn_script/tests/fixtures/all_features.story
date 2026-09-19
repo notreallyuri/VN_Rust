@@ -9,6 +9,8 @@ scene start:
   show gabriel serious at left
   show mary neutral
   show gabriel worried
+  show mary happy with dissolve
+  remove mary with slide_left 0.8
 
   # Dialogue and narration (SCRIPT.md 3)
   gabriel "This is a really interesting format."

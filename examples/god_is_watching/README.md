@@ -39,6 +39,7 @@ Where each feature is used, so the example can be read as a reference.
 | --- | --- |
 | Scenes, `jump` across files | Every chapter ends with a `jump` into the next file |
 | `background <id>`, `background none` | Every scene; `background none` for the moment report 221 breaks off (`03_reports.story`) |
+| `with <transition>` | Every chapter opens with `background … with fade`; other backgrounds, `show`, `remove` and `clear` dissolve (expression changes crossfade, moves glide); Clara leaves `with slide_right`; the third shadow arrives `with slide_left` and everyone goes `with dissolve 1.5` (`reports_the_shadows`) |
 | `music <track>`, `music none` | Each place has its track: `archive` in the Archive, `von_lucis` in the 1894 house, `santa_ilde` at the orphanage and the field post, `ending` for all three endings |
 | `sound <id>` | The box's latch (`archive_start`), turning pages, a door at Santa Ilde (`notebook_the_lady`), footsteps, closing the box (`ending_silence`) |
 | `show … at <position>`, re-show keeping the spot | `show hugo tired at right` … `show mary afraid` keeps Mary at `left` (`01_box_14.story`) |
@@ -72,6 +73,7 @@ Where each feature is used, so the example can be read as a reference.
 | Confirmation dialogs | Exit from the main menu, the pause menu's Main Menu and Quit, overwriting a slot, closing the window mid-game |
 | Settings | From the main menu and the pause menu, with sliders in the palette (`style::slider`); the text speed preview types one of Adelaide's lines |
 | Buttons | `src/style.rs`: every button has a border that brightens on hover and a press scale, with a 0.12 s transition; menu buttons slide right on hover and click with `page_turn`; Exit skews on hover; choices use a nine-slice paper image (`ui/choice.png`, swapped for `choice_hover.png` on hover), left-aligned wrapped text; HUD buttons have icons (`ui/icon_*.png`) and a shadow; Continue is disabled until there is something to continue |
+| Keyboard and gamepad | Every screen, including the example's Evidence, Credits and Case file (B closes them); `style.rs` gives every button a `focused` look matching its hover look |
 | Tooltips | On the HUD buttons (`HudButton::tooltip`), the menu's Continue (`MenuItem::tooltip`), the settings rows and the Delete button, styled with `.tooltips(...)` |
 | Typewriter text | Every line, at the player's text speed |
 | Layouts | Main menu `rows_of([1, 2, 2, 1])` with `Stretch`; pause menu and save slots as 2-column grids |

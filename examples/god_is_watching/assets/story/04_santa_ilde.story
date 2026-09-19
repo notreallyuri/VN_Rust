@@ -2,10 +2,10 @@
 # The archivist visits the orphanage in person.
 
 scene ilde_start:
-  background santa_ilde_courtyard
+  background santa_ilde_courtyard with fade
   music santa_ilde
   "November, 1903. Santa Ilde is smaller than the reports made it sound. Twenty-one windows. Somebody is singing."
-  show moriarty older at right
+  show moriarty older at right with dissolve
   sound footsteps
   "The administrator comes out to meet you before you knock. He has worn the same coat for nine years."
   moriarty "You're not the bishopric. The bishopric sends letters."
@@ -24,14 +24,14 @@ scene ilde_start:
   jump ilde_office
 
 scene ilde_office:
-  background santa_ilde_office
-  show moriarty older at left
+  background santa_ilde_office with dissolve
+  show moriarty older at left with dissolve
   moriarty "Ask your questions. I'll tell you which ones I've forgotten the answers to."
   if saw_torn_page == true:
     "The folio number is on the tip of your tongue."
     choice:
       "Ask about folio 41":
-        show moriarty wary
+        show moriarty wary with dissolve
         {player_name} "What was in the boy's cloths, Mr. Moriarty? Folio 41?"
         moriarty "Who else has read that page?"
         if believed_moriarty == true:
@@ -49,11 +49,11 @@ scene ilde_office:
   jump ilde_nursery
 
 scene ilde_nursery:
-  background nursery
-  show gabriel neutral at center
+  background nursery with dissolve
+  show gabriel neutral at center with dissolve
   "The nursery is empty except for one boy, nine years old, sitting on the floor by the window."
   "Beside him there is a painted wooden horse. It was not there when you came in."
-  show gabriel curious
+  show gabriel curious with dissolve
   gabriel "Are you going to forget me too? The last man forgot me."
 
   choice:
@@ -67,12 +67,12 @@ scene ilde_nursery:
       add suspicion -= 1
       "You note the time, the toy, the window. The House will want to know. The boy watches the pencil."
 
-  remove gabriel
+  remove gabriel with dissolve
   jump ilde_hot_water
 
 scene ilde_hot_water:
-  background santa_ilde_office
-  show clara guarded at right
+  background santa_ilde_office with dissolve
+  show clara guarded at right with dissolve
   "The sister who brings you tea keeps her eyes down. She has been at Santa Ilde longer than anyone but the administrator."
   clara "Your hot water, miss."
   if read_letter == true || saw_torn_page == true:
@@ -81,7 +81,7 @@ scene ilde_hot_water:
       "Call her Adelaide":
         set recognized_clara = true
         call note hot_water
-        show clara unveiled
+        show clara unveiled with dissolve
         {player_name} "Thank you, Adelaide."
         "The cup does not shake. She has been waiting nine years for somebody to say it."
         clara "I told her father. I went straight to him, like a good servant."
@@ -93,18 +93,18 @@ scene ilde_hot_water:
     "You thank her. She leaves without a sound."
     sound door_close
 
-  remove clara
+  remove clara with slide_right
   jump ilde_leaving
 
 scene ilde_leaving:
-  background santa_ilde_door
-  show moriarty older at center
+  background santa_ilde_door with dissolve
+  show moriarty older at center with dissolve
   moriarty "You'll write something about us. Everyone who comes here does."
   if trust >= 2:
     moriarty "Write it carefully. He's the only reason this house still has children in it."
   else:
     moriarty "Write what you like. We've been written about before."
-  remove moriarty
+  remove moriarty with dissolve
   "You sign the visitors' book on your way out. Whatever you do next, you have been to Santa Ilde."
   commit
   jump report_start

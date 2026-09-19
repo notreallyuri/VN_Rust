@@ -5,7 +5,9 @@ use raylib::prelude::*;
 use crate::Layout;
 use crate::screens::{MenuItem, SETTINGS_OVERLAY};
 use crate::ui::{self, ButtonStyle, TextStyle};
-use crate::{Action, DrawContext, FontRole, GameContext, Overlay, OverlayAction, ScreenState};
+use crate::{
+    Action, DrawContext, Focus, FontRole, GameContext, Overlay, OverlayAction, ScreenState,
+};
 
 pub const PAUSE_OVERLAY: &str = "pause";
 pub const SAVE_OVERLAY: &str = "save";
@@ -192,11 +194,15 @@ impl PauseMenuConfig {
 
 pub struct PauseMenu {
     config: Rc<PauseMenuConfig>,
+    focus: Focus,
 }
 
 impl PauseMenu {
     pub fn new(config: Rc<PauseMenuConfig>) -> Self {
-        Self { config }
+        Self {
+            config,
+            focus: Focus::default(),
+        }
     }
 }
 
@@ -207,7 +213,7 @@ impl Overlay for PauseMenu {
             .close_keys
             .iter()
             .any(|&key| ctx.rl.is_key_pressed(key));
-        if close {
+        if close || ctx.nav.back || ctx.nav.pause {
             return OverlayAction::CloseAll;
         }
 
@@ -217,9 +223,12 @@ impl Overlay for PauseMenu {
             &self.config.items,
             buttons.iter().map(|(rect, _)| *rect),
         );
-        let Some(index) =
-            crate::screens::main_menu::clicked_item(&mut ctx, &self.config.items, &buttons)
-        else {
+        let Some(index) = crate::screens::main_menu::clicked_item(
+            &mut ctx,
+            &self.config.items,
+            &buttons,
+            &mut self.focus,
+        ) else {
             return OverlayAction::Stay;
         };
 
@@ -250,6 +259,6 @@ impl Overlay for PauseMenu {
             &config.title_text,
         );
 
-        crate::screens::main_menu::draw_items(d, ctx, &config.items, buttons);
+        crate::screens::main_menu::draw_items(d, ctx, &config.items, buttons, &self.focus);
     }
 }

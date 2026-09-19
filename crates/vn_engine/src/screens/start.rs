@@ -82,6 +82,7 @@ impl Screen for StartScreen {
         ui::load_background(&mut ctx, self.config.background.as_ref());
 
         let pressed = ctx.rl.get_key_pressed().is_some()
+            || ctx.nav.any_key()
             || ctx
                 .rl
                 .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);

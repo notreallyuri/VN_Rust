@@ -2,9 +2,9 @@
 # Back at the Archive. Three endings: report, silence, keeper.
 
 scene report_start:
-  background archive_office
+  background archive_office with fade
   music archive
-  show registrar stern at right
+  show registrar stern at right with dissolve
   registrar "Report two hundred and twenty-two. Yours. What is in Santa Ilde?"
   if read_letter == true && saw_torn_page == true:
     call unlock thorough_reader
@@ -31,11 +31,11 @@ scene ending_report:
   call unlock ending_report
   {player_name} "A boy with a blessing. The blood is Von Lucis. He doesn't know what he does."
   registrar "Thank you, {player_name}. That is what an archive is for."
-  remove registrar
-  background santa_ilde_courtyard
+  remove registrar with dissolve
+  background santa_ilde_courtyard with dissolve
   "In December, three men in black knock at the door of Santa Ilde. Polite, in a way that makes you cold."
   "The administrator tells them there is no one new. It is true. The boy has been there for nine years."
-  background archive_office
+  background archive_office with dissolve
   "Report 222 is filed under Von Lucis. Nobody asks you where he was for those nine months."
   "You never write another report that anyone reads twice."
 
@@ -49,8 +49,8 @@ scene ending_silence:
     registrar "Then we'll send someone who'll find something."
   else:
     registrar "Then Santa Ilde is closed. We have spent enough shadows on it."
-  remove registrar
-  background archive_office
+  remove registrar with dissolve
+  background archive_office with dissolve
   sound book_close
   "Box fourteen goes back on its shelf. You put the reports in after it, in order, and you don't write the last word of 221."
 
@@ -63,10 +63,10 @@ scene ending_keeper:
   {player_name} "An old man, twenty-one children and a very quiet wing. I'd like to be the one who keeps watching it."
   registrar "..."
   registrar "Report two hundred and twenty-two. Filed. Go."
-  remove registrar
-  background santa_ilde_courtyard
-  show clara unveiled at left
-  show gabriel curious at right
+  remove registrar with dissolve
+  background santa_ilde_courtyard with dissolve
+  show clara unveiled at left with dissolve
+  show gabriel curious at right with dissolve
   "In the spring you take a room in the town below Santa Ilde. Every week you write the House a report."
   "Every week it says the same thing, and every week it is true: there's no family here. There's a boy."
   gabriel "Are you going to forget me?"

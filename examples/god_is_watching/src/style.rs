@@ -7,6 +7,7 @@ use vn_engine::{
 pub const INK: Color = Color::new(12, 10, 15, 255);
 pub const PANEL: Color = Color::new(22, 19, 26, 238);
 pub const RAISED: Color = Color::new(38, 33, 42, 240);
+pub const RAISED_FOCUS: Color = Color::new(52, 45, 56, 245);
 pub const PARCHMENT: Color = Color::new(221, 201, 164, 255);
 pub const TEXT: Color = Color::new(234, 228, 216, 255);
 pub const MUTED: Color = Color::new(150, 141, 128, 255);
@@ -41,6 +42,7 @@ pub fn button(style: ButtonStyle) -> ButtonStyle {
         .text_color(PARCHMENT)
         .border(1.0, Color::new(110, 100, 86, 255))
         .hovered(|l| l.border(1.5, PARCHMENT).text_color(TEXT))
+        .focused(|l| l.border(2.0, PARCHMENT).text_color(TEXT).fill(RAISED_FOCUS))
         .pressed(|l| l.transform(|t| t.scale(0.97)))
         .transition(0.12)
 }
@@ -48,6 +50,7 @@ pub fn button(style: ButtonStyle) -> ButtonStyle {
 pub fn menu_button(style: ButtonStyle) -> ButtonStyle {
     button(style)
         .hovered(|l| l.transform(|t| t.offset(6.0, 0.0)))
+        .focused(|l| l.transform(|t| t.offset(6.0, 0.0)))
         .click_sound("page_turn")
 }
 
@@ -61,6 +64,12 @@ pub fn choice_button(style: ButtonStyle) -> ButtonStyle {
         .overflow(TextOverflow::Wrap)
         .hovered(|l| {
             l.image(ButtonImage::new("ui/choice_hover.png").slice_all(16))
+                .text_color(PARCHMENT)
+                .transform(|t| t.offset(10.0, 0.0))
+        })
+        .focused(|l| {
+            l.image(ButtonImage::new("ui/choice_hover.png").slice_all(16))
+                .border(0.0, PARCHMENT)
                 .text_color(PARCHMENT)
                 .transform(|t| t.offset(10.0, 0.0))
         })

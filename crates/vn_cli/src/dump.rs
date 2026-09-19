@@ -79,6 +79,7 @@ pub fn dump(file_path: &str) -> ExitCode {
             Instruction::Jump { scene_id } => format!("JUMP_SCENE '{}'", scene_id),
             Instruction::End => "END".to_string(),
             Instruction::Commit => "COMMIT".to_string(),
+            Instruction::With(transition) => format!("WITH {}", transition),
             Instruction::Hide { char_id } => format!("HIDE {}", char_id),
             Instruction::Clear => "CLEAR".to_string(),
             Instruction::Set { var_id, value } => format!("SET {} = {}", var_id, value.literal()),

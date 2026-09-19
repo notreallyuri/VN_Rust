@@ -7,8 +7,8 @@ use crate::saves::{AUTO_SLOT, QUICK_SLOT, SaveError, SlotInfo, now, time_ago};
 use crate::screens::Confirm;
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
-    Action, Anchor, DrawContext, FontRole, GameContext, Layout, Overlay, OverlayAction, Screen,
-    ScreenState,
+    Action, Anchor, DrawContext, Focus, FontRole, GameContext, Layout, Overlay, OverlayAction,
+    Screen, ScreenState,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -262,6 +262,7 @@ struct SaveMenu {
     slots: Option<Vec<SlotInfo>>,
     thumbnails: HashMap<String, Texture2D>,
     seen_generation: u64,
+    focus: Focus,
 }
 
 impl SaveMenu {
@@ -273,6 +274,7 @@ impl SaveMenu {
             slots: None,
             thumbnails: HashMap::new(),
             seen_generation: 0,
+            focus: Focus::default(),
         }
     }
 
@@ -488,13 +490,34 @@ impl SaveMenu {
             .iter()
             .any(|&key| ctx.rl.is_key_pressed(key));
         let config = Rc::clone(&self.config);
-        let back_clicked = ui::button_clicked(ctx, self.back_rect(screen), &config.back_button);
-        if back_key || back_clicked {
+        let back = self.back_rect(screen);
+        let back_clicked = ui::button_clicked(ctx, back, &config.back_button);
+        if back_key || back_clicked || ctx.nav.back {
             return Outcome::Back;
         }
 
         let rects = self.slot_rects(screen);
         let hovered = rects.iter().position(|rect| ui::is_hovered(ctx.rl, *rect));
+
+        let mut targets = rects.clone();
+        targets.push(back);
+        let pointed = hovered.or_else(|| {
+            ui::button_hovered(ctx.rl, back, &config.back_button).then_some(rects.len())
+        });
+        let accepted = self.focus.update(&ctx.nav, &targets, &[], pointed);
+        match accepted {
+            Some(index) if index == rects.len() => return Outcome::Back,
+            Some(index) => return self.pick(ctx, index),
+            None => {}
+        }
+
+        if config.allow_delete
+            && ctx.nav.alt
+            && let Some(index) = self.focus.index().filter(|&i| self.occupied(i))
+        {
+            self.delete(ctx, index);
+            return Outcome::Stay;
+        }
 
         if self.config.allow_delete
             && let Some(index) = hovered
@@ -542,7 +565,7 @@ impl SaveMenu {
         let slots = self.slots.as_deref().unwrap_or_default();
         for (index, (info, rect)) in slots.iter().zip(self.slot_rects(screen)).enumerate() {
             let hovered = ctx.pointer_over(d, rect);
-            let color = if hovered {
+            let color = if hovered || ctx.shows_focus(&self.focus, index) {
                 config.slot_hover_color
             } else {
                 config.slot_color
@@ -558,7 +581,8 @@ impl SaveMenu {
                 x = frame.x + frame.width + 14.0;
             }
 
-            let deletable = config.allow_delete && hovered && self.occupied(index);
+            let focused = ctx.shows_focus(&self.focus, index);
+            let deletable = config.allow_delete && (hovered || focused) && self.occupied(index);
             let delete = config.delete_rect(rect);
             let right = if deletable {
                 delete.x - 10.0
@@ -623,13 +647,10 @@ impl SaveMenu {
             }
         }
 
-        ui::draw_button(
-            d,
-            ctx,
-            self.back_rect(screen),
-            &config.back_label,
-            &config.back_button,
-        );
+        let back_index = slots.len();
+        ui::Button::new(&config.back_label, &config.back_button)
+            .focused(ctx.shows_focus(&self.focus, back_index))
+            .draw(d, ctx, self.back_rect(screen));
     }
 }
 

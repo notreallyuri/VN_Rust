@@ -3,7 +3,7 @@ use std::rc::Rc;
 use raylib::prelude::*;
 
 use crate::ui::{self, ButtonStyle, TextStyle};
-use crate::{Action, DrawContext, FontRole, GameContext, Overlay, OverlayAction};
+use crate::{Action, DrawContext, Focus, FontRole, GameContext, Overlay, OverlayAction};
 
 pub const CONFIRM_OVERLAY: &str = "confirm";
 
@@ -153,13 +153,18 @@ struct Layout {
 pub struct ConfirmDialog {
     config: Rc<ConfirmConfig>,
     request: Option<Confirm>,
+    focus: Focus,
 }
+
+const CANCEL: usize = 0;
+const CONFIRM: usize = 1;
 
 impl ConfirmDialog {
     pub fn new(config: Rc<ConfirmConfig>) -> Self {
         Self {
             config,
             request: None,
+            focus: Focus::default(),
         }
     }
 
@@ -235,11 +240,22 @@ impl Overlay for ConfirmDialog {
         let cancel_clicked = ui::button_clicked(&mut ctx, layout.cancel, &config.cancel_button);
         let confirm_clicked = ui::button_clicked(&mut ctx, layout.confirm, &config.confirm_button);
 
-        if cancel_key || cancel_clicked {
+        let rects = [layout.cancel, layout.confirm];
+        let hovered = [
+            ui::button_hovered(ctx.rl, layout.cancel, &config.cancel_button),
+            ui::button_hovered(ctx.rl, layout.confirm, &config.confirm_button),
+        ]
+        .iter()
+        .position(|&hovered| hovered);
+        let had_focus = self.focus.index().is_some();
+        let accepted = self.focus.update(&ctx.nav, &rects, &[true, true], hovered);
+        let confirm_key = confirm_key && !(had_focus && ctx.nav.accept);
+
+        if cancel_key || cancel_clicked || ctx.nav.back || accepted == Some(CANCEL) {
             return OverlayAction::Close;
         }
 
-        if confirm_key || confirm_clicked {
+        if confirm_key || confirm_clicked || accepted == Some(CONFIRM) {
             let action = self.request.take().map(|r| r.action);
             ctx.close_overlay();
             if let Some(state) = action.and_then(|action| action.run(&mut ctx)) {
@@ -281,13 +297,11 @@ impl Overlay for ConfirmDialog {
             .as_deref()
             .unwrap_or(&config.cancel_label);
 
-        ui::draw_button(d, ctx, layout.cancel, cancel_label, &config.cancel_button);
-        ui::draw_button(
-            d,
-            ctx,
-            layout.confirm,
-            confirm_label,
-            &config.confirm_button,
-        );
+        ui::Button::new(cancel_label, &config.cancel_button)
+            .focused(ctx.shows_focus(&self.focus, CANCEL))
+            .draw(d, ctx, layout.cancel);
+        ui::Button::new(confirm_label, &config.confirm_button)
+            .focused(ctx.shows_focus(&self.focus, CONFIRM))
+            .draw(d, ctx, layout.confirm);
     }
 }

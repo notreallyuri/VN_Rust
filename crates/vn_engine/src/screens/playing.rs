@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
 use raylib::prelude::*;
-use vn_script::{Event, Position, StoryVm};
+use vn_script::{Event, Position};
 
 use crate::screens::PAUSE_OVERLAY;
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
-    Action, Anchor, DrawContext, FontRole, GameContext, Layout, ResourceManager, Screen,
-    ScreenState, StyleOverride, background_path, character_path,
+    Action, Anchor, DrawContext, Focus, FontRole, GameContext, Layout, NavInput, Screen,
+    ScreenState, Stage, StyleOverride, background_path, character_path,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -419,6 +419,8 @@ pub struct PlayingScreen {
     typewriter: Option<Typewriter>,
     visible: Option<usize>,
     autosave_pending: bool,
+    choice_focus: Focus,
+    stage: Stage,
 }
 
 impl PlayingScreen {
@@ -429,6 +431,8 @@ impl PlayingScreen {
             typewriter: None,
             visible: None,
             autosave_pending: false,
+            choice_focus: Focus::default(),
+            stage: Stage::default(),
         }
     }
 
@@ -439,6 +443,7 @@ impl PlayingScreen {
             }
             _ => None,
         };
+        self.choice_focus = Focus::default();
         self.current = Some(event);
     }
 
@@ -460,6 +465,13 @@ impl PlayingScreen {
                     }
                 }
                 Event::Commit => ctx.rollback.mark_barrier(),
+                event @ (Event::Show { .. }
+                | Event::Hide { .. }
+                | Event::Clear { .. }
+                | Event::Background { .. }) => {
+                    let now = ctx.rl.get_time();
+                    self.stage.apply(&event, ctx.story, &self.config, now);
+                }
                 Event::Sound { id } => ctx.play_sound(&id),
                 Event::SceneEnter { scene } => {
                     self.autosave_pending = true;
@@ -499,8 +511,11 @@ impl PlayingScreen {
         } else {
             0.0
         };
-        let back = wheel > 0.0 || config.back_keys.iter().any(|&k| ctx.rl.is_key_pressed(k));
+        let back = wheel > 0.0
+            || ctx.nav.page_back
+            || config.back_keys.iter().any(|&k| ctx.rl.is_key_pressed(k));
         let forward = wheel < 0.0
+            || ctx.nav.page_forward
             || config
                 .forward_keys
                 .iter()
@@ -517,6 +532,7 @@ impl PlayingScreen {
         if moved {
             self.current = ctx.story.current().cloned();
             self.typewriter = None;
+            self.stage.reset(ctx.story, &self.config);
         }
         back || forward
     }
@@ -535,8 +551,9 @@ impl PlayingScreen {
                 .any(|(i, rect)| ui::button_hovered(rl, *rect, &self.config.hud_style(i)))
     }
 
-    fn continue_pressed(&self, rl: &RaylibHandle) -> bool {
-        (rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) && !self.over_hud(rl))
+    fn continue_pressed(&self, rl: &RaylibHandle, nav: &NavInput) -> bool {
+        nav.accept
+            || (rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) && !self.over_hud(rl))
             || self
                 .config
                 .advance_keys
@@ -548,6 +565,10 @@ impl PlayingScreen {
 impl Screen for PlayingScreen {
     fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
         ui::load_background(&mut ctx, self.config.background.as_ref());
+        if !self.stage.is_synced() {
+            self.stage.sync(ctx.story, &self.config);
+        }
+        self.stage.expire(ctx.rl.get_time());
 
         let rl = &*ctx.rl;
         let pressed = |key: Option<KeyboardKey>| key.is_some_and(|key| rl.is_key_pressed(key));
@@ -563,7 +584,7 @@ impl Screen for PlayingScreen {
             return Some(ScreenState::MainMenu);
         }
 
-        if pause {
+        if pause || ctx.nav.pause {
             ctx.open_overlay(self.config.pause_overlay.clone());
             return None;
         }
@@ -609,12 +630,21 @@ impl Screen for PlayingScreen {
                     .choice_rects(options.len(), ui::screen_size(ctx.rl));
 
                 let mut clicked = None;
+                let mut hovered = None;
                 for (index, (rect, option)) in rects.iter().zip(options).enumerate() {
                     let style = self.config.choice_style_for(index, option);
+                    if ui::button_hovered(ctx.rl, *rect, &style) {
+                        hovered = Some(index);
+                    }
                     if ui::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
                         clicked = Some(index);
                     }
                 }
+                let enabled = vec![true; rects.len()];
+                let accepted = self
+                    .choice_focus
+                    .update(&ctx.nav, &rects, &enabled, hovered);
+                let clicked = clicked.or(accepted);
 
                 match clicked {
                     Some(index) => {
@@ -635,16 +665,17 @@ impl Screen for PlayingScreen {
                 }
             }
             Some(Event::End) => self
-                .continue_pressed(ctx.rl)
+                .continue_pressed(ctx.rl, &ctx.nav)
                 .then(|| self.config.after_end.clone()),
             Some(_) => {
                 let now = ctx.rl.get_time();
-                if !self.continue_pressed(ctx.rl) {
+                if !self.continue_pressed(ctx.rl, &ctx.nav) {
                     None
-                } else if self.typing(now) {
+                } else if self.typing(now) || self.stage.is_animating() {
                     if let Some(typewriter) = &mut self.typewriter {
                         typewriter.finish();
                     }
+                    self.stage.finish();
                     None
                 } else {
                     self.advance(&mut ctx)
@@ -670,6 +701,9 @@ impl Screen for PlayingScreen {
             let path = background_path(image);
             ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
         }
+        for path in self.stage.texture_paths() {
+            ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
+        }
 
         None
     }
@@ -678,16 +712,8 @@ impl Screen for PlayingScreen {
         let config = &self.config;
         let screen = ui::screen_size(d);
 
-        match ctx.story.background() {
-            Some(image) => match ctx.resources.textures.get(&background_path(image)) {
-                Some(texture) => {
-                    ui::draw_texture_cover(d, texture, Rectangle::new(0.0, 0.0, screen.x, screen.y))
-                }
-                None => ui::draw_background(d, ctx.resources, config.background.as_ref()),
-            },
-            None => ui::draw_background(d, ctx.resources, config.background.as_ref()),
-        }
-        draw_characters(d, ctx.resources, ctx.story, config, screen);
+        let now = d.get_time();
+        self.stage.draw(d, ctx.resources, ctx.story, config, now);
 
         let fonts = ctx.fonts();
 
@@ -738,7 +764,9 @@ impl Screen for PlayingScreen {
                 let rects = config.choice_rects(options.len(), screen);
                 for (index, (option, rect)) in options.iter().zip(rects).enumerate() {
                     let style = config.choice_style_for(index, option);
-                    ui::draw_button(d, ctx, rect, option, &style);
+                    ui::Button::new(option, &style)
+                        .focused(ctx.shows_focus(&self.choice_focus, index))
+                        .draw(d, ctx, rect);
                 }
             }
             Some(Event::End) => {
@@ -759,55 +787,5 @@ impl Screen for PlayingScreen {
             }
             _ => {}
         }
-    }
-}
-
-fn draw_characters(
-    d: &mut RaylibDrawHandle,
-    resources: &ResourceManager,
-    story: &StoryVm,
-    config: &PlayingConfig,
-    screen: Vector2,
-) {
-    let mut characters: Vec<_> = story.active_characters().iter().collect();
-    characters.sort();
-
-    let unplaced = characters
-        .iter()
-        .filter(|(name, _)| story.position(name).is_none())
-        .count();
-    let mut next_unplaced = 0;
-
-    for (name, image) in characters {
-        let Some(texture) = resources.textures.get(&character_path(name, image)) else {
-            continue;
-        };
-
-        let center_x = match story.position(name) {
-            Some(position) => screen.x * config.position_x(position),
-            None => {
-                next_unplaced += 1;
-                screen.x * next_unplaced as f32 / (unplaced as f32 + 1.0)
-            }
-        };
-
-        let (w, h) = (texture.width as f32, texture.height as f32);
-        let scale = config
-            .character_height
-            .map_or(1.0, |fraction| screen.y * fraction / h);
-        let dest = Rectangle::new(
-            center_x - w * scale / 2.0,
-            screen.y - h * scale,
-            w * scale,
-            h * scale,
-        );
-        d.draw_texture_pro(
-            texture,
-            Rectangle::new(0.0, 0.0, w, h),
-            dest,
-            Vector2::zero(),
-            0.0,
-            Color::WHITE,
-        );
     }
 }

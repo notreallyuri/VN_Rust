@@ -188,7 +188,7 @@ fn show_needs_an_image() {
         one_error(&in_scene("show mary happy near left")),
         (
             2,
-            "`show` takes a character, an image and optionally `at <position>`; unexpected `near left`"
+            "`show` takes a character, an image and optionally `at <position>` and `with <transition>`; unexpected `near left`"
                 .into()
         )
     );
@@ -521,6 +521,46 @@ fn same_file_duplicates_name_the_line() {
     assert_eq!(
         program.diagnostics[0].to_string(),
         "a.story:3: error: scene 'a' is already defined at line 1; this one is ignored"
+    );
+}
+
+#[test]
+fn transition_errors() {
+    assert_eq!(
+        one_error(&in_scene("show mary happy with")),
+        (
+            2,
+            "`with` needs a transition: dissolve, fade, slide_left, slide_right".into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("background hall with fdae")),
+        (
+            2,
+            "unknown transition `fdae` (expected dissolve, fade, slide_left, slide_right); did you mean 'fade'?"
+                .into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("remove mary with dissolve slow")),
+        (
+            2,
+            "transition length must be a number of seconds between 0 and 30, got `slow`".into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("clear with dissolve 1 2")),
+        (
+            2,
+            "`with` takes a transition and optionally its length in seconds; unexpected `2`".into()
+        )
+    );
+    assert_eq!(
+        one_error(&in_scene("clear hugo with fade")),
+        (
+            2,
+            "`clear` takes no arguments (use `remove <character>` for one character)".into()
+        )
     );
 }
 
