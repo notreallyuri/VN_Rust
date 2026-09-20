@@ -214,6 +214,8 @@ impl GameContext<'_> {
     pub fn load(&mut self, slot: &str) -> Result<LoadReport, SaveError> {
         let file = self.saves.read(slot)?;
         let report = crate::data::saves::apply(&file, self.story, self.state)?;
+        #[cfg(feature = "character-visuals")]
+        self.resources.visuals.reset();
         self.log.replace(file.log.clone());
         self.modes.skip = false;
 

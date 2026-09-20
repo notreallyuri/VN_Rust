@@ -19,6 +19,8 @@ pub enum AppError {
         source: io::Error,
     },
     Screen(io::Error),
+    #[cfg(feature = "character-visuals")]
+    Visual(String),
 }
 
 impl fmt::Display for AppError {
@@ -43,6 +45,8 @@ impl fmt::Display for AppError {
                 write!(f, "could not write the schema: {}", source)
             }
             AppError::Screen(e) => write!(f, "{}", e),
+            #[cfg(feature = "character-visuals")]
+            AppError::Visual(e) => write!(f, "invalid character visual: {}", e),
         }
     }
 }

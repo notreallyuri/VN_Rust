@@ -102,6 +102,8 @@ impl ScreenStateManager {
     ) -> io::Result<Self> {
         let assets_root = assets_root.into();
         let loader = crate::game::hot_reload::StoryLoader {
+            #[cfg(feature = "character-visuals")]
+            visuals: Default::default(),
             assets: assets_root.clone(),
             story_dir: story_dir.into(),
             schema: Default::default(),
@@ -475,6 +477,9 @@ impl ScreenStateManager {
                 return;
             }
         }
+
+        #[cfg(feature = "character-visuals")]
+        self.resources.visuals.reset();
 
         if self.current_state == ScreenState::Playing
             && let Some(screen) = self.factory.create_screen(&ScreenState::Playing)

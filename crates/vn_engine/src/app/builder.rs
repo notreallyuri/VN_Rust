@@ -37,6 +37,8 @@ use crate::ui::toast::ToastConfig;
 use crate::ui::tooltip::TooltipConfig;
 
 pub struct VnApp {
+    #[cfg(feature = "character-visuals")]
+    pub(super) visuals: crate::game::visuals::VisualRegistry,
     pub(super) title: String,
     pub(super) width: i32,
     pub(super) height: i32,
@@ -93,6 +95,8 @@ pub struct VnApp {
 impl VnApp {
     pub fn new(title: impl Into<String>) -> Self {
         Self {
+            #[cfg(feature = "character-visuals")]
+            visuals: Default::default(),
             title: title.into(),
             width: 1280,
             height: 720,
@@ -227,6 +231,16 @@ impl VnApp {
 
     pub fn character(mut self, id: impl Into<String>, character: Character) -> Self {
         self.characters.insert(id, character);
+        self
+    }
+
+    #[cfg(feature = "character-visuals")]
+    pub fn character_visual(
+        mut self,
+        id: impl Into<String>,
+        factory: impl crate::game::visuals::CharacterVisualFactory + 'static,
+    ) -> Self {
+        self.visuals.insert(id.into(), factory);
         self
     }
 

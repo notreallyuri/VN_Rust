@@ -10,7 +10,7 @@ use crate::game::hot_reload::StoryLoader;
 
 impl VnApp {
     pub fn schema(&self) -> Schema {
-        Schema {
+        let schema = Schema {
             variables: self.variables.clone(),
             characters: self
                 .characters
@@ -18,11 +18,20 @@ impl VnApp {
                 .map(|(id, c)| (id.to_string(), c.definition()))
                 .collect(),
             commands: self.commands.signatures().clone(),
-        }
+        };
+        #[cfg(feature = "character-visuals")]
+        let schema = {
+            let mut schema = schema;
+            self.visuals.extend_schema(&mut schema);
+            schema
+        };
+        schema
     }
 
     pub fn loader(&self) -> StoryLoader {
         StoryLoader {
+            #[cfg(feature = "character-visuals")]
+            visuals: self.visuals.clone(),
             assets: self.asset_source(),
             story_dir: PathBuf::from(&self.story_dir),
             schema: self.schema(),
@@ -81,7 +90,11 @@ impl VnApp {
     }
 }
 
-pub(crate) fn missing_art(story: &StoryVm, assets: &Assets) -> Vec<Diagnostic> {
+pub(crate) fn missing_art(
+    story: &StoryVm,
+    assets: &Assets,
+    custom_visual: impl Fn(&str, &str) -> bool,
+) -> Vec<Diagnostic> {
     let program = story.program();
     let mut seen = std::collections::HashSet::new();
 
@@ -93,7 +106,12 @@ pub(crate) fn missing_art(story: &StoryVm, assets: &Assets) -> Vec<Diagnostic> {
             let relative = match instruction {
                 Instruction::Show {
                     char_id, img_id, ..
-                } => crate::data::resources::character_path(char_id, img_id),
+                } => {
+                    if custom_visual(char_id, img_id) {
+                        return None;
+                    }
+                    crate::data::resources::character_path(char_id, img_id)
+                }
                 Instruction::Background { image: Some(image) } => {
                     crate::data::resources::background_path(image)
                 }

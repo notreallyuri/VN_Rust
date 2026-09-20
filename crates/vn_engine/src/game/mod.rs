@@ -5,6 +5,8 @@ pub mod hooks;
 pub mod hot_reload;
 pub mod language;
 pub mod script_errors;
+#[cfg(feature = "character-visuals")]
+pub mod visuals;
 
 pub mod prelude {
     pub use super::audio::{Audio, AudioConfig, Fade};

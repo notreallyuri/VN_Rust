@@ -83,6 +83,25 @@ pub fn progress(start: f64, transition: &Transition, now: f64) -> f32 {
 }
 
 impl Stage {
+    #[cfg(feature = "character-visuals")]
+    pub fn visual_keys(&self, story: &StoryVm) -> Vec<crate::game::visuals::VisualKey> {
+        use crate::game::visuals::VisualKey;
+        let mut keys: std::collections::BTreeSet<_> = story
+            .active_characters()
+            .iter()
+            .map(|(id, image)| VisualKey::new(id, image))
+            .collect();
+        for (id, animation) in &self.characters {
+            if let Some(image) = &animation.from_image {
+                keys.insert(VisualKey::new(id, image));
+            }
+            if let Some(placed) = &animation.leaving {
+                keys.insert(VisualKey::new(id, &placed.image));
+            }
+        }
+        keys.into_iter().collect()
+    }
+
     pub fn is_synced(&self) -> bool {
         self.synced
     }
@@ -423,6 +442,18 @@ fn sprite(
     alpha: f32,
 ) {
     if alpha <= 0.0 {
+        return;
+    }
+    #[cfg(feature = "character-visuals")]
+    if resources.visuals.draw(
+        character,
+        image,
+        d,
+        screen,
+        x,
+        config.character_height,
+        alpha,
+    ) {
         return;
     }
     let Some(texture) = resources.textures.get(&character_path(character, image)) else {

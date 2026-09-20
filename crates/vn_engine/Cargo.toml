@@ -4,6 +4,10 @@ description = "raylib-based visual novel engine built on vn_script."
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+character-visuals = []
+
 [dependencies]
 vn_script.workspace = true
 raylib.workspace = true

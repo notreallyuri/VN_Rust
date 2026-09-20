@@ -46,9 +46,9 @@ impl PlayingScreen {
     }
 }
 
-impl Screen for PlayingScreen {
-    fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
-        ui::load_background(&mut ctx, self.config.background.as_ref());
+impl PlayingScreen {
+    fn update_story(&mut self, ctx: &mut GameContext) -> Option<ScreenState> {
+        ui::load_background(ctx, self.config.background.as_ref());
         if !self.stage.is_synced() {
             self.stage.sync(ctx.story, &self.config);
         }
@@ -132,16 +132,16 @@ impl Screen for PlayingScreen {
             ctx.modes.auto = !ctx.modes.auto;
         }
 
-        if self.current.is_some() && self.roll(&mut ctx) {
+        if self.current.is_some() && self.roll(ctx) {
             return None;
         }
 
         if self.current.is_some() {
             if quick_save {
-                return Action::QuickSave.run(&mut ctx);
+                return Action::QuickSave.run(ctx);
             }
             if quick_load {
-                return Action::QuickLoad.run(&mut ctx);
+                return Action::QuickLoad.run(ctx);
             }
         }
 
@@ -155,18 +155,18 @@ impl Screen for PlayingScreen {
             let mut clicked = None;
             for (index, rect) in hud.iter().enumerate() {
                 let style = self.config.hud_style(index);
-                if ui::button::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
+                if ui::button::button_clicked(ctx, *rect, &style) && clicked.is_none() {
                     clicked = Some(index);
                 }
             }
             if let Some(index) = clicked {
                 let action = self.config.hud[index].action.clone();
-                return action.run(&mut ctx);
+                return action.run(ctx);
             }
         }
 
         let next = match &self.current {
-            None => self.resume(&mut ctx),
+            None => self.resume(ctx),
             Some(Event::Choice { options }) => {
                 let rects = self
                     .config
@@ -179,7 +179,7 @@ impl Screen for PlayingScreen {
                     if ui::button::button_hovered(ctx.rl, *rect, &style) {
                         hovered = Some(index);
                     }
-                    if ui::button::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
+                    if ui::button::button_clicked(ctx, *rect, &style) && clicked.is_none() {
                         clicked = Some(index);
                     }
                 }
@@ -208,7 +208,7 @@ impl Screen for PlayingScreen {
                         }
                         match ctx.run_choice_hooks(index, &text) {
                             Some(next) => Some(next),
-                            None => self.advance(&mut ctx),
+                            None => self.advance(ctx),
                         }
                     }
                     None => None,
@@ -235,12 +235,12 @@ impl Screen for PlayingScreen {
                     if now - self.last_skip >= self.config.skip_interval {
                         self.last_skip = now;
                         self.stage.finish();
-                        self.advance(&mut ctx)
+                        self.advance(ctx)
                     } else {
                         None
                     }
                 } else if !self.continue_pressed(ctx.rl, &ctx.nav) {
-                    self.auto_advance(&mut ctx, now)
+                    self.auto_advance(ctx, now)
                 } else if self.typing(now) || self.stage.is_animating() {
                     if let Some(typewriter) = &mut self.typewriter {
                         typewriter.finish();
@@ -248,7 +248,7 @@ impl Screen for PlayingScreen {
                     self.stage.finish();
                     None
                 } else {
-                    self.advance(&mut ctx)
+                    self.advance(ctx)
                 }
             }
         };
@@ -268,18 +268,51 @@ impl Screen for PlayingScreen {
             return next;
         }
 
-        for (name, image) in ctx.story.active_characters() {
-            let path = character_path(name, image);
-            ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
-        }
-        if let Some(image) = ctx.story.background() {
-            let path = background_path(image);
-            ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
-        }
-        for path in self.stage.texture_paths() {
-            ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
+        None
+    }
+}
+
+impl Screen for PlayingScreen {
+    fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
+        let next = self.update_story(&mut ctx);
+        if next.is_some() {
+            return next;
         }
 
+        #[cfg(feature = "character-visuals")]
+        {
+            let assets = ctx.resources.assets().clone();
+            let fallback = ctx.resources.visuals.prepare(
+                self.stage.visual_keys(ctx.story),
+                &assets,
+                ctx.rl,
+                ctx.thread,
+                ctx.rl.get_frame_time(),
+            );
+            for key in fallback {
+                ctx.resources.get_or_load(
+                    &character_path(&key.character, &key.appearance),
+                    ctx.rl,
+                    ctx.thread,
+                );
+            }
+        }
+        #[cfg(not(feature = "character-visuals"))]
+        for (name, image) in ctx.story.active_characters() {
+            ctx.resources
+                .get_or_load(&character_path(name, image), ctx.rl, ctx.thread);
+        }
+        if let Some(image) = ctx.story.background() {
+            ctx.resources
+                .get_or_load(&background_path(image), ctx.rl, ctx.thread);
+        }
+        for path in self.stage.texture_paths() {
+            #[cfg(feature = "character-visuals")]
+            if path.starts_with("characters/") {
+                continue;
+            }
+            ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
+        }
         None
     }
 

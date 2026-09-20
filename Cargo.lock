@@ -376,6 +376,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "vn_live2d"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "vn_engine",
+]
+
+[[package]]
 name = "vn_script"
 version = "0.1.0"
 dependencies = [

@@ -12,6 +12,8 @@ pub const HOT_RELOAD_INTERVAL: f64 = 0.5;
 
 #[derive(Clone, Debug)]
 pub struct StoryLoader {
+    #[cfg(feature = "character-visuals")]
+    pub visuals: crate::game::visuals::VisualRegistry,
     pub assets: Assets,
     pub story_dir: PathBuf,
     pub schema: Schema,
@@ -43,6 +45,10 @@ impl StoryLoader {
     }
 
     pub fn load(&self) -> Result<(StoryVm, Vec<Diagnostic>), AppError> {
+        #[cfg(feature = "character-visuals")]
+        self.visuals
+            .validate(&self.schema, &self.assets)
+            .map_err(AppError::Visual)?;
         let path = self.path();
         let sources = self.sources().map_err(|source| AppError::Story {
             path: path.clone(),
@@ -62,7 +68,11 @@ impl StoryLoader {
 
         let mut diagnostics = story.prepare(self.schema.clone(), self.entry_scene.as_deref());
         if self.warn_missing_art {
-            diagnostics.extend(crate::app::missing_art(&story, &self.assets));
+            #[cfg(feature = "character-visuals")]
+            let custom_visual = |id: &str, image: &str| self.visuals.handles(id, image);
+            #[cfg(not(feature = "character-visuals"))]
+            let custom_visual = |_: &str, _: &str| false;
+            diagnostics.extend(crate::app::missing_art(&story, &self.assets, custom_visual));
         }
 
         let (errors, warnings): (Vec<_>, Vec<_>) =

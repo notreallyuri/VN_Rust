@@ -6,6 +6,7 @@ members = [
     "crates/vn_engine",
     "crates/vn_build",
     "crates/vn_cli",
+    "crates/vn_live2d",
     "examples/god_is_watching",
 ]
 

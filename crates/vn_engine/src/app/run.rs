@@ -113,6 +113,10 @@ impl VnApp {
         .map_err(AppError::Screen)?;
 
         manager.state = self.state;
+        #[cfg(feature = "character-visuals")]
+        {
+            manager.resources.visuals.registry = self.visuals;
+        }
         manager.commands = Rc::new(self.commands);
         manager.hooks = Rc::new(self.hooks);
         manager.saves = saves;

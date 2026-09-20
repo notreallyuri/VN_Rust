@@ -40,6 +40,8 @@ impl Action {
     pub fn run(&self, ctx: &mut GameContext) -> Option<ScreenState> {
         match self {
             Action::NewGame => {
+                #[cfg(feature = "character-visuals")]
+                ctx.resources.visuals.reset();
                 ctx.log.clear();
                 *ctx.modes = crate::data::session::PlayModes::default();
                 ctx.story.reset();

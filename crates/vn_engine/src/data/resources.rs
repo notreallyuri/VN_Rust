@@ -22,6 +22,8 @@ pub fn background_path(image: &str) -> String {
 }
 
 pub struct ResourceManager {
+    #[cfg(feature = "character-visuals")]
+    pub visuals: crate::game::visuals::CharacterVisuals,
     assets: Assets,
     pub textures: HashMap<String, Texture2D>,
     pub fonts: Fonts,
@@ -31,6 +33,8 @@ pub struct ResourceManager {
 impl ResourceManager {
     pub fn new(assets: impl Into<Assets>, rl: &mut RaylibHandle, thread: &RaylibThread) -> Self {
         Self {
+            #[cfg(feature = "character-visuals")]
+            visuals: Default::default(),
             assets: assets.into(),
             textures: HashMap::new(),
             fonts: Fonts::new(rl, thread),
