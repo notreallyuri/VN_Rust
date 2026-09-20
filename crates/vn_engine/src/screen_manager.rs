@@ -400,9 +400,11 @@ impl ScreenStateManager {
         };
         if written {
             println!("Screenshot: {}", path.display());
-            self.notify(Toast::info("Screenshot saved"));
+            let text = crate::ui::label(&self.story, "Screenshot saved").to_string();
+            self.notify(Toast::info(text));
         } else {
-            self.notify(Toast::error("Could not save the screenshot"));
+            let text = crate::ui::label(&self.story, "Could not save the screenshot").to_string();
+            self.notify(Toast::error(text));
         }
     }
 
@@ -437,14 +439,21 @@ impl ScreenStateManager {
         self.script_errors = None;
         self.effects.clear();
         match crate::swap_story(&mut self.story, story, &mut self.rollback) {
-            Ok(RestoreOutcome::Exact) => self.notify(Toast::info("Story reloaded")),
-            Ok(RestoreOutcome::SceneRestarted { scene }) => self.notify(Toast::info(format!(
-                "Story reloaded; scene '{}' restarted",
-                scene
-            ))),
+            Ok(RestoreOutcome::Exact) => {
+                let text = crate::ui::label(&self.story, "Story reloaded").to_string();
+                self.notify(Toast::info(text));
+            }
+            Ok(RestoreOutcome::SceneRestarted { scene }) => {
+                let template =
+                    crate::ui::label(&self.story, "Story reloaded; scene '{scene}' restarted");
+                let text = crate::ui::fill(template, &[("scene", &scene)]);
+                self.notify(Toast::info(text));
+            }
             Err(e) => {
                 eprintln!("⚠️ Story not reloaded: {}", e);
-                self.notify(Toast::error(format!("Story not reloaded: {}", e)));
+                let template = crate::ui::label(&self.story, "Story not reloaded: {reason}");
+                let text = crate::ui::fill(template, &[("reason", &e.to_string())]);
+                self.notify(Toast::error(text));
                 return;
             }
         }

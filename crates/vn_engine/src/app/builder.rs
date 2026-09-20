@@ -54,6 +54,7 @@ pub struct VnApp {
     pub(super) confirm_dialog: ConfirmConfig,
     pub(super) settings: SettingsConfig,
     pub(super) languages: Vec<Language>,
+    pub(super) extra_ui_strings: Vec<String>,
     pub(super) close_confirmation: Option<String>,
     pub(super) rollback: RollbackConfig,
     pub(super) toast: ToastConfig,
@@ -122,7 +123,13 @@ impl VnApp {
             shaders: Vec::new(),
             render_scale: 1.0,
             languages: vec![Language::source("English")],
+            extra_ui_strings: Vec::new(),
         }
+    }
+
+    pub fn ui_text(mut self, text: impl Into<String>) -> Self {
+        self.extra_ui_strings.push(text.into());
+        self
     }
 
     pub fn source_language(mut self, label: impl Into<String>) -> Self {

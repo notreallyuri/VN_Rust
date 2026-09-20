@@ -1,0 +1,2181 @@
+{
+  "format_version": 1,
+  "language": "pt-BR",
+  "story": {
+    "00_archive.story": {
+      "00279a2bf8b0720e": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 36,
+        "source": "One more thing. What you read down here stays down here.",
+        "text": ""
+      },
+      "0d73c75a51092567": {
+        "kind": "choice",
+        "line": 24,
+        "source": "Read everything first",
+        "text": ""
+      },
+      "0edbd1c7e6ec40f6": {
+        "kind": "narration",
+        "line": 8,
+        "source": "The lamps are never put out down here. Paper is cheaper than daylight.",
+        "text": ""
+      },
+      "1b1c0e027367bf02": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 14,
+        "source": "What am I to work on, Registrar?",
+        "text": ""
+      },
+      "1c64a434fe0ecaf4": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 34,
+        "source": "Read first. Then we'll see how eager you are.",
+        "text": ""
+      },
+      "228673cda9ec2534": {
+        "kind": "narration",
+        "line": 7,
+        "source": "October, 1903. The Archive of the House, two floors below the street.",
+        "text": ""
+      },
+      "25a3731395b2a9db": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 19,
+        "source": "And nineteen reports from our field post at Santa Ilde. Numbers two hundred and three to two hundred and twenty-one.",
+        "text": ""
+      },
+      "3d2d2cbc4f07887b": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 27,
+        "source": "I'll read the box first. All of it.",
+        "text": ""
+      },
+      "44c93a62b0f8ed75": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 28,
+        "source": "Slow. Good. Slow people last longer here.",
+        "text": ""
+      },
+      "4da46a236ae3d1f7": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 11,
+        "source": "I don't keep names I haven't needed yet. Write yours in the ledger.",
+        "text": ""
+      },
+      "5e1e1116d3474051": {
+        "kind": "choice",
+        "line": 24,
+        "source": "Ask to be sent to Santa Ilde",
+        "text": ""
+      },
+      "6501cb6e2cc0853c": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 17,
+        "source": "Box fourteen. What was recovered from the Von Lucis residence. Never catalogued.",
+        "text": ""
+      },
+      "6f15cab930bb18cb": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 22,
+        "source": "The man who wrote it has not come back. I want to know what he nearly wrote.",
+        "text": ""
+      },
+      "797fd40bfb4ac96a": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 33,
+        "source": "Because the last three we sent forgot why they went.",
+        "text": ""
+      },
+      "8a3a7a33ce0b59d2": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 32,
+        "source": "Why not send me to Santa Ilde and ask them?",
+        "text": ""
+      },
+      "8b225b229a290804": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 10,
+        "source": "You're the new one. Sit.",
+        "text": ""
+      },
+      "9e89869e85896fce": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 21,
+        "source": "Report two hundred and twenty-one ends in the middle of a word.",
+        "text": ""
+      },
+      "c0dbc2ee8a9877ca": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 15,
+        "source": "Two things that were never meant to be read together.",
+        "text": ""
+      },
+      "c1551fd91024cfa4": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 37,
+        "source": "And if a page ever feels like it is \"reading you back\", close the box and come and find me.",
+        "text": ""
+      },
+      "d83b9e227b0230cd": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 13,
+        "source": "{player_name}. Good. Now forget it. Nobody down here will use it.",
+        "text": ""
+      },
+      "e7770f7862dac88d": {
+        "kind": "narration",
+        "line": 40,
+        "source": "The box smells of smoke and lavender. The first item is a notebook, in a young woman's hand.",
+        "text": ""
+      }
+    },
+    "01_box_14.story": {
+      "00175b60bb23c663": {
+        "kind": "narration",
+        "line": 102,
+        "source": "The Archive. The Von Lucis register is in the box, and it has a column you have not seen in a register before.",
+        "text": ""
+      },
+      "00c2b26d3e5cdbfc": {
+        "kind": "narration",
+        "line": 143,
+        "source": "Everyone repeats it with the word miracle, or with the word sin.",
+        "text": ""
+      },
+      "01acbe0b9c9a6dd0": {
+        "kind": "dialogue",
+        "speaker": "mary",
+        "line": 87,
+        "source": "Father.",
+        "text": ""
+      },
+      "02c0bfefbcdccb4f": {
+        "kind": "choice",
+        "line": 106,
+        "source": "Write \"a miracle\"",
+        "text": ""
+      },
+      "0dd8536c4c84e5fb": {
+        "kind": "narration",
+        "line": 90,
+        "source": "I am being punished for something he did.",
+        "text": ""
+      },
+      "0fa29d962ae7621d": {
+        "kind": "narration",
+        "line": 54,
+        "source": "He talks about the bloodline. He talks about having no heir.",
+        "text": ""
+      },
+      "10cdd3a623293d8f": {
+        "kind": "narration",
+        "line": 55,
+        "source": "Then he says my name.",
+        "text": ""
+      },
+      "111752b63553ff1b": {
+        "kind": "dialogue",
+        "speaker": "adelaide",
+        "line": 67,
+        "source": "Your hot water, miss. Miss? Are you unwell?",
+        "text": ""
+      },
+      "153a24afd2908022": {
+        "kind": "narration",
+        "line": 15,
+        "source": "I did not read it. His hands told me everything at supper.",
+        "text": ""
+      },
+      "15c678bf9b4b7538": {
+        "kind": "narration",
+        "line": 10,
+        "source": "The letters from the Verlaine House come in pale envelopes that smell of perfume.",
+        "text": ""
+      },
+      "15fa6fcddcfab50e": {
+        "kind": "choice",
+        "line": 106,
+        "source": "Write nothing, and initial the blank",
+        "text": ""
+      },
+      "1cdf61c5696ac425": {
+        "kind": "choice",
+        "line": 32,
+        "source": "Break the seal",
+        "text": ""
+      },
+      "21f3384f90efce0d": {
+        "kind": "narration",
+        "line": 148,
+        "source": "You look at the blank you initialled. At least it isn't lying.",
+        "text": ""
+      },
+      "254f4f1e029b2adf": {
+        "kind": "narration",
+        "line": 30,
+        "source": "Whoever put it in the box wanted it kept, and did not want it read.",
+        "text": ""
+      },
+      "2a02fc276745f92d": {
+        "kind": "narration",
+        "line": 141,
+        "source": "The debt was paid on the fifteenth of November. The child was born on the eighth of August.",
+        "text": ""
+      },
+      "326ddff892217b4b": {
+        "kind": "narration",
+        "line": 95,
+        "source": "That night I take the servants' door, and one thing that is not mine.",
+        "text": ""
+      },
+      "348a151646df872f": {
+        "kind": "dialogue",
+        "speaker": "mary",
+        "line": 21,
+        "source": "Why?",
+        "text": ""
+      },
+      "36e7516f94faca27": {
+        "kind": "dialogue",
+        "speaker": "hugo",
+        "line": 22,
+        "source": "Because I asked.",
+        "text": ""
+      },
+      "3b4c93bfde0a1f2e": {
+        "kind": "narration",
+        "line": 52,
+        "source": "Outside it is not night. Outside it is not anything.",
+        "text": ""
+      },
+      "3f52fff8fa6f2c93": {
+        "kind": "narration",
+        "line": 11,
+        "source": "Father burns them in the study fireplace. I have counted three.",
+        "text": ""
+      },
+      "4030146f68f41260": {
+        "kind": "narration",
+        "line": 131,
+        "source": "Item 7. A report from the men her father sent. August 8th, 1894.",
+        "text": ""
+      },
+      "44180d9bdf1d7aab": {
+        "kind": "narration",
+        "line": 39,
+        "source": "You check the house register in the box. Three days after that letter, a Von Lucis debt is marked paid.",
+        "text": ""
+      },
+      "45fed32a2e5744e7": {
+        "kind": "narration",
+        "line": 8,
+        "source": "Before the notebook there are the photographs: the study, as the House found it.",
+        "text": ""
+      },
+      "51a885c785f9ee6e": {
+        "kind": "narration",
+        "line": 140,
+        "source": "Item 8. A loose sheet, in the hand of whoever compiled the box.",
+        "text": ""
+      },
+      "52277b18e3bb9ae8": {
+        "kind": "dialogue",
+        "speaker": "mary",
+        "line": 74,
+        "source": "Please. Don't tell anyone. Not yet.",
+        "text": ""
+      },
+      "5227f48dd5de7af2": {
+        "kind": "narration",
+        "line": 123,
+        "source": "Item 6. A note left at the Santa Ilde orphanage, folded four times. Copied by the House in 1894.",
+        "text": ""
+      },
+      "530ae6457768df66": {
+        "kind": "narration",
+        "line": 104,
+        "source": "The House expects the archivist who opens a box to complete it. In ink.",
+        "text": ""
+      },
+      "56125f2dc52d0a07": {
+        "kind": "dialogue",
+        "speaker": "adelaide",
+        "line": 69,
+        "source": "You did, miss. I put you to bed myself.",
+        "text": ""
+      },
+      "58d6cd4e24732e75": {
+        "kind": "narration",
+        "line": 73,
+        "source": "Yesterday there was nothing. Today it is nine months.",
+        "text": ""
+      },
+      "63b55904b821816f": {
+        "kind": "narration",
+        "line": 112,
+        "source": "You write it. It is what her father's house decided. Now it is what the House decided.",
+        "text": ""
+      },
+      "6588dfce8cb9f21d": {
+        "kind": "narration",
+        "line": 133,
+        "source": "She turned around and looked at us, as if she wanted to remember our faces.",
+        "text": ""
+      },
+      "65931b06059c03ab": {
+        "kind": "narration",
+        "line": 142,
+        "source": "Two hundred and sixty-six days. A whole pregnancy. An exact one.",
+        "text": ""
+      },
+      "6633ae23f3c4222d": {
+        "kind": "narration",
+        "line": 84,
+        "source": "By the second day the whole house has chosen its word. Half say miracle. Half say sin.",
+        "text": ""
+      },
+      "66b8830332558559": {
+        "kind": "narration",
+        "line": 134,
+        "source": "She was searched, and the bank and the road as far as the bridge. What we were sent for was not found.",
+        "text": ""
+      },
+      "69d9219fd810573f": {
+        "kind": "narration",
+        "line": 89,
+        "source": "And that is when I understand. I am not being punished for something I did.",
+        "text": ""
+      },
+      "6b9d115fc8bb4a19": {
+        "kind": "narration",
+        "line": 63,
+        "source": "July 31st. The wind begins at night. It is not a rain wind. It comes from inside the house.",
+        "text": ""
+      },
+      "6c40d1fe90ff4317": {
+        "kind": "narration",
+        "line": 146,
+        "source": "You look at the word you wrote in the register, and it answers nothing.",
+        "text": ""
+      },
+      "6d6e6ec5dd2c320b": {
+        "kind": "narration",
+        "line": 13,
+        "source": "The first one he laughed at. The second one he read twice.",
+        "text": ""
+      },
+      "6e82eb15cee4ea9c": {
+        "kind": "choice",
+        "line": 106,
+        "source": "Write \"a sin\"",
+        "text": ""
+      },
+      "6f77d879b04b7231": {
+        "kind": "narration",
+        "line": 62,
+        "source": "Item 4. Testimony of Adelaide Roque, lady's maid. Taken in August, 1894.",
+        "text": ""
+      },
+      "7434ce3e6d051733": {
+        "kind": "narration",
+        "line": 29,
+        "source": "The Archive. Under the notebook there is an envelope, pale, sealed again with somebody else's wax.",
+        "text": ""
+      },
+      "81551e8cdadbc8af": {
+        "kind": "narration",
+        "line": 42,
+        "source": "You put it back where it was. She never read it either.",
+        "text": ""
+      },
+      "8488ec8a1192950f": {
+        "kind": "narration",
+        "line": 53,
+        "source": "There is a voice downstairs. Father's voice, talking and talking, filling a silence.",
+        "text": ""
+      },
+      "86bd8ac891932124": {
+        "kind": "narration",
+        "line": 144,
+        "source": "Nobody asks the only question that matters. Where was he for those nine months?",
+        "text": ""
+      },
+      "8d106624a8c2455f": {
+        "kind": "narration",
+        "line": 56,
+        "source": "Nobody answers him. Nobody needs to.",
+        "text": ""
+      },
+      "8d7abb161a1cdbea": {
+        "kind": "narration",
+        "line": 37,
+        "source": "One word, and a signature. \"Von Lucis. Three days.\"",
+        "text": ""
+      },
+      "91b46c56d79b60c6": {
+        "kind": "dialogue",
+        "speaker": "mary",
+        "line": 19,
+        "source": "So should you, Father.",
+        "text": ""
+      },
+      "9441cb4eb06d21bc": {
+        "kind": "narration",
+        "line": 38,
+        "source": "No \"Sir\". No \"Mister\". Only the name, as if it were a debt of its own.",
+        "text": ""
+      },
+      "972c909bc3755400": {
+        "kind": "narration",
+        "line": 125,
+        "source": "An object goes with this note. It is not a keepsake and not an inheritance. It is proof.",
+        "text": ""
+      },
+      "97875e1b4180531b": {
+        "kind": "narration",
+        "line": 64,
+        "source": "August 1st. I go in before the six o'clock bell, as I have every day for nine years.",
+        "text": ""
+      },
+      "9cfba9a3f1090503": {
+        "kind": "narration",
+        "line": 57,
+        "source": "I lie down again. I tell myself it was a dream, and for nine months it is.",
+        "text": ""
+      },
+      "9d4584ff9455d587": {
+        "kind": "narration",
+        "line": 14,
+        "source": "The third one he left open on the desk while he went to fetch his coat.",
+        "text": ""
+      },
+      "a04ef43947b4efbf": {
+        "kind": "dialogue",
+        "speaker": "mary",
+        "line": 68,
+        "source": "Adelaide. Did I sleep last night?",
+        "text": ""
+      },
+      "ab7e427def0b3bbc": {
+        "kind": "dialogue",
+        "speaker": "hugo",
+        "line": 20,
+        "source": "Go up. Lock your door tonight.",
+        "text": ""
+      },
+      "b0adab658001fde9": {
+        "kind": "narration",
+        "line": 77,
+        "source": "I told. I went straight to her father. May God forgive me. May God forgive all of us.",
+        "text": ""
+      },
+      "b806db4aa6bebaf4": {
+        "kind": "dialogue",
+        "speaker": "hugo",
+        "line": 91,
+        "source": "Go to your room, Mary.",
+        "text": ""
+      },
+      "b8c9b975774a4169": {
+        "kind": "narration",
+        "line": 51,
+        "source": "I go to the window first. I always look at the windows first.",
+        "text": ""
+      },
+      "beeda94cdb250f6b": {
+        "kind": "narration",
+        "line": 103,
+        "source": "Cause of the birth. For the eighth of August, 1894, it is empty.",
+        "text": ""
+      },
+      "c4f364c0d3f574e1": {
+        "kind": "narration",
+        "line": 132,
+        "source": "She was found on the old road by the river. She did not run.",
+        "text": ""
+      },
+      "c7d7f4b88c2d7be9": {
+        "kind": "narration",
+        "line": 70,
+        "source": "She pulls back the blanket.",
+        "text": ""
+      },
+      "cfb87a34aa8b46ee": {
+        "kind": "dialogue",
+        "speaker": "hugo",
+        "line": 18,
+        "source": "Mary. You should be in bed.",
+        "text": ""
+      },
+      "d3d8ef1762bb65bb": {
+        "kind": "narration",
+        "line": 83,
+        "source": "Item 5. Mary's notebook. The last pages.",
+        "text": ""
+      },
+      "e07712c2487b53af": {
+        "kind": "dialogue",
+        "speaker": "adelaide",
+        "line": 75,
+        "source": "Yes, miss.",
+        "text": ""
+      },
+      "e877ccafe75fa54d": {
+        "kind": "narration",
+        "line": 126,
+        "source": "One day he will ask where he came from. Give him this.",
+        "text": ""
+      },
+      "e99a39b1fcf38a69": {
+        "kind": "narration",
+        "line": 49,
+        "source": "Item 3. Mary's notebook again. The fourteenth of November, 1893.",
+        "text": ""
+      },
+      "e9b81912b188cc58": {
+        "kind": "choice",
+        "line": 32,
+        "source": "Leave it sealed",
+        "text": ""
+      },
+      "ec297fa93dffa15d": {
+        "kind": "narration",
+        "line": 109,
+        "source": "You write it. The pen scratches louder than it should.",
+        "text": ""
+      },
+      "ed069a12ad0d6e35": {
+        "kind": "narration",
+        "line": 94,
+        "source": "On the sixth of August the house scribe strikes my name from the register.",
+        "text": ""
+      },
+      "ee1b78339cc831d3": {
+        "kind": "narration",
+        "line": 50,
+        "source": "I wake up and the candle has gone out on its own.",
+        "text": ""
+      },
+      "f17f905dcf8c3dd9": {
+        "kind": "narration",
+        "line": 116,
+        "source": "You initial the empty column. Somebody upstairs will ask why.",
+        "text": ""
+      },
+      "f5a08eb91acad808": {
+        "kind": "narration",
+        "line": 88,
+        "source": "He looks at the floor, at the window, at the door. Anywhere but my face.",
+        "text": ""
+      },
+      "f7dbb59fad6e68f2": {
+        "kind": "narration",
+        "line": 7,
+        "source": "Item 1. From the notebook of Mary Von Lucis. November, 1893.",
+        "text": ""
+      },
+      "fc4d335ad7551d7b": {
+        "kind": "narration",
+        "line": 124,
+        "source": "His name is Gabriel. I swear on my soul, which is not worth much anymore, I never knew the father.",
+        "text": ""
+      }
+    },
+    "02_notebook.story": {
+      "063fad58a85e18eb": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 98,
+        "source": "Nothing. Cloths.",
+        "text": ""
+      },
+      "07f826cb648e7d53": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 45,
+        "source": "What is his name?",
+        "text": ""
+      },
+      "08e2eb147a94ce3d": {
+        "kind": "narration",
+        "line": 20,
+        "source": "July 14th. I am writing down what the guest looks like, because tomorrow I may not.",
+        "text": ""
+      },
+      "0c72827366cc5443": {
+        "kind": "dialogue",
+        "speaker": "clara",
+        "line": 33,
+        "source": "No guest stayed here this year.",
+        "text": ""
+      },
+      "1059b0dc94bdb034": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 47,
+        "source": "And his family name?",
+        "text": ""
+      },
+      "1a382669eaf5279a": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 100,
+        "source": "And Francis. Whoever it is you write to at night, tell them this.",
+        "text": ""
+      },
+      "1cb62cfa4cc7a61e": {
+        "kind": "narration",
+        "line": 24,
+        "source": "I read that back and it isn't right. He is broad in the shoulders. The coat is grey.",
+        "text": ""
+      },
+      "208f606cd69609d1": {
+        "kind": "choice",
+        "line": 107,
+        "source": "Let the margin note stand",
+        "text": ""
+      },
+      "22ea41171dec3a53": {
+        "kind": "narration",
+        "line": 11,
+        "source": "July 12th, 1894. Santa Ilde. Lately I have begun to forget things.",
+        "text": ""
+      },
+      "26ee67f7d2352bdd": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 93,
+        "source": "Read it. Then you'll understand why I talk about that half-year the way I do.",
+        "text": ""
+      },
+      "28872bb3d3938bc0": {
+        "kind": "narration",
+        "line": 90,
+        "source": "Part II of the annex. A conversation in the administrator's office, 1901, written down by Francis.",
+        "text": ""
+      },
+      "38c222b7e7dba05b": {
+        "kind": "narration",
+        "line": 16,
+        "source": "Ever since the guest arrived.",
+        "text": ""
+      },
+      "3deb2c8ae38d7e54": {
+        "kind": "choice",
+        "line": 75,
+        "source": "Hold the page to the lamp",
+        "text": ""
+      },
+      "43dc6e953c9c7fd7": {
+        "kind": "narration",
+        "line": 25,
+        "source": "He eats normally, at the sisters' table.",
+        "text": ""
+      },
+      "443b9aa08b21714b": {
+        "kind": "narration",
+        "line": 14,
+        "source": "The children have behaved better than usual, ever since the arrival of the",
+        "text": ""
+      },
+      "4529d8737d75db24": {
+        "kind": "narration",
+        "line": 13,
+        "source": "So I am keeping a diary. I know that, eventually, I will forget to keep it too.",
+        "text": ""
+      },
+      "45fa0fc90e27ba2c": {
+        "kind": "narration",
+        "line": 7,
+        "source": "Report two hundred and fourteen has an annex: a copy of the administrator's notebook, made by our man Francis in one night.",
+        "text": ""
+      },
+      "4c504de84e2da8e1": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 101,
+        "source": "There's no family here. There's a boy.",
+        "text": ""
+      },
+      "658f09b55b60c2d7": {
+        "kind": "narration",
+        "line": 22,
+        "source": "He is a tall man in a dark frock coat, thin enough to pity. He speaks little. He eats less.",
+        "text": ""
+      },
+      "67f774567579041c": {
+        "kind": "narration",
+        "line": 73,
+        "source": "Whoever wrote on the missing page pressed hard enough to mark the next one.",
+        "text": ""
+      },
+      "6ac32938343c63fb": {
+        "kind": "narration",
+        "line": 110,
+        "source": "You underline them twice, under the margin note, where the next reader will see both.",
+        "text": ""
+      },
+      "6fb391b597528d40": {
+        "kind": "narration",
+        "line": 112,
+        "source": "The field post knew the man. You didn't. You let it stand.",
+        "text": ""
+      },
+      "6fd4667b6ba9b437": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 60,
+        "source": "No. No one new.",
+        "text": ""
+      },
+      "714ec5037a967756": {
+        "kind": "narration",
+        "line": 41,
+        "source": "August 9th. A young woman came to the door after midnight, soaked through.",
+        "text": ""
+      },
+      "76775b0efddf0ec1": {
+        "kind": "dialogue",
+        "speaker": "man_in_black",
+        "line": 61,
+        "source": "Thank you for your time.",
+        "text": ""
+      },
+      "7b7645b9db1e8f6e": {
+        "kind": "narration",
+        "line": 78,
+        "source": "You tilt it against the lamp until the grooves catch the light.",
+        "text": ""
+      },
+      "7fbf8dfcdaab40c1": {
+        "kind": "dialogue",
+        "speaker": "man_in_black",
+        "line": 59,
+        "source": "Good morning. Has a new child come in this week?",
+        "text": ""
+      },
+      "85521ea7f194b6de": {
+        "kind": "narration",
+        "line": 79,
+        "source": "\"...a page from a register, folded small. Folio 41. His name is on it, and a price...\"",
+        "text": ""
+      },
+      "8a247bb88d0e8a0b": {
+        "kind": "choice",
+        "line": 75,
+        "source": "Leave it",
+        "text": ""
+      },
+      "8ce1108da19f656b": {
+        "kind": "narration",
+        "line": 44,
+        "source": "She did not ask for discretion. She did not offer money. She did not cry.",
+        "text": ""
+      },
+      "9397511731d9ad70": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 30,
+        "source": "Sister Clara, the guest. How long was he with us?",
+        "text": ""
+      },
+      "979db6c8748f574a": {
+        "kind": "dialogue",
+        "speaker": "mary",
+        "line": 49,
+        "source": "Don't let anyone come looking for me.",
+        "text": ""
+      },
+      "9d441c03d2fb1dd2": {
+        "kind": "narration",
+        "line": 56,
+        "source": "August 11th. Men came this morning. Three of them, in black, polite in a way that makes you cold.",
+        "text": ""
+      },
+      "9edba53497f4c3ec": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 96,
+        "source": "Look after a child for seven years and then tell me you can pack your bags.",
+        "text": ""
+      },
+      "9ede5f64f21c00ea": {
+        "kind": "dialogue",
+        "speaker": "clara",
+        "line": 31,
+        "source": "What guest, Mr. Moriarty?",
+        "text": ""
+      },
+      "a424ddd02c3a48b9": {
+        "kind": "narration",
+        "line": 83,
+        "source": "You turn the page. Some things are torn out for a reason.",
+        "text": ""
+      },
+      "ac455e340c495b55": {
+        "kind": "narration",
+        "line": 48,
+        "source": "She looked at the door.",
+        "text": ""
+      },
+      "bab2eef3befd3729": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 95,
+        "source": "I grew attached. To my colleagues. To Gabriel.",
+        "text": ""
+      },
+      "bc4cb318bffeceeb": {
+        "kind": "dialogue",
+        "speaker": "mary",
+        "line": 46,
+        "source": "Gabriel.",
+        "text": ""
+      },
+      "c3dad1e80c58db77": {
+        "kind": "narration",
+        "line": 12,
+        "source": "It's all been signed since May. I leave Santa Ilde on my birthday and go to live with my sister.",
+        "text": ""
+      },
+      "c631592d3d2c4bdf": {
+        "kind": "dialogue",
+        "speaker": "francis",
+        "line": 94,
+        "source": "Then why did you stay? After everything in there?",
+        "text": ""
+      },
+      "c78d793ee7d5d7d3": {
+        "kind": "narration",
+        "line": 65,
+        "source": "...",
+        "text": ""
+      },
+      "cd35bff60ee335de": {
+        "kind": "narration",
+        "line": 63,
+        "source": "I lied to an armed man before breakfast, and I do not recognise myself.",
+        "text": ""
+      },
+      "d5694d77260e2e8c": {
+        "kind": "narration",
+        "line": 105,
+        "source": "In Francis's copy, somebody at the field post wrote in the margin: \"A diversion. Not to be treated as information.\"",
+        "text": ""
+      },
+      "da5dfdb5ded49931": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 32,
+        "source": "The man in the coat. At your table.",
+        "text": ""
+      },
+      "dd3c18ff8af103ac": {
+        "kind": "narration",
+        "line": 64,
+        "source": "Afterwards I unwrapped the boy's cloths to change him, and there was",
+        "text": ""
+      },
+      "e0c1256617d54d6c": {
+        "kind": "narration",
+        "line": 72,
+        "source": "The Archive. Francis copied the notebook faithfully, down to the torn page. He copied the indentations too.",
+        "text": ""
+      },
+      "e57ce3275b5f4d37": {
+        "kind": "narration",
+        "line": 51,
+        "source": "I decided to take him in.",
+        "text": ""
+      },
+      "e664abeed04e6ad6": {
+        "kind": "narration",
+        "line": 66,
+        "source": "(The sentence ends mid-line. The next page has been torn out at the stitching.)",
+        "text": ""
+      },
+      "eab9971a5f1d465f": {
+        "kind": "dialogue",
+        "speaker": "francis",
+        "line": 97,
+        "source": "The torn page. What was in the boy's cloths?",
+        "text": ""
+      },
+      "f1d671b97a2984e6": {
+        "kind": "choice",
+        "line": 107,
+        "source": "Underline his last words",
+        "text": ""
+      },
+      "f49cdf51ed0578ad": {
+        "kind": "narration",
+        "line": 99,
+        "source": "The only quick answer of the night. It had been ready for years.",
+        "text": ""
+      },
+      "f5f0c3b53ce0a90d": {
+        "kind": "narration",
+        "line": 27,
+        "source": "July 23rd. The guest left two days ago. Nobody can tell me how long he stayed.",
+        "text": ""
+      },
+      "fe94d40d5723b606": {
+        "kind": "narration",
+        "line": 35,
+        "source": "Sister Clara served him dinner every night.",
+        "text": ""
+      }
+    },
+    "03_reports.story": {
+      "14fc79d712c563cf": {
+        "kind": "narration",
+        "line": 45,
+        "source": "And whoever does it has no idea what he is doing.",
+        "text": ""
+      },
+      "213b06dc620a9a3a": {
+        "kind": "dialogue",
+        "speaker": "house_envoy",
+        "line": 11,
+        "source": "A signature is learned. A blessing is inherited.",
+        "text": ""
+      },
+      "242db7a1af71fee3": {
+        "kind": "narration",
+        "line": 14,
+        "source": "We are looking for the master.",
+        "text": ""
+      },
+      "25d179eb6f6bc0dd": {
+        "kind": "narration",
+        "line": 9,
+        "source": "Report No. 206. A note from the House, for the younger men who still mix up the terms.",
+        "text": ""
+      },
+      "2eba7d7945d5c437": {
+        "kind": "narration",
+        "line": 8,
+        "source": "A house that breaks with one House is in trouble. A house that breaks with four is being carried.",
+        "text": ""
+      },
+      "347e919c2a519ff2": {
+        "kind": "narration",
+        "line": 55,
+        "source": "...",
+        "text": ""
+      },
+      "392c85079bfcc47b": {
+        "kind": "narration",
+        "line": 52,
+        "source": "(Hurried handwriting. The ink is smeared across two lines.)",
+        "text": ""
+      },
+      "42f49de6f5c86d8b": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 63,
+        "source": "You've read it all. Now go and look at it.",
+        "text": ""
+      },
+      "5f247162ff2f97cd": {
+        "kind": "narration",
+        "line": 43,
+        "source": "Report No. 220. There is no use of signatures in Santa Ilde. No master. No rival House.",
+        "text": ""
+      },
+      "6ad43322a23ebcff": {
+        "kind": "narration",
+        "line": 18,
+        "source": "Report No. 217. The shadows arrived on the eleventh. There are three.",
+        "text": ""
+      },
+      "6e78861b7ea6df42": {
+        "kind": "dialogue",
+        "speaker": "shadow",
+        "line": 20,
+        "source": "There is residue in Santa Ilde, and a great deal of it. In the young children's wing.",
+        "text": ""
+      },
+      "7599db15f1c066a9": {
+        "kind": "narration",
+        "line": 34,
+        "source": "Folio 41 of the register has been torn out. The floorboard by the fireplace is loose, and the space beneath it is empty.",
+        "text": ""
+      },
+      "9698d808d7c9f5b0": {
+        "kind": "narration",
+        "line": 33,
+        "source": "Report No. 219. We went to the Von Lucis residence. We are late. Someone methodical was here before us.",
+        "text": ""
+      },
+      "96b655ec79ab5b56": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 64,
+        "source": "Santa Ilde. Ask for the administrator. Don't ask for the boy.",
+        "text": ""
+      },
+      "a2a057cf14e21ef3": {
+        "kind": "narration",
+        "line": 25,
+        "source": "Half an hour later. The same question.",
+        "text": ""
+      },
+      "ae96394a93cab95f": {
+        "kind": "narration",
+        "line": 54,
+        "source": "One of the shadows claims to have discov",
+        "text": ""
+      },
+      "b156a821567d1336": {
+        "kind": "narration",
+        "line": 36,
+        "source": "You stop reading. Folio 41. You have seen that number before, pressed into a page from 1894.",
+        "text": ""
+      },
+      "b46f194658181dd2": {
+        "kind": "narration",
+        "line": 46,
+        "source": "If the child does not know what he does, someone decided for him, and has been deciding since 1894.",
+        "text": ""
+      },
+      "b6e68d63cc510292": {
+        "kind": "narration",
+        "line": 47,
+        "source": "And that person knows exactly what they hold.",
+        "text": ""
+      },
+      "b8b3f902703a4f38": {
+        "kind": "dialogue",
+        "speaker": "house_envoy",
+        "line": 12,
+        "source": "If there is a hand at work in Santa Ilde, someone trained it. Find the master and you find the hand.",
+        "text": ""
+      },
+      "b97cc49ee7af3b2a": {
+        "kind": "narration",
+        "line": 23,
+        "source": "The third shadow sweeps the old wing, closed since '94. He comes back in the morning and asks why we are in Santa Ilde.",
+        "text": ""
+      },
+      "b9de2cb6ed2f664c": {
+        "kind": "narration",
+        "line": 44,
+        "source": "Whoever does this has a blessing. A blessing is inherited, and inheritance has blood. The blood there is Von Lucis.",
+        "text": ""
+      },
+      "c0e64cf995884afc": {
+        "kind": "narration",
+        "line": 51,
+        "source": "Report No. 221.",
+        "text": ""
+      },
+      "ce8d6ec16dbd7ce6": {
+        "kind": "narration",
+        "line": 37,
+        "source": "Someone is putting together the same story we are, and is three steps ahead.",
+        "text": ""
+      },
+      "da072fd3770b3d71": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 59,
+        "source": "Well?",
+        "text": ""
+      },
+      "db7d6e77836ba963": {
+        "kind": "narration",
+        "line": 7,
+        "source": "Report No. 203. Santa Ilde has owed us servants since 1871. In 1898 the numbers fell by half. In 1899 they stopped.",
+        "text": ""
+      },
+      "e9f99ff5dac92b88": {
+        "kind": "narration",
+        "line": 27,
+        "source": "Neither of the other two remembers that there were three of them.",
+        "text": ""
+      },
+      "f37830d2484e0ee7": {
+        "kind": "dialogue",
+        "speaker": "shadow",
+        "line": 21,
+        "source": "The residue has no master. It is as if someone were writing without ever having seen a letter.",
+        "text": ""
+      },
+      "ff7c2f62cfe49a4d": {
+        "kind": "dialogue",
+        "speaker": "shadow_third",
+        "line": 24,
+        "source": "Why are we in Santa Ilde?",
+        "text": ""
+      },
+      "ff8c3e0789c1ba97": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 61,
+        "source": "You wanted to go and ask them. Go and ask them.",
+        "text": ""
+      }
+    },
+    "04_santa_ilde.story": {
+      "02e4a78d078e1d84": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 35,
+        "source": "What was in the boy's cloths, Mr. Moriarty? Folio 41?",
+        "text": ""
+      },
+      "0cbf116745df171e": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 85,
+        "source": "Thank you, Adelaide.",
+        "text": ""
+      },
+      "1be5618133bca24d": {
+        "kind": "dialogue",
+        "speaker": "gabriel",
+        "line": 63,
+        "source": "I wanted it.",
+        "text": ""
+      },
+      "1ef48b51cb054588": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 106,
+        "source": "Write what you like. We've been written about before.",
+        "text": ""
+      },
+      "1fc48b59f9dad64e": {
+        "kind": "narration",
+        "line": 86,
+        "source": "The cup does not shake. She has been waiting nine years for somebody to say it.",
+        "text": ""
+      },
+      "25c751cadeb081c0": {
+        "kind": "dialogue",
+        "speaker": "clara",
+        "line": 88,
+        "source": "I've spent every day since deciding things for her son instead.",
+        "text": ""
+      },
+      "360cea12221e0873": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 29,
+        "source": "Ask your questions. I'll tell you which ones I've forgotten the answers to.",
+        "text": ""
+      },
+      "44b20d5d2d833b06": {
+        "kind": "choice",
+        "line": 32,
+        "source": "Ask about folio 41",
+        "text": ""
+      },
+      "457afafd063ec7e2": {
+        "kind": "choice",
+        "line": 32,
+        "source": "Keep it to yourself",
+        "text": ""
+      },
+      "4e6f4f073ff0c41a": {
+        "kind": "choice",
+        "line": 59,
+        "source": "Ask him where the horse came from",
+        "text": ""
+      },
+      "5167550849292bb5": {
+        "kind": "narration",
+        "line": 76,
+        "source": "The sister who brings you tea keeps her eyes down. She has been at Santa Ilde longer than anyone but the administrator.",
+        "text": ""
+      },
+      "58c122f1b1523987": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 48,
+        "source": "No questions? The last ones had a list.",
+        "text": ""
+      },
+      "628f5ac1ffa58542": {
+        "kind": "choice",
+        "line": 80,
+        "source": "Thank her, and let it go",
+        "text": ""
+      },
+      "6773751dbbc296c2": {
+        "kind": "narration",
+        "line": 91,
+        "source": "You thank her. She leaves. Some names are safer where they are.",
+        "text": ""
+      },
+      "67c93821f6b6f22d": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 21,
+        "source": "The bishopric sent me, after all.",
+        "text": ""
+      },
+      "6f4a09f0346c9ca8": {
+        "kind": "narration",
+        "line": 93,
+        "source": "You thank her. She leaves without a sound.",
+        "text": ""
+      },
+      "7194cd32a7fd9bb6": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 36,
+        "source": "Who else has read that page?",
+        "text": ""
+      },
+      "74bc015943f8cdc0": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 11,
+        "source": "You're not the bishopric. The bishopric sends letters.",
+        "text": ""
+      },
+      "78b998ffe35cfbcb": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 44,
+        "source": "Then you have your answer, and so do they.",
+        "text": ""
+      },
+      "7b8c95e9945ba813": {
+        "kind": "narration",
+        "line": 64,
+        "source": "He holds it out to you. Moriarty, in the doorway, lets out a breath.",
+        "text": ""
+      },
+      "8a12650ebebd2a6b": {
+        "kind": "choice",
+        "line": 14,
+        "source": "Say the House sent you",
+        "text": ""
+      },
+      "8b89b5f2f840ee16": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 12,
+        "source": "My name is {player_name}.",
+        "text": ""
+      },
+      "8bb8dc54a26d8e44": {
+        "kind": "choice",
+        "line": 14,
+        "source": "Say you're from the bishopric",
+        "text": ""
+      },
+      "92768a53f0ccd59b": {
+        "kind": "narration",
+        "line": 54,
+        "source": "The nursery is empty except for one boy, nine years old, sitting on the floor by the window.",
+        "text": ""
+      },
+      "96a7797c47ed4cb7": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 22,
+        "source": "The bishopric doesn't know how many children live here. Come in anyway.",
+        "text": ""
+      },
+      "9aae8779120a96a2": {
+        "kind": "narration",
+        "line": 10,
+        "source": "The administrator comes out to meet you before you knock. He has worn the same coat for nine years.",
+        "text": ""
+      },
+      "a08c2c5c7a484fae": {
+        "kind": "choice",
+        "line": 80,
+        "source": "Call her Adelaide",
+        "text": ""
+      },
+      "a371c06d60976872": {
+        "kind": "dialogue",
+        "speaker": "gabriel",
+        "line": 57,
+        "source": "Are you going to forget me too? The last man forgot me.",
+        "text": ""
+      },
+      "a5deffd63685f330": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 18,
+        "source": "Honest. That's rarer than you'd think. Come in.",
+        "text": ""
+      },
+      "ad5b2af65d3926cc": {
+        "kind": "narration",
+        "line": 55,
+        "source": "Beside him there is a painted wooden horse. It was not there when you came in.",
+        "text": ""
+      },
+      "b851d403341262ff": {
+        "kind": "dialogue",
+        "speaker": "clara",
+        "line": 87,
+        "source": "I told her father. I went straight to him, like a good servant.",
+        "text": ""
+      },
+      "b852662157413411": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 40,
+        "source": "Then you already know what I'd say. A boy. Not a family.",
+        "text": ""
+      },
+      "bc9cb298188dcfe9": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 102,
+        "source": "You'll write something about us. Everyone who comes here does.",
+        "text": ""
+      },
+      "c865224f8159b2fc": {
+        "kind": "narration",
+        "line": 79,
+        "source": "Four words. You have read them before, in a testimony taken in August 1894.",
+        "text": ""
+      },
+      "c87cb4fae9b91936": {
+        "kind": "choice",
+        "line": 59,
+        "source": "Write it down",
+        "text": ""
+      },
+      "c9b0623407d25f67": {
+        "kind": "narration",
+        "line": 46,
+        "source": "You keep the number to yourself. He watches you do it.",
+        "text": ""
+      },
+      "ca448315d8f94c22": {
+        "kind": "dialogue",
+        "speaker": "clara",
+        "line": 89,
+        "source": "The floorboard was mine, too. Your people were three steps behind. I made sure of it.",
+        "text": ""
+      },
+      "cc2cb2305b6bd606": {
+        "kind": "narration",
+        "line": 7,
+        "source": "November, 1903. Santa Ilde is smaller than the reports made it sound. Twenty-one windows. Somebody is singing.",
+        "text": ""
+      },
+      "dd024c24e361a827": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 17,
+        "source": "I'm from the House. The Archive.",
+        "text": ""
+      },
+      "dfc37254234f720d": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 39,
+        "source": "Only me. And I underlined what you said to Francis.",
+        "text": ""
+      },
+      "e3077d45061cb6e5": {
+        "kind": "narration",
+        "line": 108,
+        "source": "You sign the visitors' book on your way out. Whatever you do next, you have been to Santa Ilde.",
+        "text": ""
+      },
+      "e50d16ce00125d71": {
+        "kind": "dialogue",
+        "speaker": "clara",
+        "line": 77,
+        "source": "Your hot water, miss.",
+        "text": ""
+      },
+      "e968c34acad95b28": {
+        "kind": "dialogue",
+        "speaker": "moriarty",
+        "line": 104,
+        "source": "Write it carefully. He's the only reason this house still has children in it.",
+        "text": ""
+      },
+      "ebfd1a28a0f363e5": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 43,
+        "source": "The field post.",
+        "text": ""
+      },
+      "f455a84b09b9d344": {
+        "kind": "narration",
+        "line": 31,
+        "source": "The folio number is on the tip of your tongue.",
+        "text": ""
+      },
+      "f49e8908663380ca": {
+        "kind": "narration",
+        "line": 68,
+        "source": "You note the time, the toy, the window. The House will want to know. The boy watches the pencil.",
+        "text": ""
+      },
+      "ff1f882acc7f21bb": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 62,
+        "source": "Where did the horse come from?",
+        "text": ""
+      }
+    },
+    "05_report.story": {
+      "007d4075f63b3997": {
+        "kind": "narration",
+        "line": 73,
+        "source": "Every week it says the same thing, and every week it is true: there's no family here. There's a boy.",
+        "text": ""
+      },
+      "0847052410243b0e": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 64,
+        "source": "Nothing.",
+        "text": ""
+      },
+      "1190fdfd2df880de": {
+        "kind": "choice",
+        "line": 24,
+        "source": "\"Nothing the House needs.\"",
+        "text": ""
+      },
+      "1d5bf4052547abfa": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 67,
+        "source": "Report two hundred and twenty-two. Filed. Go.",
+        "text": ""
+      },
+      "24ba5b6bebfd33bd": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 51,
+        "source": "Then we'll send someone who'll find something.",
+        "text": ""
+      },
+      "330b65e09b6d9a22": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 34,
+        "source": "A boy with a blessing. The blood is Von Lucis. He doesn't know what he does.",
+        "text": ""
+      },
+      "3b7abc9422df837f": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 66,
+        "source": "...",
+        "text": ""
+      },
+      "48df88db2183dfda": {
+        "kind": "narration",
+        "line": 7,
+        "source": "Before you answer there is the box, and the question of what goes in with the report.",
+        "text": ""
+      },
+      "5567640ec515b385": {
+        "kind": "narration",
+        "line": 15,
+        "source": "You think of a wooden horse, a woman who waited nine years, and a man who kept a promise he couldn't remember making.",
+        "text": ""
+      },
+      "7717ddc126942bf4": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 35,
+        "source": "Thank you, {player_name}. That is what an archive is for.",
+        "text": ""
+      },
+      "779899bb7f1ec078": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 50,
+        "source": "You initialled a blank in the Von Lucis register. You wanted to go there before you'd read a page.",
+        "text": ""
+      },
+      "7acaef10ddeadcc4": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 53,
+        "source": "Then Santa Ilde is closed. We have spent enough shadows on it.",
+        "text": ""
+      },
+      "86c2037d26810f7d": {
+        "kind": "narration",
+        "line": 39,
+        "source": "The administrator tells them there is no one new. It is true. The boy has been there for nine years.",
+        "text": ""
+      },
+      "88890eab46c1f3aa": {
+        "kind": "choice",
+        "line": 24,
+        "source": "\"A boy with a blessing. The Von Lucis blood.\"",
+        "text": ""
+      },
+      "89707f71ce1f19c7": {
+        "kind": "dialogue",
+        "speaker": "registrar",
+        "line": 10,
+        "source": "Report two hundred and twenty-two. Yours. What is in Santa Ilde?",
+        "text": ""
+      },
+      "93acb24b572aeb7a": {
+        "kind": "choice",
+        "line": 16,
+        "source": "\"Nothing.\" Then go back",
+        "text": ""
+      },
+      "99679ec02eb07808": {
+        "kind": "narration",
+        "line": 38,
+        "source": "In December, three men in black knock at the door of Santa Ilde. Polite, in a way that makes you cold.",
+        "text": ""
+      },
+      "9c3f3d31f202f495": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 75,
+        "source": "No. That's my whole job now.",
+        "text": ""
+      },
+      "9e1477230732aae0": {
+        "kind": "narration",
+        "line": 41,
+        "source": "Report 222 is filed under Von Lucis. Nobody asks you where he was for those nine months.",
+        "text": ""
+      },
+      "a575a3a5efa45bd9": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 65,
+        "source": "An old man, twenty-one children and a very quiet wing. I'd like to be the one who keeps watching it.",
+        "text": ""
+      },
+      "aa391ecb8cbcba0d": {
+        "kind": "narration",
+        "line": 72,
+        "source": "In the spring you take a room in the town below Santa Ilde. Every week you write the House a report.",
+        "text": ""
+      },
+      "c7d77737cf34c1fc": {
+        "kind": "narration",
+        "line": 42,
+        "source": "You never write another report that anyone reads twice.",
+        "text": ""
+      },
+      "ef56830041a8845b": {
+        "kind": "dialogue",
+        "speaker": "gabriel",
+        "line": 74,
+        "source": "Are you going to forget me?",
+        "text": ""
+      },
+      "f4deaa5d3db71b2b": {
+        "kind": "narration",
+        "line": 57,
+        "source": "Box fourteen goes back on its shelf. You put the reports in after it, in order, and you don't write the last word of 221.",
+        "text": ""
+      },
+      "f51d5cb0ac6b0412": {
+        "kind": "dialogue",
+        "speaker": "{player_name}",
+        "line": 48,
+        "source": "Nothing the House needs. An old man, twenty-one children and a very quiet wing.",
+        "text": ""
+      }
+    }
+  },
+  "names": {
+    "adelaide": {
+      "kind": "name",
+      "source": "Adelaide",
+      "text": ""
+    },
+    "clara": {
+      "kind": "name",
+      "source": "Sister Clara",
+      "text": ""
+    },
+    "francis": {
+      "kind": "name",
+      "source": "Francis",
+      "text": ""
+    },
+    "gabriel": {
+      "kind": "name",
+      "source": "Gabriel",
+      "text": ""
+    },
+    "guest": {
+      "kind": "name",
+      "source": "The Guest",
+      "text": ""
+    },
+    "house_envoy": {
+      "kind": "name",
+      "source": "Envoy of the House",
+      "text": ""
+    },
+    "hugo": {
+      "kind": "name",
+      "source": "Hugo Von Lucis",
+      "text": ""
+    },
+    "man_in_black": {
+      "kind": "name",
+      "source": "The Man in Black",
+      "text": ""
+    },
+    "mary": {
+      "kind": "name",
+      "source": "Mary",
+      "text": ""
+    },
+    "moriarty": {
+      "kind": "name",
+      "source": "Moriarty",
+      "text": ""
+    },
+    "registrar": {
+      "kind": "name",
+      "source": "The Registrar",
+      "text": ""
+    },
+    "shadow": {
+      "kind": "name",
+      "source": "Shadow",
+      "text": ""
+    },
+    "shadow_third": {
+      "kind": "name",
+      "source": "The Third Shadow",
+      "text": ""
+    }
+  },
+  "ui": {
+    "00ec2fd8db85906a": {
+      "kind": "ui",
+      "source": "PRESS ANY KEY",
+      "text": ""
+    },
+    "01cff55dcf75165c": {
+      "kind": "ui",
+      "source": "Quick save",
+      "text": "Gravação rápida"
+    },
+    "02a5e8e290104137": {
+      "kind": "ui",
+      "source": "Delete {slot}? This can't be undone.",
+      "text": ""
+    },
+    "02c442e7782c842e": {
+      "kind": "ui",
+      "source": "Cancel",
+      "text": ""
+    },
+    "04e627f6b730c47f": {
+      "kind": "ui",
+      "source": "KEYBOARD / MOUSE",
+      "text": ""
+    },
+    "0513524c9bcb098c": {
+      "kind": "ui",
+      "source": "Story reloaded; scene '{scene}' restarted",
+      "text": ""
+    },
+    "0772d058fe9b16de": {
+      "kind": "ui",
+      "source": "Could not save the screenshot",
+      "text": ""
+    },
+    "0bfd05ea1b180fc5": {
+      "kind": "ui",
+      "source": "Fullscreen",
+      "text": "Ecrã inteiro"
+    },
+    "0cf5af89fd0fefd8": {
+      "kind": "ui",
+      "source": "Play in a window, or fill the whole screen",
+      "text": ""
+    },
+    "11aab403262b1ddc": {
+      "kind": "ui",
+      "source": "EXIT",
+      "text": ""
+    },
+    "12d2bc2df1ba776c": {
+      "kind": "ui",
+      "source": "Save failed: {reason}",
+      "text": ""
+    },
+    "1552c836bc381f1f": {
+      "kind": "ui",
+      "source": "That language could not be loaded",
+      "text": ""
+    },
+    "2842eae8c27c6f07": {
+      "kind": "ui",
+      "source": "Delete",
+      "text": ""
+    },
+    "2c50c220df9c3c1b": {
+      "kind": "ui",
+      "source": "Auto",
+      "text": ""
+    },
+    "2eab4a3a4c13507b": {
+      "kind": "ui",
+      "source": "GOD IS WATCHING",
+      "text": ""
+    },
+    "2f1f549178ef538e": {
+      "kind": "ui",
+      "source": "Story not reloaded: {reason}",
+      "text": ""
+    },
+    "316507fd679df67f": {
+      "kind": "ui",
+      "source": "Load failed: {reason}",
+      "text": ""
+    },
+    "3471d760435d5dfa": {
+      "kind": "ui",
+      "source": "Type your name, then press Enter to sign",
+      "text": ""
+    },
+    "37a00b2b5439406a": {
+      "kind": "ui",
+      "source": "Your notes, your decisions and what the Archive knows",
+      "text": ""
+    },
+    "37ed7f09852348ea": {
+      "kind": "ui",
+      "source": "Fast",
+      "text": "Rápido"
+    },
+    "39d0e7baca392b19": {
+      "kind": "ui",
+      "source": "Slow",
+      "text": "Lento"
+    },
+    "3e8e9eca77782ea3": {
+      "kind": "ui",
+      "source": "Quick save failed: {reason}",
+      "text": ""
+    },
+    "3f1950f038042b6b": {
+      "kind": "ui",
+      "source": "Loaded {slot}",
+      "text": ""
+    },
+    "4053a44f2dadeaf4": {
+      "kind": "ui",
+      "source": "v0.3 · made with VN_Rust",
+      "text": ""
+    },
+    "4212d7c714517b07": {
+      "kind": "ui",
+      "source": "Could not continue: {reason}",
+      "text": ""
+    },
+    "43aaa0a30ee80ee2": {
+      "kind": "ui",
+      "source": "Pause (Esc)",
+      "text": ""
+    },
+    "443f1cb52f5be3d0": {
+      "kind": "ui",
+      "source": "Load",
+      "text": ""
+    },
+    "4d5885b9777e24f6": {
+      "kind": "ui",
+      "source": "Autosave",
+      "text": "Gravação automática"
+    },
+    "52406913e77ace76": {
+      "kind": "ui",
+      "source": "Case file",
+      "text": ""
+    },
+    "52e8239002755ba2": {
+      "kind": "ui",
+      "source": "Seen text",
+      "text": "Texto já lido"
+    },
+    "54c58ef7efa6bb54": {
+      "kind": "ui",
+      "source": "Sound effects. Drag, or hover and press Left/Right",
+      "text": ""
+    },
+    "591bf2c6ccc5e3d9": {
+      "kind": "ui",
+      "source": "\"Your hot water, miss. Miss? Are you unwell?\"",
+      "text": ""
+    },
+    "59db1cb5ccb7e7f0": {
+      "kind": "ui",
+      "source": "LOAD",
+      "text": ""
+    },
+    "5aff4d56bf983337": {
+      "kind": "ui",
+      "source": "Yes",
+      "text": ""
+    },
+    "5c81cfcf6f9ec743": {
+      "kind": "ui",
+      "source": "Screenshot saved",
+      "text": ""
+    },
+    "5cb2e8c4960fc696": {
+      "kind": "ui",
+      "source": "Language",
+      "text": "Idioma"
+    },
+    "63488426b1510195": {
+      "kind": "ui",
+      "source": "Quit the game? Unsaved progress will be lost.",
+      "text": ""
+    },
+    "6519876cdc906a22": {
+      "kind": "ui",
+      "source": "Everything read and decided so far (L)",
+      "text": ""
+    },
+    "6520afbae2c1c943": {
+      "kind": "ui",
+      "source": "Skip",
+      "text": "Saltar"
+    },
+    "7031bd6aa046d492": {
+      "kind": "ui",
+      "source": "What Skip passes over: only lines you've read, or everything",
+      "text": ""
+    },
+    "76ff67b9000cd513": {
+      "kind": "ui",
+      "source": "Back to where you left off, or your most recent save",
+      "text": ""
+    },
+    "77135b0f94a7f7c4": {
+      "kind": "ui",
+      "source": "No saved game yet",
+      "text": ""
+    },
+    "77221d85d8a3bcc6": {
+      "kind": "ui",
+      "source": "Paused",
+      "text": ""
+    },
+    "7ab3cfa85271a744": {
+      "kind": "ui",
+      "source": "Saved to {slot}",
+      "text": "Gravado em {slot}"
+    },
+    "7b5cabbd0486553f": {
+      "kind": "ui",
+      "source": "Music volume",
+      "text": "Volume da música"
+    },
+    "7e646ea33cdcb306": {
+      "kind": "ui",
+      "source": "In the Archive",
+      "text": ""
+    },
+    "80c3034a503c5ee3": {
+      "kind": "ui",
+      "source": "Sound volume",
+      "text": "Volume dos sons"
+    },
+    "80c67a7b9ce6bb3f": {
+      "kind": "ui",
+      "source": "Auto-forward",
+      "text": "Avanço automático"
+    },
+    "82ae264e677e419a": {
+      "kind": "ui",
+      "source": "Background music. Drag, or hover and press Left/Right",
+      "text": ""
+    },
+    "847a9a36ceb98a6f": {
+      "kind": "ui",
+      "source": "Click to see the credits",
+      "text": ""
+    },
+    "8919e77217b65e0c": {
+      "kind": "ui",
+      "source": "Quick loaded",
+      "text": ""
+    },
+    "8974266783f4c128": {
+      "kind": "ui",
+      "source": "Quick saved",
+      "text": "Gravação rápida feita"
+    },
+    "91c62856e4d64451": {
+      "kind": "ui",
+      "source": "Windowed",
+      "text": "Em janela"
+    },
+    "96b7b9a954a7601b": {
+      "kind": "ui",
+      "source": "Quit",
+      "text": ""
+    },
+    "99b23801a0c6f1d2": {
+      "kind": "ui",
+      "source": "The End",
+      "text": ""
+    },
+    "9a95b1b0c3853709": {
+      "kind": "ui",
+      "source": "Save Game",
+      "text": ""
+    },
+    "9addbcbb01b21209": {
+      "kind": "ui",
+      "source": "Save",
+      "text": ""
+    },
+    "9d265b87439bc93a": {
+      "kind": "ui",
+      "source": "What you have filed so far",
+      "text": ""
+    },
+    "9ed1f5b547fe59c6": {
+      "kind": "ui",
+      "source": "How long Auto waits after a line (longer lines wait a little more)",
+      "text": ""
+    },
+    "a07696a2e5b6b3ca": {
+      "kind": "ui",
+      "source": "The page is blank.",
+      "text": ""
+    },
+    "a10f08d403c66b8e": {
+      "kind": "ui",
+      "source": "Skip »",
+      "text": ""
+    },
+    "a2cefc56569e812e": {
+      "kind": "ui",
+      "source": "Log",
+      "text": ""
+    },
+    "a2eedcf41d37dd8f": {
+      "kind": "ui",
+      "source": "Leave the report desk",
+      "text": ""
+    },
+    "a3a67af4a5e56891": {
+      "kind": "ui",
+      "source": "Settings",
+      "text": "Definições"
+    },
+    "a6acbbd56bd34c9d": {
+      "kind": "ui",
+      "source": "Instant",
+      "text": "Instantâneo"
+    },
+    "a98e15789f657f44": {
+      "kind": "ui",
+      "source": "Voice volume",
+      "text": ""
+    },
+    "ac06e1e1b0ce6ae4": {
+      "kind": "ui",
+      "source": "English",
+      "text": ""
+    },
+    "aded2949d5578183": {
+      "kind": "ui",
+      "source": "Deleted {slot}",
+      "text": ""
+    },
+    "ae5204ec88aa7da1": {
+      "kind": "ui",
+      "source": "Evidence",
+      "text": ""
+    },
+    "b003ebb97a1f3e94": {
+      "kind": "ui",
+      "source": "NEW GAME",
+      "text": ""
+    },
+    "b59d35351451b68c": {
+      "kind": "ui",
+      "source": "Main Menu",
+      "text": ""
+    },
+    "b6795ad3b51f20ae": {
+      "kind": "ui",
+      "source": "All text",
+      "text": "Todo o texto"
+    },
+    "b6c978489adb2812": {
+      "kind": "ui",
+      "source": "Display",
+      "text": "Ecrã"
+    },
+    "b7ba3588c79d720d": {
+      "kind": "ui",
+      "source": "CONTINUE",
+      "text": ""
+    },
+    "bec42be1f406e41d": {
+      "kind": "ui",
+      "source": "Empty",
+      "text": ""
+    },
+    "c8e87e8898583463": {
+      "kind": "ui",
+      "source": "Slot {number}",
+      "text": "Espaço {number}"
+    },
+    "d09f0073c98bbdc4": {
+      "kind": "ui",
+      "source": "Overwrite {slot}?",
+      "text": ""
+    },
+    "d1d8bf6abf3381e3": {
+      "kind": "ui",
+      "source": "Story reloaded",
+      "text": ""
+    },
+    "d5156fb34f805c2c": {
+      "kind": "ui",
+      "source": "Text speed",
+      "text": "Velocidade do texto"
+    },
+    "d5ff0b79f4c57c20": {
+      "kind": "ui",
+      "source": "Quick load failed: {reason}",
+      "text": ""
+    },
+    "d741f451ce04a27c": {
+      "kind": "ui",
+      "source": "Quick Save",
+      "text": ""
+    },
+    "d89dba9ff954a1a5": {
+      "kind": "ui",
+      "source": "Quick Load",
+      "text": ""
+    },
+    "dc064933da27dac1": {
+      "kind": "ui",
+      "source": "Close the case file",
+      "text": ""
+    },
+    "dc29460106f2c9c4": {
+      "kind": "ui",
+      "source": "Voiced lines. Drag, or hover and press Left/Right",
+      "text": ""
+    },
+    "dd504d6911d9cb8f": {
+      "kind": "ui",
+      "source": "Normal",
+      "text": "Normal"
+    },
+    "df74222c15a174e7": {
+      "kind": "ui",
+      "source": "Back",
+      "text": "Voltar"
+    },
+    "e0c743fc8837d0c2": {
+      "kind": "ui",
+      "source": "Delete failed: {reason}",
+      "text": ""
+    },
+    "e0db68db85111fd2": {
+      "kind": "ui",
+      "source": "Load Game",
+      "text": ""
+    },
+    "e1f2567d3380ce45": {
+      "kind": "ui",
+      "source": "AN ACCOUNT FROM THE ARCHIVE OF THE HOUSE  ·  1903",
+      "text": ""
+    },
+    "e4aecbdb24794bf1": {
+      "kind": "ui",
+      "source": "SETTINGS",
+      "text": ""
+    },
+    "e5402049167e836e": {
+      "kind": "ui",
+      "source": "Turn the pages on their own (A). Tab or Ctrl skips read pages",
+      "text": ""
+    },
+    "e66d19bb92e24f30": {
+      "kind": "ui",
+      "source": "Close the evidence",
+      "text": ""
+    },
+    "e8b7f7a5ebc6a0e7": {
+      "kind": "ui",
+      "source": "GAMEPAD",
+      "text": ""
+    },
+    "eccbe27fc01ac88f": {
+      "kind": "ui",
+      "source": "Resume",
+      "text": ""
+    },
+    "f2017dacf5a4cb15": {
+      "kind": "ui",
+      "source": "The language the story is read in. Lines with no translation stay as written",
+      "text": ""
+    },
+    "f30b2646cc72b446": {
+      "kind": "ui",
+      "source": "Controls",
+      "text": ""
+    },
+    "f9d2b7525abe6234": {
+      "kind": "ui",
+      "source": "How fast lines appear. Clicking while a line types shows all of it",
+      "text": ""
+    },
+    "fc13fb103933973e": {
+      "kind": "ui",
+      "source": "CREDITS",
+      "text": ""
+    },
+    "fe1637c0fafaef03": {
+      "kind": "ui",
+      "source": "Menu",
+      "text": ""
+    },
+    "ff6407ebe226bbfa": {
+      "kind": "ui",
+      "source": "Leave a room you are searching",
+      "text": ""
+    }
+  }
+}

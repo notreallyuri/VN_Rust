@@ -21,14 +21,19 @@ impl VnApp {
             let written = self.write_schema(&path)?;
             let status = if written { "wrote" } else { "unchanged:" };
             println!("{} {}", status, path.display());
+            if let Some(path) = self.export_ui_strings()? {
+                println!("wrote {}", path.display());
+            }
             return Ok(());
         }
 
         if cfg!(debug_assertions) {
-            match self.export_schema() {
-                Ok(Some(path)) => println!("Updated {}", path.display()),
-                Ok(None) => {}
-                Err(e) => eprintln!("⚠️ {}", e),
+            for export in [self.export_schema(), self.export_ui_strings()] {
+                match export {
+                    Ok(Some(path)) => println!("Updated {}", path.display()),
+                    Ok(None) => {}
+                    Err(e) => eprintln!("⚠️ {}", e),
+                }
             }
         }
 

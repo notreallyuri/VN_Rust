@@ -2,7 +2,9 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use vn_script::translate::{self, Catalog};
-use vn_script::{LANG_DIR, SCHEMA_FILE_NAME, SchemaFile, compile_sources};
+use vn_script::{
+    LANG_DIR, SCHEMA_FILE_NAME, SchemaFile, UI_STRINGS_FILE, UiStrings, compile_sources,
+};
 
 pub fn translate(language: &str, path: &str) -> ExitCode {
     if !is_language_tag(language) {
@@ -80,6 +82,19 @@ pub fn translate(language: &str, path: &str) -> ExitCode {
     };
     catalog.language = language.to_string();
 
+    let ui = root.join(LANG_DIR).join(UI_STRINGS_FILE);
+    let ui = match ui.exists() {
+        true => match UiStrings::read(&ui) {
+            Ok(strings) => strings.strings,
+            Err(e) => {
+                eprintln!("⚠️ {}; the screens' own labels are not in the catalog", e);
+                Vec::new()
+            }
+        },
+        false => Vec::new(),
+    };
+    let ui_added = catalog.refresh_ui(&ui);
+
     let refresh = catalog.refresh(&strings, &names);
     match catalog.write(&catalog_path) {
         Ok(written) => {
@@ -92,11 +107,17 @@ pub fn translate(language: &str, path: &str) -> ExitCode {
         }
     }
 
+    if ui.is_empty() {
+        println!(
+            "no {}/{} yet: run the game once in a debug build to list the screens' own labels",
+            LANG_DIR, UI_STRINGS_FILE
+        );
+    }
     println!(
         "{} string{} ({} new), {} translated, {} missing, {} stale",
         refresh.total,
         plural(refresh.total),
-        refresh.added,
+        refresh.added + ui_added,
         refresh.translated,
         refresh.missing(),
         refresh.stale,

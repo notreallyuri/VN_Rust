@@ -109,6 +109,11 @@ wrote examples/god_is_watching/assets/lang/pt-BR.json
 263 strings (263 new), 0 translated, 263 missing, 0 stale
 ```
 
+The screens' own labels ("Settings", "Back", "Saved to {slot}") come from `lang/ui.json`,
+which the engine writes beside `schema.json` when a game runs in a debug build. They land
+in the catalog's `ui` section alongside the story, so a translator has one file to fill.
+Without that file `vn translate` says so and extracts the story only.
+
 `path` is the project (a `schema.json`, or any directory at or under it — the same search
 as `vn check`); it defaults to the working directory. A story with errors is reported and
 nothing is extracted, so a broken edit can't half-rewrite the catalog. The file format,

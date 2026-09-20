@@ -295,15 +295,18 @@ impl Screen for PlayingScreen {
                     Action::ToggleSkip => self.skipping,
                     _ => false,
                 };
-                ui::Button::new(&button.label, &config.hud_style(index))
+                ui::Button::new(ctx.label(&button.label), &config.hud_style(index))
                     .active(active)
                     .draw(d, ctx, rect);
             }
         }
 
         let labels: Vec<&str> = [
-            (self.skipping, config.skip_label.as_str()),
-            (ctx.modes.auto && !self.skipping, config.auto_label.as_str()),
+            (self.skipping, ctx.label(&config.skip_label)),
+            (
+                ctx.modes.auto && !self.skipping,
+                ctx.label(&config.auto_label),
+            ),
         ]
         .into_iter()
         .filter_map(|(on, label)| on.then_some(label))
@@ -375,14 +378,14 @@ impl Screen for PlayingScreen {
                 ui::draw_text_centered(
                     d,
                     fonts,
-                    &config.end_title,
+                    ctx.label(&config.end_title),
                     Vector2::new(screen.x / 2.0, screen.y * 0.42),
                     &config.end_title_text,
                 );
                 ui::draw_text_centered(
                     d,
                     fonts,
-                    &config.end_hint,
+                    ctx.label(&config.end_hint),
                     Vector2::new(screen.x / 2.0, screen.y * 0.52),
                     &config.end_hint_text,
                 );

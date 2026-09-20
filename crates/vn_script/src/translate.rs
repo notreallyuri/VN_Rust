@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use crate::{Instruction, Program, Schema};
 
 pub const TRANSLATION_FORMAT_VERSION: u32 = 1;
+pub const UI_BUCKET: &str = "ui";
+pub const UI_STRINGS_FILE: &str = "ui.json";
 pub const LANG_DIR: &str = "lang";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -18,6 +20,7 @@ pub enum StringKind {
     Narration,
     Choice,
     Name,
+    Ui,
 }
 
 impl StringKind {
@@ -27,6 +30,7 @@ impl StringKind {
             StringKind::Narration => "narration",
             StringKind::Choice => "choice",
             StringKind::Name => "name",
+            StringKind::Ui => "ui",
         }
     }
 }
@@ -136,6 +140,8 @@ pub struct Catalog {
     pub story: BTreeMap<String, BTreeMap<String, Entry>>,
     #[serde(default)]
     pub names: BTreeMap<String, Entry>,
+    #[serde(default)]
+    pub ui: BTreeMap<String, Entry>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -159,6 +165,7 @@ impl Catalog {
             language: language.into(),
             story: BTreeMap::new(),
             names: BTreeMap::new(),
+            ui: BTreeMap::new(),
         }
     }
 
@@ -170,6 +177,34 @@ impl Catalog {
     pub fn name(&self, id: &str, source: &str) -> Option<&str> {
         let entry = self.names.get(id)?;
         (entry.source == source).then(|| entry.translated())?
+    }
+
+    pub fn ui_text(&self, source: &str) -> Option<&str> {
+        self.ui.get(&key(UI_BUCKET, source))?.translated()
+    }
+
+    pub fn refresh_ui(&mut self, strings: &[String]) -> usize {
+        let mut added = 0;
+        let mut seen = Vec::with_capacity(strings.len());
+        for source in strings {
+            let key = key(UI_BUCKET, source);
+            seen.push(key.clone());
+            let entry = self.ui.entry(key).or_insert_with(|| {
+                added += 1;
+                Entry {
+                    kind: StringKind::Ui,
+                    source: source.clone(),
+                    ..Entry::default()
+                }
+            });
+            entry.kind = StringKind::Ui;
+            entry.source = source.clone();
+            entry.stale = false;
+        }
+        for (key, entry) in &mut self.ui {
+            entry.stale = !seen.contains(key);
+        }
+        added
     }
 
     pub fn refresh(&mut self, strings: &[Source], names: &[(String, String)]) -> Refresh {
@@ -234,6 +269,7 @@ impl Catalog {
             .values()
             .flat_map(|file| file.values())
             .chain(self.names.values())
+            .chain(self.ui.values())
     }
 
     pub fn missing(&self) -> Vec<&Entry> {
@@ -259,6 +295,60 @@ impl Catalog {
             ));
         }
         Ok(catalog)
+    }
+
+    pub fn read(path: impl AsRef<Path>) -> io::Result<Self> {
+        let path = path.as_ref();
+        let json = fs::read_to_string(path)
+            .map_err(|e| io::Error::new(e.kind(), format!("{}: {}", path.display(), e)))?;
+        Self::from_json(&json).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("{}: {}", path.display(), e),
+            )
+        })
+    }
+
+    pub fn write(&self, path: impl AsRef<Path>) -> io::Result<bool> {
+        let path = path.as_ref();
+        let json = format!("{}\n", self.to_json());
+        if fs::read_to_string(path).is_ok_and(|existing| existing == json) {
+            return Ok(false);
+        }
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(path, json)
+            .map_err(|e| io::Error::new(e.kind(), format!("{}: {}", path.display(), e)))?;
+        Ok(true)
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UiStrings {
+    #[serde(default)]
+    pub format_version: u32,
+    #[serde(default)]
+    pub strings: Vec<String>,
+}
+
+impl UiStrings {
+    pub fn new(strings: impl IntoIterator<Item = String>) -> Self {
+        let mut strings: Vec<String> = strings.into_iter().filter(|s| !s.is_empty()).collect();
+        strings.sort();
+        strings.dedup();
+        Self {
+            format_version: TRANSLATION_FORMAT_VERSION,
+            strings,
+        }
+    }
+
+    pub fn to_json(&self) -> String {
+        serde_json::to_string_pretty(self).unwrap_or_default()
+    }
+
+    pub fn from_json(json: &str) -> Result<Self, String> {
+        serde_json::from_str(json).map_err(|e| e.to_string())
     }
 
     pub fn read(path: impl AsRef<Path>) -> io::Result<Self> {

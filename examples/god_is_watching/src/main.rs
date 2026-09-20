@@ -77,6 +77,8 @@ fn main() -> ExitCode {
         .assets(ASSETS_ROOT)
         .embedded_assets(vn_engine::embedded_assets!())
         .clear_color(style::INK)
+        .source_language("English")
+        .language("pt-BR", "Português (BR)")
         .audio(|a| a.menu_music("title").fade_seconds(1.5))
         .font(FontRole::Title, "NotoSerif-Regular.ttf")
         .font(FontRole::Dialogue, "NotoSerif-Regular.ttf")

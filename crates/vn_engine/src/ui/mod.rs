@@ -1,6 +1,7 @@
 pub mod button;
 pub mod ease;
 pub mod fonts;
+pub mod labels;
 pub mod layout;
 pub mod scroll;
 pub mod shape;
@@ -12,6 +13,7 @@ use raylib::prelude::*;
 
 use crate::{FontRole, Fonts, GameContext, ResourceManager};
 pub use button::*;
+pub use labels::{fill, label};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextStyle {

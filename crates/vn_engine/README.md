@@ -1036,9 +1036,29 @@ Only what the story says is translated — ids are not. Variables, save files, t
 log and the rollback history all hold ids and source text, so a save made in one language
 opens in another. Hot reload keeps the player's language.
 
-Still to come (see TODO.md): the default screens' own labels as a table a game can
-replace, fonts per language with a fallback chain and CJK wrapping, and `vn check`
-reporting what is missing or stale.
+### The screens' own labels
+
+Every string a default screen shows — "Settings", "Back", "New Game", "The End", and the
+notifications ("Quick saved", "Saved to {slot}") — is translated the same way, and by the
+same catalog: the `ui` section of `lang/<code>.json`. Lookup is by the **English text**
+rather than by a key, which means a game's own labels are translatable too, with nothing
+extra to declare: if you renamed Save to "File in the Archive", that is the string a
+translator sees.
+
+`ctx.label(text)` (on both `GameContext` and `DrawContext`) is the lookup, and
+`ctx.message(text, &[("slot", value)])` translates a template and then fills it in, so
+word order is the translator's to choose. `ctx.notify` and `notify_error` translate what
+they are given, so a game's own notifications need no change.
+
+Running a debug build writes `lang/ui.json` beside `schema.json`: the list of every label
+the game actually shows, read from the live configuration after your builder ran.
+`vn translate <lang>` folds that list into the catalog. A game can add strings it builds
+itself with `VnApp::ui_text("Filed in the archive")`.
+
+Two things are not translated yet (see TODO.md): the time stamps on save slots ("5
+minutes ago") and the line summary stored inside a save file, which is text captured when
+the save was written. Fonts per language with a fallback chain and CJK wrapping, and
+`vn check` reporting what is missing or stale, are also still to come.
 
 ## Rollback
 

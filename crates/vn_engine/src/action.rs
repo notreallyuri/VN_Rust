@@ -58,7 +58,11 @@ impl Action {
                     Ok(_) => Some(ScreenState::Playing),
                     Err(e) => {
                         eprintln!("⚠️ Continue failed ({}): {}", slot, e);
-                        ctx.notify_error(format!("Could not continue: {}", e.player_message()));
+                        let message = ctx.message(
+                            "Could not continue: {reason}",
+                            &[("reason", &e.player_message())],
+                        );
+                        ctx.notify_error(message);
                         None
                     }
                 }
@@ -77,7 +81,11 @@ impl Action {
                     Ok(()) => ctx.notify("Quick saved"),
                     Err(e) => {
                         eprintln!("⚠️ Quick save failed: {}", e);
-                        ctx.notify_error(format!("Quick save failed: {}", e.player_message()));
+                        let message = ctx.message(
+                            "Quick save failed: {reason}",
+                            &[("reason", &e.player_message())],
+                        );
+                        ctx.notify_error(message);
                     }
                 }
                 None
@@ -89,7 +97,11 @@ impl Action {
                 }
                 Err(e) => {
                     eprintln!("⚠️ Quick load failed: {}", e);
-                    ctx.notify_error(format!("Quick load failed: {}", e.player_message()));
+                    let message = ctx.message(
+                        "Quick load failed: {reason}",
+                        &[("reason", &e.player_message())],
+                    );
+                    ctx.notify_error(message);
                     None
                 }
             },

@@ -80,10 +80,14 @@ impl GameContext<'_> {
     }
 
     pub fn notify(&mut self, text: impl Into<String>) {
+        let text = text.into();
+        let text = self.label(&text).to_string();
         *self.toast = Some(Toast::info(text));
     }
 
     pub fn notify_error(&mut self, text: impl Into<String>) {
+        let text = text.into();
+        let text = self.label(&text).to_string();
         *self.toast = Some(Toast::error(text));
     }
 
@@ -173,6 +177,14 @@ impl GameContext<'_> {
         self.story.set_catalog(catalog);
     }
 
+    pub fn label<'a>(&'a self, text: &'a str) -> &'a str {
+        crate::ui::label(self.story, text)
+    }
+
+    pub fn message(&self, text: &str, fields: &[(&str, &str)]) -> String {
+        crate::ui::fill(self.label(text), fields)
+    }
+
     pub fn play_sound(&mut self, id: &str) {
         self.audio.play_sound(id);
     }
@@ -256,6 +268,14 @@ impl DrawContext<'_> {
 
     pub fn shows_focus(&self, focus: &Focus, index: usize) -> bool {
         self.interactive && self.focus_visible && focus.is(index)
+    }
+
+    pub fn label<'a>(&'a self, text: &'a str) -> &'a str {
+        crate::ui::label(self.story, text)
+    }
+
+    pub fn message(&self, text: &str, fields: &[(&str, &str)]) -> String {
+        crate::ui::fill(self.label(text), fields)
     }
 
     pub fn fonts(&self) -> &Fonts {

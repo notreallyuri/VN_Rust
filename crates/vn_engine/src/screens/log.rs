@@ -308,7 +308,7 @@ impl Overlay for LogOverlay {
         ui::draw_text_centered(
             d,
             fonts,
-            &config.title,
+            ctx.label(&config.title),
             Vector2::new(
                 screen.x / 2.0,
                 panel.y + 20.0 + config.title_text.size / 2.0,
@@ -325,7 +325,7 @@ impl Overlay for LogOverlay {
             ui::draw_text_centered(
                 d,
                 fonts,
-                &config.empty_label,
+                ctx.label(&config.empty_label),
                 Vector2::new(screen.x / 2.0, area.y + area.height / 2.0),
                 &config.narration_text,
             );
@@ -367,7 +367,7 @@ impl Overlay for LogOverlay {
         }
         self.scroll.draw_bar(d, area, &config.scroll);
 
-        ui::Button::new(&config.back_label, &config.back_button)
+        ui::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, 0))
             .draw(d, ctx, config.back_rect(screen));
     }

@@ -280,7 +280,7 @@ impl Screen for TextInputScreen {
         ui::draw_text_centered(
             d,
             fonts,
-            hint,
+            ctx.label(hint),
             Vector2::new(screen.x / 2.0, field.y + field.height + 30.0),
             &hint_style,
         );

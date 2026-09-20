@@ -396,7 +396,7 @@ pub(crate) fn draw_items(
 ) {
     let view = ctx.view();
     for (index, (item, (rect, style))) in items.iter().zip(placement).enumerate() {
-        ui::Button::new(&item.label, &style)
+        ui::Button::new(ctx.label(&item.label), &style)
             .disabled(!item.is_enabled(&view))
             .focused(ctx.shows_focus(focus, index))
             .draw(d, ctx, rect);
@@ -511,7 +511,7 @@ impl Screen for MainMenuScreen {
             (config.subtitle.as_ref(), &config.subtitle_text),
         ];
         for (rect, (text, style)) in rects.iter().zip(texts) {
-            if let Some(text) = text {
+            if let Some(text) = text.map(|text| ctx.label(text)) {
                 let style = style
                     .clone()
                     .color(style.color.alpha(title_fade * style.color.a as f32 / 255.0));
@@ -532,7 +532,7 @@ impl Screen for MainMenuScreen {
             .zip(config.placement(screen))
             .enumerate()
         {
-            ui::Button::new(&item.label, &style)
+            ui::Button::new(ctx.label(&item.label), &style)
                 .disabled(!item.is_enabled(&view))
                 .focused(ctx.shows_focus(&self.focus, index))
                 .opacity(buttons_fade)

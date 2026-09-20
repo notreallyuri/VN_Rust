@@ -332,6 +332,9 @@ assets/lang/pt-BR.json
   },
   "names": {
     "mary": { "kind": "name", "source": "Mary", "text": "Mary" }
+  },
+  "ui": {
+    "9c41d0a6f8b35e27": { "kind": "ui", "source": "Settings", "text": "Definições" }
   }
 }
 ```
@@ -354,7 +357,9 @@ share entries for identical lines.
 | `translate::extract_names(&schema)` | The characters' display names |
 | `Catalog::refresh(&strings, &names)` | Adds what is new, refreshes line numbers, marks what is gone or edited as stale, and reports `added`, `total`, `translated`, `stale` |
 | `Catalog::read` / `write` / `to_json` / `from_json` | The file above; `write` leaves the file alone when nothing changed |
-| `Catalog::text(file, source)` / `name(id, source)` | The translation, or `None` when it is missing or stale |
+| `Catalog::refresh_ui(&strings)` | The same for a frontend's own labels, which have no file: they are keyed by their English text alone |
+| `Catalog::text(file, source)` / `name(id, source)` / `ui_text(source)` | The translation, or `None` when it is missing or stale |
+| `UiStrings` | The list of labels a frontend offers for translation (`lang/ui.json`), which `vn translate` folds into the `ui` section |
 | `Catalog::missing()` / `stale()` | For reporting (`vn check`, planned) |
 
 At runtime the VM translates **before** interpolating, so `{variable}` placeholders work

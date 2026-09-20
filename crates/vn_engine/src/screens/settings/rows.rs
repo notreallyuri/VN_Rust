@@ -11,6 +11,17 @@ pub enum SettingsRow {
 }
 
 impl SettingsRow {
+    pub const ALL: [SettingsRow; 8] = [
+        SettingsRow::Display,
+        SettingsRow::TextSpeed,
+        SettingsRow::MusicVolume,
+        SettingsRow::SoundVolume,
+        SettingsRow::VoiceVolume,
+        SettingsRow::AutoDelay,
+        SettingsRow::SkipUnseen,
+        SettingsRow::Language,
+    ];
+
     pub fn is_slider(self) -> bool {
         !matches!(
             self,

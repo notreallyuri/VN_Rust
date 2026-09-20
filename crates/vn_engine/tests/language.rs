@@ -231,3 +231,86 @@ fn a_hot_reload_keeps_the_language() {
         "reloading a story mid-game must not drop the player's language"
     );
 }
+
+#[test]
+fn a_message_is_filled_in_after_it_is_translated() {
+    use vn_engine::ui::fill;
+
+    assert_eq!(
+        fill("Saved to {slot}", &[("slot", "Slot 3")]),
+        "Saved to Slot 3"
+    );
+    assert_eq!(
+        fill("Gravado em {slot}", &[("slot", "Espaço 3")]),
+        "Gravado em Espaço 3"
+    );
+    assert_eq!(fill("No fields here", &[]), "No fields here");
+    assert_eq!(
+        fill("{a} and {b}", &[("a", "one"), ("b", "two")]),
+        "one and two"
+    );
+    assert_eq!(
+        fill("{unknown} stays", &[("slot", "x")]),
+        "{unknown} stays",
+        "a field the caller did not supply is left as written"
+    );
+    assert_eq!(fill("half {open", &[("open", "x")]), "half {open");
+}
+
+#[test]
+fn the_screens_offer_their_own_strings_for_translation() {
+    let app = VnApp::new("Test")
+        .language("pt-BR", "Português (BR)")
+        .ui_text("Filed in the archive");
+    let strings = app.ui_strings().strings;
+    let has = |text: &str| strings.iter().any(|s| s == text);
+
+    for text in [
+        "Settings",
+        "Back",
+        "New Game",
+        "Continue",
+        "Quit",
+        "Resume",
+        "Save",
+        "Load",
+        "Text speed",
+        "Language",
+        "Quick saved",
+        "Saved to {slot}",
+        "Slot {number}",
+        "Overwrite {slot}?",
+        "The End",
+        "Log",
+        "Auto",
+    ] {
+        assert!(has(text), "{} is not offered for translation", text);
+    }
+
+    assert!(has("Português (BR)"), "language names are translatable too");
+    assert!(
+        has("Filed in the archive"),
+        "a game can add its own strings"
+    );
+    assert!(!has(""), "no blank entries");
+
+    let mut sorted = strings.clone();
+    sorted.sort();
+    sorted.dedup();
+    assert_eq!(strings, sorted, "the list is sorted and free of repeats");
+}
+
+#[test]
+fn a_game_that_renames_a_label_offers_the_new_name() {
+    let app = VnApp::new("Test").main_menu(|m| {
+        m.button("Begin the Archive", vn_engine::Action::NewGame)
+            .button("Leave", vn_engine::Action::Quit)
+    });
+    let strings = app.ui_strings().strings;
+
+    assert!(strings.iter().any(|s| s == "Begin the Archive"));
+    assert!(
+        !strings.iter().any(|s| s == "New Game"),
+        "a replaced label is not offered; what the game actually shows is"
+    );
+}

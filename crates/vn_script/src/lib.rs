@@ -23,6 +23,8 @@ pub use parser::*;
 pub use schema::*;
 pub use suggest::*;
 pub use template::*;
-pub use translate::{Catalog, LANG_DIR, StringKind, TRANSLATION_FORMAT_VERSION};
+pub use translate::{
+    Catalog, LANG_DIR, StringKind, TRANSLATION_FORMAT_VERSION, UI_STRINGS_FILE, UiStrings,
+};
 pub use types::*;
 pub use vm::*;

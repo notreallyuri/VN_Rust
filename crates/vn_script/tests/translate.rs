@@ -318,3 +318,61 @@ fn changing_the_catalog_retranslates_the_choice_on_screen() {
         "choosing still picks the branch the option was written for"
     );
 }
+
+#[test]
+fn ui_strings_live_in_the_same_catalog() {
+    let mut catalog = Catalog::new("pt-BR");
+    let strings: Vec<String> = ["Settings", "Back", "Saved to {slot}"]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+    assert_eq!(catalog.refresh_ui(&strings), 3);
+    assert_eq!(catalog.refresh_ui(&strings), 0);
+    assert_eq!(catalog.ui.len(), 3);
+    assert_eq!(
+        catalog.ui_text("Settings"),
+        None,
+        "nothing is translated yet"
+    );
+
+    for entry in catalog.ui.values_mut() {
+        entry.text = match entry.source.as_str() {
+            "Settings" => "Definições".into(),
+            "Back" => "Voltar".into(),
+            other => other.into(),
+        };
+    }
+    assert_eq!(catalog.ui_text("Settings"), Some("Definições"));
+    assert_eq!(catalog.ui_text("Nothing here"), None);
+
+    let fewer: Vec<String> = vec!["Settings".into()];
+    catalog.refresh_ui(&fewer);
+    assert_eq!(catalog.stale().len(), 2, "labels that went away go stale");
+    assert_eq!(catalog.ui_text("Back"), None);
+    assert_eq!(catalog.ui_text("Settings"), Some("Definições"));
+}
+
+#[test]
+fn ui_strings_round_trip_through_a_file() {
+    let strings = vn_script::UiStrings::new(
+        ["Back", "Settings", "Back", ""]
+            .into_iter()
+            .map(String::from),
+    );
+    assert_eq!(
+        strings.strings,
+        ["Back", "Settings"],
+        "sorted, no repeats, no blanks"
+    );
+
+    let path = std::env::temp_dir().join(format!("vn_ui_{}.json", std::process::id()));
+    let _ = std::fs::remove_file(&path);
+    assert!(strings.write(&path).unwrap());
+    assert!(
+        !strings.write(&path).unwrap(),
+        "an unchanged file is left alone"
+    );
+    assert_eq!(vn_script::UiStrings::read(&path).unwrap(), strings);
+    let _ = std::fs::remove_file(&path);
+}

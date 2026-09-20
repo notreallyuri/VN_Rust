@@ -170,7 +170,7 @@ impl SettingsMenu {
         ui::draw_text_centered(
             d,
             fonts,
-            &config.title,
+            ctx.label(&config.title),
             Vector2::new(screen.x / 2.0, 70.0),
             &config.title_text,
         );
@@ -197,12 +197,13 @@ impl SettingsMenu {
             ui::draw_text(
                 d,
                 fonts,
-                config.label(row),
+                ctx.label(config.label(row)),
                 Vector2::new(left, label_y),
                 &config.label_text,
             );
 
             let value = config.value_name(row, ctx.settings);
+            let value = ctx.label(&value).to_string();
             if !row.is_slider() {
                 ui::Button::new(&value, &config.value_button)
                     .focused(focused)
@@ -232,7 +233,7 @@ impl SettingsMenu {
         ui::draw_text_wrapped_visible(
             d,
             fonts,
-            &config.sample_text,
+            ctx.label(&config.sample_text),
             Vector2::new(sample.x + 16.0, sample.y + 16.0),
             sample.width - 32.0,
             &config.sample_text_style,
@@ -240,7 +241,7 @@ impl SettingsMenu {
         );
 
         let back_index = config.rows().len();
-        ui::Button::new(&config.back_label, &config.back_button)
+        ui::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, back_index))
             .draw(d, ctx, config.back_rect(screen));
     }

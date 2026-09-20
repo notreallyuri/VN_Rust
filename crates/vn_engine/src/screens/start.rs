@@ -208,7 +208,7 @@ impl Screen for StartScreen {
                 .into_iter()
                 .chain(subtitle);
             for ((position, _), (text, style)) in rects.into_iter().zip(texts) {
-                ui::draw_text(d, fonts, text, position, style);
+                ui::draw_text(d, fonts, ctx.label(text), position, style);
             }
         }
 
@@ -224,13 +224,13 @@ impl Screen for StartScreen {
             let level = 0.65 + 0.35 * wave;
             prompt.color = prompt.color.alpha(level * prompt.color.a as f32 / 255.0);
         }
-        ui::draw_text_centered(d, fonts, &config.prompt, center, &prompt);
+        ui::draw_text_centered(d, fonts, ctx.label(&config.prompt), center, &prompt);
 
         if let Some(footer) = &config.footer {
             let size = fonts.measure(config.footer_text.font, footer, config.footer_text.size);
             let margin = 12.0;
             let position = Vector2::new(screen.x - size.x - margin, screen.y - size.y - margin);
-            ui::draw_text(d, fonts, footer, position, &config.footer_text);
+            ui::draw_text(d, fonts, ctx.label(footer), position, &config.footer_text);
         }
     }
 }

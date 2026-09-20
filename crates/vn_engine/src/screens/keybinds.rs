@@ -426,7 +426,7 @@ impl Overlay for KeybindsOverlay {
         ui::draw_text_centered(
             d,
             fonts,
-            &config.title,
+            ctx.label(&config.title),
             Vector2::new(
                 screen.x / 2.0,
                 panel.y + 18.0 + config.title_text.size / 2.0,
@@ -450,7 +450,7 @@ impl Overlay for KeybindsOverlay {
                 ui::draw_text(
                     d,
                     fonts,
-                    &section.title,
+                    ctx.label(&section.title),
                     Vector2::new(x, y),
                     &config.section_text,
                 );
@@ -478,7 +478,7 @@ impl Overlay for KeybindsOverlay {
                     let action = ui::fit_text(
                         fonts,
                         &config.action_text,
-                        &row.action,
+                        ctx.label(&row.action),
                         column_width - keys_width - pad_width,
                     );
                     ui::draw_text(d, fonts, &keys, Vector2::new(x, y), &config.key_text);
@@ -502,7 +502,7 @@ impl Overlay for KeybindsOverlay {
             }
         }
 
-        ui::Button::new(&config.back_label, &config.back_button)
+        ui::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, 0))
             .draw(d, ctx, self.back_rect(screen));
     }

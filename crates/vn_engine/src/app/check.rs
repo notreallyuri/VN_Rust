@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use vn_script::{Diagnostic, Instruction, Schema, SchemaFile, StoryVm};
+use vn_script::{
+    Diagnostic, Instruction, LANG_DIR, Schema, SchemaFile, StoryVm, UI_STRINGS_FILE, UiStrings,
+};
 
 use super::{AppError, VnApp};
 use crate::{Assets, StoryLoader};
@@ -122,4 +124,152 @@ pub(crate) fn missing_art(story: &StoryVm, assets: &Assets) -> Vec<Diagnostic> {
             })
         })
         .collect()
+}
+
+impl VnApp {
+    pub fn ui_strings(&self) -> UiStrings {
+        let mut strings: Vec<String> = Vec::new();
+        let mut add = |text: &str| strings.push(text.to_string());
+
+        for text in crate::ui::labels::MESSAGES {
+            add(text);
+        }
+        for language in &self.languages {
+            add(&language.label);
+        }
+        for text in self.extra_ui_strings.iter() {
+            add(text);
+        }
+
+        let start = &self.start;
+        for text in [
+            Some(&start.prompt),
+            start.title.as_ref(),
+            start.subtitle.as_ref(),
+            start.footer.as_ref(),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            add(text);
+        }
+
+        let menu = &self.menu;
+        for text in [menu.title.as_ref(), menu.subtitle.as_ref()]
+            .into_iter()
+            .flatten()
+        {
+            add(text);
+        }
+        for item in &menu.items {
+            add(&item.label);
+            if let Some(tooltip) = &item.tooltip {
+                add(tooltip);
+            }
+        }
+
+        let playing = &self.playing;
+        add(&playing.skip_label);
+        add(&playing.auto_label);
+        add(&playing.end_title);
+        add(&playing.end_hint);
+        for button in &playing.hud {
+            add(&button.label);
+            if let Some(tooltip) = &button.tooltip {
+                add(tooltip);
+            }
+        }
+
+        let pause = &self.pause_menu;
+        add(&pause.title);
+        for item in &pause.items {
+            add(&item.label);
+            if let Some(tooltip) = &item.tooltip {
+                add(tooltip);
+            }
+        }
+
+        let confirm = &self.confirm_dialog;
+        add(&confirm.confirm_label);
+        add(&confirm.cancel_label);
+        if let Some(message) = &self.close_confirmation {
+            add(message);
+        }
+
+        let saves = &self.save_menu;
+        for text in [
+            &saves.save_title,
+            &saves.load_title,
+            &saves.empty_label,
+            &saves.delete_label,
+            &saves.back_label,
+        ] {
+            add(text);
+        }
+
+        let settings = &self.settings;
+        for text in [
+            &settings.title,
+            &settings.display_label,
+            &settings.windowed_label,
+            &settings.fullscreen_label,
+            &settings.text_speed_label,
+            &settings.music_volume_label,
+            &settings.sound_volume_label,
+            &settings.voice_volume_label,
+            &settings.auto_delay_label,
+            &settings.skip_label,
+            &settings.skip_seen_label,
+            &settings.skip_all_label,
+            &settings.language_label,
+            &settings.sample_text,
+            &settings.back_label,
+        ] {
+            add(text);
+        }
+        for (label, _) in &settings.text_speeds {
+            add(label);
+        }
+        for row in crate::screens::SettingsRow::ALL {
+            if let Some(tooltip) = settings.row_tooltip(row) {
+                add(tooltip);
+            }
+        }
+
+        let log = &self.log;
+        add(&log.title);
+        add(&log.empty_label);
+        add(&log.back_label);
+
+        let keybinds = &self.keybinds;
+        add(&keybinds.title);
+        add(&keybinds.back_label);
+        add(&keybinds.keys_header);
+        add(&keybinds.gamepad_header);
+        let sections = keybinds.sections.iter().flatten().chain(&keybinds.extra);
+        for section in sections {
+            add(&section.title);
+            for row in &section.rows {
+                add(&row.action);
+            }
+        }
+
+        add(&self.text_input.hint);
+
+        UiStrings::new(strings)
+    }
+
+    pub fn export_ui_strings(&self) -> Result<Option<PathBuf>, AppError> {
+        let Some(schema) = self.schema_path() else {
+            return Ok(None);
+        };
+        let root = schema.parent().unwrap_or(Path::new("."));
+        let path = root.join(LANG_DIR).join(UI_STRINGS_FILE);
+        let strings = self.ui_strings();
+        match strings.write(&path) {
+            Ok(true) => Ok(Some(path)),
+            Ok(false) => Ok(None),
+            Err(source) => Err(AppError::Schema { path, source }),
+        }
+    }
 }

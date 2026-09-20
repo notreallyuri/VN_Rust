@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use super::actions::{delete_slot, load_from, save_to, slot_label};
+use super::actions::{delete_slot, load_from, save_to, slot_label, slot_label_for};
 use super::{SaveMenuConfig, SaveMenuMode};
 use crate::data::saves::SaveError;
 use crate::data::saves::{AUTO_SLOT, QUICK_SLOT, SlotInfo, now, time_ago};
@@ -90,11 +90,11 @@ impl SaveMenu {
         }
 
         let slot = info.slot.clone();
-        let label = slot_label(&slot);
+        let label = slot_label(ctx, &slot);
         if self.config.confirm_delete {
             ctx.confirm(
                 Confirm::new(
-                    format!("Delete {}? This can't be undone.", label),
+                    ctx.message("Delete {slot}? This can't be undone.", &[("slot", &label)]),
                     Action::custom(move |ctx| {
                         delete_slot(ctx, &slot);
                         None
@@ -160,14 +160,14 @@ impl SaveMenu {
             return Outcome::Stay;
         };
         let slot = info.slot.clone();
-        let label = slot_label(&slot);
+        let label = slot_label(ctx, &slot);
         let occupied = info.save.is_ok();
 
         match self.mode {
             SaveMenuMode::Save if occupied && self.config.confirm_overwrite => {
                 ctx.confirm(
                     Confirm::new(
-                        format!("Overwrite {}?", label),
+                        ctx.message("Overwrite {slot}?", &[("slot", &label)]),
                         Action::custom(move |ctx| {
                             save_to(ctx, &slot);
                             None
@@ -295,8 +295,8 @@ impl SaveMenu {
         }
 
         let title = match self.mode {
-            SaveMenuMode::Save => &config.save_title,
-            SaveMenuMode::Load => &config.load_title,
+            SaveMenuMode::Save => ctx.label(&config.save_title),
+            SaveMenuMode::Load => ctx.label(&config.load_title),
         };
         ui::draw_text_centered(
             d,
@@ -337,19 +337,19 @@ impl SaveMenu {
                 Ok(file) => (
                     format!(
                         "{}  ·  {}",
-                        slot_label(&info.slot),
+                        slot_label_for(ctx, &info.slot),
                         time_ago(file.saved_at, now)
                     ),
                     file.summary.clone(),
                     &config.slot_summary_text,
                 ),
                 Err(SaveError::Empty { .. }) => (
-                    slot_label(&info.slot),
-                    config.empty_label.clone(),
+                    slot_label_for(ctx, &info.slot),
+                    ctx.label(&config.empty_label).to_string(),
                     &config.slot_summary_text,
                 ),
                 Err(e) => (
-                    slot_label(&info.slot),
+                    slot_label_for(ctx, &info.slot),
                     e.player_message(),
                     &config.error_text,
                 ),
@@ -386,12 +386,13 @@ impl SaveMenu {
             }
 
             if deletable {
-                ui::draw_button(d, ctx, delete, &config.delete_label, &config.delete_button);
+                let delete_label = ctx.label(&config.delete_label);
+                ui::draw_button(d, ctx, delete, delete_label, &config.delete_button);
             }
         }
 
         let back_index = slots.len();
-        ui::Button::new(&config.back_label, &config.back_button)
+        ui::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, back_index))
             .draw(d, ctx, self.back_rect(screen));
     }

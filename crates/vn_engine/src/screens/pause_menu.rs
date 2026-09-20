@@ -254,7 +254,7 @@ impl Overlay for PauseMenu {
         ui::draw_text_centered(
             d,
             fonts,
-            &config.title,
+            ctx.label(&config.title),
             Vector2::new(screen.x / 2.0, title_y),
             &config.title_text,
         );

@@ -3,10 +3,14 @@ use crate::data::saves::{AUTO_SLOT, QUICK_SLOT};
 
 pub(super) fn save_to(ctx: &mut GameContext, slot: &str) {
     match ctx.save(slot) {
-        Ok(()) => ctx.notify(format!("Saved to {}", slot_label(slot))),
+        Ok(()) => {
+            let message = ctx.message("Saved to {slot}", &[("slot", &slot_label(ctx, slot))]);
+            ctx.notify(message);
+        }
         Err(e) => {
             eprintln!("⚠️ Save failed ({}): {}", slot, e);
-            ctx.notify_error(format!("Save failed: {}", e.player_message()));
+            let message = ctx.message("Save failed: {reason}", &[("reason", &e.player_message())]);
+            ctx.notify_error(message);
         }
     }
 }
@@ -14,12 +18,14 @@ pub(super) fn save_to(ctx: &mut GameContext, slot: &str) {
 pub(super) fn load_from(ctx: &mut GameContext, slot: &str) -> bool {
     match ctx.load(slot) {
         Ok(_) => {
-            ctx.notify(format!("Loaded {}", slot_label(slot)));
+            let message = ctx.message("Loaded {slot}", &[("slot", &slot_label(ctx, slot))]);
+            ctx.notify(message);
             true
         }
         Err(e) => {
             eprintln!("⚠️ Load failed ({}): {}", slot, e);
-            ctx.notify_error(format!("Load failed: {}", e.player_message()));
+            let message = ctx.message("Load failed: {reason}", &[("reason", &e.player_message())]);
+            ctx.notify_error(message);
             false
         }
     }
@@ -27,18 +33,33 @@ pub(super) fn load_from(ctx: &mut GameContext, slot: &str) -> bool {
 
 pub(super) fn delete_slot(ctx: &mut GameContext, slot: &str) {
     match ctx.saves.delete(slot) {
-        Ok(()) => ctx.notify(format!("Deleted {}", slot_label(slot))),
+        Ok(()) => {
+            let message = ctx.message("Deleted {slot}", &[("slot", &slot_label(ctx, slot))]);
+            ctx.notify(message);
+        }
         Err(e) => {
             eprintln!("⚠️ Delete failed ({}): {}", slot, e);
-            ctx.notify_error(format!("Delete failed: {}", e.player_message()));
+            let message = ctx.message(
+                "Delete failed: {reason}",
+                &[("reason", &e.player_message())],
+            );
+            ctx.notify_error(message);
         }
     }
 }
 
-pub(super) fn slot_label(slot: &str) -> String {
+pub(super) fn slot_label(ctx: &GameContext, slot: &str) -> String {
     match slot {
-        QUICK_SLOT => "Quick save".to_string(),
-        AUTO_SLOT => "Autosave".to_string(),
-        _ => format!("Slot {}", slot),
+        QUICK_SLOT => ctx.label("Quick save").to_string(),
+        AUTO_SLOT => ctx.label("Autosave").to_string(),
+        _ => ctx.message("Slot {number}", &[("number", slot)]),
+    }
+}
+
+pub(super) fn slot_label_for(ctx: &crate::DrawContext, slot: &str) -> String {
+    match slot {
+        QUICK_SLOT => ctx.label("Quick save").to_string(),
+        AUTO_SLOT => ctx.label("Autosave").to_string(),
+        _ => ctx.message("Slot {number}", &[("number", slot)]),
     }
 }

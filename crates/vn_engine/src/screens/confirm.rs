@@ -292,10 +292,12 @@ impl Overlay for ConfirmDialog {
             .confirm_label
             .as_deref()
             .unwrap_or(&config.confirm_label);
+        let confirm_label = ctx.label(confirm_label);
         let cancel_label = request
             .cancel_label
             .as_deref()
             .unwrap_or(&config.cancel_label);
+        let cancel_label = ctx.label(cancel_label);
 
         ui::Button::new(cancel_label, &config.cancel_button)
             .focused(ctx.shows_focus(&self.focus, CANCEL))
