@@ -198,7 +198,7 @@ else draws through, so it is cheaper now; the rest is additive.
 
 - [x] Screen shake and flash (`with shake` / `with flash`, `ctx.shake`/`ctx.flash`): the change is instant and the frame is shaken by offsetting the render target, or washed with `flash_color`; `ScreenEffectsConfig` tunes it
 - [x] Shader passes over the render target (`PostChain`, `VnApp::shader`, `ctx.shader`): named passes in registration order, with `amount`, `time` and `pixel` uniforms; `post::GRAIN`, `DESATURATE`, `BLUR` and `FXAA` ship with the engine
-- [ ] Weather and particle overlays (rain, snow, dust motes) as part of `Scenery`
+- [x] Weather and particle overlays (`Weather::rain`/`snow`/`dust`): `Scenery::weather` on the menus, `ctx.weather` during a scene. Each particle's position comes from the clock and its index like `Motion::at`, so there is no simulation state, nothing in a save and nothing for rollback to desynchronise; not restored by a load, the same as `ctx.shader`
 - [ ] NVL mode: full-screen text pages instead of the dialogue box, chosen per scene
 - [ ] Dialogue box variants: a speaker portrait bust inside the box, and a per-character box style
 - [ ] Choice presentation: images, disabled options with a reason, and hover previews

@@ -322,6 +322,9 @@ impl Screen for PlayingScreen {
 
         let now = d.get_time();
         self.stage.draw(d, ctx.resources, ctx.story, config, now);
+        if let Some(weather) = ctx.weather {
+            weather.draw(d, now, screen);
+        }
         if self.hidden {
             return;
         }

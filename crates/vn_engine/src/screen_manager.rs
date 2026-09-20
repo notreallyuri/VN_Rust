@@ -73,6 +73,7 @@ pub struct ScreenStateManager {
     thumbnail_at: Option<f64>,
     screen_changed: bool,
     pub(crate) effects: crate::frame::effects::ScreenEffects,
+    pub(crate) weather: Option<crate::frame::scenery::Weather>,
     pub(crate) post: crate::frame::post::PostChain,
     autosave_request: bool,
     pub audio: Audio,
@@ -154,6 +155,7 @@ impl ScreenStateManager {
             thumbnail_at: None,
             screen_changed: false,
             effects: crate::frame::effects::ScreenEffects::default(),
+            weather: None,
             post: crate::frame::post::PostChain::new(),
             autosave_request: false,
             audio: Audio::silent(),
@@ -197,6 +199,7 @@ impl ScreenStateManager {
             overlay_requests: &mut overlay_requests,
             toast: &mut toast,
             effects: &mut self.effects,
+            weather: &mut self.weather,
             post: &mut self.post,
             text_request: &mut self.text_request,
             confirm_request: &mut self.confirm_request,
@@ -437,6 +440,7 @@ impl ScreenStateManager {
             focus_visible: !self.nav.pointer,
             log: &self.log,
             modes: self.modes,
+            weather: self.weather,
         }
     }
 
@@ -455,6 +459,7 @@ impl ScreenStateManager {
     pub fn reload_story(&mut self, story: StoryVm) {
         self.script_errors = None;
         self.effects.clear();
+        self.weather = None;
         match crate::game::hot_reload::swap_story(&mut self.story, story, &mut self.rollback) {
             Ok(RestoreOutcome::Exact) => {
                 let text = crate::ui::labels::label(&self.story, "Story reloaded").to_string();
@@ -542,6 +547,7 @@ impl ScreenStateManager {
                 self.previous_state = Some(previous);
                 self.overlays.clear();
                 self.effects.clear();
+                self.weather = None;
                 self.screen_changed = true;
             }
             None => eprintln!("⚠️ No screen registered for {:?}", next_state),

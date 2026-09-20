@@ -101,11 +101,175 @@ pub struct Vignette {
     pub size: f32,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WeatherKind {
+    Rain,
+    Snow,
+    Dust,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Weather {
+    pub kind: WeatherKind,
+    pub count: u32,
+    pub speed: f32,
+    pub drift: f32,
+    pub sway: f32,
+    pub size: f32,
+    pub color: Color,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Particle {
+    pub at: Vector2,
+    pub size: f32,
+    pub alpha: f32,
+}
+
+const MAX_PARTICLES: u32 = 4000;
+
+impl Weather {
+    pub fn rain(count: u32) -> Self {
+        Self {
+            kind: WeatherKind::Rain,
+            count: count.min(MAX_PARTICLES),
+            speed: 1.6,
+            drift: 0.0,
+            sway: 0.0,
+            size: 18.0,
+            color: Color::new(180, 200, 225, 150),
+        }
+    }
+
+    pub fn snow(count: u32) -> Self {
+        Self {
+            kind: WeatherKind::Snow,
+            count: count.min(MAX_PARTICLES),
+            speed: 0.12,
+            drift: 0.01,
+            sway: 0.03,
+            size: 3.5,
+            color: Color::new(240, 245, 255, 210),
+        }
+    }
+
+    pub fn dust(count: u32) -> Self {
+        Self {
+            kind: WeatherKind::Dust,
+            count: count.min(MAX_PARTICLES),
+            speed: 0.02,
+            drift: 0.006,
+            sway: 0.02,
+            size: 2.0,
+            color: Color::new(255, 240, 200, 90),
+        }
+    }
+
+    pub fn count(mut self, count: u32) -> Self {
+        self.count = count.min(MAX_PARTICLES);
+        self
+    }
+
+    pub fn speed(mut self, speed: f32) -> Self {
+        self.speed = speed;
+        self
+    }
+
+    pub fn drift(mut self, drift: f32) -> Self {
+        self.drift = drift;
+        self
+    }
+
+    pub fn sway(mut self, sway: f32) -> Self {
+        self.sway = sway.max(0.0);
+        self
+    }
+
+    pub fn size(mut self, size: f32) -> Self {
+        self.size = size.max(0.0);
+        self
+    }
+
+    pub fn color(mut self, color: Color) -> Self {
+        self.color = color;
+        self
+    }
+
+    pub fn particle(&self, index: u32, time: f64, screen: Vector2) -> Particle {
+        let seed = noise(index);
+        let phase = noise(index ^ 0x9e37_79b9);
+        let depth = noise(index ^ 0x85eb_ca6b);
+
+        let speed = self.speed * (0.7 + 0.6 * depth);
+        let y = wrap(phase + (time * speed as f64) as f32);
+        let swing = self.sway * ((TAU * (time * 0.25 + phase as f64)).sin() as f32);
+        let x = wrap(seed + (time * self.drift as f64) as f32 + swing);
+
+        Particle {
+            at: Vector2::new(x * screen.x, y * screen.y),
+            size: self.size * (0.6 + 0.8 * depth),
+            alpha: 0.45 + 0.55 * depth,
+        }
+    }
+
+    pub fn particles(
+        &self,
+        time: f64,
+        screen: Vector2,
+    ) -> impl Iterator<Item = Particle> + use<'_> {
+        (0..self.count).map(move |index| self.particle(index, time, screen))
+    }
+
+    pub fn draw(&self, d: &mut RaylibDrawHandle, time: f64, screen: Vector2) {
+        if self.count == 0 || self.size <= 0.0 || screen.x <= 0.0 || screen.y <= 0.0 {
+            return;
+        }
+        for particle in self.particles(time, screen) {
+            let color = Color::new(
+                self.color.r,
+                self.color.g,
+                self.color.b,
+                (self.color.a as f32 * particle.alpha) as u8,
+            );
+            match self.kind {
+                WeatherKind::Rain => {
+                    let tail = Vector2::new(
+                        particle.at.x - self.drift.signum() * particle.size * 0.35,
+                        particle.at.y - particle.size,
+                    );
+                    d.draw_line_ex(tail, particle.at, (particle.size * 0.08).max(1.0), color);
+                }
+                WeatherKind::Snow | WeatherKind::Dust => {
+                    d.draw_circle_v(particle.at, particle.size, color)
+                }
+            }
+        }
+    }
+}
+
+fn noise(index: u32) -> f32 {
+    let mut hash = index.wrapping_mul(0x9e37_79b1) ^ 0x85eb_ca6b;
+    hash ^= hash >> 15;
+    hash = hash.wrapping_mul(0x2545_f491);
+    hash ^= hash >> 13;
+    (hash % 1_000_003) as f32 / 1_000_003.0
+}
+
+fn wrap(value: f32) -> f32 {
+    let fraction = value - value.floor();
+    if fraction.is_finite() {
+        fraction.clamp(0.0, 1.0)
+    } else {
+        0.0
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Scenery {
     pub motion: Option<Motion>,
     pub letterbox: Option<Letterbox>,
     pub vignette: Option<Vignette>,
+    pub weather: Option<Weather>,
 }
 
 impl Scenery {
@@ -125,6 +289,11 @@ impl Scenery {
 
     pub fn letterbox(mut self, letterbox: impl FnOnce(Letterbox) -> Letterbox) -> Self {
         self.letterbox = Some(letterbox(self.letterbox.unwrap_or_default()));
+        self
+    }
+
+    pub fn weather(mut self, weather: Weather) -> Self {
+        self.weather = Some(weather);
         self
     }
 
@@ -167,6 +336,9 @@ impl Scenery {
 
     pub fn draw_frame(&self, d: &mut RaylibDrawHandle, since_open: f64) {
         let screen = ui::screen_size(d);
+        if let Some(weather) = self.weather {
+            weather.draw(d, since_open, screen);
+        }
         if let Some(vignette) = self.vignette {
             let clear = Color::new(vignette.color.r, vignette.color.g, vignette.color.b, 0);
             let (w, h) = (screen.x * vignette.size, screen.y * vignette.size);

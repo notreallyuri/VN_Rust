@@ -1,4 +1,4 @@
-use vn_engine::frame::scenery::Scenery;
+use vn_engine::frame::scenery::{Scenery, Weather};
 use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::Color;
 use vn_engine::ui::prelude::*;
@@ -80,6 +80,7 @@ pub fn scenery(scenery: Scenery) -> Scenery {
     scenery
         .motion(1.07, 48.0)
         .pan(0.35, -0.25)
+        .weather(Weather::dust(70))
         .vignette(Color::new(4, 3, 2, 200), 0.24)
         .letterbox(|l| l.height(84.0).color(INK).rule(1.0, BRASS_DIM.alpha(0.6)))
 }

@@ -516,6 +516,7 @@ seconds_since_open)`.
 | `motion(zoom, period)` | A slow push in and out of the background image: from 1.0 to `zoom` and back every `period` seconds. It runs on the app clock, so two screens with the same motion continue it across the switch |
 | `pan(x, y)` | Drift towards the image's edges while zooming (-1..1 of the room the zoom leaves) |
 | `vignette(color, size)` | Darken the edges, fading in over `size` (a fraction of the window) |
+| `weather(w)` | Rain, snow or dust motes over the shot (see [Weather](#weather)) |
 | `letterbox(\|l\| ...)` | Black bars at the top and bottom. `Letterbox`: `height(px)` (80), `color(c)` (black), `rule(width, c)` (a line on each bar's inner edge), `slide_in(seconds)` (0: the bars grow in when the screen opens) |
 
 The example uses one scenery for both screens, with `slide_in` only on the start screen,
@@ -532,6 +533,46 @@ VnApp::new("God Is Watching")
     .start_screen(|s| s.scenery(|s| scenery(s).letterbox(|l| l.slide_in(1.6))).title("GOD IS WATCHING").prompt_in_bar(true))
     .main_menu(|m| m.scenery(scenery).title("GOD IS WATCHING").intro(1.4).buttons_in_bar(true))
 ```
+
+### Weather
+
+`Weather` drifts rain, snow or dust motes across the picture. Three starting points, each
+taking the number of particles:
+
+```rust
+Weather::rain(160)
+Weather::snow(120).drift(0.02)
+Weather::dust(70).color(Color::new(255, 240, 200, 90))
+```
+
+| Builder | Meaning |
+| --- | --- |
+| `count(n)` | Particles on screen, capped at 4000 |
+| `speed(s)` | Fall speed, in screen heights per second |
+| `drift(d)` | Sideways travel, in screen widths per second; negative blows left |
+| `sway(s)` | How far each particle wanders side to side, as a fraction of the width |
+| `size(px)` | Snow and dust draw a circle of this radius; rain draws a streak this long |
+| `color(c)` | The particle colour; its alpha is the densest a particle gets |
+
+Menus take it through `Scenery`. During a scene it is engine state, set like a shader:
+
+```rust
+ctx.weather(Some(Weather::rain(200)));
+ctx.weather(None);
+```
+
+It draws over the characters and under the dialogue box, and keeps drawing while the UI
+is hidden, since it is part of the picture rather than part of the interface.
+
+Nothing about it is stored. Each particle's position is derived from the clock and its
+index, the way `motion` derives zoom from `period` — so there is no simulation to step,
+no state in a save, and rolling back cannot desynchronise it. Two particles never share a
+path because speed, size and opacity all vary with the particle's index, which also gives
+the drift a sense of depth.
+
+The trade is that weather set from a scene is not restored by a load, the same as
+`ctx.shader`: a save records the story position, not the effects a scene switched on. Set
+it from `on_scene_enter` rather than mid-scene and a loaded save brings it back.
 
 ## Buttons
 
@@ -2086,7 +2127,7 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/rollback.rs` | Back/forward, barriers (`commit`, final choices, blocked commands, `through_choices`), history limits, history across a save and load |
 | `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
 | `tests/assets.rs` | Folders and embedded files answering the same (reads, path normalization, listings), descriptions, a story loaded only from embedded files, which source a build picks |
-| `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups |
+| `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups; weather staying on screen over a long run, replaying identically from the clock, spreading out with varied depth, capped counts, and absurd times |
 | `tests/shape.rs` | Corner outlines for each shape, round versus scooped hit tests, size capping and relative roundness, per-corner shapes, `PanelStyle`, the dialogue box's placement and the name plate |
 | `tests/layout.rs` | Every layout arrangement, anchor and alignment, fitting, and the default screens' positions |
 | `tests/hot_reload.rs` | The file watcher, swapping in a reloaded story, the story loader, the error panel's lines |

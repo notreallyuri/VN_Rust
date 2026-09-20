@@ -9,7 +9,9 @@ pub mod viewport;
 pub mod prelude {
     pub use super::effects::{ScreenEffects, ScreenEffectsConfig};
     pub use super::post::{Pass, PostChain};
-    pub use super::scenery::{Letterbox, Motion, Scenery, Vignette};
+    pub use super::scenery::{
+        Letterbox, Motion, Particle, Scenery, Vignette, Weather, WeatherKind,
+    };
     pub use super::screen_transition::{
         ScreenTransition, ScreenTransitionConfig, ScreenTransitionKind,
     };

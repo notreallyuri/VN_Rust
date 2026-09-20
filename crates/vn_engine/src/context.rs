@@ -50,6 +50,7 @@ pub struct GameContext<'a> {
     pub seen: &'a mut SeenLines,
     pub(crate) screenshot_request: &'a mut bool,
     pub(crate) effects: &'a mut crate::frame::effects::ScreenEffects,
+    pub(crate) weather: &'a mut Option<crate::frame::scenery::Weather>,
     pub(crate) post: &'a mut crate::frame::post::PostChain,
 }
 
@@ -77,6 +78,10 @@ impl GameContext<'_> {
         if !self.post.set_amount(name, amount) {
             eprintln!("⚠️ No shader named '{}'", name);
         }
+    }
+
+    pub fn weather(&mut self, weather: Option<crate::frame::scenery::Weather>) {
+        *self.weather = weather;
     }
 
     pub fn shake(&mut self, seconds: f32) {
@@ -273,6 +278,7 @@ pub struct DrawContext<'a> {
     pub focus_visible: bool,
     pub log: &'a SessionLog,
     pub modes: PlayModes,
+    pub weather: Option<crate::frame::scenery::Weather>,
 }
 
 impl DrawContext<'_> {
