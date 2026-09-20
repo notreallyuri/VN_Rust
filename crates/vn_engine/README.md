@@ -646,6 +646,175 @@ and `rows(count)` are public, for custom screens. `PlayingConfig::choice_rects`/
 `MainMenuConfig::button_rects` and `PauseMenuConfig::button_rects`/`panel` give the
 rectangles a default screen uses.
 
+## Image maps
+
+An `ImageMap` is a picture with named hotspots over it: a room to examine, a map to pick a
+destination from, a painting with three things worth clicking. Hotspots are `Shape`s given
+in fractions of the area the map is drawn into, so one map works at any window size, any
+design size and inside any panel.
+
+```rust
+use vn_engine::{Action, Highlight, Hotspot, ImageMap, Shape};
+
+let study = ImageMap::new()
+    .background("backgrounds/von_lucis_study.png")
+    .hotspot(
+        Hotspot::new("desk", Shape::rect(320.0, 360.0, 300.0, 180.0).in_image(1280.0, 720.0))
+            .label("The writing desk")
+            .tooltip("Papers, and a drawer that does not open")
+            .action(Action::custom(|ctx| ctx.run_command("note", &["desk".to_string()]))),
+    )
+    .hotspot(
+        Hotspot::new("portrait", Shape::circle(0.74, 0.3, 0.09))
+            .label("Sofia von Lucis, 1889")
+            .hover_look(Highlight::new().image("ui/portrait_lit.png")),
+    )
+    .hotspot(
+        Hotspot::new("door", Shape::polygon([(0.04, 0.18), (0.2, 0.14), (0.2, 0.92), (0.04, 0.97)]))
+            .label("Back to the hall")
+            .action(Action::Goto(ScreenState::Playing)),
+    );
+```
+
+A screen drives it with two calls:
+
+```rust
+impl Screen for StudyScreen {
+    fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
+        let area = Rectangle::new(0.0, 0.0, ui::screen_size(ctx.rl).x, ui::screen_size(ctx.rl).y);
+        let picked = self.map.update(&mut ctx, area)?;
+        if picked.id == "desk" {
+            ctx.notify("A drawer that does not open");
+        }
+        picked.screen
+    }
+
+    fn draw(&self, d: &mut RaylibDrawHandle, ctx: &DrawContext) {
+        self.map.draw(d, ctx, Rectangle::new(0.0, 0.0, 1280.0, 720.0));
+    }
+}
+```
+
+`update` loads what the map needs, tracks hover, tooltips and focus, runs the hotspot's
+`Action` when one is picked, and returns a `HotspotPick` (`index`, `id`, and `screen`, the
+state the action asked for). It fires on release like a button, and a keyboard or gamepad
+moves over the hotspots' bounding boxes and picks with Accept.
+
+| Shape | Meaning |
+| --- | --- |
+| `Shape::rect(x, y, width, height)` | A rectangle, in fractions of the area (`0.5, 0.0, 0.5, 1.0` is its right half) |
+| `Shape::circle(x, y, radius)` | A circle. The radius is a fraction of the area's **width**, so it stays a circle in a wide area |
+| `Shape::polygon([(x, y), ..])` | Any outline, convex or not. It hit-tests and fills to its edges |
+| `Shape::all()` | The whole area |
+| `.in_image(width, height)` | Divides the coordinates by an image size, so hotspots can be read off the picture in pixels |
+
+The area a map is drawn into is where the **picture** goes, not where the hotspots are: the
+background is drawn covering the area, and the hotspots are placed over the picture as it
+ended up — cropped, and possibly larger than the area — so a hotspot stays on the desk it
+was drawn over whatever shape the window is. `ImageMap::frame(resources, area)` gives that
+rectangle, for a screen drawing its own marks over the picture, and `ui::cover_rect` is the
+same sum for any texture. Without a background the area is used as it is.
+
+Hotspots are hit-tested from the last one to the first, so a hotspot listed later wins the
+points it shares with an earlier one — the same order they are drawn in. `hit::pick`,
+`Shape::contains`, `bounds` and `center` are public for screens doing their own hit testing.
+
+| Hotspot | Meaning |
+| --- | --- |
+| `.label(text)` | Shown while the hotspot is under the pointer or focused, placed by the style |
+| `.tooltip(text)` | The usual [tooltip](#tooltips), after the usual delay |
+| `.action(Action)` | What picking it does. Without one, `update` just reports the pick |
+| `.look(Highlight)`, `.hover_look(Highlight)` | Override the style's looks for this hotspot |
+| `.enabled_if(\|view\| ..)` | A disabled hotspot does not answer the pointer and draws the disabled look |
+
+`ImageMapStyle` holds the looks every hotspot shares and the label:
+
+```rust
+ImageMap::new().style(|s| {
+    s.hovered(Highlight::new().fill(Color::new(255, 240, 200, 30)).border(2.0, style::BRASS))
+        .label(LabelStyle::default().at(LabelAt::Pointer).panel(Some(style::plate(PanelStyle::default()))))
+        .hover_sound("page_turn")
+})
+```
+
+A `Highlight` is what gets drawn over a shape: `fill`, `border(width, color)`, `image`
+(stretched into the shape's bounds), `tint` and `opacity`. Looks are layered rather than
+replaced — `hovered` is drawn with the fields `idle` set where it does not set its own,
+and a hotspot's own look wins over the style's — so a style can add a border to a hover
+without repeating the fill. By default a hotspot is invisible until the pointer is over
+it, which is what a point-and-click scene usually wants; give the idle look an image to
+mark them all.
+
+`LabelStyle` sets the label's `text`, `panel`, `padding` and `gap`, and `LabelAt` where it
+goes: `Above` (the default), `Below`, `Center`, `Pointer`, or `Hidden` for no label at all.
+Labels are kept inside the window.
+
+## Drag and drop
+
+`DragBoard` is the same hit testing with something held: draggable items, drop targets, and
+a rule per target for what it takes. Inventory puzzles, sorting minigames, a board to
+arrange evidence on.
+
+```rust
+use vn_engine::{DragBoard, Draggable, DropTarget, Shape};
+
+let mut board = DragBoard::new()
+    .target(DropTarget::new("ledger", Shape::rect(0.05, 0.6, 0.26, 0.34)).label("The ledger"))
+    .target(
+        DropTarget::new("fire", Shape::rect(0.69, 0.6, 0.26, 0.34))
+            .label("The fire")
+            .accepts(|item, view| item != "will" || view.state.get::<Journal>().knows_the_truth()),
+    );
+
+board.set_items(evidence.items().enumerate().map(|(i, item)| {
+    Draggable::new(item.id, Shape::rect(0.06 + i as f32 * 0.14, 0.1, 0.12, 0.3))
+        .label(item.name)
+        .image(format!("ui/card_{}.png", item.id))
+}));
+```
+
+The board does not own where things are: the items' shapes come from the game's own model,
+so a drop is applied by changing that model and handing the board its items again.
+
+```rust
+fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
+    self.board.set_items(self.cards(ctx.state));
+    let drop = self.board.update(&mut ctx, self.area(ui::screen_size(ctx.rl)))?;
+    match (drop.accepted, drop.target_id.as_deref()) {
+        (true, Some(target)) => ctx.state.get_mut::<Evidence>().file(&drop.item_id, target),
+        (false, Some(_)) => ctx.notify("That does not belong there"),
+        _ => {}
+    }
+    None
+}
+```
+
+`update` returns a `Dropped` only on the frame something is let go: `item`, `item_id`,
+`target`, `target_id`, `accepted` (the target was there and its rule said yes) and `point`.
+A drop onto nothing, a right click, Escape and the gamepad's B all end the drag with no
+target, which is how a drag is cancelled.
+
+| Held | What happens |
+| --- | --- |
+| Mouse | Press on an item to lift it, and it follows the pointer until the button is released. The target under the **pointer** takes it |
+| Keyboard, gamepad | Accept on the focused item lifts it, the focus then moves over the targets that will take it (the item rides along to the focused one), Accept drops and Back cancels |
+
+The state machine underneath is public, so a game can drive it itself or test a puzzle
+without a window: `item_at`, `target_at`, `grab`, `drag`, `release`, `cancel`, `held`,
+`held_id`, `offset`, `item_rect` and `item_area`. While an item is held, its shape is
+resolved against `item_area`, the drawing area shifted by the drag — which is all a shape
+needs to move, since its coordinates are fractions of that area.
+
+`DragStyle` holds the looks, layered the same way as an image map's: `item`,
+`item_hovered`, `item_held`, `target`, `target_ready` (a held item may land here),
+`target_blocked` (it may not), `target_hovered`, a `label` for the item or target under the
+pointer, and `pick_sound` / `drop_sound` / `reject_sound`. `DragBoard::draw` draws the
+targets, then the items with the held one on top; a game that draws its own art can use
+`item_rect` for the rest.
+
+`set_items` keeps an item held while its index still exists, so rebuilding the list every
+frame is fine as long as the order is stable while something is held.
+
 ## Custom screens
 
 Replace any screen, or add new ones under `ScreenState::Custom(name)`:
@@ -1721,6 +1890,7 @@ cargo test -p vn_engine
 ```
 
 The tests run without a window; drawing and input are checked by playing the example.
+A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_engine -- --ignored`.
 
 | File | Covers |
 | --- | --- |
@@ -1739,3 +1909,6 @@ The tests run without a window; drawing and input are checked by playing the exa
 | `tests/shape.rs` | Corner outlines for each shape, round versus scooped hit tests, size capping and relative roundness, per-corner shapes, `PanelStyle`, the dialogue box's placement and the name plate |
 | `tests/layout.rs` | Every layout arrangement, anchor and alignment, fitting, and the default screens' positions |
 | `tests/hot_reload.rs` | The file watcher, swapping in a reloaded story, the story loader, the error panel's lines |
+| `tests/hit.rs` | Shapes in fractions of an area (rectangles, circles, polygons, pixels read off an image), hit testing, picking the topmost, cutting a concave outline into triangles (with a windowed check that its notch stays empty), layered looks, label placement |
+| `tests/image_map.rs` | Hotspots found by id and by point, overlapping hotspots, hotspots disabled by the game state, what a hotspot carries, the default style |
+| `tests/drag.rs` | Items and targets under a point, a held item following the pointer, drops on a target, on nothing and on one that refuses, cancelling, validity rules reading the item and the game, replacing the item list |

@@ -4,6 +4,8 @@
 scene report_start:
   background archive_office with fade
   music archive
+  "Before you answer there is the box, and the question of what goes in with the report."
+  call assemble
   show registrar stern at right with dissolve
   registrar "Report two hundred and twenty-two. Yours. What is in Santa Ilde?"
   if read_letter == true && saw_torn_page == true:

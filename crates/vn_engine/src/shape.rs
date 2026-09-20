@@ -454,7 +454,7 @@ fn color_at(point: Vector2, rect: Rectangle, color: Color, gradient: Option<Grad
     )
 }
 
-fn triangles(vertices: &[(Vector2, Color)]) {
+pub(crate) fn triangles(vertices: &[(Vector2, Color)]) {
     unsafe {
         ffi::rlSetTexture(0);
         ffi::rlBegin(ffi::RL_TRIANGLES as i32);

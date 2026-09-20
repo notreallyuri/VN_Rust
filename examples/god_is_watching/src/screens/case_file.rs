@@ -2,6 +2,8 @@ use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
 use vn_engine::{DrawContext, GameContext, Overlay, OverlayAction, PanelStyle, TextStyle};
 
+use crate::desk::Desk;
+use crate::evidence::describe;
 use crate::journal::{Journal, note_text};
 use crate::style;
 
@@ -70,13 +72,21 @@ impl Overlay for CaseFileOverlay {
         ];
         let notes: Vec<&str> = journal.notes().map(note_text).collect();
         let decisions: Vec<&str> = journal.recent_decisions(4).collect();
+        let report: Vec<&str> = ctx
+            .state
+            .get::<Desk>()
+            .in_report()
+            .map(|item| describe(item).0)
+            .collect();
 
         let height = 120.0
             + facts.len() as f32 * ROW
             + 44.0
             + notes.len().max(1) as f32 * ROW * 1.5
             + 44.0
-            + decisions.len().max(1) as f32 * ROW;
+            + decisions.len().max(1) as f32 * ROW
+            + report.len() as f32 * ROW
+            + if report.is_empty() { 0.0 } else { 44.0 };
         let panel = Rectangle::new(
             (screen.x - PANEL_WIDTH) / 2.0,
             ((screen.y - height) / 2.0).max(20.0),
@@ -146,6 +156,28 @@ impl Overlay for CaseFileOverlay {
                 &self.line,
             );
             y += ROW;
+        }
+
+        if !report.is_empty() {
+            y += 14.0;
+            ui::draw_text(
+                d,
+                fonts,
+                "GOING IN THE REPORT",
+                Vector2::new(left, y),
+                &self.section,
+            );
+            y += 26.0;
+            for item in report {
+                ui::draw_text(
+                    d,
+                    fonts,
+                    &format!("· {}", item),
+                    Vector2::new(left, y),
+                    &self.line,
+                );
+                y += ROW;
+            }
         }
 
         ui::draw_text_centered(

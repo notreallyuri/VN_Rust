@@ -214,8 +214,8 @@ else draws through, so it is cheaper now; the rest is additive.
 
 ### Interaction
 
-- [ ] Image maps / point-and-click scenes: named hotspots over a background, each with a hover look and an action, used for examining a room or picking a destination
-- [ ] Drag and drop: draggable items with drop targets and a validity rule, for inventory puzzles and minigames; needs the same hit-testing as image maps, so the two share a base
+- [x] Image maps / point-and-click scenes (`ImageMap`, `Hotspot`): named hotspots over a background, each with a label, tooltip, hover look and action. Shapes are fractions of the picture, so they follow it when the window doesn't match its aspect
+- [x] Drag and drop (`DragBoard`, `Draggable`, `DropTarget`): items dragged onto targets that accept or refuse them, with the pointer or the keyboard. It shares `hit.rs` with image maps: `Shape` (rect, circle, polygon), picking the topmost, `Highlight` and `LabelStyle`
 
 ### Extras
 

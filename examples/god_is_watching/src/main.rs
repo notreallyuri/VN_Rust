@@ -7,16 +7,20 @@ use vn_engine::{
 };
 
 mod cast;
+mod desk;
 mod evidence;
 mod journal;
 mod screens;
 mod style;
 
+use desk::Desk;
 use evidence::Evidence;
 use journal::{Journal, achievement_name, chapter_title};
 
 const ASSETS_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 const CASE_FILE: &str = "case_file";
+const SEARCH: &str = "search";
+const REPORT_DESK: &str = "report_desk";
 const SUBTITLE: &str = "AN ACCOUNT FROM THE ARCHIVE OF THE HOUSE  ·  1903";
 
 fn give_item(ctx: &mut GameContext, (item, count): (String, Option<u32>)) -> Option<ScreenState> {
@@ -40,6 +44,15 @@ fn note(ctx: &mut GameContext, (key,): (String,)) -> Option<ScreenState> {
         ctx.notify("Added to the case file");
     }
     None
+}
+
+fn search(ctx: &mut GameContext, (room,): (String,)) -> Option<ScreenState> {
+    ctx.state.get_mut::<Desk>().search(&room);
+    Some(ScreenState::Custom(SEARCH.to_string()))
+}
+
+fn assemble(_ctx: &mut GameContext, _: ()) -> Option<ScreenState> {
+    Some(ScreenState::Custom(REPORT_DESK.to_string()))
 }
 
 fn unlock(ctx: &mut GameContext, (key,): (String,)) -> Option<ScreenState> {
@@ -70,10 +83,13 @@ fn main() -> ExitCode {
         .font(FontRole::Speaker, "NotoSerif-Regular.ttf")
         .state(Evidence::default())
         .state(Journal::default())
+        .state(Desk::default())
         .command("give_item", give_item)
         .command("ask_name", ask_name)
         .command("note", note)
         .command("unlock", unlock)
+        .command("search", search)
+        .command("assemble", assemble)
         .on_scene_enter(|ctx, scene| {
             if let Some(title) = chapter_title(scene) {
                 ctx.notify(title);
@@ -261,7 +277,9 @@ fn main() -> ExitCode {
                 .section(
                     KeySection::new("In the Archive")
                         .row("E, Esc", "B", "Close the evidence")
-                        .row("Tab, Esc", "B", "Close the case file"),
+                        .row("Tab, Esc", "B", "Close the case file")
+                        .row("E, Esc", "B", "Leave a room you are searching")
+                        .row("Esc", "B", "Leave the report desk"),
                 )
         })
         .log(|l| {
@@ -287,6 +305,14 @@ fn main() -> ExitCode {
         })
         .screen(credits, screens::CreditsScreen::new)
         .screen(evidence_screen, screens::EvidenceScreen::new)
+        .screen(
+            ScreenState::Custom(SEARCH.to_string()),
+            screens::SearchScreen::new,
+        )
+        .screen(
+            ScreenState::Custom(REPORT_DESK.to_string()),
+            screens::ReportDesk::new,
+        )
         .overlay(CASE_FILE, screens::CaseFileOverlay::new);
 
     match app.run() {

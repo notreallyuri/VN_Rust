@@ -290,6 +290,20 @@ pub fn load_background(ctx: &mut GameContext, background: Option<&Background>) {
     }
 }
 
+pub fn cover_rect(size: Vector2, area: Rectangle) -> Rectangle {
+    if size.x <= 0.0 || size.y <= 0.0 {
+        return area;
+    }
+    let scale = (area.width / size.x).max(area.height / size.y);
+    let (width, height) = (size.x * scale, size.y * scale);
+    Rectangle::new(
+        area.x + (area.width - width) / 2.0,
+        area.y + (area.height - height) / 2.0,
+        width,
+        height,
+    )
+}
+
 pub fn draw_texture_cover(d: &mut RaylibDrawHandle, texture: &Texture2D, area: Rectangle) {
     let (w, h) = (texture.width as f32, texture.height as f32);
     let scale = (area.width / w).max(area.height / h);

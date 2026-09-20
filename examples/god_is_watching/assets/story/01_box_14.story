@@ -5,6 +5,8 @@ scene box_start:
   background von_lucis_study with fade
   music von_lucis
   "Item 1. From the notebook of Mary Von Lucis. November, 1893."
+  "Before the notebook there are the photographs: the study, as the House found it."
+  call search study
   "The letters from the Verlaine House come in pale envelopes that smell of perfume."
   "Father burns them in the study fireplace. I have counted three."
   show hugo tired at center with dissolve

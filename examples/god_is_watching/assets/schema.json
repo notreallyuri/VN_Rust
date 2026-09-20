@@ -181,6 +181,11 @@
       "optional": [],
       "rest": null
     },
+    "assemble": {
+      "required": [],
+      "optional": [],
+      "rest": null
+    },
     "give_item": {
       "required": [
         "Word"
@@ -191,6 +196,13 @@
       "rest": null
     },
     "note": {
+      "required": [
+        "Word"
+      ],
+      "optional": [],
+      "rest": null
+    },
+    "search": {
       "required": [
         "Word"
       ],

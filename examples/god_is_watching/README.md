@@ -52,7 +52,7 @@ Where each feature is used, so the example can be read as a reference.
 | `commit` | Signing the visitors' book at Santa Ilde (`ilde_leaving`) |
 | `if` / `else`, `&&`, `\|\|`, nested blocks | `if verdict == miracle \|\| verdict == sin:`, `if read_letter == true && saw_torn_page == true:`, a `choice` inside an `if` (`ilde_office`) |
 | `set` for bool, enum and string values; `add` with `+=` / `-=` | `set read_letter = true`, `set approach = bold`, `add trust -= 1` |
-| `call` with typed arguments | `call give_item field_report 19` (word + optional count), `call ask_name player_name`, `call note folio_41`, `call unlock ending_keeper` |
+| `call` with typed arguments | `call give_item field_report 19` (word + optional count), `call ask_name player_name`, `call note folio_41`, `call unlock ending_keeper`, `call search study` and `call assemble`, which open a screen and come back to the same line |
 
 ### Engine
 
@@ -60,11 +60,13 @@ Where each feature is used, so the example can be read as a reference.
 | --- | --- |
 | Registries | `src/cast.rs`: 13 characters with colors and image lists, 10 variables (int, bool, enum, string) |
 | Validation, `vn check`, schema export | The story is checked at startup; `assets/schema.json` is refreshed in debug builds for `vn check` |
-| Commands with typed arguments | `give_item`, `ask_name`, `note`, `unlock` in `src/main.rs` |
-| Game state by type | `Evidence` (`src/evidence.rs`) and `Journal` (`src/journal.rs`), saved with the game |
+| Commands with typed arguments | `give_item`, `ask_name`, `note`, `unlock`, `search` and `assemble` in `src/main.rs` |
+| Game state by type | `Evidence` (`src/evidence.rs`), `Journal` (`src/journal.rs`) and `Desk` (`src/desk.rs`: what has been examined, and what goes in the report), saved with the game |
 | Text input | `ask_name` opens the engine's text input screen, pre-filled with "Archivist" |
 | Hooks | `on_scene_enter` announces each chapter as a notification; `on_choice` records every decision in the journal |
-| Custom screens and overlays | Evidence (a screen, HUD button or E), Case file (an overlay: variables, notes, recent decisions), Credits (ending reached, achievements) |
+| Custom screens and overlays | Evidence (a screen, HUD button or E), Case file (an overlay: variables, notes, recent decisions, what is going in the report), Credits (ending reached, achievements), the study (`src/screens/search.rs`) and the report desk (`src/screens/report_desk.rs`) |
+| Image map | `call search study` opens the study as a point-and-click photograph (`src/screens/search.rs`): six hotspots over `von_lucis_study.png`, the desk a polygon and the lamp a circle, each with a label at the pointer and a line for the caption panel; a brass dot marks what has already been examined (`ImageMap::frame`) |
+| Drag and drop | `call assemble` opens the report desk (`src/screens/report_desk.rs`): every filed item is a card to drag into "Report 222" or "Back in Box 14". The report tray refuses Box 14 itself (`DropTarget::accepts`), and says so; the cards' places come from `Desk`, so a drop is a change to the game's own state |
 | HUD buttons | Evidence and Case file as small plates at the top-right (a `hud_group("top", ..)`), Log, Auto and Menu as a quiet row of icon labels under the dialogue box (`hud_layout` anchored at the bottom) |
 | Title card and main menu | One shot for both: the title background slowly pushing in and drifting (`Scenery::motion`, `pan`), a vignette, letterbox bars that slide in on the start screen, "GOD IS WATCHING" in tracked capitals (`TextStyle::spacing`). "PRESS ANY KEY" pulses in the bottom bar; pressing it keeps the shot and fades the menu into the same bar (`buttons_in_bar`, `intro`): text links with an underline on hover and brass diamonds between them (`separator`) |
 | Rollback and barriers | Wheel / Page Up-Down; `choice final:` and `commit` in the story; `unlock` is a blocked command, so an achievement can't be rolled back |
@@ -76,9 +78,9 @@ Where each feature is used, so the example can be read as a reference.
 | Buttons | `src/style.rs`: beveled corners and a brass border that brightens on hover, with a 0.12 s transition; main menu links are text only, underlined on hover, and click with `page_turn`; Exit, Delete and Yes use the oxblood variant; choices use a nine-slice beveled frame (`ui/choice.png`, swapped for `choice_hover.png` on hover), left-aligned wrapped text; HUD buttons are borderless labels with icons (`ui/icon_*.png`); Continue is disabled until there is something to continue |
 | Shapes and panels | Scooped (inward) corners with a double brass rule on every panel (`style::frame`), beveled corners on buttons, slots and plates, diamond separators on the main menu |
 | Dialogue box | A framed box with a name plate on its top edge for the speaker (`name_plate`), narrower than the window (`max_width`) and raised off the bottom (`bottom`) to leave room for the HUD row |
-| Keyboard and gamepad | Every screen, including the example's Evidence, Credits and Case file (B closes them); `style.rs` gives every button a `focused` look matching its hover look |
+| Keyboard and gamepad | Every screen, including the example's Evidence, Credits and Case file (B closes them), the study's hotspots and the report desk, where Enter lifts a card, the arrows move it between the trays that will take it and B puts it back; `style.rs` gives every button a `focused` look matching its hover look |
 | Playing controls | Ren'Py's keys (H, Ctrl, Tab, A, L, S, F, middle and right click); the HUD has Log and Auto with icons; the log is styled like the rest (`Decided:` before choices); the voice row is hidden (`voice_row(false)`), since the story has no voice clips |
-| Controls overlay (F1) | Styled like the rest, with an extra "In the Archive" section for the Evidence and Case file keys (`KeySection`) |
+| Controls overlay (F1) | Styled like the rest, with an extra "In the Archive" section for the Evidence, Case file, study and report desk keys (`KeySection`) |
 | Tooltips | On the HUD buttons (`HudButton::tooltip`), the menu's Continue (`MenuItem::tooltip`), the settings rows and the Delete button, styled with `.tooltips(...)` |
 | Typewriter text | Every line, at the player's text speed |
 | Layouts | Main menu as a centered row in the letterbox bar, each link sized to its label (`MenuItem::style`); pause menu and save slots as 2-column grids, the slots centered in their panel |
