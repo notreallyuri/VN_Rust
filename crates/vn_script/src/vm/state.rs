@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::{Event, StoryVm, VmError};
-use crate::{Instruction, Position, Program, Value, VarType};
+use crate::{Catalog, Instruction, Position, Program, Value, VarType};
 
 impl StoryVm {
     pub fn set_entry_scene(&mut self, scene_id: impl Into<String>) -> Result<(), VmError> {
@@ -30,6 +30,30 @@ impl StoryVm {
         self.current = None;
         self.entered = false;
         self.reset_position();
+    }
+
+    pub fn set_catalog(&mut self, catalog: Option<Catalog>) {
+        self.catalog = catalog;
+    }
+
+    pub fn catalog(&self) -> Option<&Catalog> {
+        self.catalog.as_ref()
+    }
+
+    pub fn language(&self) -> Option<&str> {
+        self.catalog
+            .as_ref()
+            .map(|catalog| catalog.language.as_str())
+    }
+
+    pub(super) fn localized<'a>(&'a self, ip: usize, text: &'a str) -> &'a str {
+        let Some(catalog) = &self.catalog else {
+            return text;
+        };
+        let Some(file) = self.program.file(ip) else {
+            return text;
+        };
+        catalog.text(file, text).unwrap_or(text)
     }
 
     pub fn program(&self) -> &Program {

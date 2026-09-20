@@ -50,7 +50,7 @@ impl StoryVm {
                         speaker: char_id
                             .as_deref()
                             .map(|speaker| interpolate(speaker, &self.variables)),
-                        text: interpolate(text, &self.variables),
+                        text: interpolate(self.localized(self.ip, text), &self.variables),
                     };
                     self.ip += 1;
                     return event;
@@ -253,7 +253,7 @@ impl StoryVm {
         Event::Choice {
             options: options
                 .iter()
-                .map(|(text, _)| interpolate(text, &self.variables))
+                .map(|(text, _)| interpolate(self.localized(choice_ip, text), &self.variables))
                 .collect(),
         }
     }

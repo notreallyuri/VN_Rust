@@ -11,7 +11,7 @@ pub use snapshot::*;
 
 use std::collections::HashMap;
 
-use crate::{Position, Program, Schema, Transition, Value};
+use crate::{Catalog, Position, Program, Schema, Transition, Value};
 
 #[derive(Debug)]
 pub struct StoryVm {
@@ -30,4 +30,5 @@ pub struct StoryVm {
     entry: Option<String>,
     scene_events: bool,
     entered: bool,
+    catalog: Option<Catalog>,
 }

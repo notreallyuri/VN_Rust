@@ -40,6 +40,7 @@ impl StoryVm {
             entry: None,
             scene_events: false,
             entered: false,
+            catalog: None,
         };
         vm.reset();
         vm

@@ -3,6 +3,7 @@ mod dump;
 mod fmt;
 mod lsp;
 mod new;
+mod translate;
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -15,6 +16,7 @@ const USAGE: &str = "usage:
   vn dump <file.story | directory>
   vn fmt <path> [--check]
   vn lsp
+  vn translate <lang> [path]
   vn new <directory> [--title <title>] [--engine-path <dir> | --engine-git <url>]";
 
 fn main() -> ExitCode {
@@ -26,6 +28,8 @@ fn main() -> ExitCode {
         [cmd, path] if cmd == "fmt" => fmt::fmt(path, false),
         [cmd, path, flag] if cmd == "fmt" && flag == "--check" => fmt::fmt(path, true),
         [cmd, path] if cmd == "check" => check::check(path, None),
+        [cmd, language] if cmd == "translate" => translate::translate(language, "."),
+        [cmd, language, path] if cmd == "translate" => translate::translate(language, path),
         [cmd, path, flag, schema] if cmd == "check" && flag == "--schema" => {
             check::check(path, Some(schema))
         }

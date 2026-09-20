@@ -123,7 +123,7 @@ fn resolve(path: &Path, schema: Option<&Path>) -> Result<Target, String> {
     })
 }
 
-fn find_schema(path: &Path) -> Option<PathBuf> {
+pub(crate) fn find_schema(path: &Path) -> Option<PathBuf> {
     let absolute = fs::canonicalize(path).ok()?;
     let start = if absolute.is_dir() {
         absolute.as_path()

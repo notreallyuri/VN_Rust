@@ -16,6 +16,7 @@ The language itself is specified in [SCRIPT.md](../../SCRIPT.md).
 | `vm/` | `mod.rs` holds `StoryVm` itself; `build.rs` loads and validates a story, `step.rs` is the interpreter (`advance`, `next_event`, condition evaluation), `state.rs` the variables and scene accessors, `snapshot.rs` save/restore, `event.rs` and `error.rs` the types they trade in |
 | `types/` | `Instruction`, `Node`, `Token`, `Value` and friends |
 | `schema.rs` | The registry a game exports for `vn check` and the LSP |
+| `translate.rs` | Extracting translatable strings, and the per-language catalog the VM reads them back from |
 | `markup.rs`, `template.rs`, `format.rs`, `suggest.rs`, `files.rs`, `diagnostics.rs` | Text tags, `{variable}` interpolation, `vn fmt`, "did you mean", story file discovery, diagnostics |
 
 ## Pipeline
@@ -304,6 +305,71 @@ Every field except `format_version`, `game` and `story_dir` may be left out (an 
 registry, which turns its checks off), as may a character's `images` and a command's
 `optional`/`rest`.
 
+## Translation
+
+`translate` extracts every string a player reads and looks it up again at runtime. The
+`vn translate <lang>` command writes the catalog; the engine loads one and hands it to the
+VM.
+
+```text
+assets/lang/pt-BR.json
+```
+
+```json
+{
+  "format_version": 1,
+  "language": "pt-BR",
+  "story": {
+    "01_box_14.story": {
+      "3f9a1c0b7d2e4f58": {
+        "kind": "dialogue",
+        "speaker": "mary",
+        "line": 12,
+        "source": "Your hot water, miss.",
+        "text": "Sua água quente, senhorita."
+      }
+    }
+  },
+  "names": {
+    "mary": { "kind": "name", "source": "Mary", "text": "Mary" }
+  }
+}
+```
+
+An entry's key is a hash of the file's name and the source text, so **editing a line
+makes a new entry rather than silently keeping the old translation**: the edited line
+comes back as missing (empty `text`), and the entry it replaced stays in the file marked
+`"stale": true`, with the old translation to work from. A character renamed in
+`schema.json` goes stale the same way, by comparing `source`. Nothing is ever deleted
+from a catalog, so a rewrite that gets reverted costs no work.
+
+The file part of the key is the story file's name without its directories, because the
+same story is loaded from a folder while developing and from inside the executable in a
+release build. Two story files with the same name in different subdirectories therefore
+share entries for identical lines.
+
+| Call | Does |
+| --- | --- |
+| `translate::extract(&program)` | Every dialogue line, narration line and choice option, with its file, line, kind and speaker |
+| `translate::extract_names(&schema)` | The characters' display names |
+| `Catalog::refresh(&strings, &names)` | Adds what is new, refreshes line numbers, marks what is gone or edited as stale, and reports `added`, `total`, `translated`, `stale` |
+| `Catalog::read` / `write` / `to_json` / `from_json` | The file above; `write` leaves the file alone when nothing changed |
+| `Catalog::text(file, source)` / `name(id, source)` | The translation, or `None` when it is missing or stale |
+| `Catalog::missing()` / `stale()` | For reporting (`vn check`, planned) |
+
+At runtime the VM translates **before** interpolating, so `{variable}` placeholders work
+inside a translation:
+
+```rust
+let mut vm = StoryVm::from_dir("assets/story")?;
+vm.set_catalog(Some(Catalog::read("assets/lang/pt-BR.json")?));
+```
+
+`Event::Say` and `Event::Choice` then carry translated text, falling back to the source
+for anything missing or stale, so a half-finished catalog is playable. `vm.language()`
+says which catalog is loaded. Nothing else changes: the VM's ids, variables, snapshots
+and save data are all language-independent.
+
 ## StoryVm
 
 The VM emits one `Event` per `advance()` call. The frontend decides how to present it.
@@ -432,6 +498,7 @@ cargo test -p vn_script
 | `tests/snapshot.rs` | Snapshot round trips (mid-scene, at a choice, JSON), edits to other scenes, edits to the saved scene, missing scenes |
 | `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example story directory, `prepare`, schema files (round trip, unchanged writes, missing fields, newer formats) |
 | `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, music state and sound events (and music in snapshots), the fixture playing through, the example playing through all three chapters, `story_files` (recursive, sorted, `.story` only) |
+| `tests/translate.rs` | What gets extracted and with which kind, how entries are keyed, file names normalized across loaders, a second extraction adding nothing, an edited line going stale while the rest is kept, a renamed character, JSON round trips and newer formats, and the VM reading lines out of a catalog (with fallback and interpolation) |
 | `tests/spec.rs` | Every example in SCRIPT.md: it must compile without diagnostics, and its compiled instructions and the events the VM produces (first option of every choice) must match `tests/golden/script_md.txt`. Blocks with `<placeholders>` are syntax templates and skipped; fragments are wrapped in a scene and `...` lines become narration |
 | `tests/fixtures/all_features.story` | Golden input covering every construct in SCRIPT.md |
 

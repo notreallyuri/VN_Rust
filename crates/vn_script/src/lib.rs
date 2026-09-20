@@ -9,6 +9,7 @@ pub mod parser;
 pub mod schema;
 pub mod suggest;
 pub mod template;
+pub mod translate;
 pub mod types;
 pub mod vm;
 
@@ -22,5 +23,6 @@ pub use parser::*;
 pub use schema::*;
 pub use suggest::*;
 pub use template::*;
+pub use translate::{Catalog, LANG_DIR, StringKind, TRANSLATION_FORMAT_VERSION};
 pub use types::*;
 pub use vm::*;

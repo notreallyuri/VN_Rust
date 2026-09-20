@@ -92,6 +92,29 @@ A file is only rewritten when it compiles and when the result compiles to the sa
 program, so formatting can't change what a story does; a file with errors is reported
 and left alone.
 
+### `vn translate <lang> [path]`
+
+Extracts every translatable string into `lang/<lang>.json` next to the game's
+`schema.json`: dialogue, narration, choice options, and the characters' display names.
+Run it again whenever the story changes — it keeps the translations already written,
+adds entries for new strings, and marks as `stale` the ones whose source has been edited
+or deleted.
+
+```sh
+cargo run -p vn_cli -- translate pt-BR examples/god_is_watching/assets
+```
+
+```text
+wrote examples/god_is_watching/assets/lang/pt-BR.json
+263 strings (263 new), 0 translated, 263 missing, 0 stale
+```
+
+`path` is the project (a `schema.json`, or any directory at or under it — the same search
+as `vn check`); it defaults to the working directory. A story with errors is reported and
+nothing is extracted, so a broken edit can't half-rewrite the catalog. The file format,
+how entries are keyed, and how a game loads one are in
+[vn_script's README](../vn_script/README.md#translation).
+
 ### `vn new <directory> [--title <title>] [--engine-path <dir> | --engine-git <url>]`
 
 Creates a game project that runs with `cargo run`:
@@ -160,7 +183,7 @@ language-servers = ["vn"]
 
 VS Code and Zed need a small extension to start it (planned, see TODO.md).
 
-Planned: `run`, `fmt` (see TODO.md).
+Planned: `run` (see TODO.md).
 
 ## Tests
 
@@ -175,6 +198,9 @@ project, the schema's entry scene, files outside the story directory, no schema,
 the files it writes pass `vn check`, the package name and engine path, `--title` and
 `--engine-git` (with quotes in the title), non-empty directories, names that aren't crate
 names, and bad arguments.
+`tests/translate.rs` runs `vn translate`: the catalog it writes and where, a second run
+that changes nothing, an edited line going stale while the rest keeps its translation, a
+story with errors, a language tag that isn't one, and a project with no schema.
 `tests/lsp.rs` runs `vn lsp` over pipes like an editor: diagnostics following unsaved
 edits (and clearing), a scene defined in an unsaved file, completion in every context,
 definition across files, hover, symbols, a file with no project, unknown requests, and
