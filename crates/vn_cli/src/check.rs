@@ -10,7 +10,7 @@ struct Target {
     schema: Option<(PathBuf, SchemaFile)>,
 }
 
-pub fn check(path: &str, schema: Option<&str>) -> ExitCode {
+pub fn check(path: &str, schema: Option<&str>, lang: Option<&str>) -> ExitCode {
     let target = match resolve(Path::new(path), schema.map(Path::new)) {
         Ok(target) => target,
         Err(e) => {
@@ -75,11 +75,88 @@ pub fn check(path: &str, schema: Option<&str>) -> ExitCode {
         shown,
     );
 
-    if errors > 0 {
+    let translations = report_translations(&target, story.program(), lang);
+
+    if errors > 0 || translations.is_err() {
         ExitCode::FAILURE
     } else {
         ExitCode::SUCCESS
     }
+}
+
+fn report_translations(
+    target: &Target,
+    program: &vn_script::Program,
+    lang: Option<&str>,
+) -> Result<(), ()> {
+    let Some((schema_path, file)) = &target.schema else {
+        if lang.is_some() {
+            eprintln!(
+                "❌ no {} found, so there is nothing to check translations against",
+                SCHEMA_FILE_NAME
+            );
+            return Err(());
+        }
+        return Ok(());
+    };
+    let root = schema_path.parent().unwrap_or(Path::new("."));
+
+    let codes = match lang {
+        Some(code) => vec![code.to_string()],
+        None => crate::lang::codes(root),
+    };
+    if codes.is_empty() {
+        if lang.is_some() {
+            eprintln!("❌ no catalog to check");
+            return Err(());
+        }
+        return Ok(());
+    }
+
+    let mut failed = false;
+    for code in &codes {
+        let status = match crate::lang::status(root, code, program, Some(&file.schema)) {
+            Ok(status) => status,
+            Err(e) => {
+                eprintln!("❌ {}", e);
+                failed = true;
+                continue;
+            }
+        };
+
+        if lang.is_some() {
+            for line in &status.missing {
+                println!(
+                    "{}: missing {} translation: {:?}",
+                    line.place(),
+                    line.kind,
+                    line.source
+                );
+            }
+            for line in &status.stale {
+                println!(
+                    "{}: stale {} translation: {:?}",
+                    line.place(),
+                    line.kind,
+                    line.source
+                );
+            }
+        }
+
+        println!(
+            "{}: {}/{} translated, {} missing, {} stale",
+            status.language,
+            status.translated,
+            status.total,
+            status.missing.len(),
+            status.stale.len(),
+        );
+        if lang.is_none() && !status.is_complete() {
+            println!("  run `vn check --lang {}` to list them", status.language);
+        }
+    }
+
+    if failed { Err(()) } else { Ok(()) }
 }
 
 fn resolve(path: &Path, schema: Option<&Path>) -> Result<Target, String> {

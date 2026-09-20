@@ -1,6 +1,7 @@
 mod check;
 mod dump;
 mod fmt;
+mod lang;
 mod lsp;
 mod new;
 mod translate;
@@ -12,7 +13,7 @@ use std::process::ExitCode;
 use vn_script::{read_sources, story_files};
 
 const USAGE: &str = "usage:
-  vn check <path> [--schema <schema.json>]
+  vn check <path> [--schema <schema.json>] [--lang <code>]
   vn dump <file.story | directory>
   vn fmt <path> [--check]
   vn lsp
@@ -27,12 +28,15 @@ fn main() -> ExitCode {
         [cmd] if cmd == "lsp" => lsp::lsp(),
         [cmd, path] if cmd == "fmt" => fmt::fmt(path, false),
         [cmd, path, flag] if cmd == "fmt" && flag == "--check" => fmt::fmt(path, true),
-        [cmd, path] if cmd == "check" => check::check(path, None),
         [cmd, language] if cmd == "translate" => translate::translate(language, "."),
         [cmd, language, path] if cmd == "translate" => translate::translate(language, path),
-        [cmd, path, flag, schema] if cmd == "check" && flag == "--schema" => {
-            check::check(path, Some(schema))
-        }
+        [cmd, rest @ ..] if cmd == "check" => match parse_check(rest) {
+            Ok((path, schema, lang)) => check::check(path, schema, lang),
+            Err(e) => {
+                eprintln!("❌ {e}\n\n{USAGE}");
+                ExitCode::FAILURE
+            }
+        },
         [cmd, rest @ ..] if cmd == "new" => match new::Options::parse(rest) {
             Ok(options) => new::new(options),
             Err(e) => {
@@ -45,6 +49,31 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+type CheckArgs<'a> = (&'a str, Option<&'a str>, Option<&'a str>);
+
+fn parse_check(args: &[String]) -> Result<CheckArgs<'_>, String> {
+    let (mut path, mut schema, mut lang) = (None, None, None);
+    let mut rest = args.iter();
+
+    while let Some(arg) = rest.next() {
+        match arg.as_str() {
+            "--schema" => schema = Some(value(&mut rest, "--schema")?),
+            "--lang" => lang = Some(value(&mut rest, "--lang")?),
+            _ if arg.starts_with("--") => return Err(format!("unknown option {arg}")),
+            _ if path.is_none() => path = Some(arg.as_str()),
+            _ => return Err(format!("unexpected argument {arg}")),
+        }
+    }
+
+    Ok((path.ok_or("check needs a path")?, schema, lang))
+}
+
+fn value<'a>(args: &mut std::slice::Iter<'a, String>, flag: &str) -> Result<&'a str, String> {
+    args.next()
+        .map(String::as_str)
+        .ok_or_else(|| format!("{flag} needs a value"))
 }
 
 pub fn load_sources(path: &Path) -> io::Result<Vec<(String, String)>> {

@@ -4,7 +4,7 @@ The `vn` command-line tool for working with `.story` files.
 
 ## Commands
 
-### `vn check <path> [--schema <schema.json>]`
+### `vn check <path> [--schema <schema.json>] [--lang <code>]`
 
 Checks stories without running the game: syntax, and, with a schema, the registries
 (variables, characters, images, command arguments) and the entry scene. Prints every
@@ -36,6 +36,30 @@ What gets checked depends on `path`:
 
 Without `--schema`, `vn check` looks for `schema.json` in `path`'s directory and each of
 its parents. With no schema anywhere it checks syntax and jump targets only, and says so.
+
+#### Translations
+
+When the project has a `lang/` directory, `vn check` ends with a line per catalog,
+counted against the story as it is now rather than as it was at the last `vn translate`:
+
+```text
+6 files, 30 scenes checked against examples/god_is_watching/assets/schema.json: 0 errors, 0 warnings
+pt-BR: 22/364 translated, 342 missing, 0 stale
+  run `vn check --lang pt-BR` to list them
+```
+
+`--lang <code>` lists them, sorted by file and line, before that summary:
+
+```text
+00_archive.story:7: missing narration translation: "October, 1903. The Archive of the House, two floors below the street."
+00_archive.story:10: missing dialogue translation: "You're the new one. Sit."
+name registrar: missing name translation: "The Registrar"
+screens: missing ui translation: "Resume"
+```
+
+Missing and stale translations don't fail the check — an untranslated line falls back to
+the source text, so a partly translated game still runs. A catalog that can't be read
+does fail, as does `--lang <code>` with no `<code>.json` to check.
 
 ### `vn dump <file.story | directory>`
 

@@ -237,3 +237,118 @@ fn dump_accepts_a_directory() {
             .any(|l| l.starts_with("scene two:") && l.ends_with("02.story:1)"))
     );
 }
+
+fn catalog(project: &Project, code: &str, json: &str) {
+    let dir = project.path("lang");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join(format!("{}.json", code)), json).unwrap();
+}
+
+fn with_a_line(project: &Project) {
+    project.story("01.story", "scene start:\n  mary \"Hi.\"\n");
+}
+
+#[test]
+fn a_catalog_is_summarised_without_asking_for_it() {
+    let project = Project::new().with_schema();
+    with_a_line(&project);
+    catalog(
+        &project,
+        "pt-BR",
+        r#"{"format_version":1,"language":"pt-BR","story":{},"names":{},"ui":{}}"#,
+    );
+
+    let (ok, lines) = check(&project.path(""));
+    assert!(ok, "{:?}", lines);
+    let summary = lines.iter().find(|l| l.starts_with("pt-BR:")).unwrap();
+    assert!(summary.contains("missing"), "{}", summary);
+    assert!(
+        lines.iter().all(|l| !l.contains("missing dialogue")),
+        "{:?}",
+        lines
+    );
+}
+
+#[test]
+fn lang_lists_every_missing_string() {
+    let project = Project::new().with_schema();
+    with_a_line(&project);
+    catalog(
+        &project,
+        "pt-BR",
+        r#"{"format_version":1,"language":"pt-BR","story":{},"names":{},"ui":{}}"#,
+    );
+
+    let (ok, lines) = vn(&[
+        Path::new("check"),
+        &project.path(""),
+        Path::new("--lang"),
+        Path::new("pt-BR"),
+    ]);
+    assert!(ok, "{:?}", lines);
+    assert!(
+        lines
+            .iter()
+            .any(|l| l.contains("01.story:2: missing dialogue translation: \"Hi.\"")),
+        "{:?}",
+        lines
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|l| l.contains("name mary: missing name translation: \"Mary\"")),
+        "{:?}",
+        lines
+    );
+}
+
+#[test]
+fn a_translated_line_is_counted_and_an_edit_makes_it_stale() {
+    let project = Project::new().with_schema();
+    with_a_line(&project);
+    let key = vn_script::translate::key("01.story", "Hi.");
+    catalog(
+        &project,
+        "pt-BR",
+        &format!(
+            r#"{{"format_version":1,"language":"pt-BR","story":{{"01.story":{{"{}":{{"kind":"dialogue","line":2,"source":"Hi.","text":"Oi."}},"stale0":{{"kind":"dialogue","line":9,"source":"Gone.","text":"Sumiu."}}}}}},"names":{{}},"ui":{{}}}}"#,
+            key
+        ),
+    );
+
+    let (ok, lines) = vn(&[
+        Path::new("check"),
+        &project.path(""),
+        Path::new("--lang"),
+        Path::new("pt-BR"),
+    ]);
+    assert!(ok, "{:?}", lines);
+    assert!(
+        lines
+            .iter()
+            .any(|l| l.contains("stale dialogue translation: \"Gone.\"")),
+        "{:?}",
+        lines
+    );
+    let summary = lines.iter().find(|l| l.starts_with("pt-BR:")).unwrap();
+    assert!(summary.contains("1 stale"), "{}", summary);
+    assert!(
+        !lines.iter().any(|l| l.contains("translation: \"Hi.\"")),
+        "{:?}",
+        lines
+    );
+}
+
+#[test]
+fn an_unknown_language_fails() {
+    let project = Project::new().with_schema();
+    with_a_line(&project);
+
+    let (ok, lines) = vn(&[
+        Path::new("check"),
+        &project.path(""),
+        Path::new("--lang"),
+        Path::new("pt-BR"),
+    ]);
+    assert!(!ok, "{:?}", lines);
+}

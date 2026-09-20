@@ -174,7 +174,7 @@ fonts and saves at once, and each of those is cheaper to change now than later.
 - [x] The engine side: `VnApp::source_language` / `language(code, label)`, `lang/<code>.json` read through `Assets` (folder or embedded), a `language` setting saved in `settings.json` and applied at startup, a Language row in the settings screen when a game ships more than one, `ctx.set_language` / `apply_language`, and a hot reload that keeps it. Changing language re-renders the line being read
 - [x] Translatable UI labels: every string the default screens show goes through `ctx.label` / `ctx.message` and is looked up in the catalog's `ui` section by its English text, so a game's own labels and notifications are translatable with nothing to declare. A debug build writes `lang/ui.json` (what the game actually shows, read from the live configs) and `vn translate` folds it into the catalog; `VnApp::ui_text` adds strings a game builds itself
 - [ ] Fonts per language with a fallback chain, and wrapping for scripts without spaces (CJK)
-- [ ] `vn check` reports missing and stale translations for a language
+- [x] `vn check` reports missing and stale translations for a language: a line per catalog in `lang/`, counted against the story as it is now, and `--lang <code>` lists each one with its file and line
 - [ ] Saves stay language-independent: store ids, not translated text, so the session log and save slots re-render in whatever language is active. Also the save slots' time stamps ("5 minutes ago"), which are built in `data/saves` without a context
 
 ## M9: UI and presentation
