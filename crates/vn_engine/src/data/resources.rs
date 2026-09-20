@@ -1,4 +1,4 @@
-use crate::assets::{Assets, extension_of};
+use crate::data::assets::{Assets, extension_of};
 use crate::{FontRole, FontVariant, Fonts};
 use raylib::{
     RaylibHandle, RaylibThread,

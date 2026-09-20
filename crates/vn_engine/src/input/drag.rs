@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::hit::{Highlight, LabelStyle, Shape};
+use crate::input::hit::{Highlight, LabelStyle, Shape};
 use crate::{DrawContext, Focus, GameContext, GameView};
 
 type EnabledCheck = Rc<dyn Fn(&GameView) -> bool>;
@@ -250,11 +250,11 @@ impl DragBoard {
     }
 
     pub fn item_at(&self, area: Rectangle, point: Vector2) -> Option<usize> {
-        crate::hit::pick(self.items.iter().map(|item| &item.shape), area, point)
+        crate::input::hit::pick(self.items.iter().map(|item| &item.shape), area, point)
     }
 
     pub fn target_at(&self, area: Rectangle, point: Vector2) -> Option<usize> {
-        crate::hit::pick(self.targets.iter().map(|target| &target.shape), area, point)
+        crate::input::hit::pick(self.targets.iter().map(|target| &target.shape), area, point)
     }
 
     pub fn offset(&self, item: usize) -> Vector2 {
@@ -361,7 +361,7 @@ impl DragBoard {
     pub fn update(&mut self, ctx: &mut GameContext, area: Rectangle) -> Option<Dropped> {
         self.load(ctx);
 
-        let pointer = crate::viewport::mouse_position(ctx.rl);
+        let pointer = crate::frame::viewport::mouse_position(ctx.rl);
         let released = ctx
             .rl
             .is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT);
@@ -506,7 +506,7 @@ impl DragBoard {
 
     pub fn draw(&self, d: &mut RaylibDrawHandle, ctx: &DrawContext, area: Rectangle) {
         let view = ctx.view();
-        let pointer = crate::viewport::mouse_position(d);
+        let pointer = crate::frame::viewport::mouse_position(d);
         let enabled: Vec<bool> = self
             .items
             .iter()

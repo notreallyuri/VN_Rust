@@ -3,7 +3,7 @@ use std::f32::consts::FRAC_PI_2;
 use raylib::ffi;
 use raylib::prelude::*;
 
-use crate::button::{Border, Shadow};
+use crate::ui::button::{Border, Shadow};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum CornerShape {
@@ -308,7 +308,7 @@ fn inset_corners(corners: &Corners, rect: Rectangle, inset: f32) -> Corners {
 }
 
 fn segments(corner: &Corner) -> usize {
-    let scale = crate::viewport::render_scale().max(1.0);
+    let scale = crate::frame::viewport::render_scale().max(1.0);
     ((corner.size * scale / 1.2).ceil() as usize).clamp(8, 96)
 }
 

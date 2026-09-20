@@ -5,8 +5,8 @@ use raylib::prelude::*;
 
 use super::actions::{delete_slot, load_from, save_to, slot_label};
 use super::{SaveMenuConfig, SaveMenuMode};
-use crate::saves::SaveError;
-use crate::saves::{AUTO_SLOT, QUICK_SLOT, SlotInfo, now, time_ago};
+use crate::data::saves::SaveError;
+use crate::data::saves::{AUTO_SLOT, QUICK_SLOT, SlotInfo, now, time_ago};
 use crate::screens::Confirm;
 use crate::ui;
 use crate::{Action, DrawContext, Focus, GameContext, ScreenState};

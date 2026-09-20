@@ -1,6 +1,6 @@
 use raylib::prelude::*;
 
-use crate::target::RenderTarget;
+use crate::frame::target::RenderTarget;
 
 pub const GRAIN: &str = r#"#version 330
 in vec2 fragTexCoord;

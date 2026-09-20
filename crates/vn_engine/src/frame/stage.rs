@@ -3,8 +3,8 @@ use std::collections::{BTreeMap, HashMap};
 use raylib::prelude::*;
 use vn_script::{Event, StoryVm, Transition, TransitionKind};
 
-use crate::ease::{Easing, lerp};
 use crate::screens::PlayingConfig;
+use crate::ui::ease::{Easing, lerp};
 use crate::ui::{self, Background};
 use crate::{ResourceManager, background_path, character_path};
 

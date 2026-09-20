@@ -1,4 +1,4 @@
-use crate::styled::StyledText;
+use crate::ui::styled::StyledText;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Typewriter {

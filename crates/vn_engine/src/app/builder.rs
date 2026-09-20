@@ -6,7 +6,7 @@ use raylib::prelude::*;
 use vn_script::{SCHEMA_FILE_NAME, VariableDef};
 
 use super::{OverlayBuilder, ScreenBuilder};
-use crate::screen_transition::ScreenTransitionConfig;
+use crate::frame::screen_transition::ScreenTransitionConfig;
 use crate::screens::{
     ConfirmConfig, KeybindsConfig, LogConfig, MainMenuConfig, PauseMenuConfig, PlayingConfig,
     SaveMenuConfig, SettingsConfig, StartScreenConfig, TextInputConfig,

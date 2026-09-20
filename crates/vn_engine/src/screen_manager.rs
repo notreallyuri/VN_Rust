@@ -377,9 +377,9 @@ impl ScreenStateManager {
     }
 
     pub fn autosave(&self) {
-        crate::saves::autosave(
+        crate::data::saves::autosave(
             &self.saves,
-            crate::saves::SaveParts {
+            crate::data::saves::SaveParts {
                 story: &self.story,
                 state: &self.state,
                 rollback: &self.rollback,
@@ -393,7 +393,7 @@ impl ScreenStateManager {
         flush_batch();
         let image = d.load_image_from_screen(thread);
         let dir = self.saves.dir().join("screenshots");
-        let path = dir.join(format!("screenshot-{}.png", crate::saves::now()));
+        let path = dir.join(format!("screenshot-{}.png", crate::data::saves::now()));
         let written = std::fs::create_dir_all(&dir).is_ok() && {
             image.export_image(&path.to_string_lossy());
             path.exists()

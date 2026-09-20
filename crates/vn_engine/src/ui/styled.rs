@@ -1,8 +1,8 @@
 use raylib::prelude::*;
 use vn_script::markup::{self, Span};
 
-use crate::fonts::Fonts;
 use crate::ui::TextStyle;
+use crate::ui::fonts::Fonts;
 
 pub const LINE_SPACING: f32 = 1.3;
 

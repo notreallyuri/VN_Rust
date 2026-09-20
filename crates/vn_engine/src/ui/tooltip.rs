@@ -119,7 +119,7 @@ pub fn draw_tooltip(d: &mut RaylibDrawHandle, fonts: &Fonts, text: &str, config:
         lines.len() as f32 * line_height + config.padding * 2.0 - (line_height - style.size);
 
     let screen = ui::screen_size(d);
-    let mouse = crate::viewport::mouse_position(d);
+    let mouse = crate::frame::viewport::mouse_position(d);
     let mut x = mouse.x + config.offset.x;
     let mut y = mouse.y + config.offset.y;
     if x + width > screen.x - 4.0 {

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use raylib::core::audio::{Music, RaylibAudio, Sound};
 
-use crate::assets::{Assets, extension_of};
+use crate::data::assets::{Assets, extension_of};
 
 pub const AUDIO_EXTENSIONS: [&str; 4] = ["ogg", "mp3", "wav", "flac"];
 

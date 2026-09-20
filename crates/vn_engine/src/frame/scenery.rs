@@ -2,7 +2,7 @@ use std::f64::consts::TAU;
 
 use raylib::prelude::*;
 
-use crate::shape::{self, Corners, Gradient, GradientDirection};
+use crate::ui::shape::{self, Corners, Gradient, GradientDirection};
 use crate::ui::{self, Background};
 use crate::{Border, ResourceManager};
 

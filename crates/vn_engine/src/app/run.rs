@@ -5,8 +5,8 @@ use raylib::prelude::*;
 use vn_script::SCHEMA_FILE_NAME;
 
 use super::{AppError, DefaultScreens, VnApp};
-use crate::screen_transition::ScreenTransition;
-use crate::target::RenderTarget;
+use crate::frame::screen_transition::ScreenTransition;
+use crate::frame::target::RenderTarget;
 use crate::{
     Audio, Navigation, Rollback, SETTINGS_FILE_NAME, ScreenStateManager, ScriptErrors, SeenLines,
     SettingsStore, StoryWatcher,
@@ -157,15 +157,15 @@ impl VnApp {
                 (layout.1 as f32 * self.render_scale).round() as i32,
             );
             target.resize(&mut rl, &thread, drawn);
-            let destination = crate::target::destination(layout, screen);
+            let destination = crate::frame::target::destination(layout, screen);
             if target.frame().is_some() {
-                crate::viewport::set_render_scale(self.render_scale);
-                crate::viewport::set(crate::Viewport {
+                crate::frame::viewport::set_render_scale(self.render_scale);
+                crate::frame::viewport::set(crate::Viewport {
                     size: layout,
                     destination,
                 });
             } else {
-                crate::viewport::clear();
+                crate::frame::viewport::clear();
             }
 
             manager.update(&mut rl, &thread);
@@ -184,7 +184,7 @@ impl VnApp {
                 Some(frame) => {
                     if starting {
                         if let Some(previous) = snapshot.frame_mut() {
-                            crate::target::copy_into(&mut d, &thread, frame, previous, size);
+                            crate::frame::target::copy_into(&mut d, &thread, frame, previous, size);
                         }
                         transition = ScreenTransition::start(self.screen_transition, now);
                     }

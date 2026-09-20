@@ -1,5 +1,5 @@
 use crate::GameContext;
-use crate::saves::{AUTO_SLOT, QUICK_SLOT};
+use crate::data::saves::{AUTO_SLOT, QUICK_SLOT};
 
 pub(super) fn save_to(ctx: &mut GameContext, slot: &str) {
     match ctx.save(slot) {

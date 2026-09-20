@@ -117,10 +117,10 @@ impl GameContext<'_> {
     }
 
     pub fn save(&mut self, slot: &str) -> Result<(), SaveError> {
-        crate::saves::save_game(
+        crate::data::saves::save_game(
             self.saves,
             slot,
-            crate::saves::SaveParts {
+            crate::data::saves::SaveParts {
                 story: self.story,
                 state: self.state,
                 rollback: self.rollback,
@@ -165,7 +165,7 @@ impl GameContext<'_> {
 
     pub fn load(&mut self, slot: &str) -> Result<LoadReport, SaveError> {
         let file = self.saves.read(slot)?;
-        let report = crate::saves::apply(&file, self.story, self.state)?;
+        let report = crate::data::saves::apply(&file, self.story, self.state)?;
         self.log.replace(file.log.clone());
         self.modes.skip = false;
 

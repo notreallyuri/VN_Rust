@@ -5,8 +5,8 @@ use raylib::ffi;
 use raylib::prelude::*;
 
 use crate::PanelStyle;
-use crate::scroll::{Scroll, ScrollStyle};
-use crate::styled::{self, StyledLine, StyledText};
+use crate::ui::scroll::{Scroll, ScrollStyle};
+use crate::ui::styled::{self, StyledLine, StyledText};
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{DrawContext, Focus, FontRole, GameContext, LogEntry, Overlay, OverlayAction};
 

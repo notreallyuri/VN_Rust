@@ -1,4 +1,4 @@
-use crate::ease::{Easing, Tween};
+use crate::ui::ease::{Easing, Tween};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ScreenTransitionKind {

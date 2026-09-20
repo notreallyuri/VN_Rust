@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::io;
 
-const BUILTIN_FONT: &[u8] = include_bytes!("../assets/fonts/NotoSans-Regular.ttf");
+const BUILTIN_FONT: &[u8] = include_bytes!("../../assets/fonts/NotoSans-Regular.ttf");
 const RASTER_SIZE: i32 = 64;
 const GLYPH_RANGES: &[(i32, i32)] = &[
     (0x20, 0x7E),
@@ -70,7 +70,7 @@ impl Fonts {
             return true;
         }
 
-        let extension = crate::assets::extension_of(file);
+        let extension = crate::data::assets::extension_of(file);
         match data.and_then(|data| load_font_from_memory(rl, thread, &extension, &data)) {
             Ok(font) => {
                 println!("📥 Loaded font: {}", file);

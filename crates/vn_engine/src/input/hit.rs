@@ -1,6 +1,6 @@
 use raylib::prelude::*;
 
-use crate::shape;
+use crate::ui::shape;
 use crate::ui::{self, TextStyle};
 use crate::{Border, DrawContext, FontRole, PanelStyle};
 

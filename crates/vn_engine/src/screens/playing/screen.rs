@@ -4,8 +4,8 @@ use raylib::prelude::*;
 use vn_script::Event;
 
 use super::{PlayingConfig, Typewriter};
-use crate::styled::StyledText;
 use crate::ui;
+use crate::ui::styled::StyledText;
 use crate::{
     Action, DrawContext, Focus, GameContext, LogEntry, Screen, ScreenState, Stage, background_path,
     character_path,
@@ -351,7 +351,7 @@ impl Screen for PlayingScreen {
                     }
                 }
 
-                crate::styled::draw(
+                crate::ui::styled::draw(
                     d,
                     fonts,
                     &StyledText::parse(text),

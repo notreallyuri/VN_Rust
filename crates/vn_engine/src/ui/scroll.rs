@@ -118,7 +118,7 @@ impl Scroll {
     }
 
     pub fn input(&mut self, rl: &RaylibHandle, area: Rectangle, style: &ScrollStyle) {
-        let mouse = crate::viewport::mouse_position(rl);
+        let mouse = crate::frame::viewport::mouse_position(rl);
 
         if let Some(thumb) = self.thumb(area, style) {
             let bar = self.bar(area, style).unwrap_or(thumb);

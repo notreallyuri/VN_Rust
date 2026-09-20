@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::hit::{Highlight, LabelStyle, Shape};
+use crate::input::hit::{Highlight, LabelStyle, Shape};
 use crate::{Action, DrawContext, Focus, GameContext, GameView, ResourceManager, ScreenState};
 
 type EnabledCheck = Rc<dyn Fn(&GameView) -> bool>;
@@ -190,7 +190,7 @@ impl ImageMap {
     }
 
     pub fn hovered_at(&self, area: Rectangle, point: Vector2) -> Option<usize> {
-        crate::hit::pick(
+        crate::input::hit::pick(
             self.hotspots.iter().map(|hotspot| &hotspot.shape),
             area,
             point,
@@ -263,7 +263,7 @@ impl ImageMap {
             .iter()
             .map(|hotspot| hotspot.is_enabled(&view))
             .collect();
-        let pointer = crate::viewport::mouse_position(ctx.rl);
+        let pointer = crate::frame::viewport::mouse_position(ctx.rl);
         let hovered = self.topmost(area, pointer, &enabled);
 
         if hovered != self.entered {
@@ -328,7 +328,7 @@ impl ImageMap {
             .iter()
             .map(|hotspot| hotspot.is_enabled(&view))
             .collect();
-        let pointer = crate::viewport::mouse_position(d);
+        let pointer = crate::frame::viewport::mouse_position(d);
         let hovered = match ctx.interactive {
             true => self.topmost(area, pointer, &enabled),
             false => None,

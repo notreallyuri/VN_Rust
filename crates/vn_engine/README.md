@@ -1885,22 +1885,38 @@ Behavior:
 
 ## Source layout
 
-Most modules are one file at the crate root; the ones that grew past a few hundred lines
-are folders whose `mod.rs` only wires the parts together and re-exports them, so
-`vn_engine::ButtonStyle` (and every other name) resolves exactly as before.
+The crate root holds what everything else hangs off — the app, the screen manager, the
+contexts a screen is handed — and the rest is grouped by what it does:
 
 | Path | Holds |
 | --- | --- |
+| `lib.rs`, `app/`, `screen_manager.rs`, `context.rs`, `screen.rs`, `overlay.rs`, `action.rs` | The loop, and what it hands a screen each frame |
+| `ui/` | Drawing. `mod.rs` is the `ui` helpers themselves (text, backgrounds, sliders, hit tests), beside `button/`, `shape.rs`, `layout.rs`, `styled.rs`, `fonts.rs`, `ease.rs`, `scroll.rs`, `tooltip.rs`, `toast.rs` |
+| `input/` | `navigation.rs` (focus, keys, gamepad), `hit.rs` (shapes and picking), `image_map.rs`, `drag.rs` |
+| `frame/` | The picture: `target.rs`, `viewport.rs`, `post.rs`, `effects.rs`, `screen_transition.rs`, `scenery.rs`, `stage.rs` |
+| `data/` | What persists: `saves/`, `session.rs`, `rollback.rs`, `state.rs`, `settings.rs`, `assets.rs`, `resources.rs` |
+| `game/` | What a game registers, and the story's side effects: `characters.rs`, `commands.rs`, `hooks.rs`, `audio.rs`, `hot_reload.rs`, `script_errors.rs` |
+| `screens/` | One module per default screen |
+
+A group's `mod.rs` only declares its modules; `lib.rs` re-exports both the modules and
+the names they hold, so `vn_engine::ButtonStyle`, `vn_engine::ui::draw_text`,
+`vn_engine::post::GRAIN` and `vn_engine::saves::SaveFile` all resolve whatever folder the
+file sits in. Inside the crate, code uses the grouped path (`crate::ui::shape`).
+
+Modules that grew past a few hundred lines are folders whose `mod.rs` wires the parts
+together and re-exports them:
+
+| Path | Parts |
+| --- | --- |
 | `app/` | `builder.rs` is the `VnApp` builder, `check.rs` the schema export and story/art validation, `run.rs` the window and the game loop, `screens.rs` the default `ScreenFactory`, `error.rs` `AppError` |
-| `button/` | `style.rs` (`ButtonStyle`, `ButtonLook`), `decor.rs` (borders, shadows, images, icons), `transform.rs` (scale/rotate/skew and its hit test), `look.rs` (the blended `Look`), `anim.rs` (hover and press state), `draw.rs` (`Button`, `draw_button`) |
-| `saves/` | `store.rs` is `Saves` (slots, files, thumbnails), `file.rs` the `SaveFile` and applying one, `migrate.rs` the version steps, `dirs.rs` where saves live, `error.rs` the errors and warnings |
-| `screens/` | One module per default screen. The big ones are folders: `playing/` (`config.rs`, `screen.rs`, `flow.rs`, `typewriter.rs`, `keys.rs`, `style.rs`), `settings/` (`config.rs`, `values.rs`, `layout.rs`, `menu.rs`, `screen.rs`) and `save_menu/` (`config.rs`, `menu.rs`, `actions.rs`, `screen.rs`). Each `config.rs` is the builder a game configures; `menu.rs`/`screen.rs` is what runs |
-| Drawing | `ui.rs`, `shape.rs`, `layout.rs`, `styled.rs`, `fonts.rs`, `ease.rs`, `scroll.rs`, `tooltip.rs`, `toast.rs` |
-| Input | `navigation.rs` (focus, keys, gamepad), `hit.rs` (shapes and picking), `image_map.rs`, `drag.rs` |
-| The frame | `target.rs`, `viewport.rs`, `post.rs`, `effects.rs`, `screen_transition.rs`, `scenery.rs`, `stage.rs` |
-| State | `saves/`, `session.rs`, `rollback.rs`, `state.rs`, `settings.rs`, `assets.rs`, `resources.rs` |
-| The game | `characters.rs`, `commands.rs`, `hooks.rs`, `audio.rs`, `hot_reload.rs`, `script_errors.rs` |
-| The loop | `app/`, `screen_manager.rs`, `context.rs`, `screen.rs`, `overlay.rs`, `action.rs` |
+| `ui/button/` | `style.rs` (`ButtonStyle`, `ButtonLook`), `decor.rs` (borders, shadows, images, icons), `transform.rs` (scale/rotate/skew and its hit test), `look.rs` (the blended `Look`), `anim.rs` (hover and press state), `draw.rs` (`Button`, `draw_button`) |
+| `data/saves/` | `store.rs` is `Saves` (slots, files, thumbnails), `file.rs` the `SaveFile` and applying one, `migrate.rs` the version steps, `dirs.rs` where saves live, `error.rs` the errors and warnings |
+| `screens/playing/` | `config.rs`, `screen.rs`, `flow.rs`, `typewriter.rs`, `keys.rs`, `style.rs` |
+| `screens/settings/` | `config.rs`, `values.rs`, `layout.rs`, `menu.rs`, `screen.rs` |
+| `screens/save_menu/` | `config.rs`, `menu.rs`, `actions.rs`, `screen.rs` |
+
+Each screen's `config.rs` is the builder a game configures; `menu.rs` / `screen.rs` is
+what runs.
 
 ## Tests
 

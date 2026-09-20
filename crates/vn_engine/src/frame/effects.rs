@@ -2,7 +2,7 @@ use std::f32::consts::TAU;
 
 use raylib::prelude::*;
 
-use crate::ease::Tween;
+use crate::ui::ease::Tween;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ScreenEffectsConfig {

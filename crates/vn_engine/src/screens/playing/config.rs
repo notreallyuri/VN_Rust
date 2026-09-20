@@ -5,7 +5,7 @@ use vn_script::Position;
 
 use super::{DialogueBoxStyle, PlayingKeys};
 use crate::screens::{LOG_OVERLAY, PAUSE_OVERLAY};
-use crate::styled::StyledText;
+use crate::ui::styled::StyledText;
 use crate::ui::{Background, ButtonStyle, TextStyle};
 use crate::{Action, Anchor, FontRole, Layout, PanelStyle, ScreenState, StyleOverride};
 

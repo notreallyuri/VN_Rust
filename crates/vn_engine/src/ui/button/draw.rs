@@ -7,7 +7,7 @@ use super::{
     Transform, button_key, faded, step_amount,
 };
 use crate::DrawContext;
-use crate::shape::{self, Corners};
+use crate::ui::shape::{self, Corners};
 use crate::ui::{TextStyle, fit_text};
 
 pub fn draw_button(
@@ -65,7 +65,7 @@ impl<'a> Button<'a> {
         let style = self.style;
         let hovered = ctx.interactive
             && !self.disabled
-            && style.contains(rect, crate::viewport::mouse_position(d));
+            && style.contains(rect, crate::frame::viewport::mouse_position(d));
         let held = d.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT);
         let target = StateAmounts {
             hover: f32::from(u8::from(hovered)),
@@ -308,7 +308,7 @@ fn draw_content(
             && line.color.a > 0
         {
             let under = Rectangle::new(x, y + text.size + 3.0, *width, line.width);
-            crate::shape::fill(
+            crate::ui::shape::fill(
                 under,
                 &crate::Corners::SQUARE,
                 faded(line.color, look.opacity),

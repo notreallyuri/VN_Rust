@@ -7,7 +7,7 @@ use super::{
     Border, ButtonIcon, ButtonImage, Look, Shadow, StateAmounts, TextAlign, TextOverflow, Transform,
 };
 use crate::FontRole;
-use crate::shape::Corners;
+use crate::ui::shape::Corners;
 use crate::ui::{TextStyle, lighten};
 
 #[derive(Clone, Debug, Default, PartialEq)]

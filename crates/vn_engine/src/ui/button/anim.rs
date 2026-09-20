@@ -44,12 +44,12 @@ pub fn step_amount(current: f32, target: f32, dt: f32, seconds: f32) -> f32 {
 }
 
 pub fn button_hovered(rl: &RaylibHandle, rect: Rectangle, style: &ButtonStyle) -> bool {
-    style.contains(rect, crate::viewport::mouse_position(rl))
+    style.contains(rect, crate::frame::viewport::mouse_position(rl))
 }
 
 pub fn button_clicked(ctx: &mut GameContext, rect: Rectangle, style: &ButtonStyle) -> bool {
     let rl = &*ctx.rl;
-    let mouse = crate::viewport::mouse_position(rl);
+    let mouse = crate::frame::viewport::mouse_position(rl);
     let hovered = style.contains(rect, mouse);
     let key = rect_key(rect);
 

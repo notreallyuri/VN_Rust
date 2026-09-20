@@ -46,7 +46,7 @@ impl PlayingScreen {
                 | Event::Background { .. }) => {
                     let now = ctx.rl.get_time();
                     self.stage.apply(&event, ctx.story, &self.config, now);
-                    match crate::stage::effect_of(&event) {
+                    match crate::frame::stage::effect_of(&event) {
                         Some((TransitionKind::Shake, seconds)) => ctx.shake(seconds),
                         Some((TransitionKind::Flash, seconds)) => ctx.flash(seconds),
                         _ => {}

@@ -1,7 +1,7 @@
 use std::fmt;
 use std::rc::Rc;
 
-use crate::saves::QUICK_SLOT;
+use crate::data::saves::QUICK_SLOT;
 use crate::screens::Confirm;
 use crate::{GameContext, ScreenState};
 

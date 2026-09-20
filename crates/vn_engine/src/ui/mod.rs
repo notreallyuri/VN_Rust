@@ -1,7 +1,17 @@
+pub mod button;
+pub mod ease;
+pub mod fonts;
+pub mod layout;
+pub mod scroll;
+pub mod shape;
+pub mod styled;
+pub mod toast;
+pub mod tooltip;
+
 use raylib::prelude::*;
 
-pub use crate::button::*;
 use crate::{FontRole, Fonts, GameContext, ResourceManager};
+pub use button::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextStyle {
@@ -172,7 +182,7 @@ pub fn lighten(color: Color) -> Color {
 }
 
 pub fn is_hovered(rl: &RaylibHandle, rect: Rectangle) -> bool {
-    rect.check_collision_point_rec(crate::viewport::mouse_position(rl))
+    rect.check_collision_point_rec(crate::frame::viewport::mouse_position(rl))
 }
 
 pub fn is_clicked(rl: &RaylibHandle, rect: Rectangle) -> bool {
@@ -281,7 +291,7 @@ pub fn fit_text(fonts: &Fonts, style: &TextStyle, text: &str, max_width: f32) ->
 }
 
 pub fn screen_size(rl: &RaylibHandle) -> Vector2 {
-    crate::viewport::size(rl)
+    crate::frame::viewport::size(rl)
 }
 
 pub fn load_background(ctx: &mut GameContext, background: Option<&Background>) {
