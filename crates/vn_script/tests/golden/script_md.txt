@@ -134,7 +134,18 @@ scene example:  (line 1)
 > Say { speaker: Some("mary"), text: "The sign says \"Closed\"." }
 > End
 
-======== SCRIPT.md:245  4.3 Example
+======== SCRIPT.md:232  3.8 Text tags
+scene example:
+  registrar "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street."
+-------- instructions
+scene example:  (line 1)
+000: SAY [registrar]: "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street."
+001: END
+-------- events
+> Say { speaker: Some("registrar"), text: "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street." }
+> End
+
+======== SCRIPT.md:270  4.3 Example
 scene example:
   choice:
     "Agree":
@@ -159,7 +170,7 @@ scene example:  (line 1)
 > Say { speaker: None, text: "You nod silently." }
 > End
 
-======== SCRIPT.md:324  7. Full Minimal Example (Valid script)
+======== SCRIPT.md:349  7. Full Minimal Example (Valid script)
 scene start:
   show gabriel serious
 
@@ -209,7 +220,7 @@ scene second_scene:  (line 18)
 > Say { speaker: None, text: "Things just got darker." }
 > End
 
-======== SCRIPT.md:404  8.2.3 Examples
+======== SCRIPT.md:429  8.2.3 Examples
 scene example:
   set met_mary = true
   set route = good
@@ -223,7 +234,7 @@ scene example:  (line 1)
 -------- events
 > End
 
-======== SCRIPT.md:413  8.2.3 Examples
+======== SCRIPT.md:438  8.2.3 Examples
 scene example:
   call ask_name player_name
   mary "Nice to meet you, {player_name}."
@@ -237,7 +248,7 @@ scene example:  (line 1)
 > Say { speaker: Some("mary"), text: "Nice to meet you, {player_name}." }
 > End
 
-======== SCRIPT.md:437  8.3.2 Examples
+======== SCRIPT.md:462  8.3.2 Examples
 scene example:
   add affection += 1
   add affection -= 2
@@ -249,7 +260,7 @@ scene example:  (line 1)
 -------- events
 > End
 
-======== SCRIPT.md:479  8.4.2 Example
+======== SCRIPT.md:504  8.4.2 Example
 scene example:
   if affection >= 3 && met_mary == true:
     mary "You remembered."
@@ -266,7 +277,7 @@ scene example:  (line 1)
 > Say { speaker: Some("mary"), text: "You forgot." }
 > End
 
-======== SCRIPT.md:518  8.8 Minimal Example (Variables + Choices)
+======== SCRIPT.md:543  8.8 Minimal Example (Variables + Choices)
 scene start:
   if met_mary == true:
     mary "Nice to see you again."
@@ -298,7 +309,7 @@ scene start:  (line 1)
 > Choice { options: ["Be kind", "Say nothing"] }
 > End
 
-======== SCRIPT.md:562  9.3 Example
+======== SCRIPT.md:587  9.3 Example
 scene example:
   call give_item stick 1
   call unlock_route good
@@ -312,7 +323,7 @@ scene example:  (line 1)
 > Call { command: "unlock_route", args: ["good"] }
 > End
 
-======== SCRIPT.md:575  10.1 Commit
+======== SCRIPT.md:600  10.1 Commit
 scene example:
   commit
 -------- instructions
@@ -323,7 +334,7 @@ scene example:  (line 1)
 > Commit
 > End
 
-======== SCRIPT.md:584  10.2 Final choices
+======== SCRIPT.md:609  10.2 Final choices
 scene example:
   choice final:
     "Keep the letter":
@@ -346,7 +357,7 @@ scene example:  (line 1)
 > Say { speaker: None, text: "..." }
 > End
 
-======== SCRIPT.md:603  10.3 Rules
+======== SCRIPT.md:628  10.3 Rules
 scene example:
   choice:
     "Spare him":

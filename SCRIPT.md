@@ -216,6 +216,31 @@ mary "The sign says \"Closed\"."
 Any other `\` is an error. Nothing may follow the closing quote (except the `:` of a
 choice option).
 
+### 3.8 Text tags
+
+Dialogue, narration and choice text can carry tags in square brackets. Variables stay in
+braces (`{name}`), so the two never collide.
+
+| Tag | Effect |
+|---|---|
+| `[b]…[/b]` | Bold |
+| `[i]…[/i]` | Italic |
+| `[color=#c8a165]…[/color]` | Colour, six hex digits |
+| `[size=34]…[/size]` | Text size in pixels |
+| `[w]` / `[w=0.75]` | Hold the typewriter there, half a second by default |
+
+```story
+registrar "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street."
+```
+
+Tags nest, and `[[` writes a literal `[`. An unknown tag, a bad colour or size, and a
+closing tag that closes nothing are errors; a tag left open is a warning and ends with
+the line. Choice buttons show the text with its tags stripped.
+
+Italic needs an italic font registered for the role (`VnApp::font_variant`); without one
+the text is drawn in the regular face. Bold uses a bold font the same way, and is drawn
+twice with a small offset when there is none.
+
 ## 4. Choices (branching)
 
 ### 4.1 Choice block

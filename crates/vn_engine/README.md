@@ -312,6 +312,30 @@ Screenshots and save thumbnails capture while the target is still bound, so they
 reading the game image (`tests/target.rs` covers this with a windowed test, run with
 `--include-ignored`).
 
+## Text tags
+
+Dialogue, narration and the log render the tags described in SCRIPT.md 3.8: `[b]`, `[i]`,
+`[color=#rrggbb]`, `[size=N]` and `[w]`. `StyledText::parse` turns a line into spans,
+`styled::wrap` lays them out (a line is as tall as its largest span), and `styled::draw`
+reveals them character by character for the typewriter, counting only visible characters,
+never the tags.
+
+```rust
+let text = StyledText::parse("[b]Mary[/b] said [color=#ff0000]no[/color].");
+styled::draw(d, fonts, &text, position, max_width, &style, visible);
+```
+
+Bold and italic use a registered font when there is one:
+
+```rust
+VnApp::new("My Game")
+    .font(FontRole::Dialogue, "NotoSerif-Regular.ttf")
+    .font_variant(FontRole::Dialogue, FontVariant::Italic, "NotoSerif-Italic.ttf")
+```
+
+Without a bold font the text is drawn twice with a small offset; without an italic font
+it is drawn in the regular face.
+
 ## Resolution independence
 
 By default the render target matches the window, so a screen laid out with

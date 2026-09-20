@@ -26,10 +26,10 @@ use crate::screens::{
 use crate::target::RenderTarget;
 use crate::{
     Assets, Audio, AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, EmbeddedFile,
-    FontRole, FromArgs, GameContext, GameState, Hooks, Migrations, Navigation, NavigationConfig,
-    Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, SaveMigration, Saves, Screen,
-    ScreenFactory, ScreenState, ScreenStateManager, ScriptErrors, SettingsStore, StoryLoader,
-    StoryWatcher, ToastConfig, TooltipConfig,
+    FontRole, FontVariant, FromArgs, GameContext, GameState, Hooks, Migrations, Navigation,
+    NavigationConfig, Overlay, Rollback, RollbackConfig, SETTINGS_FILE_NAME, SaveMigration, Saves,
+    Screen, ScreenFactory, ScreenState, ScreenStateManager, ScriptErrors, SettingsStore,
+    StoryLoader, StoryWatcher, ToastConfig, TooltipConfig,
 };
 
 type ScreenBuilder = Box<dyn Fn() -> Box<dyn Screen>>;
@@ -47,6 +47,7 @@ pub struct VnApp {
     schema_file: Option<PathBuf>,
     initial_screen: ScreenState,
     fonts: Vec<(FontRole, String)>,
+    font_variants: Vec<(FontRole, FontVariant, String)>,
     start: StartScreenConfig,
     menu: MainMenuConfig,
     playing: PlayingConfig,
@@ -141,6 +142,7 @@ impl VnApp {
             schema_file: Some(PathBuf::from(SCHEMA_FILE_NAME)),
             initial_screen: ScreenState::StartScreen,
             fonts: Vec::new(),
+            font_variants: Vec::new(),
             start: StartScreenConfig::default(),
             menu: MainMenuConfig::default(),
             playing: PlayingConfig::default(),
@@ -175,6 +177,16 @@ impl VnApp {
             screen_transition: ScreenTransitionConfig::default(),
             design_size: None,
         }
+    }
+
+    pub fn font_variant(
+        mut self,
+        role: FontRole,
+        variant: FontVariant,
+        file: impl Into<String>,
+    ) -> Self {
+        self.font_variants.push((role, variant, file.into()));
+        self
     }
 
     pub fn design_size(mut self, width: i32, height: i32) -> Self {
@@ -599,6 +611,12 @@ impl VnApp {
 
         for (role, file) in &self.fonts {
             manager.resources.set_font(&mut rl, &thread, *role, file);
+        }
+
+        for (role, variant, file) in &self.font_variants {
+            manager
+                .resources
+                .set_font_variant(&mut rl, &thread, *role, *variant, file);
         }
 
         let mut target = RenderTarget::new();

@@ -184,7 +184,8 @@ else draws through, so it is cheaper now; the rest is additive.
 
 ### Foundations
 
-- [ ] Inline text markup (`{b}`, `{i}`, `{color=...}`, `{size=...}`, `{w}` waits, ruby text for furigana), parsed into styled spans in `vn_script` so `vn check` validates tags. Touches `Fonts::wrap`, `ui::draw_text_wrapped`, the typewriter (reveal across spans) and the log at once, and translated lines carry the same tags, so it belongs with M8
+- [x] Inline text markup: `[b]`, `[i]`, `[color=#rrggbb]`, `[size=N]` and `[w]` waits, parsed into spans in `vn_script::markup` and validated by `vn check`; span-aware wrapping, drawing, typewriter and log in the engine, with bold/italic font variants (`VnApp::font_variant`). Square brackets because `{...}` is variable interpolation
+  - [ ] Ruby text for furigana, left out of the first pass
 - [x] Draw the game to a `RenderTexture` instead of straight to the screen (`RenderTarget` in `target.rs`), recreated on resize, with a fallback to drawing to the screen; screenshots and thumbnails still capture the game image
 - [x] Screen transitions (`ScreenTransitionConfig`): crossfade (the default, 0.2s), fade through black and slide, built on a snapshot of the previous frame
 - [x] A shared easing/tween helper (`Easing`, `Tween` in `ease.rs`), used by the stage and screen transitions; buttons still have their own timing to move over

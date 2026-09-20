@@ -4,6 +4,7 @@ use raylib::prelude::*;
 use vn_script::{Event, Position};
 
 use crate::screens::{LOG_OVERLAY, PAUSE_OVERLAY};
+use crate::styled::StyledText;
 use crate::ui::{self, Background, ButtonStyle, TextStyle};
 use crate::{
     Action, Anchor, DrawContext, Focus, FontRole, GameContext, Layout, NavInput, Screen,
@@ -578,7 +579,7 @@ impl PlayingConfig {
     }
 
     pub fn auto_delay(&self, settings: &crate::Settings, text: &str) -> f64 {
-        settings.auto_seconds() + text.chars().count() as f64 * self.auto_per_character
+        settings.auto_seconds() + StyledText::parse(text).chars() as f64 * self.auto_per_character
     }
 
     pub fn pause_overlay(mut self, name: impl Into<String>) -> Self {
@@ -663,15 +664,18 @@ pub struct Typewriter {
     started: f64,
     chars_per_second: u32,
     total: usize,
+    pauses: Vec<(usize, f32)>,
     finished: bool,
 }
 
 impl Typewriter {
     pub fn start(text: &str, chars_per_second: u32, now: f64) -> Self {
+        let styled = StyledText::parse(text);
         Self {
             started: now,
             chars_per_second,
-            total: text.chars().count(),
+            total: styled.chars(),
+            pauses: styled.pauses(),
             finished: chars_per_second == 0,
         }
     }
@@ -680,17 +684,35 @@ impl Typewriter {
         Self {
             started: 0.0,
             chars_per_second: 0,
-            total: text.chars().count(),
+            total: StyledText::parse(text).chars(),
+            pauses: Vec::new(),
             finished: true,
         }
     }
 
     pub fn visible(&self, now: f64) -> usize {
-        if self.finished {
+        if self.finished || self.chars_per_second == 0 {
             return self.total;
         }
-        let elapsed = (now - self.started).max(0.0);
-        ((elapsed * self.chars_per_second as f64) as usize).min(self.total)
+
+        let speed = self.chars_per_second as f64;
+        let mut left = (now - self.started).max(0.0);
+        let mut shown = 0;
+
+        for (at, seconds) in &self.pauses {
+            let typing = (at - shown) as f64 / speed;
+            if left < typing {
+                return shown + (left * speed) as usize;
+            }
+            left -= typing;
+            shown = *at;
+            if left < *seconds as f64 {
+                return shown;
+            }
+            left -= *seconds as f64;
+        }
+
+        (shown + (left * speed) as usize).min(self.total)
     }
 
     pub fn is_done(&self, now: f64) -> bool {
@@ -1205,10 +1227,10 @@ impl Screen for PlayingScreen {
                     }
                 }
 
-                ui::draw_text_wrapped_visible(
+                crate::styled::draw(
                     d,
                     fonts,
-                    text,
+                    &StyledText::parse(text),
                     Vector2::new(inner_x, y),
                     inner_width,
                     &config.dialogue_text,
@@ -1219,7 +1241,8 @@ impl Screen for PlayingScreen {
                 let rects = config.choice_rects(options.len(), screen);
                 for (index, (option, rect)) in options.iter().zip(rects).enumerate() {
                     let style = config.choice_style_for(index, option);
-                    ui::Button::new(option, &style)
+                    let label = vn_script::markup::plain(option);
+                    ui::Button::new(&label, &style)
                         .focused(ctx.shows_focus(&self.choice_focus, index))
                         .draw(d, ctx, rect);
                 }

@@ -417,6 +417,7 @@ impl<'a> Checker<'a> {
         for name in referenced_variables(text) {
             self.variable(line, name);
         }
+        self.diagnostics.extend(crate::markup::validate(text, line));
     }
 
     fn condition(&mut self, line: usize, condition: &Condition) {

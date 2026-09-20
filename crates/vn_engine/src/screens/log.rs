@@ -6,6 +6,7 @@ use raylib::prelude::*;
 
 use crate::PanelStyle;
 use crate::scroll::{Scroll, ScrollStyle};
+use crate::styled::{self, StyledLine, StyledText};
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{DrawContext, Focus, FontRole, GameContext, LogEntry, Overlay, OverlayAction};
 
@@ -188,7 +189,7 @@ impl LogOverlay {
 
 struct Block {
     speaker: Option<(String, TextStyle)>,
-    lines: Vec<String>,
+    lines: Vec<StyledLine>,
     style: TextStyle,
 }
 
@@ -198,7 +199,12 @@ impl Block {
             .speaker
             .as_ref()
             .map_or(0.0, |(_, style)| style.size * 1.3);
-        speaker + self.lines.len() as f32 * self.style.size * 1.3
+        speaker
+            + self
+                .lines
+                .iter()
+                .map(|line| line.height(&self.style))
+                .sum::<f32>()
     }
 }
 
@@ -221,7 +227,7 @@ fn blocks(ctx: &DrawContext, config: &LogConfig, width: f32) -> Vec<Block> {
                     };
                     (name, style)
                 });
-                let lines = fonts.wrap(style.font, text, style.size, width);
+                let lines = styled::wrap(fonts, &StyledText::parse(text), &style, width);
                 Block {
                     speaker,
                     lines,
@@ -233,7 +239,7 @@ fn blocks(ctx: &DrawContext, config: &LogConfig, width: f32) -> Vec<Block> {
                 let text = format!("{}{}", config.choice_prefix, text);
                 Block {
                     speaker: None,
-                    lines: fonts.wrap(style.font, &text, style.size, width),
+                    lines: styled::wrap(fonts, &StyledText::parse(&text), &style, width),
                     style,
                 }
             }
@@ -347,8 +353,8 @@ impl Overlay for LogOverlay {
                     y += style.size * 1.3;
                 }
                 for line in &block.lines {
-                    ui::draw_text(d, fonts, line, Vector2::new(area.x, y), &block.style);
-                    y += block.style.size * 1.3;
+                    styled::draw_line(d, fonts, line, Vector2::new(area.x, y), &block.style);
+                    y += line.height(&block.style);
                 }
             }
             bottom = top - config.entry_spacing;

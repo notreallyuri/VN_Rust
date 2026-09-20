@@ -1,5 +1,5 @@
 use crate::assets::{Assets, extension_of};
-use crate::{FontRole, Fonts};
+use crate::{FontRole, FontVariant, Fonts};
 use raylib::{
     RaylibHandle, RaylibThread,
     color::Color,
@@ -49,6 +49,22 @@ impl ResourceManager {
         let data = self.assets.read(&path);
         let source = self.assets.describe(&path);
         self.fonts.assign(rl, thread, data, &source, role, file);
+    }
+
+    pub fn set_font_variant(
+        &mut self,
+        rl: &mut RaylibHandle,
+        thread: &RaylibThread,
+        role: FontRole,
+        variant: FontVariant,
+        file: &str,
+    ) {
+        let path = format!("fonts/{}", file);
+        let data = self.assets.read(&path);
+        let source = self.assets.describe(&path);
+        if self.fonts.load(rl, thread, data, &source, file) {
+            self.fonts.assign_variant(role, variant, file);
+        }
     }
 
     pub fn assets(&self) -> &Assets {
