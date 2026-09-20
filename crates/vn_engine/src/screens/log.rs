@@ -5,6 +5,7 @@ use raylib::ffi;
 use raylib::prelude::*;
 
 use crate::PanelStyle;
+use crate::scroll::{Scroll, ScrollStyle};
 use crate::ui::{self, ButtonStyle, TextStyle};
 use crate::{DrawContext, Focus, FontRole, GameContext, LogEntry, Overlay, OverlayAction};
 
@@ -27,7 +28,7 @@ pub struct LogConfig {
     pub back_button: ButtonStyle,
     pub back_label: String,
     pub close_keys: Vec<KeyboardKey>,
-    pub scroll_step: f32,
+    pub scroll: ScrollStyle,
 }
 
 impl Default for LogConfig {
@@ -52,7 +53,7 @@ impl Default for LogConfig {
                 KeyboardKey::KEY_BACKSPACE,
                 KeyboardKey::KEY_L,
             ],
-            scroll_step: 48.0,
+            scroll: ScrollStyle::default(),
         }
     }
 }
@@ -169,7 +170,7 @@ impl LogConfig {
 
 pub struct LogOverlay {
     config: Rc<LogConfig>,
-    scroll: f32,
+    scroll: Scroll,
     content: Cell<f32>,
     focus: Focus,
 }
@@ -178,7 +179,7 @@ impl LogOverlay {
     pub fn new(config: Rc<LogConfig>) -> Self {
         Self {
             config,
-            scroll: 0.0,
+            scroll: Scroll::new(),
             content: Cell::new(0.0),
             focus: Focus::default(),
         }
@@ -261,14 +262,17 @@ impl Overlay for LogOverlay {
             return OverlayAction::Close;
         }
 
-        let view = config.entries_area(screen).height;
-        let page = view * 0.9;
-        let mut delta = ctx.rl.get_mouse_wheel_move() * config.scroll_step;
+        let area = config.entries_area(screen);
+        self.scroll.extent(area.height, self.content.get());
+        self.scroll.input(ctx.rl, area, &config.scroll);
+
+        let page = self.scroll.page();
+        let mut delta = 0.0;
         if ctx.nav.up {
-            delta += config.scroll_step;
+            delta += config.scroll.step;
         }
         if ctx.nav.down {
-            delta -= config.scroll_step;
+            delta -= config.scroll.step;
         }
         if ctx.nav.page_back || ctx.rl.is_key_pressed(KeyboardKey::KEY_PAGE_UP) {
             delta += page;
@@ -276,15 +280,13 @@ impl Overlay for LogOverlay {
         if ctx.nav.page_forward || ctx.rl.is_key_pressed(KeyboardKey::KEY_PAGE_DOWN) {
             delta -= page;
         }
+        self.scroll.by(-delta);
         if ctx.rl.is_key_pressed(KeyboardKey::KEY_HOME) {
-            delta = f32::INFINITY;
+            self.scroll.to_start();
         }
         if ctx.rl.is_key_pressed(KeyboardKey::KEY_END) {
-            delta = f32::NEG_INFINITY;
+            self.scroll.to_end();
         }
-
-        let max = (self.content.get() - view).max(0.0);
-        self.scroll = (self.scroll + delta).clamp(0.0, max);
         OverlayAction::Stay
     }
 
@@ -334,7 +336,7 @@ impl Overlay for LogOverlay {
         let mut bottom = if content < area.height {
             area.y + content
         } else {
-            area.y + area.height + self.scroll
+            area.y + area.height + self.scroll.from_end()
         };
         for block in blocks.iter().rev() {
             let top = bottom - block.height();
@@ -357,6 +359,7 @@ impl Overlay for LogOverlay {
         unsafe {
             ffi::EndScissorMode();
         }
+        self.scroll.draw_bar(d, area, &config.scroll);
 
         ui::Button::new(&config.back_label, &config.back_button)
             .focused(ctx.shows_focus(&self.focus, 0))

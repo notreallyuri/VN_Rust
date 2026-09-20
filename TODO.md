@@ -188,8 +188,8 @@ else draws through, so it is cheaper now; the rest is additive.
 - [x] Draw the game to a `RenderTexture` instead of straight to the screen (`RenderTarget` in `target.rs`), recreated on resize, with a fallback to drawing to the screen; screenshots and thumbnails still capture the game image
 - [x] Screen transitions (`ScreenTransitionConfig`): crossfade (the default, 0.2s), fade through black and slide, built on a snapshot of the previous frame
 - [x] A shared easing/tween helper (`Easing`, `Tween` in `ease.rs`), used by the stage and screen transitions; buttons still have their own timing to move over
-- [ ] A reusable scroll container (wheel, drag, scrollbar, keyboard and gamepad through `navigation.rs`), today only inside the log screen; needed by settings, keybindings, save lists and a gallery
-- [ ] Resolution independence: design at one size, letterbox or pillarbox the render target on other aspect ratios (ultrawide included)
+- [x] A reusable scroll container (`Scroll`, `ScrollStyle`): wheel, thumb dragging, track clicks, keys and gamepad, with a scrollbar; the log screen now uses it
+- [x] Resolution independence: `VnApp::design_size` fixes the layout size and the frame is scaled, centred and letterboxed; `viewport` maps mouse positions back so input follows the picture
 - [x] Remove the debug `println!` on every screen change
 
 ### Presentation

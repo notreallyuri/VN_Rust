@@ -312,6 +312,41 @@ Screenshots and save thumbnails capture while the target is still bound, so they
 reading the game image (`tests/target.rs` covers this with a windowed test, run with
 `--include-ignored`).
 
+## Resolution independence
+
+By default the render target matches the window, so a screen laid out with
+`ui::screen_size` fills it. `VnApp::design_size(width, height)` fixes the target instead:
+screens are then laid out at that size whatever the window does, and the frame is scaled
+to fit and centred, with black bars where the aspect ratios differ.
+
+```rust
+VnApp::new("My Game").size(1280, 720).design_size(1280, 720)
+```
+
+`viewport` holds the mapping for the current frame. `ui::screen_size` returns the design
+size rather than the window size, and mouse positions are mapped back through the same
+transform (`viewport::mouse_position`), so clicks, hovers and tooltips land where they
+look even when the frame is scaled or letterboxed.
+
+## Scrolling
+
+`Scroll` is the scrollable region used by the log, and by any screen with more content
+than room: it keeps an offset, clamps it to the content, and draws a scrollbar.
+
+```rust
+scroll.extent(area.height, content_height);
+scroll.input(ctx.rl, area, &style);
+// draw content shifted by scroll.offset(), inside a scissor
+scroll.draw_bar(d, area, &style);
+```
+
+`extent` takes the visible height and the content height and pulls the offset back when
+the content shrinks. `input` handles the wheel, dragging the thumb and clicking the
+track. `by`, `page`, `to_start` and `to_end` move it from keys or gamepad, `from_end` is
+the distance from the bottom for content anchored there (the log reads it that way), and
+`overflows` says whether a bar is needed at all. `ScrollStyle` sets the step, bar width
+and colours.
+
 ## Screen transitions
 
 Changing screen crossfades by default: the frame that was on screen is copied into a

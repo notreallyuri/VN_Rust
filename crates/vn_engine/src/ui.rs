@@ -172,7 +172,7 @@ pub fn lighten(color: Color) -> Color {
 }
 
 pub fn is_hovered(rl: &RaylibHandle, rect: Rectangle) -> bool {
-    rect.check_collision_point_rec(rl.get_mouse_position())
+    rect.check_collision_point_rec(crate::viewport::mouse_position(rl))
 }
 
 pub fn is_clicked(rl: &RaylibHandle, rect: Rectangle) -> bool {
@@ -281,7 +281,7 @@ pub fn fit_text(fonts: &Fonts, style: &TextStyle, text: &str, max_width: f32) ->
 }
 
 pub fn screen_size(rl: &RaylibHandle) -> Vector2 {
-    Vector2::new(rl.get_screen_width() as f32, rl.get_screen_height() as f32)
+    crate::viewport::size(rl)
 }
 
 pub fn load_background(ctx: &mut GameContext, background: Option<&Background>) {

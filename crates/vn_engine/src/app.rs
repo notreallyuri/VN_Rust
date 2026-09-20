@@ -79,6 +79,7 @@ pub struct VnApp {
     warn_missing_art: bool,
     hot_reload: bool,
     screen_transition: ScreenTransitionConfig,
+    design_size: Option<(i32, i32)>,
 }
 
 #[derive(Debug)]
@@ -172,7 +173,13 @@ impl VnApp {
             warn_missing_art: true,
             hot_reload: cfg!(debug_assertions),
             screen_transition: ScreenTransitionConfig::default(),
+            design_size: None,
         }
+    }
+
+    pub fn design_size(mut self, width: i32, height: i32) -> Self {
+        self.design_size = Some((width, height));
+        self
     }
 
     pub fn screen_transition(mut self, transition: ScreenTransitionConfig) -> Self {
@@ -629,26 +636,35 @@ impl VnApp {
                 }
             }
 
-            manager.update(&mut rl, &thread);
-
             let screen = (rl.get_screen_width(), rl.get_screen_height());
             let now = rl.get_time();
-            target.resize(&mut rl, &thread, screen);
+            target.resize(&mut rl, &thread, self.design_size.unwrap_or(screen));
+            let destination = crate::target::destination(target.size(), screen);
+            if target.frame().is_some() {
+                crate::viewport::set(crate::Viewport {
+                    size: target.size(),
+                    destination,
+                });
+            } else {
+                crate::viewport::clear();
+            }
+
+            manager.update(&mut rl, &thread);
 
             let starting = manager.take_screen_changed() && target.frame().is_some();
             if starting {
-                snapshot.resize(&mut rl, &thread, screen);
+                snapshot.resize(&mut rl, &thread, target.size());
             }
 
             let source = target.source();
             let snapshot_source = snapshot.source();
-            let destination = crate::target::destination(target.size(), screen);
+            let size = target.size();
             let mut d = rl.begin_drawing(&thread);
             match target.frame_mut() {
                 Some(frame) => {
                     if starting {
                         if let Some(previous) = snapshot.frame_mut() {
-                            crate::target::copy_into(&mut d, &thread, frame, previous, screen);
+                            crate::target::copy_into(&mut d, &thread, frame, previous, size);
                         }
                         transition = ScreenTransition::start(self.screen_transition, now);
                     }

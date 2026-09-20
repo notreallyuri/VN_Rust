@@ -617,7 +617,7 @@ impl SettingsMenu {
             ctx.settings.update(|s| config.step(row, s, horizontal));
             sample |= row == SettingsRow::SoundVolume;
         }
-        let mouse = ctx.rl.get_mouse_position();
+        let mouse = crate::viewport::mouse_position(ctx.rl);
         let pressed = ctx
             .rl
             .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);

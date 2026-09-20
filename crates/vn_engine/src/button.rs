@@ -726,12 +726,12 @@ pub fn step_amount(current: f32, target: f32, dt: f32, seconds: f32) -> f32 {
 }
 
 pub fn button_hovered(rl: &RaylibHandle, rect: Rectangle, style: &ButtonStyle) -> bool {
-    style.contains(rect, rl.get_mouse_position())
+    style.contains(rect, crate::viewport::mouse_position(rl))
 }
 
 pub fn button_clicked(ctx: &mut GameContext, rect: Rectangle, style: &ButtonStyle) -> bool {
     let rl = &*ctx.rl;
-    let mouse = rl.get_mouse_position();
+    let mouse = crate::viewport::mouse_position(rl);
     let hovered = style.contains(rect, mouse);
     let key = rect_key(rect);
 
@@ -811,8 +811,9 @@ impl<'a> Button<'a> {
 
     fn amounts(&self, d: &RaylibDrawHandle, ctx: &DrawContext, rect: Rectangle) -> StateAmounts {
         let style = self.style;
-        let hovered =
-            ctx.interactive && !self.disabled && style.contains(rect, d.get_mouse_position());
+        let hovered = ctx.interactive
+            && !self.disabled
+            && style.contains(rect, crate::viewport::mouse_position(d));
         let held = d.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT);
         let target = StateAmounts {
             hover: f32::from(u8::from(hovered)),
