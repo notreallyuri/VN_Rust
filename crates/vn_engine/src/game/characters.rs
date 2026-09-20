@@ -3,11 +3,15 @@ use std::collections::HashMap;
 use raylib::color::Color;
 use vn_script::{CharacterDef, StoryVm, interpolate};
 
+use crate::screens::playing::{BoxOverride, DialogueBoxStyle};
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Character {
     pub name: String,
     pub color: Option<Color>,
     pub images: Vec<String>,
+    pub bust: Option<String>,
+    pub box_style: Option<BoxOverride>,
 }
 
 impl Character {
@@ -16,6 +20,8 @@ impl Character {
             name: name.into(),
             color: None,
             images: Vec::new(),
+            bust: None,
+            box_style: None,
         }
     }
 
@@ -30,6 +36,19 @@ impl Character {
         S: Into<String>,
     {
         self.images = images.into_iter().map(Into::into).collect();
+        self
+    }
+
+    pub fn bust(mut self, file: impl Into<String>) -> Self {
+        self.bust = Some(file.into());
+        self
+    }
+
+    pub fn box_style(
+        mut self,
+        style: impl Fn(DialogueBoxStyle) -> DialogueBoxStyle + 'static,
+    ) -> Self {
+        self.box_style = Some(BoxOverride::new(style));
         self
     }
 
@@ -68,5 +87,19 @@ impl Characters {
 
     pub fn color(&self, speaker: &str) -> Option<Color> {
         self.characters.get(speaker).and_then(|c| c.color)
+    }
+
+    pub fn bust(&self, speaker: &str) -> Option<&str> {
+        self.characters.get(speaker)?.bust.as_deref()
+    }
+
+    pub fn dialogue_box(&self, speaker: Option<&str>, base: &DialogueBoxStyle) -> DialogueBoxStyle {
+        match speaker.and_then(|id| self.characters.get(id)) {
+            Some(character) => match &character.box_style {
+                Some(style) => style.apply(base),
+                None => base.clone(),
+            },
+            None => base.clone(),
+        }
     }
 }

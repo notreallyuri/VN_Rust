@@ -17,6 +17,13 @@ pub fn character_path(character: &str, image: &str) -> String {
     format!("characters/{}/{}.png", character, image).to_lowercase()
 }
 
+pub fn bust_path(file: &str) -> String {
+    match file.contains('/') {
+        true => file.to_lowercase(),
+        false => format!("busts/{}", file).to_lowercase(),
+    }
+}
+
 pub fn background_path(image: &str) -> String {
     format!("backgrounds/{}.png", image).to_lowercase()
 }

@@ -200,7 +200,7 @@ else draws through, so it is cheaper now; the rest is additive.
 - [x] Shader passes over the render target (`PostChain`, `VnApp::shader`, `ctx.shader`): named passes in registration order, with `amount`, `time` and `pixel` uniforms; `post::GRAIN`, `DESATURATE`, `BLUR` and `FXAA` ship with the engine
 - [x] Weather and particle overlays (`Weather::rain`/`snow`/`dust`): `Scenery::weather` on the menus, `ctx.weather` during a scene. Each particle's position comes from the clock and its index like `Motion::at`, so there is no simulation state, nothing in a save and nothing for rollback to desynchronise; not restored by a load, the same as `ctx.shader`
 - [ ] NVL mode: full-screen text pages instead of the dialogue box, chosen per scene
-- [ ] Dialogue box variants: a speaker portrait bust inside the box, and a per-character box style
+- [x] Dialogue box variants: `Character::box_style(|b| ...)` layers a character's own box over the game's base, inheriting what it does not name; `DialogueBoxStyle::bust` plus `Character::bust(file)` draws a portrait inside the box and moves the text out of its way, keeping its aspect ratio and standing on the box's floor, with `rise`/`sink` to break the edges
 - [ ] Choice presentation: images, disabled options with a reason, and hover previews
 - [x] Sharper edges: `VnApp::render_scale` supersamples the frame (the render target is not multisampled, so window MSAA would not help), and corner segments scale with corner size and render scale; `post::FXAA` is the cheap alternative
 - [ ] A custom mouse cursor, and prompts that show keyboard or gamepad glyphs depending on the last input used

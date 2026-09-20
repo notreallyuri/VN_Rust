@@ -6,7 +6,7 @@ use vn_script::Event;
 use super::{PlayingConfig, Typewriter};
 use crate::action::Action;
 use crate::context::{DrawContext, GameContext};
-use crate::data::resources::{background_path, character_path};
+use crate::data::resources::{background_path, bust_path, character_path};
 use crate::data::session::{LogEntry, Spoken};
 use crate::frame::stage::Stage;
 use crate::input::navigation::Focus;
@@ -366,14 +366,36 @@ impl Screen for PlayingScreen {
 
         match &self.current {
             Some(Event::Say { speaker, text }) => {
-                let rect = config.dialogue_box.rect(screen);
-                let style = &config.dialogue_box;
+                let style = ctx
+                    .characters
+                    .dialogue_box(speaker.as_deref(), &config.dialogue_box);
+                let style = &style;
+                let rect = style.rect(screen);
 
                 style.panel.draw(d, rect);
 
-                let inner_x = rect.x + style.padding;
-                let inner_width = rect.width - style.padding * 2.0;
-                let mut y = rect.y + style.padding;
+                if let (Some(bust), Some(speaker)) = (&style.bust, speaker.as_deref())
+                    && let Some(file) = ctx.characters.bust(speaker)
+                {
+                    let path = bust_path(file);
+                    if let Some(texture) = ctx.resources.texture(&path) {
+                        let natural = Vector2::new(texture.width as f32, texture.height as f32);
+                        let at = bust.rect(rect, natural);
+                        d.draw_texture_pro(
+                            texture,
+                            Rectangle::new(0.0, 0.0, natural.x, natural.y),
+                            at,
+                            Vector2::zero(),
+                            0.0,
+                            Color::WHITE,
+                        );
+                    }
+                }
+
+                let area = style.text_area(rect);
+                let inner_x = area.x;
+                let inner_width = area.width;
+                let mut y = area.y;
 
                 if let Some(speaker) = speaker {
                     let name = ctx.characters.display_name(speaker, ctx.story);

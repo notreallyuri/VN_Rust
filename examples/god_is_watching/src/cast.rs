@@ -10,7 +10,8 @@ fn person(name: &str, color: (u8, u8, u8), images: &[&str]) -> Character {
 pub fn register(app: VnApp) -> VnApp {
     app.character(
         "registrar",
-        person("The Registrar", (170, 182, 205), &["neutral", "stern"]),
+        person("The Registrar", (170, 182, 205), &["neutral", "stern"])
+            .box_style(|b| b.color(crate::style::PANEL_DEEP).roundness(0.0)),
     )
     .character(
         "mary",

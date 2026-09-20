@@ -50,6 +50,9 @@ impl VnApp {
         for warning in &warnings {
             eprintln!("{}", warning);
         }
+        for missing in self.missing_busts() {
+            eprintln!("warning: {} (a placeholder will be drawn)", missing);
+        }
 
         let (mut rl, thread) = raylib::init()
             .size(self.width, self.height)

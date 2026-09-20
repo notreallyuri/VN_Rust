@@ -1,6 +1,116 @@
+use std::fmt;
+use std::rc::Rc;
+
 use raylib::prelude::*;
 
 use crate::ui::shape::PanelStyle;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum BustSide {
+    #[default]
+    Left,
+    Right,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BustStyle {
+    pub width: f32,
+    pub side: BustSide,
+    pub gap: f32,
+    pub rise: f32,
+    pub sink: f32,
+}
+
+impl Default for BustStyle {
+    fn default() -> Self {
+        Self {
+            width: 150.0,
+            side: BustSide::Left,
+            gap: 16.0,
+            rise: 0.0,
+            sink: 0.0,
+        }
+    }
+}
+
+impl BustStyle {
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = width.max(0.0);
+        self
+    }
+
+    pub fn side(mut self, side: BustSide) -> Self {
+        self.side = side;
+        self
+    }
+
+    pub fn gap(mut self, gap: f32) -> Self {
+        self.gap = gap;
+        self
+    }
+
+    pub fn rise(mut self, rise: f32) -> Self {
+        self.rise = rise.max(0.0);
+        self
+    }
+
+    pub fn sink(mut self, sink: f32) -> Self {
+        self.sink = sink.max(0.0);
+        self
+    }
+
+    pub fn rect(&self, box_rect: Rectangle, natural: Vector2) -> Rectangle {
+        let height = box_rect.height + self.rise + self.sink;
+        let width = match natural.y > 0.0 && natural.x > 0.0 {
+            true => (natural.x / natural.y) * height,
+            false => self.width,
+        };
+        let width = width.min(self.width);
+        let height = match natural.x > 0.0 && natural.y > 0.0 {
+            true => (natural.y / natural.x) * width,
+            false => height,
+        };
+        let x = match self.side {
+            BustSide::Left => box_rect.x + self.gap,
+            BustSide::Right => box_rect.x + box_rect.width - self.gap - width,
+        };
+        Rectangle::new(
+            x,
+            box_rect.y + box_rect.height + self.sink - height,
+            width,
+            height,
+        )
+    }
+
+    pub fn reserved(&self) -> f32 {
+        self.width + self.gap * 2.0
+    }
+}
+
+#[derive(Clone)]
+pub struct BoxOverride(Rc<dyn Fn(DialogueBoxStyle) -> DialogueBoxStyle>);
+
+impl BoxOverride {
+    pub fn new(style: impl Fn(DialogueBoxStyle) -> DialogueBoxStyle + 'static) -> Self {
+        Self(Rc::new(style))
+    }
+
+    pub fn apply(&self, base: &DialogueBoxStyle) -> DialogueBoxStyle {
+        (self.0)(base.clone())
+    }
+}
+
+impl fmt::Debug for BoxOverride {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "BoxOverride(..)")
+    }
+}
+
+impl PartialEq for BoxOverride {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct NamePlate {
@@ -70,6 +180,7 @@ pub struct DialogueBoxStyle {
     pub padding: f32,
     pub panel: PanelStyle,
     pub name_plate: Option<NamePlate>,
+    pub bust: Option<BustStyle>,
 }
 
 impl Default for DialogueBoxStyle {
@@ -82,6 +193,7 @@ impl Default for DialogueBoxStyle {
             padding: 24.0,
             panel: PanelStyle::new(Color::new(0, 0, 0, 200)),
             name_plate: None,
+            bust: None,
         }
     }
 }
@@ -130,6 +242,25 @@ impl DialogueBoxStyle {
     pub fn name_plate(mut self, plate: impl FnOnce(NamePlate) -> NamePlate) -> Self {
         self.name_plate = Some(plate(self.name_plate.unwrap_or_default()));
         self
+    }
+
+    pub fn bust(mut self, style: impl FnOnce(BustStyle) -> BustStyle) -> Self {
+        self.bust = Some(style(self.bust.unwrap_or_default()));
+        self
+    }
+
+    pub fn text_area(&self, box_rect: Rectangle) -> Rectangle {
+        let reserved = self.bust.as_ref().map_or(0.0, BustStyle::reserved);
+        let left = match self.bust.as_ref().map(|b| b.side) {
+            Some(BustSide::Left) => reserved,
+            _ => 0.0,
+        };
+        Rectangle::new(
+            box_rect.x + self.padding + left,
+            box_rect.y + self.padding,
+            (box_rect.width - self.padding * 2.0 - reserved).max(0.0),
+            (box_rect.height - self.padding * 2.0).max(0.0),
+        )
     }
 
     pub fn rect(&self, screen: Vector2) -> Rectangle {

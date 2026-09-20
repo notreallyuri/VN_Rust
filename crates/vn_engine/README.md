@@ -244,6 +244,7 @@ raylib's "Esc closes the window" is turned off (see `VnApp::exit_key`).
 | `max_width(px)` | none; a narrower box is centered |
 | `panel(\|p\| ...)` (or `color(c)`, `roundness(r)`) | black at 200 alpha, square (see [Shapes and panels](#shapes-and-panels)) |
 | `name_plate(\|n\| ...)` | none: the speaker's name is the first line inside the box |
+| `bust(\|b\| ...)` | none: no portrait inside the box (see [Busts](#busts)) |
 
 With a name plate, the speaker's name sits in its own small panel on the box's top edge
 and the line starts at the top of the box. `NamePlate`: `panel(|p| ...)` (black at 220
@@ -263,6 +264,47 @@ character's color.
     .hud_layout(|l| l.row().anchor(Anchor::Bottom))
 })
 ```
+
+##### Per-character boxes
+
+A character can restyle the box for its own lines, on top of whatever the game set:
+
+```rust
+.character(
+    "registrar",
+    Character::new("The Registrar")
+        .color(SLATE)
+        .box_style(|b| b.color(PANEL_DEEP).roundness(0.0)),
+)
+```
+
+The closure is handed the game's own style, so it changes what it names and inherits the
+rest — a character that only wants a different colour keeps the height, padding, name
+plate and panel shape configured in `.playing(...)`. Narration and characters with no
+style of their own use the base unchanged.
+
+##### Busts
+
+`bust(|b| ...)` puts a portrait inside the box and moves the text out of its way.
+`Character::bust(file)` says which picture, from `<assets>/busts/` unless the name
+contains a `/`:
+
+```rust
+.playing(|p| p.dialogue_box(|b| b.bust(|u| u.width(160.0).rise(40.0))))
+.character("mary", Character::new("Mary").bust("mary.png"))
+```
+
+| Option | Default |
+|---|---|
+| `width(px)` | 150: the widest the portrait may be drawn |
+| `side(BustSide)` | `Left`; `Right` takes the same room without moving the text |
+| `gap(px)` | 16 on each side of the portrait |
+| `rise(px)`, `sink(px)` | 0, 0: how far the portrait may stand above the box's top edge, or below its floor |
+
+The picture keeps its aspect ratio, is never drawn wider than `width`, and stands on the
+box's floor. The text area loses `width + gap * 2` whichever side the bust is on, so
+switching sides never reflows the line. A character with no bust leaves the box as it is,
+and a bust whose file is missing draws the usual placeholder and warns at startup.
 
 ## Styles
 
@@ -2172,6 +2214,7 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/rollback.rs` | Back/forward, barriers (`commit`, final choices, blocked commands, `through_choices`), history limits, history across a save and load |
 | `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
 | `tests/assets.rs` | Folders and embedded files answering the same (reads, path normalization, listings), descriptions, a story loaded only from embedded files, which source a build picks |
+| `tests/dialogue_box.rs` | Per-character box styles layering over the game's base without altering it, a bust reserving room and moving the text, aspect ratio and floor placement, `rise`/`sink`, and a character with no bust |
 | `tests/request.rs` | What a screen asks the manager for: overlay requests keeping their order, the last tooltip and toast of a frame winning, asking twice doing the work once, and a quiet frame asking for nothing |
 | `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups; weather staying on screen over a long run, replaying identically from the clock, spreading out with varied depth, capped counts, and absurd times |
 | `tests/shape.rs` | Corner outlines for each shape, round versus scooped hit tests, size capping and relative roundness, per-corner shapes, `PanelStyle`, the dialogue box's placement and the name plate |

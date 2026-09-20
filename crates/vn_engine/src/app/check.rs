@@ -152,6 +152,24 @@ pub(crate) fn missing_art(
 }
 
 impl VnApp {
+    pub fn missing_busts(&self) -> Vec<String> {
+        if !self.warn_missing_art {
+            return Vec::new();
+        }
+        let assets = self.asset_source();
+        self.characters
+            .iter()
+            .filter_map(|(id, character)| {
+                let file = character.bust.as_deref()?;
+                let path = crate::data::resources::bust_path(file);
+                assets
+                    .read(&path)
+                    .is_err()
+                    .then(|| format!("character '{}': missing {}", id, path))
+            })
+            .collect()
+    }
+
     pub fn ui_strings(&self) -> UiStrings {
         let mut strings: Vec<String> = Vec::new();
         let mut add = |text: &str| strings.push(text.to_string());
