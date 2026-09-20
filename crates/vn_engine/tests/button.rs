@@ -1,10 +1,14 @@
-use vn_engine::button::{StateAmounts, mix_color, step_amount};
+use vn_engine::action::Action;
+use vn_engine::context::GameView;
+use vn_engine::data::saves::Saves;
+use vn_engine::data::settings::Settings;
+use vn_engine::data::state::GameState;
 use vn_engine::raylib::prelude::{Color, Rectangle, Vector2};
+use vn_engine::screens::main_menu::{MenuItem, can_continue};
+use vn_engine::screens::playing::{HudButton, PlayingConfig};
 use vn_engine::script::StoryVm;
-use vn_engine::{
-    Action, ButtonIcon, ButtonImage, ButtonStyle, GameState, GameView, HudButton, MenuItem,
-    PlayingConfig, Saves, Settings, Transform, can_continue,
-};
+use vn_engine::ui::button::{ButtonIcon, ButtonImage, ButtonStyle, Transform};
+use vn_engine::ui::button::{StateAmounts, mix_color, step_amount};
 
 const RECT: Rectangle = Rectangle {
     x: 100.0,

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use vn_engine::data::rollback::{Rollback, RollbackConfig};
+use vn_engine::data::state::GameState;
 use vn_engine::script::{Event, StoryVm};
-use vn_engine::{GameState, Rollback, RollbackConfig};
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 struct Coins(u32);

@@ -2,9 +2,12 @@ use std::f64::consts::TAU;
 
 use raylib::prelude::*;
 
-use crate::ui::shape::{self, Corners, Gradient, GradientDirection};
-use crate::ui::{self, Background};
-use crate::{Border, ResourceManager};
+use crate::data::resources::ResourceManager;
+use crate::ui;
+use crate::ui::Background;
+use crate::ui::button::Border;
+use crate::ui::shape;
+use crate::ui::shape::{Corners, Gradient, GradientDirection};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Motion {

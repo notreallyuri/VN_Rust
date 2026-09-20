@@ -1,4 +1,4 @@
-use vn_engine::PostChain;
+use vn_engine::frame::post::PostChain;
 
 fn chain() -> PostChain {
     let mut chain = PostChain::new();
@@ -69,10 +69,10 @@ fn the_built_in_shaders_compile() {
 
     let mut chain = PostChain::new();
     for (name, source) in [
-        ("grain", vn_engine::post::GRAIN),
-        ("desaturate", vn_engine::post::DESATURATE),
-        ("blur", vn_engine::post::BLUR),
-        ("fxaa", vn_engine::post::FXAA),
+        ("grain", vn_engine::frame::post::GRAIN),
+        ("desaturate", vn_engine::frame::post::DESATURATE),
+        ("blur", vn_engine::frame::post::BLUR),
+        ("fxaa", vn_engine::frame::post::FXAA),
     ] {
         chain.load(&mut rl, &thread, name, source, 1.0);
         chain.set_enabled(name, true);

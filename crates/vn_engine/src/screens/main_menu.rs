@@ -2,11 +2,20 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::ui::{self, Background, ButtonStyle, TextStyle};
-use crate::{
-    Action, DrawContext, Focus, FontRole, GameContext, GameView, Screen, ScreenState, StyleOverride,
-};
-use crate::{Anchor, Corners, Fonts, Layout, PanelStyle, Scenery, TextAlign};
+use crate::action::Action;
+use crate::context::{DrawContext, GameContext, GameView};
+use crate::frame::scenery::Scenery;
+use crate::input::navigation::Focus;
+use crate::screen::{Screen, ScreenState};
+use crate::ui;
+use crate::ui::button::ButtonStyle;
+use crate::ui::button::StyleOverride;
+use crate::ui::button::TextAlign;
+use crate::ui::fonts::FontRole;
+use crate::ui::fonts::Fonts;
+use crate::ui::layout::{Anchor, Layout};
+use crate::ui::shape::{Corners, PanelStyle};
+use crate::ui::{Background, TextStyle};
 
 type EnabledCheck = Rc<dyn Fn(&GameView) -> bool>;
 
@@ -375,11 +384,11 @@ pub(crate) fn clicked_item(
     let rects: Vec<Rectangle> = placement.iter().map(|(rect, _)| *rect).collect();
     let hovered = placement
         .iter()
-        .position(|(rect, style)| ui::button_hovered(ctx.rl, *rect, style));
+        .position(|(rect, style)| ui::button::button_hovered(ctx.rl, *rect, style));
 
     let mut clicked = None;
     for (index, (rect, style)) in placement.iter().enumerate() {
-        if enabled[index] && ui::button_clicked(ctx, *rect, style) && clicked.is_none() {
+        if enabled[index] && ui::button::button_clicked(ctx, *rect, style) && clicked.is_none() {
             clicked = Some(index);
         }
     }
@@ -396,7 +405,7 @@ pub(crate) fn draw_items(
 ) {
     let view = ctx.view();
     for (index, (item, (rect, style))) in items.iter().zip(placement).enumerate() {
-        ui::Button::new(ctx.label(&item.label), &style)
+        ui::button::Button::new(ctx.label(&item.label), &style)
             .disabled(!item.is_enabled(&view))
             .focused(ctx.shows_focus(focus, index))
             .draw(d, ctx, rect);
@@ -532,7 +541,7 @@ impl Screen for MainMenuScreen {
             .zip(config.placement(screen))
             .enumerate()
         {
-            ui::Button::new(ctx.label(&item.label), &style)
+            ui::button::Button::new(ctx.label(&item.label), &style)
                 .disabled(!item.is_enabled(&view))
                 .focused(ctx.shows_focus(&self.focus, index))
                 .opacity(buttons_fade)

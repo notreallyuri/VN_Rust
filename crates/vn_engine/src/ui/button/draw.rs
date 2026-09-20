@@ -6,8 +6,9 @@ use super::{
     Anim, ButtonImage, ButtonStyle, IconSide, Look, StateAmounts, TextAlign, TextOverflow,
     Transform, button_key, faded, step_amount,
 };
-use crate::DrawContext;
-use crate::ui::shape::{self, Corners};
+use crate::context::DrawContext;
+use crate::ui::shape;
+use crate::ui::shape::Corners;
 use crate::ui::{TextStyle, fit_text};
 
 pub fn draw_button(
@@ -310,7 +311,7 @@ fn draw_content(
             let under = Rectangle::new(x, y + text.size + 3.0, *width, line.width);
             crate::ui::shape::fill(
                 under,
-                &crate::Corners::SQUARE,
+                &crate::ui::shape::Corners::SQUARE,
                 faded(line.color, look.opacity),
                 None,
             );

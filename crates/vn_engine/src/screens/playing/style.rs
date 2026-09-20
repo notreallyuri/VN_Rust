@@ -1,6 +1,6 @@
 use raylib::prelude::*;
 
-use crate::PanelStyle;
+use crate::ui::shape::PanelStyle;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct NamePlate {

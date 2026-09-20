@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use vn_script::VmError;
 
-use crate::StateError;
+use crate::data::state::StateError;
 
 #[derive(Debug)]
 pub enum SaveError {

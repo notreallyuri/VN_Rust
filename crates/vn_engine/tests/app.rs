@@ -2,10 +2,13 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use vn_engine::app::{AppError, VnApp};
+use vn_engine::context::GameContext;
+use vn_engine::game::characters::{Character, Characters};
+use vn_engine::game::commands::FromArgs;
+use vn_engine::screen::ScreenState;
 use vn_engine::script::{CommandSig, ParamKind, Severity, StoryVm};
-use vn_engine::{
-    AppError, Character, Characters, FromArgs, GameContext, ScreenState, Value, VariableDef, VnApp,
-};
+use vn_engine::script::{Value, VariableDef};
 
 struct Project(PathBuf);
 

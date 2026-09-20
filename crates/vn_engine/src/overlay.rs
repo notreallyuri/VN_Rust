@@ -1,6 +1,7 @@
 use raylib::prelude::RaylibDrawHandle;
 
-use crate::{DrawContext, GameContext, ScreenState};
+use crate::context::{DrawContext, GameContext};
+use crate::screen::ScreenState;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OverlayAction {

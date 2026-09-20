@@ -1,4 +1,5 @@
-use crate::{GameContext, ScreenState};
+use crate::context::GameContext;
+use crate::screen::ScreenState;
 
 type SceneHook = Box<dyn Fn(&mut GameContext, &str) -> Option<ScreenState>>;
 type ChoiceHook = Box<dyn Fn(&mut GameContext, usize, &str) -> Option<ScreenState>>;

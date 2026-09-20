@@ -9,17 +9,6 @@ pub mod settings;
 pub mod start;
 pub mod text_input;
 
-pub use confirm::*;
-pub use keybinds::*;
-pub use log::*;
-pub use main_menu::*;
-pub use pause_menu::*;
-pub use playing::*;
-pub use save_menu::*;
-pub use settings::*;
-pub use start::*;
-pub use text_input::*;
-
 pub mod prelude {
     pub use super::confirm::{CONFIRM_OVERLAY, Confirm, ConfirmConfig};
     pub use super::keybinds::{KEYBINDS_OVERLAY, KeyRow, KeySection, KeybindsConfig};

@@ -4,12 +4,15 @@ use raylib::prelude::*;
 use vn_script::Event;
 
 use super::{PlayingConfig, Typewriter};
+use crate::action::Action;
+use crate::context::{DrawContext, GameContext};
+use crate::data::resources::{background_path, character_path};
+use crate::data::session::LogEntry;
+use crate::frame::stage::Stage;
+use crate::input::navigation::Focus;
+use crate::screen::{Screen, ScreenState};
 use crate::ui;
 use crate::ui::styled::StyledText;
-use crate::{
-    Action, DrawContext, Focus, GameContext, LogEntry, Screen, ScreenState, Stage, background_path,
-    character_path,
-};
 
 pub struct PlayingScreen {
     pub(super) config: Rc<PlayingConfig>,
@@ -152,7 +155,7 @@ impl Screen for PlayingScreen {
             let mut clicked = None;
             for (index, rect) in hud.iter().enumerate() {
                 let style = self.config.hud_style(index);
-                if ui::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
+                if ui::button::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
                     clicked = Some(index);
                 }
             }
@@ -173,10 +176,10 @@ impl Screen for PlayingScreen {
                 let mut hovered = None;
                 for (index, (rect, option)) in rects.iter().zip(options).enumerate() {
                     let style = self.config.choice_style_for(index, option);
-                    if ui::button_hovered(ctx.rl, *rect, &style) {
+                    if ui::button::button_hovered(ctx.rl, *rect, &style) {
                         hovered = Some(index);
                     }
-                    if ui::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
+                    if ui::button::button_clicked(&mut ctx, *rect, &style) && clicked.is_none() {
                         clicked = Some(index);
                     }
                 }
@@ -295,7 +298,7 @@ impl Screen for PlayingScreen {
                     Action::ToggleSkip => self.skipping,
                     _ => false,
                 };
-                ui::Button::new(ctx.label(&button.label), &config.hud_style(index))
+                ui::button::Button::new(ctx.label(&button.label), &config.hud_style(index))
                     .active(active)
                     .draw(d, ctx, rect);
             }
@@ -369,7 +372,7 @@ impl Screen for PlayingScreen {
                 for (index, (option, rect)) in options.iter().zip(rects).enumerate() {
                     let style = config.choice_style_for(index, option);
                     let label = vn_script::markup::plain(option);
-                    ui::Button::new(&label, &style)
+                    ui::button::Button::new(&label, &style)
                         .focused(ctx.shows_focus(&self.choice_focus, index))
                         .draw(d, ctx, rect);
                 }

@@ -1,8 +1,12 @@
 use raylib::prelude::*;
 
+use crate::context::DrawContext;
+use crate::ui;
+use crate::ui::TextStyle;
+use crate::ui::button::Border;
+use crate::ui::fonts::FontRole;
 use crate::ui::shape;
-use crate::ui::{self, TextStyle};
-use crate::{Border, DrawContext, FontRole, PanelStyle};
+use crate::ui::shape::PanelStyle;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Shape {
@@ -121,11 +125,16 @@ impl Shape {
         }
         match self {
             Shape::Rect(_) => {
-                shape::fill(self.bounds(area), &crate::Corners::SQUARE, color, None);
+                shape::fill(
+                    self.bounds(area),
+                    &crate::ui::shape::Corners::SQUARE,
+                    color,
+                    None,
+                );
             }
             Shape::Circle { .. } => {
                 let bounds = self.bounds(area);
-                let corners = crate::Corners::round(bounds.width / 2.0);
+                let corners = crate::ui::shape::Corners::round(bounds.width / 2.0);
                 shape::fill(bounds, &corners, color, None);
             }
             Shape::Polygon(points) => {
@@ -152,11 +161,16 @@ impl Shape {
         }
         match self {
             Shape::Rect(_) => {
-                shape::stroke(self.bounds(area), &crate::Corners::SQUARE, width, color);
+                shape::stroke(
+                    self.bounds(area),
+                    &crate::ui::shape::Corners::SQUARE,
+                    width,
+                    color,
+                );
             }
             Shape::Circle { .. } => {
                 let bounds = self.bounds(area);
-                let corners = crate::Corners::round(bounds.width / 2.0);
+                let corners = crate::ui::shape::Corners::round(bounds.width / 2.0);
                 shape::stroke(bounds, &corners, width, color);
             }
             Shape::Polygon(points) => {

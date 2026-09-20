@@ -1,8 +1,9 @@
 use raylib::prelude::*;
 
-use crate::PanelStyle;
-use crate::ui::{self, TextStyle};
-use crate::{FontRole, Fonts};
+use crate::ui;
+use crate::ui::TextStyle;
+use crate::ui::fonts::{FontRole, Fonts};
+use crate::ui::shape::PanelStyle;
 
 #[derive(Clone, Debug)]
 pub struct ToastConfig {

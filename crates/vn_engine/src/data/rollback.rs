@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 use vn_script::{RestoreOutcome, StorySnapshot, StoryVm};
 
-use crate::GameState;
+use crate::data::state::GameState;
 
 #[derive(Clone, Debug)]
 pub struct RollbackConfig {

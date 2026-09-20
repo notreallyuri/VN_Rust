@@ -6,13 +6,23 @@ use raylib::{RaylibHandle, RaylibThread};
 
 use vn_script::StoryVm;
 
-use crate::screens::{CONFIRM_OVERLAY, Confirm};
-use crate::{
-    Audio, Characters, Commands, Focus, Fonts, GameState, Hooks, LoadReport, LoadWarning, NavInput,
-    OverlayRequest, ResourceManager, Rollback, SaveError, Saves, ScreenState, Settings,
-    SettingsStore, TextRequest, Toast,
-};
-use crate::{PlayModes, SeenLines, SessionLog};
+use crate::data::resources::ResourceManager;
+use crate::data::rollback::Rollback;
+use crate::data::saves::{LoadReport, LoadWarning, SaveError, Saves};
+use crate::data::session::{PlayModes, SeenLines, SessionLog};
+use crate::data::settings::{Settings, SettingsStore};
+use crate::data::state::GameState;
+use crate::game::audio::Audio;
+use crate::game::characters::Characters;
+use crate::game::commands::Commands;
+use crate::game::hooks::Hooks;
+use crate::input::navigation::{Focus, NavInput};
+use crate::overlay::OverlayRequest;
+use crate::screen::ScreenState;
+use crate::screens::confirm::{CONFIRM_OVERLAY, Confirm};
+use crate::screens::text_input::TextRequest;
+use crate::ui::fonts::Fonts;
+use crate::ui::toast::Toast;
 
 pub struct GameContext<'a> {
     pub rl: &'a mut RaylibHandle,
@@ -39,8 +49,8 @@ pub struct GameContext<'a> {
     pub modes: &'a mut PlayModes,
     pub seen: &'a mut SeenLines,
     pub(crate) screenshot_request: &'a mut bool,
-    pub(crate) effects: &'a mut crate::ScreenEffects,
-    pub(crate) post: &'a mut crate::PostChain,
+    pub(crate) effects: &'a mut crate::frame::effects::ScreenEffects,
+    pub(crate) post: &'a mut crate::frame::post::PostChain,
 }
 
 impl GameContext<'_> {
@@ -161,16 +171,15 @@ impl GameContext<'_> {
 
     pub fn apply_language(&mut self) {
         let code = self.settings.values.language.clone();
-        let catalog =
-            code.and_then(
-                |code| match crate::load_catalog(self.resources.assets(), &code) {
-                    Ok(catalog) => Some(catalog),
-                    Err(e) => {
-                        eprintln!("⚠️ {}; playing in the source language", e);
-                        None
-                    }
-                },
-            );
+        let catalog = code.and_then(|code| {
+            match crate::game::language::load_catalog(self.resources.assets(), &code) {
+                Ok(catalog) => Some(catalog),
+                Err(e) => {
+                    eprintln!("⚠️ {}; playing in the source language", e);
+                    None
+                }
+            }
+        });
         if code_missing(&self.settings.values.language, &catalog) {
             self.notify_error("That language could not be loaded");
         }
@@ -178,11 +187,11 @@ impl GameContext<'_> {
     }
 
     pub fn label<'a>(&'a self, text: &'a str) -> &'a str {
-        crate::ui::label(self.story, text)
+        crate::ui::labels::label(self.story, text)
     }
 
     pub fn message(&self, text: &str, fields: &[(&str, &str)]) -> String {
-        crate::ui::fill(self.label(text), fields)
+        crate::ui::labels::fill(self.label(text), fields)
     }
 
     pub fn play_sound(&mut self, id: &str) {
@@ -271,11 +280,11 @@ impl DrawContext<'_> {
     }
 
     pub fn label<'a>(&'a self, text: &'a str) -> &'a str {
-        crate::ui::label(self.story, text)
+        crate::ui::labels::label(self.story, text)
     }
 
     pub fn message(&self, text: &str, fields: &[(&str, &str)]) -> String {
-        crate::ui::fill(self.label(text), fields)
+        crate::ui::labels::fill(self.label(text), fields)
     }
 
     pub fn fonts(&self) -> &Fonts {

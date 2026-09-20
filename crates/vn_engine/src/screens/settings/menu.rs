@@ -3,9 +3,10 @@ use std::rc::Rc;
 use raylib::prelude::*;
 
 use super::{SettingsConfig, SettingsRow};
-use crate::screens::Typewriter;
+use crate::context::{DrawContext, GameContext};
+use crate::input::navigation::{Focus, NavInput};
+use crate::screens::playing::Typewriter;
 use crate::ui;
-use crate::{DrawContext, Focus, GameContext, NavInput};
 
 const PREVIEW_PAUSE: f64 = 1.5;
 
@@ -48,7 +49,7 @@ impl SettingsMenu {
 
         let back_key = config.back_keys.iter().any(|&k| ctx.rl.is_key_pressed(k));
         let back = config.back_rect(screen);
-        if ui::button_clicked(ctx, back, &config.back_button) || back_key || ctx.nav.back {
+        if ui::button::button_clicked(ctx, back, &config.back_button) || back_key || ctx.nav.back {
             return Outcome::Back;
         }
 
@@ -99,7 +100,7 @@ impl SettingsMenu {
             }
 
             if !row.is_slider() {
-                if ui::button_clicked(ctx, control, &config.value_button) {
+                if ui::button::button_clicked(ctx, control, &config.value_button) {
                     ctx.settings.update(|s| config.step(row, s, 1));
                 }
                 continue;
@@ -205,7 +206,7 @@ impl SettingsMenu {
             let value = config.value_name(row, ctx.settings);
             let value = ctx.label(&value).to_string();
             if !row.is_slider() {
-                ui::Button::new(&value, &config.value_button)
+                ui::button::Button::new(&value, &config.value_button)
                     .focused(focused)
                     .draw(d, ctx, control);
                 continue;
@@ -241,7 +242,7 @@ impl SettingsMenu {
         );
 
         let back_index = config.rows().len();
-        ui::Button::new(ctx.label(&config.back_label), &config.back_button)
+        ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, back_index))
             .draw(d, ctx, config.back_rect(screen));
     }

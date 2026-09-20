@@ -1,5 +1,6 @@
+use vn_engine::action::Action;
 use vn_engine::raylib::prelude::Vector2;
-use vn_engine::{Action, MainMenuConfig};
+use vn_engine::screens::main_menu::MainMenuConfig;
 
 fn menu(buttons: usize) -> MainMenuConfig {
     (0..buttons).fold(
@@ -34,8 +35,10 @@ fn a_menu_too_long_to_move_squeezes_its_spacing() {
 }
 
 mod layout {
+    use vn_engine::action::Action;
     use vn_engine::raylib::prelude::{Rectangle, Vector2};
-    use vn_engine::{Action, Align, Anchor, Layout, PlayingConfig};
+    use vn_engine::screens::playing::PlayingConfig;
+    use vn_engine::ui::layout::{Align, Anchor, Layout};
 
     fn area() -> Rectangle {
         Rectangle::new(0.0, 0.0, 1000.0, 600.0)
@@ -176,8 +179,9 @@ mod layout {
 }
 
 mod pause_and_save_menus {
+    use vn_engine::action::Action;
     use vn_engine::raylib::prelude::Vector2;
-    use vn_engine::{Action, PauseMenuConfig};
+    use vn_engine::screens::pause_menu::PauseMenuConfig;
 
     #[test]
     fn a_grid_pause_menu_widens_its_panel() {
@@ -196,8 +200,10 @@ mod pause_and_save_menus {
 }
 
 mod rows_of {
+    use vn_engine::action::Action;
     use vn_engine::raylib::prelude::{Rectangle, Vector2};
-    use vn_engine::{Action, Align, Anchor, Layout, MainMenuConfig};
+    use vn_engine::screens::main_menu::MainMenuConfig;
+    use vn_engine::ui::layout::{Align, Anchor, Layout};
 
     fn corners(rects: &[Rectangle]) -> Vec<(f32, f32)> {
         rects.iter().map(|r| (r.x, r.y)).collect()
@@ -311,7 +317,7 @@ mod rows_of {
 
 mod stretch {
     use vn_engine::raylib::prelude::{Rectangle, Vector2};
-    use vn_engine::{Align, Anchor, Layout};
+    use vn_engine::ui::layout::{Align, Anchor, Layout};
 
     fn place(layout: Layout, sizes: &[Vector2]) -> Vec<(f32, f32)> {
         layout
@@ -372,7 +378,7 @@ mod stretch {
 }
 
 mod character_positions {
-    use vn_engine::PlayingConfig;
+    use vn_engine::screens::playing::PlayingConfig;
     use vn_engine::script::Position;
 
     #[test]

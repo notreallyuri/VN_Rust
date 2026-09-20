@@ -11,8 +11,9 @@ the same versions the engine uses and only need `vn_engine` as a dependency (plu
 A game is a `VnApp` built from defaults, with only the parts it wants changed:
 
 ```rust
+use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::*;
-use vn_engine::{FontRole, Action, MenuItem, TextStyle, VnApp};
+use vn_engine::screens::main_menu::MenuItem;
 
 fn main() -> std::io::Result<()> {
     VnApp::new("My Novel")
@@ -34,6 +35,34 @@ fn main() -> std::io::Result<()> {
 [settings](#settings), and runs the loop until the player closes the window (see
 [Closing the window](#closing-the-window)) or a screen returns `ScreenState::Quit`. It returns an
 `AppError` without opening a window if the story can't be read or has errors.
+
+## Modules and preludes
+
+The engine's items live in six module groups, and nothing is re-exported at the crate root:
+
+| Module | Holds |
+|---|---|
+| `data` | `assets`, `resources`, `rollback`, `saves`, `session`, `settings`, `state` |
+| `frame` | `effects`, `post`, `scenery`, `screen_transition`, `stage`, `target`, `viewport` |
+| `game` | `audio`, `characters`, `commands`, `hooks`, `hot_reload`, `language`, `script_errors` |
+| `input` | `drag`, `hit`, `image_map`, `navigation` |
+| `ui` | `button`, `ease`, `fonts`, `labels`, `layout`, `scroll`, `shape`, `styled`, `toast`, `tooltip` |
+| `screens` | the built-in screens and their configs |
+
+Every item can be reached at its own path — `vn_engine::ui::button::ButtonStyle`,
+`vn_engine::data::saves::Saves` — and each group also has a `prelude` with the everyday
+names of that subsystem, for files that work inside one of them:
+
+```rust
+use vn_engine::input::prelude::*;
+use vn_engine::ui::prelude::*;
+```
+
+`vn_engine::prelude` is the short list that nearly every game file needs: `Action`,
+`AppError`, `Character`, `DrawContext`, `FontRole`, `GameContext`, `GameView`, `Overlay`,
+`OverlayAction`, `OverlayRequest`, `PanelStyle`, `Screen`, `ScreenState`, `TextStyle`,
+`Value`, `VariableDef` and `VnApp`. It stays small on purpose, so a glob import of it
+doesn't hide where a name came from.
 
 ## VnApp
 
@@ -378,7 +407,7 @@ finished frame, in the order they were registered, between the render target and
 window.
 
 ```rust
-use vn_engine::post;
+use vn_engine::frame::post;
 
 VnApp::new("My Game")
     .shader("grain", post::GRAIN)
@@ -444,7 +473,7 @@ second render target, the new screen is drawn, and the old frame is blended over
 while it fades out.
 
 ```rust
-use vn_engine::{ScreenTransitionConfig, ScreenTransitionKind};
+use vn_engine::frame::prelude::*;
 
 VnApp::new("My Game")
     .screen_transition(ScreenTransitionConfig::new(ScreenTransitionKind::Fade, 0.35))
@@ -654,7 +683,8 @@ in fractions of the area the map is drawn into, so one map works at any window s
 design size and inside any panel.
 
 ```rust
-use vn_engine::{Action, Highlight, Hotspot, ImageMap, Shape};
+use vn_engine::input::prelude::*;
+use vn_engine::prelude::*;
 
 let study = ImageMap::new()
     .background("backgrounds/von_lucis_study.png")
@@ -756,7 +786,7 @@ a rule per target for what it takes. Inventory puzzles, sorting minigames, a boa
 arrange evidence on.
 
 ```rust
-use vn_engine::{DragBoard, Draggable, DropTarget, Shape};
+use vn_engine::input::prelude::*;
 
 let mut board = DragBoard::new()
     .target(DropTarget::new("ledger", Shape::rect(0.05, 0.6, 0.26, 0.34)).label("The ledger"))

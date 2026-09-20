@@ -6,7 +6,7 @@ use raylib::prelude::*;
 use super::{
     Border, ButtonIcon, ButtonImage, Look, Shadow, StateAmounts, TextAlign, TextOverflow, Transform,
 };
-use crate::FontRole;
+use crate::ui::fonts::FontRole;
 use crate::ui::shape::Corners;
 use crate::ui::{TextStyle, lighten};
 

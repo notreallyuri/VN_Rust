@@ -2,8 +2,10 @@ use std::path::Path;
 
 use raylib::prelude::*;
 
-use crate::ui::{self, TextStyle};
-use crate::{AppError, FontRole, Fonts};
+use crate::app::AppError;
+use crate::ui;
+use crate::ui::TextStyle;
+use crate::ui::fonts::{FontRole, Fonts};
 
 pub const SCRIPT_ERRORS_KEY: KeyboardKey = KeyboardKey::KEY_F2;
 

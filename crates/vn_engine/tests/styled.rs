@@ -1,5 +1,5 @@
-use vn_engine::StyledText;
-use vn_engine::screens::Typewriter;
+use vn_engine::screens::playing::Typewriter;
+use vn_engine::ui::styled::StyledText;
 
 #[test]
 fn visible_length_counts_text_not_tags() {

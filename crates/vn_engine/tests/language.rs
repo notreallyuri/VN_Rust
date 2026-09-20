@@ -1,9 +1,14 @@
 use std::fs;
 use std::path::PathBuf;
 
-use vn_engine::screens::SettingsConfig;
-use vn_engine::script::translate::{self, Catalog};
-use vn_engine::{Assets, EmbeddedFile, Language, Settings, SettingsRow, VnApp, load_catalog};
+use vn_engine::app::VnApp;
+use vn_engine::data::assets::{Assets, EmbeddedFile};
+use vn_engine::data::settings::Settings;
+use vn_engine::game::language::{Language, load_catalog};
+use vn_engine::screens::settings::SettingsConfig;
+use vn_engine::screens::settings::SettingsRow;
+use vn_engine::script::translate;
+use vn_engine::script::translate::Catalog;
 
 static EMBEDDED: &[EmbeddedFile] = &[(
     "lang/ja.json",
@@ -211,8 +216,9 @@ fn the_language_is_remembered_in_the_settings_file() {
 
 #[test]
 fn a_hot_reload_keeps_the_language() {
+    use vn_engine::data::rollback::{Rollback, RollbackConfig};
+    use vn_engine::game::hot_reload::swap_story;
     use vn_engine::script::{StoryVm, compile_sources};
-    use vn_engine::{Rollback, RollbackConfig, swap_story};
 
     let source = "scene start:\n  \"The lamps are never put out.\"\n  \"Paper is cheaper.\"\n";
     let story = |source: &str| StoryVm::from_program(compile_sources([("story/01.story", source)]));
@@ -234,7 +240,7 @@ fn a_hot_reload_keeps_the_language() {
 
 #[test]
 fn a_message_is_filled_in_after_it_is_translated() {
-    use vn_engine::ui::fill;
+    use vn_engine::ui::labels::fill;
 
     assert_eq!(
         fill("Saved to {slot}", &[("slot", "Slot 3")]),
@@ -303,8 +309,8 @@ fn the_screens_offer_their_own_strings_for_translation() {
 #[test]
 fn a_game_that_renames_a_label_offers_the_new_name() {
     let app = VnApp::new("Test").main_menu(|m| {
-        m.button("Begin the Archive", vn_engine::Action::NewGame)
-            .button("Leave", vn_engine::Action::Quit)
+        m.button("Begin the Archive", vn_engine::action::Action::NewGame)
+            .button("Leave", vn_engine::action::Action::Quit)
     });
     let strings = app.ui_strings().strings;
 

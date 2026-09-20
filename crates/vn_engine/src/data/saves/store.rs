@@ -10,7 +10,9 @@ use super::{
     AUTO_SLOT, LoadReport, Migrations, SAVE_FORMAT_VERSION, SaveError, SaveFile, SaveMigration,
     SlotInfo, THUMBNAIL_WIDTH, apply, format_migrations, now, summary,
 };
-use crate::{GameState, LogEntry, Rollback};
+use crate::data::rollback::Rollback;
+use crate::data::session::LogEntry;
+use crate::data::state::GameState;
 
 #[derive(Debug, Clone)]
 pub struct Saves {

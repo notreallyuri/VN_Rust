@@ -5,7 +5,8 @@ use vn_script::{
 };
 
 use super::{AppError, VnApp};
-use crate::{Assets, StoryLoader};
+use crate::data::assets::Assets;
+use crate::game::hot_reload::StoryLoader;
 
 impl VnApp {
     pub fn schema(&self) -> Schema {
@@ -92,17 +93,23 @@ pub(crate) fn missing_art(story: &StoryVm, assets: &Assets) -> Vec<Diagnostic> {
             let relative = match instruction {
                 Instruction::Show {
                     char_id, img_id, ..
-                } => crate::character_path(char_id, img_id),
-                Instruction::Background { image: Some(image) } => crate::background_path(image),
+                } => crate::data::resources::character_path(char_id, img_id),
+                Instruction::Background { image: Some(image) } => {
+                    crate::data::resources::background_path(image)
+                }
                 Instruction::Music { track: Some(track) }
-                    if crate::music_path(assets, track).is_none() =>
+                    if crate::game::audio::music_path(assets, track).is_none() =>
                 {
                     format!("music/{}.ogg", track)
                 }
-                Instruction::Sound { id } if crate::sound_path(assets, id).is_none() => {
+                Instruction::Sound { id }
+                    if crate::game::audio::sound_path(assets, id).is_none() =>
+                {
                     format!("sounds/{}.ogg", id)
                 }
-                Instruction::Voice { id } if crate::voice_path(assets, id).is_none() => {
+                Instruction::Voice { id }
+                    if crate::game::audio::voice_path(assets, id).is_none() =>
+                {
                     format!("voice/{}.ogg", id)
                 }
                 _ => return None,
@@ -230,7 +237,7 @@ impl VnApp {
         for (label, _) in &settings.text_speeds {
             add(label);
         }
-        for row in crate::screens::SettingsRow::ALL {
+        for row in crate::screens::settings::SettingsRow::ALL {
             if let Some(tooltip) = settings.row_tooltip(row) {
                 add(tooltip);
             }

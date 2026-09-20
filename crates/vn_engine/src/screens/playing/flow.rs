@@ -2,8 +2,11 @@ use raylib::prelude::*;
 use vn_script::{Event, TransitionKind};
 
 use super::{PlayingScreen, Typewriter};
+use crate::context::GameContext;
+use crate::data::session::LogEntry;
+use crate::input::navigation::{Focus, NavInput};
+use crate::screen::ScreenState;
 use crate::ui;
-use crate::{Focus, GameContext, LogEntry, NavInput, ScreenState};
 
 impl PlayingScreen {
     pub(super) fn show(&mut self, event: Event, typed: Option<(u32, f64)>) {
@@ -161,7 +164,7 @@ impl PlayingScreen {
                 .hud_rects(ui::screen_size(rl))
                 .iter()
                 .enumerate()
-                .any(|(i, rect)| ui::button_hovered(rl, *rect, &self.config.hud_style(i)))
+                .any(|(i, rect)| ui::button::button_hovered(rl, *rect, &self.config.hud_style(i)))
     }
 
     pub(super) fn continue_pressed(&self, rl: &RaylibHandle, nav: &NavInput) -> bool {

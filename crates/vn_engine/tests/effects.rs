@@ -1,4 +1,4 @@
-use vn_engine::{ScreenEffects, ScreenEffectsConfig};
+use vn_engine::frame::effects::{ScreenEffects, ScreenEffectsConfig};
 
 fn effects() -> ScreenEffects {
     ScreenEffects::new(ScreenEffectsConfig::default())

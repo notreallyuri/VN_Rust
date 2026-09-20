@@ -3,9 +3,13 @@ use std::rc::Rc;
 use raylib::prelude::*;
 use vn_script::Value;
 
-use crate::ui::{self, Background, TextStyle};
-use crate::{Border, PanelStyle};
-use crate::{DrawContext, FontRole, GameContext, Screen, ScreenState};
+use crate::context::{DrawContext, GameContext};
+use crate::screen::{Screen, ScreenState};
+use crate::ui;
+use crate::ui::button::Border;
+use crate::ui::fonts::FontRole;
+use crate::ui::shape::PanelStyle;
+use crate::ui::{Background, TextStyle};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TextRequest {

@@ -1,9 +1,11 @@
 use raylib::prelude::*;
 
 use super::SettingsRow;
-use crate::PanelStyle;
-use crate::ui::{Background, ButtonStyle, SliderStyle, TextStyle};
-use crate::{FontRole, Language};
+use crate::game::language::Language;
+use crate::ui::button::ButtonStyle;
+use crate::ui::fonts::FontRole;
+use crate::ui::shape::PanelStyle;
+use crate::ui::{Background, SliderStyle, TextStyle};
 
 #[derive(Clone, Debug)]
 pub struct SettingsConfig {

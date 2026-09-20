@@ -1,9 +1,8 @@
+use vn_engine::input::prelude::*;
+use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::*;
-use vn_engine::ui::{self, ButtonStyle};
-use vn_engine::{
-    DragBoard, Draggable, DrawContext, DropTarget, GameContext, Highlight, LabelAt, LabelStyle,
-    PanelStyle, Screen, ScreenState, Shape, TextStyle,
-};
+use vn_engine::ui;
+use vn_engine::ui::button::ButtonStyle;
 
 use crate::desk::{self, BOX, Desk, REPORT};
 use crate::evidence::{Evidence, describe};
@@ -111,7 +110,7 @@ impl Screen for ReportDesk {
             return None;
         }
 
-        let done = ui::button_clicked(&mut ctx, self.done_rect(screen), &self.done);
+        let done = ui::button::button_clicked(&mut ctx, self.done_rect(screen), &self.done);
         let key = [KeyboardKey::KEY_ESCAPE, KeyboardKey::KEY_BACKSPACE]
             .into_iter()
             .any(|key| ctx.rl.is_key_pressed(key));
@@ -175,7 +174,7 @@ impl Screen for ReportDesk {
             );
         }
 
-        ui::draw_button(d, ctx, self.done_rect(screen), "Done", &self.done);
+        ui::button::draw_button(d, ctx, self.done_rect(screen), "Done", &self.done);
     }
 }
 

@@ -11,9 +11,9 @@ pub mod tooltip;
 
 use raylib::prelude::*;
 
-use crate::{FontRole, Fonts, GameContext, ResourceManager};
-pub use button::*;
-pub use labels::{fill, label};
+use crate::context::GameContext;
+use crate::data::resources::ResourceManager;
+use crate::ui::fonts::{FontRole, Fonts};
 
 pub mod prelude {
     pub use super::button::{

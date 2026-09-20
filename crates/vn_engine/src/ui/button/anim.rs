@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use raylib::prelude::*;
 
 use super::{ButtonStyle, StateAmounts};
-use crate::GameContext;
+use crate::context::GameContext;
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Anim {

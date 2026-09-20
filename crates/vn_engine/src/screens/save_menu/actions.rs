@@ -1,4 +1,4 @@
-use crate::GameContext;
+use crate::context::GameContext;
 use crate::data::saves::{AUTO_SLOT, QUICK_SLOT};
 
 pub(super) fn save_to(ctx: &mut GameContext, slot: &str) {
@@ -56,7 +56,7 @@ pub(super) fn slot_label(ctx: &GameContext, slot: &str) -> String {
     }
 }
 
-pub(super) fn slot_label_for(ctx: &crate::DrawContext, slot: &str) -> String {
+pub(super) fn slot_label_for(ctx: &crate::context::DrawContext, slot: &str) -> String {
     match slot {
         QUICK_SLOT => ctx.label("Quick save").to_string(),
         AUTO_SLOT => ctx.label("Autosave").to_string(),

@@ -1,9 +1,8 @@
+use vn_engine::input::prelude::*;
+use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::*;
-use vn_engine::ui::{self, ButtonStyle};
-use vn_engine::{
-    DrawContext, GameContext, Highlight, Hotspot, ImageMap, LabelAt, LabelStyle, PanelStyle,
-    Screen, ScreenState, Shape, TextStyle,
-};
+use vn_engine::ui;
+use vn_engine::ui::button::ButtonStyle;
 
 use crate::desk::Desk;
 use crate::style;
@@ -77,7 +76,8 @@ impl Screen for SearchScreen {
             .any(|key| ctx.rl.is_key_pressed(key))
             || ctx.nav.back;
         let back = self.back_rect(screen);
-        (ui::button_clicked(&mut ctx, back, &self.back) || leaving).then_some(ScreenState::Playing)
+        (ui::button::button_clicked(&mut ctx, back, &self.back) || leaving)
+            .then_some(ScreenState::Playing)
     }
 
     fn draw(&self, d: &mut RaylibDrawHandle, ctx: &DrawContext) {
@@ -121,7 +121,7 @@ impl Screen for SearchScreen {
             &self.body,
         );
 
-        ui::draw_button(
+        ui::button::draw_button(
             d,
             ctx,
             self.back_rect(screen),
@@ -147,7 +147,7 @@ fn study() -> ImageMap {
                 LabelStyle::default()
                     .at(LabelAt::Pointer)
                     .text(TextStyle::new(
-                        vn_engine::FontRole::Menu,
+                        vn_engine::ui::fonts::FontRole::Menu,
                         17.0,
                         style::PARCHMENT,
                     ))

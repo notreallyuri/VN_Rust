@@ -1,5 +1,5 @@
+use vn_engine::input::navigation::{Focus, NavInput, Repeater, navigate};
 use vn_engine::raylib::prelude::{Rectangle, Vector2};
-use vn_engine::{Focus, NavInput, Repeater, navigate};
 
 fn column(count: usize) -> Vec<Rectangle> {
     (0..count)

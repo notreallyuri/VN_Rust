@@ -1,4 +1,4 @@
-use vn_engine::target::destination;
+use vn_engine::frame::target::destination;
 
 #[test]
 fn a_matching_screen_uses_every_pixel() {
@@ -38,7 +38,7 @@ fn a_target_that_could_not_be_created_falls_back_to_the_whole_screen() {
 #[ignore = "opens a window; run with --ignored on a machine with a display"]
 fn the_screen_capture_reads_the_render_target() {
     use raylib::prelude::*;
-    use vn_engine::target::RenderTarget;
+    use vn_engine::frame::target::RenderTarget;
 
     let (mut rl, thread) = raylib::init().size(320, 200).title("render target").build();
     rl.set_trace_log(TraceLogLevel::LOG_WARNING);
@@ -74,7 +74,7 @@ fn the_screen_capture_reads_the_render_target() {
 #[ignore = "opens a window; run with --ignored on a machine with a display"]
 fn a_copied_frame_keeps_its_orientation() {
     use raylib::prelude::*;
-    use vn_engine::target::{RenderTarget, copy_into};
+    use vn_engine::frame::target::{RenderTarget, copy_into};
 
     let (mut rl, thread) = raylib::init().size(64, 64).title("copy").build();
     rl.set_trace_log(TraceLogLevel::LOG_WARNING);

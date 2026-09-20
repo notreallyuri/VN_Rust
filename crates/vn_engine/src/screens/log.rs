@@ -4,11 +4,18 @@ use std::rc::Rc;
 use raylib::ffi;
 use raylib::prelude::*;
 
-use crate::PanelStyle;
+use crate::context::{DrawContext, GameContext};
+use crate::data::session::LogEntry;
+use crate::input::navigation::Focus;
+use crate::overlay::{Overlay, OverlayAction};
+use crate::ui;
+use crate::ui::TextStyle;
+use crate::ui::button::ButtonStyle;
+use crate::ui::fonts::FontRole;
 use crate::ui::scroll::{Scroll, ScrollStyle};
-use crate::ui::styled::{self, StyledLine, StyledText};
-use crate::ui::{self, ButtonStyle, TextStyle};
-use crate::{DrawContext, Focus, FontRole, GameContext, LogEntry, Overlay, OverlayAction};
+use crate::ui::shape::PanelStyle;
+use crate::ui::styled;
+use crate::ui::styled::{StyledLine, StyledText};
 
 pub const LOG_OVERLAY: &str = "log";
 
@@ -258,7 +265,7 @@ impl Overlay for LogOverlay {
             .rl
             .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_RIGHT);
         let accepted = self.focus.update(&ctx.nav, &[back], &[], None);
-        if ui::button_clicked(&mut ctx, back, &config.back_button)
+        if ui::button::button_clicked(&mut ctx, back, &config.back_button)
             || key
             || right_click
             || ctx.nav.back
@@ -367,7 +374,7 @@ impl Overlay for LogOverlay {
         }
         self.scroll.draw_bar(d, area, &config.scroll);
 
-        ui::Button::new(ctx.label(&config.back_label), &config.back_button)
+        ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, 0))
             .draw(d, ctx, config.back_rect(screen));
     }

@@ -1,8 +1,10 @@
 use raylib::prelude::*;
 
-use crate::ui::{self, TextStyle};
-use crate::{Border, PanelStyle};
-use crate::{FontRole, Fonts};
+use crate::ui;
+use crate::ui::TextStyle;
+use crate::ui::button::Border;
+use crate::ui::fonts::{FontRole, Fonts};
+use crate::ui::shape::PanelStyle;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TooltipConfig {

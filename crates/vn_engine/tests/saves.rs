@@ -4,12 +4,14 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde::{Deserialize, Serialize};
-use vn_engine::saves::time_ago;
-use vn_engine::script::{Event, StoryVm, Value, VmError};
-use vn_engine::{
-    AUTO_SLOT, Checkpoint, GameState, LoadWarning, SAVE_FORMAT_VERSION, SaveError, Saves,
-    THUMBNAIL_WIDTH, default_saves_dir, slug,
+use vn_engine::data::rollback::Checkpoint;
+use vn_engine::data::saves::time_ago;
+use vn_engine::data::saves::{
+    AUTO_SLOT, LoadWarning, SAVE_FORMAT_VERSION, SaveError, Saves, THUMBNAIL_WIDTH,
+    default_saves_dir, slug,
 };
+use vn_engine::data::state::GameState;
+use vn_engine::script::{Event, StoryVm, Value, VmError};
 
 const STORY: &str = r#"
 scene intro:
@@ -395,7 +397,7 @@ fn rollback_history_is_stored_in_the_file() {
     let saves = Saves::new(&dir.0, "Test Game");
     let (vm, state) = played_game();
 
-    let mut rollback = vn_engine::Rollback::default();
+    let mut rollback = vn_engine::data::rollback::Rollback::default();
     let mut replay = StoryVm::from_source(STORY);
     replay.advance_until_blocking();
     rollback.record(&replay, &state);
@@ -409,9 +411,9 @@ fn rollback_history_is_stored_in_the_file() {
     assert_eq!(read.rollback.len(), 2);
     assert_eq!(read.rollback, file.rollback);
 
-    let mut restored = vn_engine::Rollback::default();
+    let mut restored = vn_engine::data::rollback::Rollback::default();
     let mut loaded = StoryVm::from_source(STORY);
-    vn_engine::saves::apply(&read, &mut loaded, &mut fresh_state()).unwrap();
+    vn_engine::data::saves::apply(&read, &mut loaded, &mut fresh_state()).unwrap();
     assert_eq!(restored.restore_history(read.rollback, &loaded), 2);
     assert!(restored.can_go_back());
 }

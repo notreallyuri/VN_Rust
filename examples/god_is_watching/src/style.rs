@@ -1,8 +1,7 @@
+use vn_engine::frame::scenery::Scenery;
+use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::Color;
-use vn_engine::{
-    Background, ButtonIcon, ButtonImage, ButtonStyle, Corners, FontRole, PanelStyle, Scenery,
-    SliderStyle, TextAlign, TextOverflow, TextStyle,
-};
+use vn_engine::ui::prelude::*;
 
 pub const INK: Color = Color::new(12, 10, 8, 255);
 pub const PANEL: Color = Color::new(20, 16, 12, 240);

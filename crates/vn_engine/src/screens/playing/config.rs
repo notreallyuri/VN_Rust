@@ -4,10 +4,17 @@ use raylib::prelude::*;
 use vn_script::Position;
 
 use super::{DialogueBoxStyle, PlayingKeys};
-use crate::screens::{LOG_OVERLAY, PAUSE_OVERLAY};
+use crate::action::Action;
+use crate::screen::ScreenState;
+use crate::screens::log::LOG_OVERLAY;
+use crate::screens::pause_menu::PAUSE_OVERLAY;
+use crate::ui::button::ButtonStyle;
+use crate::ui::button::StyleOverride;
+use crate::ui::fonts::FontRole;
+use crate::ui::layout::{Anchor, Layout};
+use crate::ui::shape::PanelStyle;
 use crate::ui::styled::StyledText;
-use crate::ui::{Background, ButtonStyle, TextStyle};
-use crate::{Action, Anchor, FontRole, Layout, PanelStyle, ScreenState, StyleOverride};
+use crate::ui::{Background, TextStyle};
 
 #[derive(Clone, Debug)]
 pub struct HudButton {
@@ -354,7 +361,7 @@ impl PlayingConfig {
         self
     }
 
-    pub fn auto_delay(&self, settings: &crate::Settings, text: &str) -> f64 {
+    pub fn auto_delay(&self, settings: &crate::data::settings::Settings, text: &str) -> f64 {
         settings.auto_seconds() + StyledText::parse(text).chars() as f64 * self.auto_per_character
     }
 

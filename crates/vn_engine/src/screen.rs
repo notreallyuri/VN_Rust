@@ -1,6 +1,6 @@
 use raylib::prelude::RaylibDrawHandle;
 
-use crate::{DrawContext, GameContext};
+use crate::context::{DrawContext, GameContext};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ScreenState {

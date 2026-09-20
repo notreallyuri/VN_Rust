@@ -1,5 +1,5 @@
 use vn_engine::raylib::prelude::*;
-use vn_engine::{Corner, CornerShape, Corners, GradientDirection, PanelStyle};
+use vn_engine::ui::shape::{Corner, CornerShape, Corners, GradientDirection, PanelStyle};
 
 fn rect() -> Rectangle {
     Rectangle::new(10.0, 20.0, 200.0, 100.0)
@@ -63,22 +63,22 @@ fn rounds_bulge_out_and_scoops_bite_in() {
     let past_the_curve = Vector2::new(21.0, 29.0);
 
     let round = Corners::round(12.0);
-    assert!(!vn_engine::shape::contains(r, &round, near_corner));
-    assert!(vn_engine::shape::contains(r, &round, past_the_curve));
+    assert!(!vn_engine::ui::shape::contains(r, &round, near_corner));
+    assert!(vn_engine::ui::shape::contains(r, &round, past_the_curve));
 
     let scoop = Corners::scoop(12.0);
-    assert!(!vn_engine::shape::contains(r, &scoop, near_corner));
-    assert!(!vn_engine::shape::contains(
+    assert!(!vn_engine::ui::shape::contains(r, &scoop, near_corner));
+    assert!(!vn_engine::ui::shape::contains(
         r,
         &scoop,
         Vector2::new(18.0, 26.0)
     ));
-    assert!(vn_engine::shape::contains(
+    assert!(vn_engine::ui::shape::contains(
         r,
         &scoop,
         Vector2::new(24.0, 34.0)
     ));
-    assert!(vn_engine::shape::contains(
+    assert!(vn_engine::ui::shape::contains(
         r,
         &scoop,
         Vector2::new(110.0, 70.0)
@@ -140,7 +140,7 @@ fn panel_style_builder() {
 
 #[test]
 fn dialogue_box_margins_bottom_and_max_width() {
-    use vn_engine::DialogueBoxStyle;
+    use vn_engine::screens::playing::DialogueBoxStyle;
     let screen = Vector2::new(1280.0, 720.0);
 
     let default = DialogueBoxStyle::default().rect(screen);
@@ -168,7 +168,7 @@ fn dialogue_box_margins_bottom_and_max_width() {
 
 #[test]
 fn name_plates_sit_on_the_top_edge() {
-    use vn_engine::NamePlate;
+    use vn_engine::screens::playing::NamePlate;
     let dialogue = Rectangle::new(80.0, 518.0, 1120.0, 150.0);
     let plate = NamePlate::default()
         .padding(20.0, 6.0)

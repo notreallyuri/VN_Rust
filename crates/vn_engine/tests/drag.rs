@@ -1,9 +1,11 @@
 use raylib::prelude::*;
+use vn_engine::context::GameView;
+use vn_engine::data::saves::Saves;
+use vn_engine::data::settings::Settings;
+use vn_engine::data::state::GameState;
+use vn_engine::input::drag::{DragBoard, DragStyle, Draggable, DropTarget};
+use vn_engine::input::hit::{Highlight, Shape};
 use vn_engine::script::StoryVm;
-use vn_engine::{
-    DragBoard, DragStyle, Draggable, DropTarget, GameState, GameView, Saves, Settings,
-};
-use vn_engine::{Highlight, Shape};
 
 fn area() -> Rectangle {
     Rectangle::new(0.0, 0.0, 1000.0, 500.0)

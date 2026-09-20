@@ -3,8 +3,10 @@ use std::rc::Rc;
 use raylib::prelude::*;
 
 use super::{Outcome, SettingsConfig, SettingsMenu};
+use crate::context::{DrawContext, GameContext};
+use crate::overlay::{Overlay, OverlayAction};
+use crate::screen::{Screen, ScreenState};
 use crate::ui;
-use crate::{DrawContext, GameContext, Overlay, OverlayAction, Screen, ScreenState};
 
 pub struct SettingsScreen {
     menu: SettingsMenu,

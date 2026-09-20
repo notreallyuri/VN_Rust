@@ -1,7 +1,9 @@
+use vn_engine::action::Action;
+use vn_engine::frame::scenery::{Letterbox, Motion, Scenery};
 use vn_engine::raylib::prelude::*;
-use vn_engine::{
-    Action, Anchor, HudButton, Letterbox, MainMenuConfig, Motion, PlayingConfig, Scenery,
-};
+use vn_engine::screens::main_menu::MainMenuConfig;
+use vn_engine::screens::playing::{HudButton, PlayingConfig};
+use vn_engine::ui::layout::Anchor;
 
 #[test]
 fn motion_breathes_between_rest_and_full_zoom() {

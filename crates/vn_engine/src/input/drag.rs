@@ -2,8 +2,9 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
+use crate::context::{DrawContext, GameContext, GameView};
 use crate::input::hit::{Highlight, LabelStyle, Shape};
-use crate::{DrawContext, Focus, GameContext, GameView};
+use crate::input::navigation::Focus;
 
 type EnabledCheck = Rc<dyn Fn(&GameView) -> bool>;
 type DropRule = Rc<dyn Fn(&str, &GameView) -> bool>;

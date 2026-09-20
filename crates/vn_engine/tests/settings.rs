@@ -1,10 +1,12 @@
 use std::fs;
 use std::path::PathBuf;
 
+use vn_engine::data::settings::{Settings, SettingsStore};
+use vn_engine::screen::ScreenState;
+use vn_engine::screen_manager::close_needs_confirmation;
+use vn_engine::screens::playing::Typewriter;
+use vn_engine::screens::settings::SettingsConfig;
 use vn_engine::script::StoryVm;
-use vn_engine::{
-    ScreenState, Settings, SettingsConfig, SettingsStore, Typewriter, close_needs_confirmation,
-};
 
 fn temp_file(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("vn_engine_settings_{}", std::process::id()));
@@ -108,7 +110,7 @@ fn closing_asks_only_during_a_game() {
 
 #[test]
 fn sliders_map_positions_to_settings() {
-    use vn_engine::SettingsRow::*;
+    use vn_engine::screens::settings::SettingsRow::*;
 
     let config = SettingsConfig::default();
     let mut settings = Settings::default();
@@ -137,7 +139,7 @@ fn sliders_map_positions_to_settings() {
 
 #[test]
 fn arrow_keys_step_sliders_and_stop_at_the_ends() {
-    use vn_engine::SettingsRow::*;
+    use vn_engine::screens::settings::SettingsRow::*;
 
     let config = SettingsConfig::default();
     let mut settings = Settings {
@@ -170,7 +172,7 @@ fn arrow_keys_step_sliders_and_stop_at_the_ends() {
 
 #[test]
 fn rows_and_old_settings_files() {
-    use vn_engine::SettingsRow::*;
+    use vn_engine::screens::settings::SettingsRow::*;
 
     assert_eq!(
         SettingsConfig::default().rows(),
@@ -239,7 +241,7 @@ fn slider_math() {
 
 #[test]
 fn tooltips_wait_for_the_delay_and_hide_on_click() {
-    use vn_engine::TooltipTimer;
+    use vn_engine::ui::tooltip::TooltipTimer;
 
     let mut timer = TooltipTimer::default();
     timer.update(Some("Save".into()), 10.0, false);
@@ -270,7 +272,7 @@ fn tooltips_wait_for_the_delay_and_hide_on_click() {
 
 #[test]
 fn auto_delay_and_skip_rows() {
-    use vn_engine::SettingsRow::*;
+    use vn_engine::screens::settings::SettingsRow::*;
 
     let config = SettingsConfig::default();
     let mut settings = Settings::default();

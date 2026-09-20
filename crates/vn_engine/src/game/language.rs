@@ -1,6 +1,6 @@
 use vn_script::{Catalog, LANG_DIR};
 
-use crate::Assets;
+use crate::data::assets::Assets;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Language {

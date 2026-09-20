@@ -1,5 +1,5 @@
 use super::{AUTO_DELAY_MAX, AUTO_DELAY_MIN, AUTO_DELAY_STEP, SettingsConfig, SettingsRow};
-use crate::Settings;
+use crate::data::settings::Settings;
 use crate::ui;
 
 impl SettingsConfig {

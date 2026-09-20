@@ -1,7 +1,12 @@
 use raylib::prelude::*;
 
-use crate::ui::{self, Background, ButtonStyle, TextStyle};
-use crate::{Anchor, Border, FontRole, Layout, PanelStyle};
+use crate::ui;
+use crate::ui::button::Border;
+use crate::ui::button::ButtonStyle;
+use crate::ui::fonts::FontRole;
+use crate::ui::layout::{Anchor, Layout};
+use crate::ui::shape::PanelStyle;
+use crate::ui::{Background, TextStyle};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SaveMenuMode {

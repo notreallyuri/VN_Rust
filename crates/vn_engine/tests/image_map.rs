@@ -1,6 +1,12 @@
 use raylib::prelude::*;
-use vn_engine::{Action, GameState, GameView, Hotspot, ImageMap, ImageMapStyle, Settings, Shape};
-use vn_engine::{Saves, script::StoryVm};
+use vn_engine::action::Action;
+use vn_engine::context::GameView;
+use vn_engine::data::saves::Saves;
+use vn_engine::data::settings::Settings;
+use vn_engine::data::state::GameState;
+use vn_engine::input::hit::Shape;
+use vn_engine::input::image_map::{Hotspot, ImageMap, ImageMapStyle};
+use vn_engine::script::StoryVm;
 
 fn area() -> Rectangle {
     Rectangle::new(0.0, 0.0, 1280.0, 720.0)

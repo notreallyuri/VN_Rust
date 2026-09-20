@@ -6,17 +6,35 @@ use raylib::prelude::*;
 use vn_script::{SCHEMA_FILE_NAME, VariableDef};
 
 use super::{OverlayBuilder, ScreenBuilder};
+use crate::context::GameContext;
+use crate::data::assets::EmbeddedFile;
+use crate::data::rollback::RollbackConfig;
+use crate::data::saves::{Migrations, SaveMigration, Saves};
+use crate::data::state::GameState;
+use crate::frame::effects::ScreenEffectsConfig;
 use crate::frame::screen_transition::ScreenTransitionConfig;
-use crate::screens::{
-    ConfirmConfig, KeybindsConfig, LogConfig, MainMenuConfig, PauseMenuConfig, PlayingConfig,
-    SaveMenuConfig, SettingsConfig, StartScreenConfig, TextInputConfig,
-};
-use crate::{
-    AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, EmbeddedFile, FontRole,
-    FontVariant, FromArgs, GameContext, GameState, Hooks, Language, Migrations, NavigationConfig,
-    Overlay, RollbackConfig, SaveMigration, Saves, Screen, ScreenEffectsConfig, ScreenState,
-    ToastConfig, TooltipConfig,
-};
+use crate::game::audio::AudioConfig;
+use crate::game::characters::{Character, Characters};
+use crate::game::commands::{Commands, FromArgs};
+use crate::game::hooks::Hooks;
+use crate::game::language::Language;
+use crate::input::navigation::NavigationConfig;
+use crate::overlay::Overlay;
+use crate::screen::{Screen, ScreenState};
+use crate::screen_manager::CLOSE_MESSAGE;
+use crate::screens::confirm::ConfirmConfig;
+use crate::screens::keybinds::KeybindsConfig;
+use crate::screens::log::LogConfig;
+use crate::screens::main_menu::MainMenuConfig;
+use crate::screens::pause_menu::PauseMenuConfig;
+use crate::screens::playing::PlayingConfig;
+use crate::screens::save_menu::SaveMenuConfig;
+use crate::screens::settings::SettingsConfig;
+use crate::screens::start::StartScreenConfig;
+use crate::screens::text_input::TextInputConfig;
+use crate::ui::fonts::{FontRole, FontVariant};
+use crate::ui::toast::ToastConfig;
+use crate::ui::tooltip::TooltipConfig;
 
 pub struct VnApp {
     pub(super) title: String,
@@ -268,7 +286,7 @@ impl VnApp {
     pub fn saves_path(&self) -> PathBuf {
         self.saves_dir
             .clone()
-            .unwrap_or_else(|| crate::default_saves_dir(&self.title))
+            .unwrap_or_else(|| crate::data::saves::default_saves_dir(&self.title))
     }
 
     pub fn audio(mut self, config: impl FnOnce(AudioConfig) -> AudioConfig) -> Self {

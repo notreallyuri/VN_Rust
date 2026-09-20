@@ -4,7 +4,9 @@ use std::time::SystemTime;
 
 use vn_script::{Diagnostic, RestoreOutcome, Schema, StoryVm, VmError, story_files};
 
-use crate::{AppError, Assets, Rollback};
+use crate::app::AppError;
+use crate::data::assets::Assets;
+use crate::data::rollback::Rollback;
 
 pub const HOT_RELOAD_INTERVAL: f64 = 0.5;
 

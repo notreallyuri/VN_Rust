@@ -2,15 +2,25 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use super::{OverlayBuilder, ScreenBuilder};
-use crate::screens::{
-    CONFIRM_OVERLAY, ConfirmConfig, ConfirmDialog, KEYBINDS_OVERLAY, KeybindsConfig,
-    KeybindsOverlay, LOAD_OVERLAY, LOG_OVERLAY, LogConfig, LogOverlay, MainMenuConfig,
-    MainMenuScreen, PAUSE_OVERLAY, PauseMenu, PauseMenuConfig, PlayingConfig, PlayingScreen,
-    SAVE_OVERLAY, SETTINGS_OVERLAY, SaveMenuConfig, SaveMenuMode, SaveMenuOverlay, SaveMenuScreen,
-    SettingsConfig, SettingsOverlay, SettingsScreen, StartScreen, StartScreenConfig,
-    TextInputConfig, TextInputScreen, default_keybinds,
+use crate::data::rollback::RollbackConfig;
+use crate::input::navigation::NavigationConfig;
+use crate::overlay::Overlay;
+use crate::screen::{Screen, ScreenState};
+use crate::screen_manager::ScreenFactory;
+use crate::screens::confirm::{CONFIRM_OVERLAY, ConfirmConfig, ConfirmDialog};
+use crate::screens::keybinds::{
+    KEYBINDS_OVERLAY, KeybindsConfig, KeybindsOverlay, default_keybinds,
 };
-use crate::{NavigationConfig, Overlay, RollbackConfig, Screen, ScreenFactory, ScreenState};
+use crate::screens::log::{LOG_OVERLAY, LogConfig, LogOverlay};
+use crate::screens::main_menu::{MainMenuConfig, MainMenuScreen};
+use crate::screens::pause_menu::{
+    LOAD_OVERLAY, PAUSE_OVERLAY, PauseMenu, PauseMenuConfig, SAVE_OVERLAY,
+};
+use crate::screens::playing::{PlayingConfig, PlayingScreen};
+use crate::screens::save_menu::{SaveMenuConfig, SaveMenuMode, SaveMenuOverlay, SaveMenuScreen};
+use crate::screens::settings::{SETTINGS_OVERLAY, SettingsConfig, SettingsOverlay, SettingsScreen};
+use crate::screens::start::{StartScreen, StartScreenConfig};
+use crate::screens::text_input::{TextInputConfig, TextInputScreen};
 
 pub struct DefaultScreens {
     pub title: String,

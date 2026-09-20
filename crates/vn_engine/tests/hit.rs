@@ -1,6 +1,7 @@
 use raylib::prelude::*;
-use vn_engine::hit::{self, Shape};
-use vn_engine::{Highlight, LabelAt, LabelStyle};
+use vn_engine::input::hit;
+use vn_engine::input::hit::Shape;
+use vn_engine::input::hit::{Highlight, LabelAt, LabelStyle};
 
 fn area() -> Rectangle {
     Rectangle::new(100.0, 50.0, 400.0, 200.0)

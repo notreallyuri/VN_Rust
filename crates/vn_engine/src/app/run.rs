@@ -5,12 +5,16 @@ use raylib::prelude::*;
 use vn_script::SCHEMA_FILE_NAME;
 
 use super::{AppError, DefaultScreens, VnApp};
+use crate::data::rollback::Rollback;
+use crate::data::session::SeenLines;
+use crate::data::settings::{SETTINGS_FILE_NAME, SettingsStore};
 use crate::frame::screen_transition::ScreenTransition;
 use crate::frame::target::RenderTarget;
-use crate::{
-    Audio, Navigation, Rollback, SETTINGS_FILE_NAME, ScreenStateManager, ScriptErrors, SeenLines,
-    SettingsStore, StoryWatcher,
-};
+use crate::game::audio::Audio;
+use crate::game::hot_reload::StoryWatcher;
+use crate::game::script_errors::ScriptErrors;
+use crate::input::navigation::Navigation;
+use crate::screen_manager::ScreenStateManager;
 
 impl VnApp {
     pub fn run(mut self) -> Result<(), AppError> {
@@ -72,7 +76,7 @@ impl VnApp {
             settings.update(|values| values.language = None);
         }
         if let Some(code) = settings.values.language.clone() {
-            match crate::load_catalog(&loader.assets, &code) {
+            match crate::game::language::load_catalog(&loader.assets, &code) {
                 Ok(catalog) => story.set_catalog(Some(catalog)),
                 Err(e) => eprintln!("⚠️ {}; playing in the source language", e),
             }
@@ -114,14 +118,19 @@ impl VnApp {
         manager.saves = saves;
         manager.characters = self.characters;
         manager.toast_config = self.toast;
-        manager.effects = crate::ScreenEffects::new(self.screen_effects);
+        manager.effects = crate::frame::effects::ScreenEffects::new(self.screen_effects);
         manager.rollback = Rollback::new(self.rollback);
         manager.settings = settings;
         manager.close_confirmation = self.close_confirmation;
         manager.tooltip_config = self.tooltips;
         manager.keybind_keys = self.keybinds.open_keys.clone();
         manager.navigation = Navigation::new(self.navigation);
-        manager.seen = SeenLines::load(manager.saves.dir().join(crate::SEEN_FILE_NAME));
+        manager.seen = SeenLines::load(
+            manager
+                .saves
+                .dir()
+                .join(crate::data::session::SEEN_FILE_NAME),
+        );
         manager.audio = Audio::new(manager.resources.assets().clone(), self.audio);
 
         for (role, file) in &self.fonts {
@@ -184,7 +193,7 @@ impl VnApp {
             let destination = crate::frame::target::destination(layout, screen);
             if target.frame().is_some() {
                 crate::frame::viewport::set_render_scale(self.render_scale);
-                crate::frame::viewport::set(crate::Viewport {
+                crate::frame::viewport::set(crate::frame::viewport::Viewport {
                     size: layout,
                     destination,
                 });

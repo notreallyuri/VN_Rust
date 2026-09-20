@@ -1,9 +1,10 @@
 use std::fmt;
 use std::rc::Rc;
 
+use crate::context::GameContext;
 use crate::data::saves::QUICK_SLOT;
-use crate::screens::Confirm;
-use crate::{GameContext, ScreenState};
+use crate::screen::ScreenState;
+use crate::screens::confirm::Confirm;
 
 type CustomAction = Rc<dyn Fn(&mut GameContext) -> Option<ScreenState>>;
 
@@ -40,7 +41,7 @@ impl Action {
         match self {
             Action::NewGame => {
                 ctx.log.clear();
-                *ctx.modes = crate::PlayModes::default();
+                *ctx.modes = crate::data::session::PlayModes::default();
                 ctx.story.reset();
                 ctx.state.reset();
                 ctx.rollback.clear();

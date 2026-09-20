@@ -1,6 +1,7 @@
+use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::*;
-use vn_engine::ui::{self, ButtonStyle};
-use vn_engine::{DrawContext, GameContext, PanelStyle, Screen, ScreenState, TextStyle};
+use vn_engine::ui;
+use vn_engine::ui::button::ButtonStyle;
 
 use crate::journal::{Journal, achievement_name};
 use crate::style;
@@ -51,7 +52,7 @@ impl Screen for CreditsScreen {
             .any(|key| ctx.rl.is_key_pressed(key));
 
         let nav = ctx.nav.back || ctx.nav.accept;
-        (ui::button_clicked(&mut ctx, back, &self.back) || key || nav)
+        (ui::button::button_clicked(&mut ctx, back, &self.back) || key || nav)
             .then_some(ScreenState::MainMenu)
     }
 
@@ -125,7 +126,7 @@ impl Screen for CreditsScreen {
             }
         }
 
-        ui::Button::new("Back", &self.back)
+        ui::button::Button::new("Back", &self.back)
             .focused(ctx.interactive && ctx.focus_visible)
             .draw(d, ctx, self.back_rect(screen));
     }

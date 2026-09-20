@@ -2,9 +2,15 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::PanelStyle;
-use crate::ui::{self, ButtonStyle, TextStyle};
-use crate::{Action, DrawContext, Focus, FontRole, GameContext, Overlay, OverlayAction};
+use crate::action::Action;
+use crate::context::{DrawContext, GameContext};
+use crate::input::navigation::Focus;
+use crate::overlay::{Overlay, OverlayAction};
+use crate::ui;
+use crate::ui::TextStyle;
+use crate::ui::button::ButtonStyle;
+use crate::ui::fonts::FontRole;
+use crate::ui::shape::PanelStyle;
 
 pub const CONFIRM_OVERLAY: &str = "confirm";
 
@@ -172,7 +178,7 @@ impl ConfirmDialog {
         }
     }
 
-    fn layout(&self, fonts: &crate::Fonts, screen: Vector2) -> Layout {
+    fn layout(&self, fonts: &crate::ui::fonts::Fonts, screen: Vector2) -> Layout {
         let config = &self.config;
         let message = self.request.as_ref().map_or("", |r| r.message.as_str());
         let style = &config.message_text;
@@ -241,13 +247,15 @@ impl Overlay for ConfirmDialog {
         let layout = self.layout(&ctx.resources.fonts, ui::screen_size(ctx.rl));
 
         let config = Rc::clone(&self.config);
-        let cancel_clicked = ui::button_clicked(&mut ctx, layout.cancel, &config.cancel_button);
-        let confirm_clicked = ui::button_clicked(&mut ctx, layout.confirm, &config.confirm_button);
+        let cancel_clicked =
+            ui::button::button_clicked(&mut ctx, layout.cancel, &config.cancel_button);
+        let confirm_clicked =
+            ui::button::button_clicked(&mut ctx, layout.confirm, &config.confirm_button);
 
         let rects = [layout.cancel, layout.confirm];
         let hovered = [
-            ui::button_hovered(ctx.rl, layout.cancel, &config.cancel_button),
-            ui::button_hovered(ctx.rl, layout.confirm, &config.confirm_button),
+            ui::button::button_hovered(ctx.rl, layout.cancel, &config.cancel_button),
+            ui::button::button_hovered(ctx.rl, layout.confirm, &config.confirm_button),
         ]
         .iter()
         .position(|&hovered| hovered);
@@ -299,10 +307,10 @@ impl Overlay for ConfirmDialog {
             .unwrap_or(&config.cancel_label);
         let cancel_label = ctx.label(cancel_label);
 
-        ui::Button::new(cancel_label, &config.cancel_button)
+        ui::button::Button::new(cancel_label, &config.cancel_button)
             .focused(ctx.shows_focus(&self.focus, CANCEL))
             .draw(d, ctx, layout.cancel);
-        ui::Button::new(confirm_label, &config.confirm_button)
+        ui::button::Button::new(confirm_label, &config.confirm_button)
             .focused(ctx.shows_focus(&self.focus, CONFIRM))
             .draw(d, ctx, layout.confirm);
     }

@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use vn_engine::{Assets, Audio, AudioConfig, EmbeddedFile, Fade, music_path, sound_path};
+use vn_engine::data::assets::{Assets, EmbeddedFile};
+use vn_engine::game::audio::{Audio, AudioConfig, Fade, music_path, sound_path};
 
 fn temp_assets() -> PathBuf {
     let dir = std::env::temp_dir().join(format!("vn_engine_audio_{}", std::process::id()));

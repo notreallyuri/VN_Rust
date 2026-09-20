@@ -2,8 +2,12 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
+use crate::action::Action;
+use crate::context::{DrawContext, GameContext, GameView};
+use crate::data::resources::ResourceManager;
 use crate::input::hit::{Highlight, LabelStyle, Shape};
-use crate::{Action, DrawContext, Focus, GameContext, GameView, ResourceManager, ScreenState};
+use crate::input::navigation::Focus;
+use crate::screen::ScreenState;
 
 type EnabledCheck = Rc<dyn Fn(&GameView) -> bool>;
 

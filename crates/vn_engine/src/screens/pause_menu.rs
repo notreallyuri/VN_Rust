@@ -2,13 +2,19 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::Layout;
-use crate::PanelStyle;
-use crate::screens::{MenuItem, SETTINGS_OVERLAY};
-use crate::ui::{self, ButtonStyle, TextStyle};
-use crate::{
-    Action, DrawContext, Focus, FontRole, GameContext, Overlay, OverlayAction, ScreenState,
-};
+use crate::action::Action;
+use crate::context::{DrawContext, GameContext};
+use crate::input::navigation::Focus;
+use crate::overlay::{Overlay, OverlayAction};
+use crate::screen::ScreenState;
+use crate::screens::main_menu::MenuItem;
+use crate::screens::settings::SETTINGS_OVERLAY;
+use crate::ui;
+use crate::ui::TextStyle;
+use crate::ui::button::ButtonStyle;
+use crate::ui::fonts::FontRole;
+use crate::ui::layout::Layout;
+use crate::ui::shape::PanelStyle;
 
 pub const PAUSE_OVERLAY: &str = "pause";
 pub const SAVE_OVERLAY: &str = "save";

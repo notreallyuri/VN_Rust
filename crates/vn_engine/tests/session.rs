@@ -1,10 +1,13 @@
 use std::fs;
 
+use vn_engine::action::Action;
+use vn_engine::data::rollback::{Rollback, RollbackConfig};
+use vn_engine::data::saves::Saves;
+use vn_engine::data::session::{LogEntry, SeenLines, SessionLog};
+use vn_engine::data::settings::Settings;
+use vn_engine::data::state::GameState;
+use vn_engine::screens::playing::{HudButton, PlayingConfig};
 use vn_engine::script::StoryVm;
-use vn_engine::{
-    Action, GameState, HudButton, LogEntry, PlayingConfig, Rollback, RollbackConfig, Saves,
-    SeenLines, SessionLog, Settings,
-};
 
 fn line(text: &str) -> LogEntry {
     LogEntry::Line {
@@ -97,7 +100,7 @@ fn checkpoints_remember_the_log_length() {
     let json = serde_json::to_value(&rollback.history()[0]).unwrap();
     let mut old = json.clone();
     old.as_object_mut().unwrap().remove("log_len");
-    let old: vn_engine::Checkpoint = serde_json::from_value(old).unwrap();
+    let old: vn_engine::data::rollback::Checkpoint = serde_json::from_value(old).unwrap();
     assert_eq!(old.log_len, None, "older saves have no log length");
 }
 

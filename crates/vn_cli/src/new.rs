@@ -274,8 +274,8 @@ fn main_rs(title: &str) -> String {
 
 const MAIN_RS: &str = r#"use std::process::ExitCode;
 
+use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::Color;
-use vn_engine::{Character, GameContext, ScreenState, VariableDef, VnApp};
 
 const ASSETS_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 

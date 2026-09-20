@@ -5,14 +5,28 @@ use raylib::prelude::*;
 
 use vn_script::{Event, RestoreOutcome, StoryVm};
 
-use crate::screens::{CONFIRM_OVERLAY, Confirm, KEYBINDS_OVERLAY};
-use crate::{
-    Action, Assets, Audio, Characters, Commands, DrawContext, GameContext, GameState, Hooks,
-    NavInput, Navigation, Overlay, OverlayAction, OverlayRequest, ResourceManager, Rollback,
-    SCRIPT_ERRORS_KEY, Saves, Screen, ScreenState, ScriptErrors, SettingsStore, THUMBNAIL_WIDTH,
-    TextRequest, Toast, ToastConfig, TooltipConfig, TooltipTimer,
-};
-use crate::{PlayModes, SeenLines, SessionLog};
+use crate::action::Action;
+use crate::context::{DrawContext, GameContext};
+use crate::data::assets::Assets;
+use crate::data::resources::ResourceManager;
+use crate::data::rollback::Rollback;
+use crate::data::saves::{Saves, THUMBNAIL_WIDTH};
+use crate::data::session::{PlayModes, SeenLines, SessionLog};
+use crate::data::settings::SettingsStore;
+use crate::data::state::GameState;
+use crate::game::audio::Audio;
+use crate::game::characters::Characters;
+use crate::game::commands::Commands;
+use crate::game::hooks::Hooks;
+use crate::game::script_errors::{SCRIPT_ERRORS_KEY, ScriptErrors};
+use crate::input::navigation::{NavInput, Navigation};
+use crate::overlay::{Overlay, OverlayAction, OverlayRequest};
+use crate::screen::{Screen, ScreenState};
+use crate::screens::confirm::{CONFIRM_OVERLAY, Confirm};
+use crate::screens::keybinds::KEYBINDS_OVERLAY;
+use crate::screens::text_input::TextRequest;
+use crate::ui::toast::{Toast, ToastConfig};
+use crate::ui::tooltip::{TooltipConfig, TooltipTimer};
 
 pub const CLOSE_MESSAGE: &str = "Quit the game? Unsaved progress will be lost.";
 
@@ -58,8 +72,8 @@ pub struct ScreenStateManager {
     thumbnail: Option<Image>,
     thumbnail_at: Option<f64>,
     screen_changed: bool,
-    pub(crate) effects: crate::ScreenEffects,
-    pub(crate) post: crate::PostChain,
+    pub(crate) effects: crate::frame::effects::ScreenEffects,
+    pub(crate) post: crate::frame::post::PostChain,
     autosave_request: bool,
     pub audio: Audio,
     pub tooltip_config: TooltipConfig,
@@ -87,7 +101,7 @@ impl ScreenStateManager {
         story_dir: &str,
     ) -> io::Result<Self> {
         let assets_root = assets_root.into();
-        let loader = crate::StoryLoader {
+        let loader = crate::game::hot_reload::StoryLoader {
             assets: assets_root.clone(),
             story_dir: story_dir.into(),
             schema: Default::default(),
@@ -137,8 +151,8 @@ impl ScreenStateManager {
             thumbnail: None,
             thumbnail_at: None,
             screen_changed: false,
-            effects: crate::ScreenEffects::default(),
-            post: crate::PostChain::new(),
+            effects: crate::frame::effects::ScreenEffects::default(),
+            post: crate::frame::post::PostChain::new(),
             autosave_request: false,
             audio: Audio::silent(),
             tooltip_config: TooltipConfig::default(),
@@ -340,7 +354,7 @@ impl ScreenStateManager {
         if config.enabled
             && let Some(text) = self.tooltip_timer.visible(d.get_time(), config.delay)
         {
-            crate::draw_tooltip(d, ctx.fonts(), text, config);
+            crate::ui::tooltip::draw_tooltip(d, ctx.fonts(), text, config);
         }
     }
 
@@ -364,7 +378,7 @@ impl ScreenStateManager {
         self.thumbnail_at = Some(now);
     }
 
-    pub fn effects(&self) -> &crate::ScreenEffects {
+    pub fn effects(&self) -> &crate::frame::effects::ScreenEffects {
         &self.effects
     }
 
@@ -400,10 +414,11 @@ impl ScreenStateManager {
         };
         if written {
             println!("Screenshot: {}", path.display());
-            let text = crate::ui::label(&self.story, "Screenshot saved").to_string();
+            let text = crate::ui::labels::label(&self.story, "Screenshot saved").to_string();
             self.notify(Toast::info(text));
         } else {
-            let text = crate::ui::label(&self.story, "Could not save the screenshot").to_string();
+            let text =
+                crate::ui::labels::label(&self.story, "Could not save the screenshot").to_string();
             self.notify(Toast::error(text));
         }
     }
@@ -438,21 +453,24 @@ impl ScreenStateManager {
     pub fn reload_story(&mut self, story: StoryVm) {
         self.script_errors = None;
         self.effects.clear();
-        match crate::swap_story(&mut self.story, story, &mut self.rollback) {
+        match crate::game::hot_reload::swap_story(&mut self.story, story, &mut self.rollback) {
             Ok(RestoreOutcome::Exact) => {
-                let text = crate::ui::label(&self.story, "Story reloaded").to_string();
+                let text = crate::ui::labels::label(&self.story, "Story reloaded").to_string();
                 self.notify(Toast::info(text));
             }
             Ok(RestoreOutcome::SceneRestarted { scene }) => {
-                let template =
-                    crate::ui::label(&self.story, "Story reloaded; scene '{scene}' restarted");
-                let text = crate::ui::fill(template, &[("scene", &scene)]);
+                let template = crate::ui::labels::label(
+                    &self.story,
+                    "Story reloaded; scene '{scene}' restarted",
+                );
+                let text = crate::ui::labels::fill(template, &[("scene", &scene)]);
                 self.notify(Toast::info(text));
             }
             Err(e) => {
                 eprintln!("⚠️ Story not reloaded: {}", e);
-                let template = crate::ui::label(&self.story, "Story not reloaded: {reason}");
-                let text = crate::ui::fill(template, &[("reason", &e.to_string())]);
+                let template =
+                    crate::ui::labels::label(&self.story, "Story not reloaded: {reason}");
+                let text = crate::ui::labels::fill(template, &[("reason", &e.to_string())]);
                 self.notify(Toast::error(text));
                 return;
             }

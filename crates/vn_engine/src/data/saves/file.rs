@@ -5,7 +5,9 @@ use serde_json::Value as Json;
 use vn_script::{Event, RestoreOutcome, StorySnapshot, StoryVm};
 
 use super::{LoadReport, LoadWarning, SaveError};
-use crate::{Checkpoint, GameState, LogEntry};
+use crate::data::rollback::Checkpoint;
+use crate::data::session::LogEntry;
+use crate::data::state::GameState;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SaveFile {

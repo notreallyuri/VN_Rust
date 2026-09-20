@@ -1,12 +1,17 @@
 use std::rc::Rc;
 
+use vn_engine::data::rollback::RollbackConfig;
+use vn_engine::input::navigation::NavigationConfig;
 use vn_engine::raylib::prelude::KeyboardKey;
-use vn_engine::{
-    KeySection, KeybindsConfig, KeybindsOverlay, NavigationConfig, PlayingConfig, RollbackConfig,
-    default_keybinds, key_list, key_name,
+use vn_engine::screens::keybinds::{
+    KeySection, KeybindsConfig, KeybindsOverlay, default_keybinds, key_list, key_name,
 };
+use vn_engine::screens::playing::PlayingConfig;
 
-fn find<'a>(sections: &'a [KeySection], action: &str) -> Option<&'a vn_engine::KeyRow> {
+fn find<'a>(
+    sections: &'a [KeySection],
+    action: &str,
+) -> Option<&'a vn_engine::screens::keybinds::KeyRow> {
     sections
         .iter()
         .flat_map(|section| &section.rows)

@@ -2,7 +2,8 @@ use std::collections::{BTreeMap, HashMap};
 
 use vn_script::{CommandSig, ParamKind};
 
-use crate::{GameContext, ScreenState};
+use crate::context::GameContext;
+use crate::screen::ScreenState;
 
 type Handler = Box<dyn Fn(&mut GameContext, &[String]) -> Option<ScreenState>>;
 

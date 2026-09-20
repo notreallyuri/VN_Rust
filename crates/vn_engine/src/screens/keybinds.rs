@@ -2,13 +2,16 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::PanelStyle;
-use crate::screens::PlayingConfig;
-use crate::ui::{self, ButtonStyle, TextStyle};
-use crate::{
-    DrawContext, Focus, FontRole, GameContext, NavigationConfig, Overlay, OverlayAction,
-    RollbackConfig,
-};
+use crate::context::{DrawContext, GameContext};
+use crate::data::rollback::RollbackConfig;
+use crate::input::navigation::{Focus, NavigationConfig};
+use crate::overlay::{Overlay, OverlayAction};
+use crate::screens::playing::PlayingConfig;
+use crate::ui;
+use crate::ui::TextStyle;
+use crate::ui::button::ButtonStyle;
+use crate::ui::fonts::FontRole;
+use crate::ui::shape::PanelStyle;
 
 pub const KEYBINDS_OVERLAY: &str = "keybinds";
 
@@ -403,7 +406,7 @@ impl Overlay for KeybindsOverlay {
             .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_RIGHT);
         let accepted = self.focus.update(&ctx.nav, &[back], &[], None);
 
-        if ui::button_clicked(&mut ctx, back, &config.back_button)
+        if ui::button::button_clicked(&mut ctx, back, &config.back_button)
             || key
             || right_click
             || ctx.nav.back
@@ -502,7 +505,7 @@ impl Overlay for KeybindsOverlay {
             }
         }
 
-        ui::Button::new(ctx.label(&config.back_label), &config.back_button)
+        ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, 0))
             .draw(d, ctx, self.back_rect(screen));
     }

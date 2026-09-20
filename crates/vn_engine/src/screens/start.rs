@@ -2,8 +2,12 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use crate::ui::{self, Background, TextStyle};
-use crate::{DrawContext, FontRole, Fonts, GameContext, Scenery, Screen, ScreenState};
+use crate::context::{DrawContext, GameContext};
+use crate::frame::scenery::Scenery;
+use crate::screen::{Screen, ScreenState};
+use crate::ui;
+use crate::ui::fonts::{FontRole, Fonts};
+use crate::ui::{Background, TextStyle};
 
 #[derive(Clone, Debug)]
 pub struct StartScreenConfig {

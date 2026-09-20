@@ -1,4 +1,7 @@
-use vn_engine::{Easing, ScreenTransition, ScreenTransitionConfig, ScreenTransitionKind, Tween};
+use vn_engine::frame::screen_transition::{
+    ScreenTransition, ScreenTransitionConfig, ScreenTransitionKind,
+};
+use vn_engine::ui::ease::{Easing, Tween};
 
 #[test]
 fn easing_stays_inside_its_range() {

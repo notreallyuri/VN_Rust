@@ -1,5 +1,6 @@
+use vn_engine::frame::stage::{Stage, progress, stage_layout};
+use vn_engine::screens::playing::PlayingConfig;
 use vn_engine::script::{StoryVm, TransitionKind};
-use vn_engine::{PlayingConfig, Stage, progress, stage_layout};
 
 const STORY: &str = r#"
 scene a:

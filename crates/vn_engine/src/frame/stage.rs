@@ -3,10 +3,11 @@ use std::collections::{BTreeMap, HashMap};
 use raylib::prelude::*;
 use vn_script::{Event, StoryVm, Transition, TransitionKind};
 
-use crate::screens::PlayingConfig;
+use crate::data::resources::{ResourceManager, background_path, character_path};
+use crate::screens::playing::PlayingConfig;
+use crate::ui;
+use crate::ui::Background;
 use crate::ui::ease::{Easing, lerp};
-use crate::ui::{self, Background};
-use crate::{ResourceManager, background_path, character_path};
 
 const OFFSCREEN_LEFT: f32 = -0.25;
 const OFFSCREEN_RIGHT: f32 = 1.25;

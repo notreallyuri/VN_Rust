@@ -1,5 +1,6 @@
 use raylib::prelude::*;
-use vn_engine::{Scroll, ScrollStyle, Viewport};
+use vn_engine::frame::viewport::Viewport;
+use vn_engine::ui::scroll::{Scroll, ScrollStyle};
 
 fn area() -> Rectangle {
     Rectangle::new(100.0, 50.0, 400.0, 200.0)

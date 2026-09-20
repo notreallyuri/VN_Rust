@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use vn_engine::{Assets, EmbeddedFile, VnApp};
+use vn_engine::app::VnApp;
+use vn_engine::data::assets::{Assets, EmbeddedFile};
 
 static FILES: &[EmbeddedFile] = &[
     ("backgrounds/hall.png", b"png"),

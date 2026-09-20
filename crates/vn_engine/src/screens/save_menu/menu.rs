@@ -5,11 +5,14 @@ use raylib::prelude::*;
 
 use super::actions::{delete_slot, load_from, save_to, slot_label, slot_label_for};
 use super::{SaveMenuConfig, SaveMenuMode};
+use crate::action::Action;
+use crate::context::{DrawContext, GameContext};
 use crate::data::saves::SaveError;
 use crate::data::saves::{AUTO_SLOT, QUICK_SLOT, SlotInfo, now, time_ago};
-use crate::screens::Confirm;
+use crate::input::navigation::Focus;
+use crate::screen::ScreenState;
+use crate::screens::confirm::Confirm;
 use crate::ui;
-use crate::{Action, DrawContext, Focus, GameContext, ScreenState};
 
 pub(super) enum Outcome {
     Stay,
@@ -231,7 +234,7 @@ impl SaveMenu {
             .any(|&key| ctx.rl.is_key_pressed(key));
         let config = Rc::clone(&self.config);
         let back = self.back_rect(screen);
-        let back_clicked = ui::button_clicked(ctx, back, &config.back_button);
+        let back_clicked = ui::button::button_clicked(ctx, back, &config.back_button);
         if back_key || back_clicked || ctx.nav.back {
             return Outcome::Back;
         }
@@ -242,7 +245,7 @@ impl SaveMenu {
         let mut targets = rects.clone();
         targets.push(back);
         let pointed = hovered.or_else(|| {
-            ui::button_hovered(ctx.rl, back, &config.back_button).then_some(rects.len())
+            ui::button::button_hovered(ctx.rl, back, &config.back_button).then_some(rects.len())
         });
         let accepted = self.focus.update(&ctx.nav, &targets, &[], pointed);
         match accepted {
@@ -272,7 +275,7 @@ impl SaveMenu {
                 .delete_keys
                 .iter()
                 .any(|&key| ctx.rl.is_key_pressed(key));
-            if ui::button_clicked(ctx, delete, &config.delete_button) || key {
+            if ui::button::button_clicked(ctx, delete, &config.delete_button) || key {
                 self.delete(ctx, index);
                 return Outcome::Stay;
             }
@@ -387,12 +390,12 @@ impl SaveMenu {
 
             if deletable {
                 let delete_label = ctx.label(&config.delete_label);
-                ui::draw_button(d, ctx, delete, delete_label, &config.delete_button);
+                ui::button::draw_button(d, ctx, delete, delete_label, &config.delete_button);
             }
         }
 
         let back_index = slots.len();
-        ui::Button::new(ctx.label(&config.back_label), &config.back_button)
+        ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, back_index))
             .draw(d, ctx, self.back_rect(screen));
     }
