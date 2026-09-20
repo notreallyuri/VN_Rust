@@ -103,6 +103,10 @@ system, and `main.rs` and the custom screens only use it:
 | `button`, `menu_button`, `danger_button`, `choice_button`, `hud_button` | Beveled; hover and focus only change the fill and the rule, never the position or size | Every button |
 | `heading`, `body`, `label`, `section` | Noto Serif for titles and dialogue, Noto Sans for menus; section labels in brass | Every text |
 
+The game runs at `render_scale(1.5)`: the frame is drawn at 1920×1080 and scaled down to
+the window, so the scooped corners, the brass rules and the text come out smoother. The
+layout is still 1280×720, so nothing moves. Drop it to 1.0 on a slow machine.
+
 ## Assets
 
 The asset root is `CARGO_MANIFEST_DIR/assets`, resolved at compile time so

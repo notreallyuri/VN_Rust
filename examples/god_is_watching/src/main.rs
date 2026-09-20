@@ -60,6 +60,7 @@ fn main() -> ExitCode {
 
     let app = cast::register(VnApp::new("God Is Watching"))
         .size(1280, 720)
+        .render_scale(1.5)
         .assets(ASSETS_ROOT)
         .embedded_assets(vn_engine::embedded_assets!())
         .clear_color(style::INK)
