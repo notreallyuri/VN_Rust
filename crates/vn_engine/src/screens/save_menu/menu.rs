@@ -3,12 +3,14 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use super::actions::{delete_slot, load_from, save_to, slot_label, slot_label_for};
+use super::actions::{
+    delete_slot, load_from, save_to, slot_label, slot_label_for, summary_of, when,
+};
 use super::{SaveMenuConfig, SaveMenuMode};
 use crate::action::Action;
 use crate::context::{DrawContext, GameContext};
 use crate::data::saves::SaveError;
-use crate::data::saves::{AUTO_SLOT, QUICK_SLOT, SlotInfo, now, time_ago};
+use crate::data::saves::{AUTO_SLOT, QUICK_SLOT, SlotInfo, now};
 use crate::input::navigation::Focus;
 use crate::screen::ScreenState;
 use crate::screens::confirm::Confirm;
@@ -341,9 +343,9 @@ impl SaveMenu {
                     format!(
                         "{}  ·  {}",
                         slot_label_for(ctx, &info.slot),
-                        time_ago(file.saved_at, now)
+                        when(ctx, file.saved_at, now)
                     ),
-                    file.summary.clone(),
+                    summary_of(ctx, file),
                     &config.slot_summary_text,
                 ),
                 Err(SaveError::Empty { .. }) => (

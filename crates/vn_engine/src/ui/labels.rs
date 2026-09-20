@@ -53,4 +53,6 @@ pub const MESSAGES: &[&str] = &[
     "Story reloaded; scene '{scene}' restarted",
     "Story not reloaded: {reason}",
     "That language could not be loaded",
+    "Making a choice",
+    "The end",
 ];

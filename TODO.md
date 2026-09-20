@@ -175,7 +175,7 @@ fonts and saves at once, and each of those is cheaper to change now than later.
 - [x] Translatable UI labels: every string the default screens show goes through `ctx.label` / `ctx.message` and is looked up in the catalog's `ui` section by its English text, so a game's own labels and notifications are translatable with nothing to declare. A debug build writes `lang/ui.json` (what the game actually shows, read from the live configs) and `vn translate` folds it into the catalog; `VnApp::ui_text` adds strings a game builds itself
 - [ ] Fonts per language with a fallback chain, and wrapping for scripts without spaces (CJK)
 - [x] `vn check` reports missing and stale translations for a language: a line per catalog in `lang/`, counted against the story as it is now, and `--lang <code>` lists each one with its file and line
-- [ ] Saves stay language-independent: store ids, not translated text, so the session log and save slots re-render in whatever language is active. Also the save slots' time stamps ("5 minutes ago"), which are built in `data/saves` without a context
+- [x] Saves stay language-independent: the log and the save slots store the speaker's id, the story file, the line as written and the values it was read with (`Spoken`, `SavePoint`), and re-render through the active catalog; `time_ago` returns an `Elapsed` the screens fill in with `ctx.message`. `SAVE_FORMAT_VERSION` 2; older saves show their stored summary
 
 ## M9: UI and presentation
 

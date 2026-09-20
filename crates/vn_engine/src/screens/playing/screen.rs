@@ -7,7 +7,7 @@ use super::{PlayingConfig, Typewriter};
 use crate::action::Action;
 use crate::context::{DrawContext, GameContext};
 use crate::data::resources::{background_path, character_path};
-use crate::data::session::LogEntry;
+use crate::data::session::{LogEntry, Spoken};
 use crate::frame::stage::Stage;
 use crate::input::navigation::Focus;
 use crate::screen::{Screen, ScreenState};
@@ -192,11 +192,17 @@ impl Screen for PlayingScreen {
                 match clicked {
                     Some(index) => {
                         let text = options[index].clone();
+                        let said = ctx
+                            .story
+                            .choice_source(index)
+                            .map(|source| Spoken::capture(ctx.story, source));
                         if let Err(e) = ctx.story.choose(index) {
                             eprintln!("⚠️ {}", e);
                             return None;
                         }
-                        ctx.log.push(LogEntry::Choice { text: text.clone() });
+                        if let Some(said) = said {
+                            ctx.log.push(LogEntry::Choice { said });
+                        }
                         if !ctx.rollback.config().through_choices {
                             ctx.rollback.mark_barrier();
                         }

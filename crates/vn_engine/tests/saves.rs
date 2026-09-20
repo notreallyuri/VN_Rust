@@ -5,11 +5,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde::{Deserialize, Serialize};
 use vn_engine::data::rollback::Checkpoint;
-use vn_engine::data::saves::time_ago;
 use vn_engine::data::saves::{
     AUTO_SLOT, LoadWarning, SAVE_FORMAT_VERSION, SaveError, Saves, THUMBNAIL_WIDTH,
     default_saves_dir, slug,
 };
+use vn_engine::data::saves::{Elapsed, SavePoint, time_ago};
+use vn_engine::data::session::Spoken;
 use vn_engine::data::state::GameState;
 use vn_engine::script::{Event, StoryVm, Value, VmError};
 
@@ -126,12 +127,63 @@ fn save_file_is_readable_json_with_a_summary() {
     let file = saves.read("1").unwrap();
     assert_eq!(file.format_version, SAVE_FORMAT_VERSION);
     assert_eq!(file.game, "Test Game");
-    assert_eq!(file.summary, "middle line");
     assert!(file.state.contains_key("Inventory"));
     assert!(file.state.contains_key("Affection"));
 
+    let SavePoint::Line { speaker, said } = &file.point else {
+        panic!("expected a line, got {:?}", file.point);
+    };
+    assert_eq!(speaker.as_deref(), None);
+    assert_eq!(said.source, "middle line");
+    assert_eq!(said.text(None), "middle line");
+
     let raw = fs::read_to_string(dir.0.join("1.json")).unwrap();
     assert!(raw.contains("\"scene\": \"middle\""));
+    assert!(
+        !raw.contains("\"summary\""),
+        "the translated line should not be written any more:\n{}",
+        raw
+    );
+}
+
+#[test]
+fn a_save_point_keeps_the_values_a_line_was_read_with() {
+    let source = "Hello, {player_name}. You have {coins} coins.";
+    let mut variables = std::collections::HashMap::new();
+    variables.insert("player_name".to_string(), Value::String("Mary".into()));
+    variables.insert("coins".to_string(), Value::Int(3));
+
+    let said = Spoken::with_variables("01.story", source, &variables);
+    assert_eq!(said.fields.len(), 2, "only what the line refers to");
+    assert_eq!(said.text(None), "Hello, Mary. You have 3 coins.");
+
+    variables.insert("coins".to_string(), Value::Int(99));
+    assert_eq!(
+        said.text(None),
+        "Hello, Mary. You have 3 coins.",
+        "a later change to the variable does not rewrite the log"
+    );
+}
+
+#[test]
+fn a_save_from_the_old_format_still_shows_its_summary() {
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let (vm, state) = played_game();
+    saves.save("1", &vm, &state).unwrap();
+
+    let path = dir.0.join("1.json");
+    let mut json: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+    let file = json.as_object_mut().unwrap();
+    file.insert("format_version".into(), 1.into());
+    file.insert("summary".into(), "middle line".into());
+    file.remove("point");
+    fs::write(&path, serde_json::to_string_pretty(&json).unwrap()).unwrap();
+
+    let file = saves.read("1").unwrap();
+    assert_eq!(file.point, SavePoint::Unknown);
+    assert_eq!(file.summary, "middle line");
 }
 
 #[test]
@@ -382,13 +434,46 @@ fn state_key_collisions_are_rejected() {
 
 #[test]
 fn relative_times() {
-    assert_eq!(time_ago(1000, 1030), "just now");
-    assert_eq!(time_ago(1000, 1060), "1 minute ago");
-    assert_eq!(time_ago(1000, 1000 + 5 * 60), "5 minutes ago");
-    assert_eq!(time_ago(0, 2 * 3600), "2 hours ago");
-    assert_eq!(time_ago(0, 86_400), "1 day ago");
-    assert_eq!(time_ago(0, 90 * 86_400), "3 months ago");
-    assert_eq!(time_ago(2000, 1000), "just now");
+    let shown = |saved_at, now| {
+        let elapsed = time_ago(saved_at, now);
+        vn_engine::ui::labels::fill(elapsed.template(), &[("n", &elapsed.count().to_string())])
+    };
+
+    assert_eq!(time_ago(1000, 1030), Elapsed::JustNow);
+    assert_eq!(time_ago(1000, 1060), Elapsed::Minutes(1));
+    assert_eq!(time_ago(0, 2 * 3600), Elapsed::Hours(2));
+    assert_eq!(time_ago(0, 86_400), Elapsed::Days(1));
+    assert_eq!(time_ago(0, 90 * 86_400), Elapsed::Months(3));
+    assert_eq!(time_ago(2000, 1000), Elapsed::JustNow);
+
+    assert_eq!(shown(1000, 1030), "just now");
+    assert_eq!(shown(1000, 1060), "1 minute ago");
+    assert_eq!(shown(1000, 1000 + 5 * 60), "5 minutes ago");
+    assert_eq!(shown(0, 2 * 3600), "2 hours ago");
+    assert_eq!(shown(0, 90 * 86_400), "3 months ago");
+}
+
+#[test]
+fn every_relative_time_has_a_translatable_message() {
+    let templates = [
+        Elapsed::JustNow,
+        Elapsed::Minutes(1),
+        Elapsed::Minutes(5),
+        Elapsed::Hours(1),
+        Elapsed::Hours(5),
+        Elapsed::Days(1),
+        Elapsed::Days(5),
+        Elapsed::Months(1),
+        Elapsed::Months(5),
+    ];
+    for elapsed in templates {
+        assert!(
+            Elapsed::MESSAGES.contains(&elapsed.template()),
+            "{:?} shows {:?}, which vn translate never sees",
+            elapsed,
+            elapsed.template()
+        );
+    }
 }
 
 #[test]

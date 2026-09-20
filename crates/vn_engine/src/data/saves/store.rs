@@ -8,7 +8,7 @@ use vn_script::{Event, StoryVm};
 
 use super::{
     AUTO_SLOT, LoadReport, Migrations, SAVE_FORMAT_VERSION, SaveError, SaveFile, SaveMigration,
-    SlotInfo, THUMBNAIL_WIDTH, apply, format_migrations, now, summary,
+    SlotInfo, THUMBNAIL_WIDTH, apply, format_migrations, now, point,
 };
 use crate::data::rollback::Rollback;
 use crate::data::session::LogEntry;
@@ -128,7 +128,8 @@ impl Saves {
             game: self.game.clone(),
             game_version: self.version,
             saved_at: now(),
-            summary: summary(story),
+            summary: String::new(),
+            point: point(story),
             story: story.snapshot(),
             state: state.to_json().map_err(SaveError::State)?,
             rollback: Vec::new(),

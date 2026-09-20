@@ -57,6 +57,30 @@ impl StoryVm {
         });
     }
 
+    pub fn current_file(&self) -> Option<&str> {
+        self.program
+            .file(self.current_ip.or(self.pending_choice)?)
+            .map(crate::translate::file_key)
+    }
+
+    pub fn current_say(&self) -> Option<(Option<&str>, &str)> {
+        let Some(Instruction::Say { char_id, text }) =
+            self.program.instructions.get(self.current_ip?)
+        else {
+            return None;
+        };
+        Some((char_id.as_deref(), text.as_str()))
+    }
+
+    pub fn choice_source(&self, index: usize) -> Option<&str> {
+        let Some(Instruction::Choice { options }) =
+            self.program.instructions.get(self.pending_choice?)
+        else {
+            return None;
+        };
+        options.get(index).map(|(text, _)| text.as_str())
+    }
+
     pub fn catalog(&self) -> Option<&Catalog> {
         self.catalog.as_ref()
     }

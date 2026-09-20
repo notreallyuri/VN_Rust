@@ -141,6 +141,9 @@ impl VnApp {
         for text in crate::ui::labels::MESSAGES {
             add(text);
         }
+        for text in crate::data::saves::Elapsed::MESSAGES {
+            add(text);
+        }
         for language in &self.languages {
             add(&language.label);
         }

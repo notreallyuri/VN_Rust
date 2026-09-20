@@ -1085,10 +1085,10 @@ the game actually shows, read from the live configuration after your builder ran
 `vn translate <lang>` folds that list into the catalog. A game can add strings it builds
 itself with `VnApp::ui_text("Filed in the archive")`.
 
-Two things are not translated yet (see TODO.md): the time stamps on save slots ("5
-minutes ago") and the line summary stored inside a save file, which is text captured when
-the save was written. Fonts per language with a fallback chain and CJK wrapping, and
-`vn check` reporting what is missing or stale, are also still to come.
+Nothing a save holds is in any one language: the log and the save slots store the
+source text, the speaker's id and the values the line was read with, and re-render
+through whatever catalog is active (see [Saves](#saves)). Fonts per language with a
+fallback chain and CJK wrapping are still to come (see TODO.md).
 
 ## Rollback
 
@@ -1196,8 +1196,12 @@ disappear, and the gamepad column is empty when the gamepad is off. `key_name(ke
 ## Log
 
 Every line the player sees and every choice they make is kept in the session log
-(`ctx.log`, a `SessionLog` of `LogEntry::Line { speaker, text }` and
-`LogEntry::Choice { text }`, the last 300). The log is part of the game: rolling back
+(`ctx.log`, a `SessionLog` of `LogEntry::Line { speaker, said }` and
+`LogEntry::Choice { said }`, the last 300). `speaker` is the character's id and `said` is
+a `Spoken`: the story file, the line as written, and the values of the variables that
+line interpolates, captured as it was read. Nothing there is in a particular language, so
+the log re-renders when the player switches — and a line keeps the numbers it was read
+with, rather than today's. The log is part of the game: rolling back
 rewinds it (and rolling forward restores it), saves store it (`SaveFile::log`) and
 loading brings it back, New Game clears it.
 
@@ -1574,11 +1578,17 @@ previous save intact.
 
 ```json
 {
-  "format_version": 1,
+  "format_version": 2,
   "game": "God Is Watching",
   "game_version": 0,
   "saved_at": 1789000000,
-  "summary": "mary: The hallway candles were lit when I came down.",
+  "point": {
+    "line": {
+      "speaker": "mary",
+      "file": "02_house.story",
+      "source": "The hallway candles were lit when I came down."
+    }
+  },
   "story": {
     "scene": "mary_breakfast",
     "offset": 7,
@@ -1591,6 +1601,14 @@ previous save intact.
   "state": { "Inventory": { "items": { "verlaine_letter": 1 } } }
 }
 ```
+
+`point` is what the slot shows, kept as ids rather than as the sentence the player read:
+the speaker's id, the story file and the line as written, plus the values of any
+variables it interpolates. The menu renders it through the active catalog and the
+character registry, so the slots and their time stamps ("5 minutes ago", built from
+`Elapsed` and filled in by `ctx.message`) are in whatever language is on now, not the one
+the save was written in. Saves at `format_version` 1 have a `summary` string instead,
+which is shown as it was stored.
 
 ### Autosave
 

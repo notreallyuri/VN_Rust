@@ -221,7 +221,7 @@ fn blocks(ctx: &DrawContext, config: &LogConfig, width: f32) -> Vec<Block> {
         .entries()
         .iter()
         .map(|entry| match entry {
-            LogEntry::Line { speaker, text } => {
+            LogEntry::Line { speaker, said } => {
                 let style = match speaker {
                     Some(_) => config.line_text.clone(),
                     None => config.narration_text.clone(),
@@ -234,16 +234,17 @@ fn blocks(ctx: &DrawContext, config: &LogConfig, width: f32) -> Vec<Block> {
                     };
                     (name, style)
                 });
-                let lines = styled::wrap(fonts, &StyledText::parse(text), &style, width);
+                let text = said.text(ctx.story.catalog());
+                let lines = styled::wrap(fonts, &StyledText::parse(&text), &style, width);
                 Block {
                     speaker,
                     lines,
                     style,
                 }
             }
-            LogEntry::Choice { text } => {
+            LogEntry::Choice { said } => {
                 let style = config.choice_text.clone();
-                let text = format!("{}{}", config.choice_prefix, text);
+                let text = format!("{}{}", config.choice_prefix, said.text(ctx.story.catalog()));
                 Block {
                     speaker: None,
                     lines: styled::wrap(fonts, &StyledText::parse(&text), &style, width),

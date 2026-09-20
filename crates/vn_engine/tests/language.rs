@@ -320,3 +320,57 @@ fn a_game_that_renames_a_label_offers_the_new_name() {
         "a replaced label is not offered; what the game actually shows is"
     );
 }
+
+fn translated(file: &str, source: &str, into: &str) -> Catalog {
+    let mut catalog = Catalog::new("pt-BR");
+    catalog.refresh(
+        &[translate::Source {
+            file: file.into(),
+            line: 1,
+            kind: translate::StringKind::Dialogue,
+            speaker: None,
+            text: source.into(),
+        }],
+        &[],
+    );
+    for entry in catalog.story.get_mut(file).unwrap().values_mut() {
+        entry.text = into.to_string();
+    }
+    catalog
+}
+
+#[test]
+fn a_logged_line_is_read_in_whatever_language_is_active() {
+    use vn_engine::data::session::Spoken;
+
+    let said = Spoken::with_variables("01.story", "Sit down.", &Default::default());
+    assert_eq!(said.text(None), "Sit down.");
+
+    let catalog = translated("01.story", "Sit down.", "Sente-se.");
+    assert_eq!(
+        said.text(Some(&catalog)),
+        "Sente-se.",
+        "a line already in the log must follow a language change"
+    );
+
+    let other = translated("01.story", "Something else.", "Outra coisa.");
+    assert_eq!(
+        said.text(Some(&other)),
+        "Sit down.",
+        "an untranslated line falls back to the source text"
+    );
+}
+
+#[test]
+fn a_translated_line_keeps_the_values_it_was_read_with() {
+    use vn_engine::data::session::Spoken;
+    use vn_engine::script::Value;
+
+    let source = "Welcome, {player_name}.";
+    let mut variables = std::collections::HashMap::new();
+    variables.insert("player_name".to_string(), Value::String("Mary".into()));
+    let said = Spoken::with_variables("01.story", source, &variables);
+
+    let catalog = translated("01.story", source, "Bem-vinda, {player_name}.");
+    assert_eq!(said.text(Some(&catalog)), "Bem-vinda, Mary.");
+}

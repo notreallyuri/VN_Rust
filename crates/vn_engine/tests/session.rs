@@ -3,17 +3,25 @@ use std::fs;
 use vn_engine::action::Action;
 use vn_engine::data::rollback::{Rollback, RollbackConfig};
 use vn_engine::data::saves::Saves;
-use vn_engine::data::session::{LogEntry, SeenLines, SessionLog};
+use vn_engine::data::session::{LogEntry, SeenLines, SessionLog, Spoken};
 use vn_engine::data::settings::Settings;
 use vn_engine::data::state::GameState;
 use vn_engine::screens::playing::{HudButton, PlayingConfig};
 use vn_engine::script::StoryVm;
 
+fn said(source: &str) -> Spoken {
+    Spoken::with_variables("01.story", source, &Default::default())
+}
+
 fn line(text: &str) -> LogEntry {
     LogEntry::Line {
         speaker: None,
-        text: text.into(),
+        said: said(text),
     }
+}
+
+fn choice(text: &str) -> LogEntry {
+    LogEntry::Choice { said: said(text) }
 }
 
 #[test]
@@ -21,11 +29,11 @@ fn the_log_keeps_order_forgets_the_oldest_and_can_be_rewound() {
     let mut log = SessionLog::new(3);
     assert!(log.is_empty());
     log.push(line("one"));
-    log.push(LogEntry::Choice { text: "Go".into() });
+    log.push(choice("Go"));
     log.push(line("two"));
     log.push(line("three"));
     assert_eq!(log.len(), 3);
-    assert_eq!(log.entries()[0], LogEntry::Choice { text: "Go".into() });
+    assert_eq!(log.entries()[0], choice("Go"));
 
     log.show(1);
     assert_eq!(log.entries().len(), 1, "rolled back");
@@ -48,8 +56,8 @@ fn the_log_keeps_order_forgets_the_oldest_and_can_be_rewound() {
 
 #[test]
 fn log_entries_serialize_compactly() {
-    let json = serde_json::to_string(&LogEntry::Choice { text: "Go".into() }).unwrap();
-    assert_eq!(json, r#"{"choice":{"text":"Go"}}"#);
+    let json = serde_json::to_string(&choice("Go")).unwrap();
+    assert_eq!(json, r#"{"choice":{"file":"01.story","source":"Go"}}"#);
 }
 
 #[test]

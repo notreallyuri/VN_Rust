@@ -3,7 +3,7 @@ use vn_script::{Event, TransitionKind};
 
 use super::{PlayingScreen, Typewriter};
 use crate::context::GameContext;
-use crate::data::session::LogEntry;
+use crate::data::session::{LogEntry, Spoken};
 use crate::input::navigation::{Focus, NavInput};
 use crate::screen::ScreenState;
 use crate::ui;
@@ -64,10 +64,13 @@ impl PlayingScreen {
                     }
                 }
                 event if event.is_blocking() => {
-                    if let Event::Say { speaker, text } = &event {
+                    if let Event::Say { speaker, .. } = &event
+                        && let Some((_, source)) = ctx.story.current_say()
+                    {
+                        let said = Spoken::capture(ctx.story, source);
                         ctx.log.push(LogEntry::Line {
                             speaker: speaker.clone(),
-                            text: text.clone(),
+                            said,
                         });
                     }
                     let typed = (ctx.settings.values.text_speed, ctx.rl.get_time());

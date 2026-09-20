@@ -1,9 +1,10 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+use vn_script::{Catalog, StoryVm, Value, interpolate, referenced_variables};
 
 pub const SEEN_FILE_NAME: &str = "seen.json";
 pub const LOG_LIMIT: usize = 300;
@@ -14,16 +15,72 @@ pub struct PlayModes {
     pub skip: bool,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Spoken {
+    #[serde(default)]
+    pub file: String,
+    pub source: String,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub fields: BTreeMap<String, String>,
+}
+
+impl Spoken {
+    pub fn capture(story: &StoryVm, source: &str) -> Self {
+        Self::with_variables(
+            story.current_file().unwrap_or_default(),
+            source,
+            story.variables(),
+        )
+    }
+
+    pub fn with_variables(file: &str, source: &str, variables: &HashMap<String, Value>) -> Self {
+        let fields = referenced_variables(source)
+            .into_iter()
+            .filter_map(|name| {
+                let value = variables.get(name)?;
+                Some((name.to_string(), value.to_string()))
+            })
+            .collect();
+        Self {
+            file: file.to_string(),
+            source: source.to_string(),
+            fields,
+        }
+    }
+
+    pub fn text(&self, catalog: Option<&Catalog>) -> String {
+        let text = catalog
+            .and_then(|catalog| catalog.text(&self.file, &self.source))
+            .unwrap_or(&self.source);
+        let fields: HashMap<String, Value> = self
+            .fields
+            .iter()
+            .map(|(name, value)| (name.clone(), Value::String(value.clone())))
+            .collect();
+        interpolate(text, &fields)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LogEntry {
     Line {
         speaker: Option<String>,
-        text: String,
+        #[serde(flatten)]
+        said: Spoken,
     },
     Choice {
-        text: String,
+        #[serde(flatten)]
+        said: Spoken,
     },
+}
+
+impl LogEntry {
+    pub fn said(&self) -> &Spoken {
+        match self {
+            LogEntry::Line { said, .. } | LogEntry::Choice { said } => said,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
