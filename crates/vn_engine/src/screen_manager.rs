@@ -57,6 +57,7 @@ pub struct ScreenStateManager {
     script_errors: Option<ScriptErrors>,
     thumbnail: Option<Image>,
     thumbnail_at: Option<f64>,
+    screen_changed: bool,
     autosave_request: bool,
     pub audio: Audio,
     pub tooltip_config: TooltipConfig,
@@ -133,6 +134,7 @@ impl ScreenStateManager {
             script_errors: None,
             thumbnail: None,
             thumbnail_at: None,
+            screen_changed: false,
             autosave_request: false,
             audio: Audio::silent(),
             tooltip_config: TooltipConfig::default(),
@@ -356,6 +358,10 @@ impl ScreenStateManager {
         self.thumbnail_at = Some(now);
     }
 
+    pub fn take_screen_changed(&mut self) -> bool {
+        std::mem::take(&mut self.screen_changed)
+    }
+
     pub fn thumbnail(&self) -> Option<&Image> {
         self.thumbnail.as_ref()
     }
@@ -492,6 +498,7 @@ impl ScreenStateManager {
                 let previous = std::mem::replace(&mut self.current_state, next_state);
                 self.previous_state = Some(previous);
                 self.overlays.clear();
+                self.screen_changed = true;
             }
             None => eprintln!("⚠️ No screen registered for {:?}", next_state),
         }

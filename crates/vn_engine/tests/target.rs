@@ -69,3 +69,49 @@ fn the_screen_capture_reads_the_render_target() {
         "a capture inside texture mode must read the render target, or save thumbnails break"
     );
 }
+
+#[test]
+#[ignore = "opens a window; run with --ignored on a machine with a display"]
+fn a_copied_frame_keeps_its_orientation() {
+    use raylib::prelude::*;
+    use vn_engine::target::{RenderTarget, copy_into};
+
+    let (mut rl, thread) = raylib::init().size(64, 64).title("copy").build();
+    rl.set_trace_log(TraceLogLevel::LOG_WARNING);
+
+    let mut from = RenderTarget::new();
+    let mut into = RenderTarget::new();
+    from.resize(&mut rl, &thread, (64, 64));
+    into.resize(&mut rl, &thread, (64, 64));
+
+    let mut d = rl.begin_drawing(&thread);
+    {
+        let mut t = d.begin_texture_mode(&thread, from.frame_mut().unwrap());
+        t.clear_background(Color::BLUE);
+        t.draw_rectangle(0, 0, 64, 32, Color::RED);
+    }
+    copy_into(
+        &mut d,
+        &thread,
+        from.frame().unwrap(),
+        into.frame_mut().unwrap(),
+        (64, 64),
+    );
+
+    let copied = {
+        let t = d.begin_texture_mode(&thread, into.frame_mut().unwrap());
+        unsafe { raylib::ffi::rlDrawRenderBatchActive() };
+        t.load_image_from_screen(&thread)
+    };
+    let pixels = copied.get_image_data();
+    let top = pixels[64 * 8 + 32];
+    let bottom = pixels[64 * 56 + 32];
+    assert_eq!(
+        ((top.r, top.g, top.b), (bottom.r, bottom.g, bottom.b)),
+        (
+            (Color::RED.r, Color::RED.g, Color::RED.b),
+            (Color::BLUE.r, Color::BLUE.g, Color::BLUE.b)
+        ),
+        "the copy is upside down: the snapshot would show a flipped screen"
+    );
+}

@@ -11,6 +11,7 @@ use vn_script::{
 };
 
 use crate::SeenLines;
+use crate::screen_transition::{ScreenTransition, ScreenTransitionConfig};
 use crate::screens::{
     CONFIRM_OVERLAY, ConfirmConfig, ConfirmDialog, LOAD_OVERLAY, MainMenuConfig, MainMenuScreen,
     PAUSE_OVERLAY, PauseMenu, PauseMenuConfig, PlayingConfig, PlayingScreen, SAVE_OVERLAY,
@@ -77,6 +78,7 @@ pub struct VnApp {
     characters: Characters,
     warn_missing_art: bool,
     hot_reload: bool,
+    screen_transition: ScreenTransitionConfig,
 }
 
 #[derive(Debug)]
@@ -169,7 +171,13 @@ impl VnApp {
             characters: Characters::default(),
             warn_missing_art: true,
             hot_reload: cfg!(debug_assertions),
+            screen_transition: ScreenTransitionConfig::default(),
         }
+    }
+
+    pub fn screen_transition(mut self, transition: ScreenTransitionConfig) -> Self {
+        self.screen_transition = transition;
+        self
     }
 
     pub fn entry_scene(mut self, scene: impl Into<String>) -> Self {
@@ -587,6 +595,8 @@ impl VnApp {
         }
 
         let mut target = RenderTarget::new();
+        let mut snapshot = RenderTarget::new();
+        let mut transition: Option<ScreenTransition> = None;
 
         let mut watcher = loader
             .watch_dir()
@@ -622,13 +632,27 @@ impl VnApp {
             manager.update(&mut rl, &thread);
 
             let screen = (rl.get_screen_width(), rl.get_screen_height());
+            let now = rl.get_time();
             target.resize(&mut rl, &thread, screen);
 
+            let starting = manager.take_screen_changed() && target.frame().is_some();
+            if starting {
+                snapshot.resize(&mut rl, &thread, screen);
+            }
+
             let source = target.source();
+            let snapshot_source = snapshot.source();
             let destination = crate::target::destination(target.size(), screen);
             let mut d = rl.begin_drawing(&thread);
             match target.frame_mut() {
                 Some(frame) => {
+                    if starting {
+                        if let Some(previous) = snapshot.frame_mut() {
+                            crate::target::copy_into(&mut d, &thread, frame, previous, screen);
+                        }
+                        transition = ScreenTransition::start(self.screen_transition, now);
+                    }
+
                     {
                         let mut t = d.begin_texture_mode(&thread, frame);
                         t.clear_background(self.clear_color);
@@ -643,6 +667,31 @@ impl VnApp {
                         0.0,
                         Color::WHITE,
                     );
+
+                    if let Some(active) = transition
+                        && let Some(previous) = snapshot.frame()
+                    {
+                        let alpha = active.previous_alpha(now);
+                        if alpha > 0.0 {
+                            let mut over = destination;
+                            over.x += active.previous_offset(now, destination.width);
+                            d.draw_texture_pro(
+                                previous.texture(),
+                                snapshot_source,
+                                over,
+                                Vector2::zero(),
+                                0.0,
+                                Color::WHITE.alpha(alpha),
+                            );
+                        }
+                        let cover = active.cover_alpha(now);
+                        if cover > 0.0 {
+                            d.draw_rectangle(0, 0, screen.0, screen.1, Color::BLACK.alpha(cover));
+                        }
+                        if active.finished(now) {
+                            transition = None;
+                        }
+                    }
                 }
                 None => {
                     d.clear_background(self.clear_color);

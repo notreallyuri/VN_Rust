@@ -312,6 +312,43 @@ Screenshots and save thumbnails capture while the target is still bound, so they
 reading the game image (`tests/target.rs` covers this with a windowed test, run with
 `--include-ignored`).
 
+## Screen transitions
+
+Changing screen crossfades by default: the frame that was on screen is copied into a
+second render target, the new screen is drawn, and the old frame is blended over it
+while it fades out.
+
+```rust
+use vn_engine::{ScreenTransitionConfig, ScreenTransitionKind};
+
+VnApp::new("My Game")
+    .screen_transition(ScreenTransitionConfig::new(ScreenTransitionKind::Fade, 0.35))
+```
+
+| Kind | What it does |
+| --- | --- |
+| `Crossfade` | The old screen fades out over the new one. The default, at 0.2 seconds |
+| `Fade` | Fades through black, swapping screens at the midpoint |
+| `SlideLeft` / `SlideRight` | The old screen slides off that side |
+| `None` | Switches immediately |
+
+`ScreenTransitionConfig::none()` turns it off. Overlays (the pause menu, save and load,
+settings) are not screen changes, so they still appear at once.
+
+## Easing and tweens
+
+`Easing` (`Linear`, `Smooth`, `In`, `Out`) and `Tween` are shared by sprite motion,
+transitions and scenery, so timing behaves the same everywhere.
+
+```rust
+let tween = Tween::new(now, 0.4, Easing::Smooth);
+let x = tween.value(now, from, to);
+if tween.finished(now) { /* ... */ }
+```
+
+`Tween::elapsed` is the raw 0..1 fraction of time, `progress` applies the easing, and a
+tween with zero seconds is finished at once.
+
 ## Scenery
 
 `Scenery` frames a full-screen background like a film shot. The start screen and the main

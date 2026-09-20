@@ -72,3 +72,23 @@ pub fn destination(target: (i32, i32), screen: (i32, i32)) -> Rectangle {
         height,
     )
 }
+
+pub fn copy_into(
+    d: &mut RaylibDrawHandle,
+    thread: &RaylibThread,
+    from: &RenderTexture2D,
+    into: &mut RenderTexture2D,
+    size: (i32, i32),
+) {
+    let whole = Rectangle::new(0.0, 0.0, size.0 as f32, size.1 as f32);
+    let flipped = Rectangle::new(0.0, 0.0, size.0 as f32, -(size.1 as f32));
+    let mut t = d.begin_texture_mode(thread, into);
+    t.draw_texture_pro(
+        from.texture(),
+        flipped,
+        whole,
+        Vector2::zero(),
+        0.0,
+        Color::WHITE,
+    );
+}

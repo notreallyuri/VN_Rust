@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use raylib::prelude::*;
 use vn_script::{Event, StoryVm, Transition, TransitionKind};
 
+use crate::ease::{Easing, lerp};
 use crate::screens::PlayingConfig;
 use crate::ui::{self, Background};
 use crate::{ResourceManager, background_path, character_path};
@@ -78,14 +79,6 @@ pub fn progress(start: f64, transition: &Transition, now: f64) -> f32 {
         return 1.0;
     }
     ((now - start) / seconds).clamp(0.0, 1.0) as f32
-}
-
-fn ease(t: f32) -> f32 {
-    t * t * (3.0 - 2.0 * t)
-}
-
-fn lerp(a: f32, b: f32, t: f32) -> f32 {
-    a + (b - a) * t
 }
 
 impl Stage {
@@ -265,9 +258,9 @@ impl Stage {
             match (current.get(id), self.characters.get(id)) {
                 (Some(placed), Some(anim)) if anim.leaving.is_none() => {
                     let t = progress(anim.start, &anim.transition, now);
-                    let x = anim
-                        .from_x
-                        .map_or(placed.x, |from| lerp(from, placed.x, ease(t)));
+                    let x = anim.from_x.map_or(placed.x, |from| {
+                        lerp(from, placed.x, Easing::Smooth.apply(t))
+                    });
                     match &anim.from_image {
                         Some(old) => {
                             sprite(d, resources, config, screen, id, old, x, 1.0 - t.powi(3));
@@ -297,10 +290,13 @@ impl Stage {
                     };
                     let t = progress(anim.start, &anim.transition, now);
                     let (x, alpha) = match anim.transition.kind {
-                        TransitionKind::SlideLeft => (lerp(placed.x, OFFSCREEN_LEFT, ease(t)), 1.0),
-                        TransitionKind::SlideRight => {
-                            (lerp(placed.x, OFFSCREEN_RIGHT, ease(t)), 1.0)
+                        TransitionKind::SlideLeft => {
+                            (lerp(placed.x, OFFSCREEN_LEFT, Easing::Smooth.apply(t)), 1.0)
                         }
+                        TransitionKind::SlideRight => (
+                            lerp(placed.x, OFFSCREEN_RIGHT, Easing::Smooth.apply(t)),
+                            1.0,
+                        ),
                         TransitionKind::Dissolve | TransitionKind::Fade => (placed.x, 1.0 - t),
                     };
                     sprite(d, resources, config, screen, id, &placed.image, x, alpha);
@@ -365,7 +361,7 @@ impl Stage {
                 } else {
                     1.0
                 };
-                let shift = ease(t) * screen.x * sign;
+                let shift = Easing::Smooth.apply(t) * screen.x * sign;
                 backdrop(d, resources, from, 1.0, shift, screen);
                 backdrop(d, resources, current, 1.0, shift - screen.x * sign, screen);
                 0.0
