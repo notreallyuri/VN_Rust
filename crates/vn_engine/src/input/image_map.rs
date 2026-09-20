@@ -281,7 +281,7 @@ impl ImageMap {
         if let Some(index) = hovered
             && let Some(text) = &self.hotspots[index].tooltip
         {
-            *ctx.tooltip = Some(text.clone());
+            ctx.tooltip_text(text.clone());
         }
 
         if ctx

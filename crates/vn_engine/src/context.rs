@@ -18,6 +18,7 @@ use crate::game::commands::Commands;
 use crate::game::hooks::Hooks;
 use crate::input::navigation::{Focus, NavInput};
 use crate::overlay::OverlayRequest;
+use crate::request::Request;
 use crate::screen::ScreenState;
 use crate::screens::confirm::{CONFIRM_OVERLAY, Confirm};
 use crate::screens::text_input::TextRequest;
@@ -36,19 +37,15 @@ pub struct GameContext<'a> {
     pub settings: &'a mut SettingsStore,
     pub(crate) commands: Rc<Commands>,
     pub(crate) hooks: Rc<Hooks>,
-    pub(crate) overlay_requests: &'a mut Vec<OverlayRequest>,
-    pub(crate) toast: &'a mut Option<Toast>,
+    pub(crate) requests: &'a mut crate::request::Requests,
     pub(crate) text_request: &'a mut Option<TextRequest>,
     pub(crate) confirm_request: &'a mut Option<Confirm>,
     pub(crate) thumbnail: Option<&'a Image>,
-    pub(crate) autosave_request: &'a mut bool,
     pub(crate) audio: &'a mut Audio,
-    pub(crate) tooltip: &'a mut Option<String>,
     pub nav: NavInput,
     pub log: &'a mut SessionLog,
     pub modes: &'a mut PlayModes,
     pub seen: &'a mut SeenLines,
-    pub(crate) screenshot_request: &'a mut bool,
     pub(crate) effects: &'a mut crate::frame::effects::ScreenEffects,
     pub(crate) weather: &'a mut Option<crate::frame::scenery::Weather>,
     pub(crate) post: &'a mut crate::frame::post::PostChain,
@@ -56,16 +53,17 @@ pub struct GameContext<'a> {
 
 impl GameContext<'_> {
     pub fn open_overlay(&mut self, name: impl Into<String>) {
-        self.overlay_requests
-            .push(OverlayRequest::Open(name.into()));
+        self.requests
+            .push(Request::Overlay(OverlayRequest::Open(name.into())));
     }
 
     pub fn close_overlay(&mut self) {
-        self.overlay_requests.push(OverlayRequest::Close);
+        self.requests.push(Request::Overlay(OverlayRequest::Close));
     }
 
     pub fn close_overlays(&mut self) {
-        self.overlay_requests.push(OverlayRequest::CloseAll);
+        self.requests
+            .push(Request::Overlay(OverlayRequest::CloseAll));
     }
 
     pub fn shader(&mut self, name: &str, on: bool) {
@@ -97,13 +95,13 @@ impl GameContext<'_> {
     pub fn notify(&mut self, text: impl Into<String>) {
         let text = text.into();
         let text = self.label(&text).to_string();
-        *self.toast = Some(Toast::info(text));
+        self.requests.push(Request::Toast(Toast::info(text)));
     }
 
     pub fn notify_error(&mut self, text: impl Into<String>) {
         let text = text.into();
         let text = self.label(&text).to_string();
-        *self.toast = Some(Toast::error(text));
+        self.requests.push(Request::Toast(Toast::error(text)));
     }
 
     pub fn ask_text(&mut self, request: TextRequest) -> Option<ScreenState> {
@@ -150,7 +148,7 @@ impl GameContext<'_> {
     }
 
     pub fn screenshot(&mut self) {
-        *self.screenshot_request = true;
+        self.requests.push(Request::Screenshot);
     }
 
     pub fn view(&self) -> GameView<'_> {
@@ -164,8 +162,12 @@ impl GameContext<'_> {
 
     pub fn tooltip(&mut self, rect: Rectangle, text: impl Into<String>) {
         if crate::ui::is_hovered(self.rl, rect) {
-            *self.tooltip = Some(text.into());
+            self.tooltip_text(text);
         }
+    }
+
+    pub fn tooltip_text(&mut self, text: impl Into<String>) {
+        self.requests.push(Request::Tooltip(text.into()));
     }
 
     pub fn set_language(&mut self, code: Option<&str>) {
@@ -212,7 +214,7 @@ impl GameContext<'_> {
 
     pub fn autosave(&mut self) {
         if self.saves.autosaves() {
-            *self.autosave_request = true;
+            self.requests.push(Request::Autosave);
         }
     }
 

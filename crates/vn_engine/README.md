@@ -904,10 +904,35 @@ time the screen is entered. A custom screen implements `Screen`:
 |---|---|
 | `ScreenState` | `StartScreen`, `MainMenu`, `Playing`, `Save`, `Load`, `TextInput`, `Settings`, `Custom(String)`, `Quit` |
 | `Screen` | `update(ctx) -> Option<ScreenState>` returns the next state; `draw(d, &DrawContext)` |
-| `GameContext` | What `update` gets: `rl`, `thread`, `resources`, `story`, `state`, `saves`, `rollback`, `settings`, `previous` (the screen before this one); plus `open_overlay(name)`, `run_command(name, args)`, `ask_text(request)`, `save(slot)`, `load(slot)`, `tooltip(rect, text)`, `play_sound(id)` and `view()` |
+| `GameContext` | What `update` gets: `rl`, `thread`, `resources`, `story`, `state`, `saves`, `rollback`, `settings`, `previous` (the screen before this one); plus `open_overlay(name)`, `run_command(name, args)`, `ask_text(request)`, `save(slot)`, `load(slot)`, `tooltip(rect, text)`, `play_sound(id)` and `view()`. The ones that ask the manager for something take effect after `update` returns (see [Asking the manager for something](#asking-the-manager-for-something)) |
 | `DrawContext` | What `draw` gets: `resources`, `story`, `state`, `saves`, `characters`, `settings`, `fonts()` and `view()`; `interactive` is true only for the layer that receives input (the top overlay, or the screen when no overlay is open), and `pointer_over(d, rect)` is a hover test that is false on the other layers |
 
 Switching to a state with no screen logs a warning and stays on the current one.
+
+### Asking the manager for something
+
+A screen holds `&mut GameContext` for the whole of `update`, so it cannot reach back into
+the manager to open an overlay or take a screenshot there and then. Instead it *asks*,
+and the manager acts once `update` returns:
+
+```rust
+ctx.open_overlay(LOG_OVERLAY);
+ctx.notify("Filed in the archive");
+ctx.tooltip(rect, "The ledger");
+ctx.screenshot();
+```
+
+Each of those pushes a `Request` onto one list. `Requests::resolve` turns a frame's list
+into a `Resolved`: the overlay requests in the order they were asked for, the last tooltip
+and the last toast of the frame, and whether an autosave or a screenshot was wanted.
+Asking twice in one frame does the work once.
+
+`resolve` is ordinary data in and data out, so what a screen asked for can be asserted in
+a test without opening a window — which is most of the reason the requests are a list
+rather than a scattering of flags.
+
+Screenshots and autosaves are carried out during `draw` rather than after `update`, since
+both need the finished frame.
 
 The `ui` module has the pieces the default screens use, for custom screens to reuse:
 
@@ -2127,6 +2152,7 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/rollback.rs` | Back/forward, barriers (`commit`, final choices, blocked commands, `through_choices`), history limits, history across a save and load |
 | `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
 | `tests/assets.rs` | Folders and embedded files answering the same (reads, path normalization, listings), descriptions, a story loaded only from embedded files, which source a build picks |
+| `tests/request.rs` | What a screen asks the manager for: overlay requests keeping their order, the last tooltip and toast of a frame winning, asking twice doing the work once, and a quiet frame asking for nothing |
 | `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups; weather staying on screen over a long run, replaying identically from the clock, spreading out with varied depth, capped counts, and absurd times |
 | `tests/shape.rs` | Corner outlines for each shape, round versus scooped hit tests, size capping and relative roundness, per-corner shapes, `PanelStyle`, the dialogue box's placement and the name plate |
 | `tests/layout.rs` | Every layout arrangement, anchor and alignment, fitting, and the default screens' positions |

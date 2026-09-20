@@ -180,9 +180,7 @@ impl ScreenStateManager {
         let keybinds_open = self.overlay_name() == Some(KEYBINDS_OVERLAY);
         self.resources.load_requested(rl, thread);
         self.nav = self.navigation.read(rl);
-        let mut overlay_requests = Vec::new();
-        let mut toast = None;
-        let mut tooltip = None;
+        let mut requests = crate::request::Requests::default();
 
         let ctx = GameContext {
             rl,
@@ -196,22 +194,18 @@ impl ScreenStateManager {
             settings: &mut self.settings,
             commands: Rc::clone(&self.commands),
             hooks: Rc::clone(&self.hooks),
-            overlay_requests: &mut overlay_requests,
-            toast: &mut toast,
+            requests: &mut requests,
             effects: &mut self.effects,
             weather: &mut self.weather,
             post: &mut self.post,
             text_request: &mut self.text_request,
             confirm_request: &mut self.confirm_request,
             thumbnail: self.thumbnail.as_ref(),
-            autosave_request: &mut self.autosave_request,
             audio: &mut self.audio,
-            tooltip: &mut tooltip,
             nav: self.nav,
             log: &mut self.log,
             modes: &mut self.modes,
             seen: &mut self.seen,
-            screenshot_request: &mut self.screenshot_request,
         };
 
         let next_state = match self.overlays.last_mut() {
@@ -238,16 +232,20 @@ impl ScreenStateManager {
             self.open_overlay(KEYBINDS_OVERLAY);
         }
 
-        let clicked = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
-        self.tooltip_timer.update(tooltip, now, clicked);
-
-        for request in overlay_requests {
-            match request {
+        let asked = requests.resolve();
+        for overlay in asked.overlays {
+            match overlay {
                 OverlayRequest::Open(name) => self.open_overlay(&name),
                 OverlayRequest::Close => self.close_overlay(),
                 OverlayRequest::CloseAll => self.overlays.clear(),
             }
         }
+        self.autosave_request |= asked.autosave;
+        self.screenshot_request |= asked.screenshot;
+        let (tooltip, toast) = (asked.tooltip, asked.toast);
+
+        let clicked = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
+        self.tooltip_timer.update(tooltip, now, clicked);
 
         if let Some(mut toast) = toast {
             toast.shown_at = Some(now);
