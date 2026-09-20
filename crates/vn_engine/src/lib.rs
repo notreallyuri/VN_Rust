@@ -13,7 +13,7 @@ pub mod ui;
 
 pub use data::{assets, resources, rollback, saves, session, settings, state};
 pub use frame::{effects, post, scenery, screen_transition, stage, target, viewport};
-pub use game::{audio, characters, commands, hooks, hot_reload, script_errors};
+pub use game::{audio, characters, commands, hooks, hot_reload, language, script_errors};
 pub use input::{drag, hit, image_map, navigation};
 pub use ui::{button, ease, fonts, layout, scroll, shape, styled, toast, tooltip};
 
@@ -36,6 +36,7 @@ pub use hit::{Highlight, LabelAt, LabelStyle, Shape};
 pub use hooks::*;
 pub use hot_reload::*;
 pub use image_map::{Hotspot, HotspotPick, ImageMap, ImageMapStyle};
+pub use language::{Language, load_catalog};
 pub use layout::{Align, Anchor, Arrangement, Layout};
 pub use navigation::*;
 pub use overlay::*;

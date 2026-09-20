@@ -367,7 +367,9 @@ vm.set_catalog(Some(Catalog::read("assets/lang/pt-BR.json")?));
 
 `Event::Say` and `Event::Choice` then carry translated text, falling back to the source
 for anything missing or stale, so a half-finished catalog is playable. `vm.language()`
-says which catalog is loaded. Nothing else changes: the VM's ids, variables, snapshots
+says which catalog is loaded, and `set_catalog` re-renders the line or choice currently
+being read (`current()`), so switching language mid-scene changes what is on screen
+instead of waiting for the next line. Nothing else changes: the VM's ids, variables, snapshots
 and save data are all language-independent.
 
 ## StoryVm

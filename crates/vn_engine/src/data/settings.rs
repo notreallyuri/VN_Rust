@@ -16,6 +16,8 @@ pub struct Settings {
     pub voice_volume: u32,
     pub auto_delay: u32,
     pub skip_unseen: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
 }
 
 impl Default for Settings {
@@ -28,6 +30,7 @@ impl Default for Settings {
             voice_volume: 100,
             auto_delay: 1500,
             skip_unseen: false,
+            language: None,
         }
     }
 }

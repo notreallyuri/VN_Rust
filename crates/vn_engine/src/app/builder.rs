@@ -13,9 +13,9 @@ use crate::screens::{
 };
 use crate::{
     AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, EmbeddedFile, FontRole,
-    FontVariant, FromArgs, GameContext, GameState, Hooks, Migrations, NavigationConfig, Overlay,
-    RollbackConfig, SaveMigration, Saves, Screen, ScreenEffectsConfig, ScreenState, ToastConfig,
-    TooltipConfig,
+    FontVariant, FromArgs, GameContext, GameState, Hooks, Language, Migrations, NavigationConfig,
+    Overlay, RollbackConfig, SaveMigration, Saves, Screen, ScreenEffectsConfig, ScreenState,
+    ToastConfig, TooltipConfig,
 };
 
 pub struct VnApp {
@@ -53,6 +53,7 @@ pub struct VnApp {
     pub(super) pause_menu: PauseMenuConfig,
     pub(super) confirm_dialog: ConfirmConfig,
     pub(super) settings: SettingsConfig,
+    pub(super) languages: Vec<Language>,
     pub(super) close_confirmation: Option<String>,
     pub(super) rollback: RollbackConfig,
     pub(super) toast: ToastConfig,
@@ -120,7 +121,26 @@ impl VnApp {
             screen_effects: ScreenEffectsConfig::default(),
             shaders: Vec::new(),
             render_scale: 1.0,
+            languages: vec![Language::source("English")],
         }
+    }
+
+    pub fn source_language(mut self, label: impl Into<String>) -> Self {
+        self.languages[0] = Language::source(label);
+        self
+    }
+
+    pub fn language(mut self, code: impl Into<String>, label: impl Into<String>) -> Self {
+        let language = Language::new(code, label);
+        match self.languages.iter().position(|l| l.code == language.code) {
+            Some(index) => self.languages[index] = language,
+            None => self.languages.push(language),
+        }
+        self
+    }
+
+    pub fn languages(&self) -> &[Language] {
+        &self.languages
     }
 
     pub fn font_variant(

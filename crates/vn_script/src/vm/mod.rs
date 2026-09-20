@@ -26,6 +26,7 @@ pub struct StoryVm {
     pending_transition: Option<Transition>,
     pending_choice: Option<usize>,
     current: Option<Event>,
+    current_ip: Option<usize>,
     schema: Schema,
     entry: Option<String>,
     scene_events: bool,

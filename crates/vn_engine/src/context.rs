@@ -149,6 +149,30 @@ impl GameContext<'_> {
         }
     }
 
+    pub fn set_language(&mut self, code: Option<&str>) {
+        self.settings
+            .update(|values| values.language = code.map(str::to_string));
+        self.apply_language();
+    }
+
+    pub fn apply_language(&mut self) {
+        let code = self.settings.values.language.clone();
+        let catalog =
+            code.and_then(
+                |code| match crate::load_catalog(self.resources.assets(), &code) {
+                    Ok(catalog) => Some(catalog),
+                    Err(e) => {
+                        eprintln!("⚠️ {}; playing in the source language", e);
+                        None
+                    }
+                },
+            );
+        if code_missing(&self.settings.values.language, &catalog) {
+            self.notify_error("That language could not be loaded");
+        }
+        self.story.set_catalog(catalog);
+    }
+
     pub fn play_sound(&mut self, id: &str) {
         self.audio.play_sound(id);
     }
@@ -199,6 +223,10 @@ impl GameContext<'_> {
         let hooks = Rc::clone(&self.hooks);
         hooks.choice_made(self, index, text)
     }
+}
+
+fn code_missing(code: &Option<String>, catalog: &Option<vn_script::Catalog>) -> bool {
+    code.is_some() && catalog.is_none()
 }
 
 pub struct GameView<'a> {

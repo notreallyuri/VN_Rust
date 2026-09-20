@@ -129,6 +129,7 @@ pub fn swap_story(
     mut fresh: StoryVm,
     rollback: &mut Rollback,
 ) -> Result<RestoreOutcome, VmError> {
+    fresh.set_catalog(current.catalog().cloned());
     let outcome = fresh.restore(&current.snapshot())?;
     *current = fresh;
     match outcome {

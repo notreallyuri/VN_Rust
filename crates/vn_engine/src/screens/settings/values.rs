@@ -59,6 +59,9 @@ impl SettingsConfig {
         if self.play_rows {
             rows.extend([SettingsRow::AutoDelay, SettingsRow::SkipUnseen]);
         }
+        if self.languages.len() > 1 {
+            rows.push(SettingsRow::Language);
+        }
         rows
     }
 
@@ -69,6 +72,18 @@ impl SettingsConfig {
             SettingsRow::MusicVolume => settings.music_gain(),
             SettingsRow::SoundVolume => settings.sound_gain(),
             SettingsRow::VoiceVolume => settings.voice_gain(),
+            SettingsRow::Language => {
+                let count = self.languages.len();
+                let index = self
+                    .languages
+                    .iter()
+                    .position(|language| language.is(settings.language.as_deref()))
+                    .unwrap_or(0);
+                match count > 1 {
+                    true => index as f32 / (count - 1) as f32,
+                    false => 0.0,
+                }
+            }
             SettingsRow::AutoDelay => {
                 let span = (AUTO_DELAY_MAX - AUTO_DELAY_MIN) as f32;
                 (settings.auto_delay.clamp(AUTO_DELAY_MIN, AUTO_DELAY_MAX) - AUTO_DELAY_MIN) as f32
@@ -95,6 +110,12 @@ impl SettingsConfig {
                 settings.auto_delay = AUTO_DELAY_MIN + step * AUTO_DELAY_STEP;
             }
             SettingsRow::SkipUnseen => settings.skip_unseen = fraction >= 0.5,
+            SettingsRow::Language => {
+                let index = ui::slider_step(fraction, self.languages.len());
+                if let Some(language) = self.languages.get(index) {
+                    settings.language = language.code.clone();
+                }
+            }
         }
     }
 
@@ -102,6 +123,19 @@ impl SettingsConfig {
         match row {
             SettingsRow::Display => settings.fullscreen = !settings.fullscreen,
             SettingsRow::SkipUnseen => settings.skip_unseen = !settings.skip_unseen,
+            SettingsRow::Language => {
+                let count = self.languages.len();
+                if count == 0 {
+                    return;
+                }
+                let current = self
+                    .languages
+                    .iter()
+                    .position(|language| language.is(settings.language.as_deref()))
+                    .unwrap_or(0) as i32;
+                let next = (current + delta.signum().max(1)).rem_euclid(count as i32);
+                settings.language = self.languages[next as usize].code.clone();
+            }
             SettingsRow::AutoDelay => {
                 let snapped =
                     (settings.auto_delay + AUTO_DELAY_STEP / 2) / AUTO_DELAY_STEP * AUTO_DELAY_STEP;
@@ -145,6 +179,10 @@ impl SettingsConfig {
             SettingsRow::AutoDelay => Self::auto_delay_name(settings.auto_delay),
             SettingsRow::SkipUnseen if settings.skip_unseen => self.skip_all_label.clone(),
             SettingsRow::SkipUnseen => self.skip_seen_label.clone(),
+            SettingsRow::Language => self
+                .language_of(settings.language.as_deref())
+                .map(|language| language.label.clone())
+                .unwrap_or_else(|| settings.language.clone().unwrap_or_default()),
         }
     }
 
@@ -157,6 +195,7 @@ impl SettingsConfig {
             SettingsRow::VoiceVolume => &self.voice_volume_label,
             SettingsRow::AutoDelay => &self.auto_delay_label,
             SettingsRow::SkipUnseen => &self.skip_label,
+            SettingsRow::Language => &self.language_label,
         }
     }
 
@@ -169,6 +208,7 @@ impl SettingsConfig {
             SettingsRow::VoiceVolume => self.voice_volume_tooltip.as_deref(),
             SettingsRow::AutoDelay => self.auto_delay_tooltip.as_deref(),
             SettingsRow::SkipUnseen => self.skip_tooltip.as_deref(),
+            SettingsRow::Language => self.language_tooltip.as_deref(),
         }
     }
 

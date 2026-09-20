@@ -13,7 +13,7 @@ use crate::{
 };
 
 impl VnApp {
-    pub fn run(self) -> Result<(), AppError> {
+    pub fn run(mut self) -> Result<(), AppError> {
         if std::env::args().any(|arg| arg == "--export-schema") {
             let path = self
                 .schema_path()
@@ -53,8 +53,27 @@ impl VnApp {
         if cfg!(debug_assertions) {
             println!("Saves: {}", saves_dir.display());
         }
-        let settings = SettingsStore::load(saves_dir.join(SETTINGS_FILE_NAME));
+        let mut settings = SettingsStore::load(saves_dir.join(SETTINGS_FILE_NAME));
         let saves = self.saves();
+
+        let known =
+            |code: &Option<String>| self.languages.iter().any(|language| language.code == *code);
+        if !known(&settings.values.language) {
+            eprintln!(
+                "⚠️ Language '{}' is not one of this game's; using {}",
+                settings.values.language.as_deref().unwrap_or(""),
+                self.languages[0].label
+            );
+            settings.update(|values| values.language = None);
+        }
+        if let Some(code) = settings.values.language.clone() {
+            match crate::load_catalog(&loader.assets, &code) {
+                Ok(catalog) => story.set_catalog(Some(catalog)),
+                Err(e) => eprintln!("⚠️ {}; playing in the source language", e),
+            }
+        }
+
+        self.settings.languages = self.languages.clone();
 
         let factory = DefaultScreens {
             title: self.title,

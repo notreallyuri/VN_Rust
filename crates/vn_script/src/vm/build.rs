@@ -36,6 +36,7 @@ impl StoryVm {
             pending_transition: None,
             pending_choice: None,
             current: None,
+            current_ip: None,
             schema: Schema::default(),
             entry: None,
             scene_events: false,

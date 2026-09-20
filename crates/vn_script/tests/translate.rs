@@ -187,7 +187,7 @@ fn an_empty_or_stale_entry_is_not_a_translation() {
     assert_eq!(catalog.text("01.story", "Hello"), None);
 }
 
-fn translated_vm() -> StoryVm {
+fn catalog() -> Catalog {
     let mut catalog = Catalog::new("pt-BR");
     catalog.refresh(&strings(STORY), &[]);
     let file = catalog.story.get_mut("01_box.story").unwrap();
@@ -199,9 +199,12 @@ fn translated_vm() -> StoryVm {
             entry.text = "Abrir a carta".into();
         }
     }
+    catalog
+}
 
+fn translated_vm() -> StoryVm {
     let mut vm = StoryVm::from_program(program(STORY));
-    vm.set_catalog(Some(catalog));
+    vm.set_catalog(Some(catalog()));
     vm
 }
 
@@ -267,5 +270,51 @@ fn a_vm_with_no_catalog_reads_the_source() {
             speaker: None,
             text: "The lamps are never put out down here.".into(),
         }
+    );
+}
+
+#[test]
+fn changing_the_catalog_retranslates_the_line_being_read() {
+    let mut vm = StoryVm::from_program(program(STORY));
+    vm.advance();
+    vm.advance();
+    let text = |vm: &StoryVm| match vm.current() {
+        Some(Event::Say { text, .. }) => text.clone(),
+        other => panic!("not a line: {:?}", other),
+    };
+    assert_eq!(text(&vm), "Your hot water, miss.");
+
+    vm.set_catalog(Some(catalog()));
+    assert_eq!(
+        text(&vm),
+        "Sua água quente, senhorita.",
+        "the line on screen follows the new language"
+    );
+
+    vm.set_catalog(None);
+    assert_eq!(text(&vm), "Your hot water, miss.");
+}
+
+#[test]
+fn changing_the_catalog_retranslates_the_choice_on_screen() {
+    let mut vm = StoryVm::from_program(program(STORY));
+    while !matches!(vm.current(), Some(Event::Choice { .. })) {
+        assert_ne!(vm.advance(), Event::End, "the story has a choice");
+    }
+
+    vm.set_catalog(Some(catalog()));
+    assert_eq!(
+        vm.current(),
+        Some(&Event::Choice {
+            options: vec!["Abrir a carta".into(), "Leave it sealed".into()],
+        })
+    );
+
+    vm.choose(0).unwrap();
+    vm.advance_until_blocking();
+    assert_eq!(
+        vm.variable("read"),
+        Some(&vn_script::Value::Bool(true)),
+        "choosing still picks the branch the option was written for"
     );
 }

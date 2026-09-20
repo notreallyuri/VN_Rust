@@ -34,6 +34,15 @@ impl SettingsMenu {
     }
 
     pub(crate) fn update(&mut self, ctx: &mut GameContext) -> Outcome {
+        let language = ctx.settings.values.language.clone();
+        let outcome = self.changes(ctx);
+        if ctx.settings.values.language != language {
+            ctx.apply_language();
+        }
+        outcome
+    }
+
+    fn changes(&mut self, ctx: &mut GameContext) -> Outcome {
         let config = Rc::clone(&self.config);
         let screen = ui::screen_size(ctx.rl);
 

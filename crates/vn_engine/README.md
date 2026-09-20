@@ -953,11 +953,15 @@ their default, so new settings don't break old files.
   how long [auto mode](#playing-controls) waits after a line.
 - **Skip:** `skip_unseen` (default off): whether skipping passes lines the player hasn't
   read yet.
+- **Language:** `language` (default none, meaning the story as written). See
+  [Languages](#languages).
 
 The default settings screen shows one row per setting (`SettingsRow::Display`,
-`TextSpeed`, `MusicVolume`, `SoundVolume`, `VoiceVolume`, `AutoDelay`, `SkipUnseen`).
+`TextSpeed`, `MusicVolume`, `SoundVolume`, `VoiceVolume`, `AutoDelay`, `SkipUnseen`,
+`Language`).
 `audio_rows(false)` hides the three volumes, `voice_row(false)` only the voice (for games
-without voice clips), `play_rows(false)` Auto-forward and Skip. Display and Skip are
+without voice clips), `play_rows(false)` Auto-forward and Skip, and the Language row only appears when the game
+ships more than one language. Display and Skip are
 buttons that toggle; the others are sliders: drag the knob or click anywhere on the track, or hover
 the row and press ←/→ for one step. Text speed stops at each entry of `text_speeds`
 (Slow → Normal → Fast → Instant); the volumes move in `volume_step` steps, with the value
@@ -997,6 +1001,44 @@ use, public for custom settings screens. From code, `ctx.settings.values` reads 
 `ctx.settings.update(|s| ...)` changes and saves them; `DrawContext::settings` is the
 read-only view. `Typewriter::start(text, chars_per_second, now)` / `visible(now)` /
 `finish()` is the timing the playing screen and the preview use.
+
+## Languages
+
+A game ships its stories as written, plus a catalog per translation
+(`assets/lang/<code>.json`, written by `vn translate` — see
+[vn_script's README](../vn_script/README.md#translation)). It registers what it has:
+
+```rust
+VnApp::new("My Novel")
+    .source_language("English")
+    .language("pt-BR", "Português (BR)")
+    .language("ja", "日本語")
+```
+
+`source_language(label)` names the story as written (the default label is "English"); it
+is always the first choice and needs no file. `language(code, label)` adds one, where
+`code` is the catalog's file name. With more than one, the settings screen grows a
+Language row; the choice is saved in `settings.json` and applied at startup, so a player
+who picked Portuguese gets it next time too.
+
+The catalog is read through [`Assets`](#assets), so it works from a folder while
+developing and from inside the executable in a release build. A missing or broken catalog
+is a warning, not a crash: the game plays in the source language. So does any line the
+catalog has no translation for, which makes a half-finished translation playable.
+
+From code, `ctx.set_language(Some("pt-BR"))` (or `None` for the source) changes it and
+saves the setting; `ctx.apply_language()` re-reads the catalog named by the current
+setting, and `ctx.view().story.language()` says which one is loaded. Changing the language
+retranslates the line being read, so the switch shows up at once rather than on the next
+click.
+
+Only what the story says is translated — ids are not. Variables, save files, the session
+log and the rollback history all hold ids and source text, so a save made in one language
+opens in another. Hot reload keeps the player's language.
+
+Still to come (see TODO.md): the default screens' own labels as a table a game can
+replace, fonts per language with a fallback chain and CJK wrapping, and `vn check`
+reporting what is missing or stale.
 
 ## Rollback
 
@@ -1931,6 +1973,7 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | --- | --- |
 | `tests/app.rs` | `VnApp::check` (validation, missing art, story directories, errors with their file), entry scene, typed command arguments, schema export, hook registration |
 | `tests/saves.rs` | Save/load round trips, file format and errors, all-or-nothing loads, edited or missing scenes, state added or removed, stored rollback history, thumbnails (scaled, replaced, deleted with the slot), autosave switch, save directory names, migrations (state and variables renamed in the save and its history, game version recorded, versions with no step, newer versions refused, failing steps) |
+| `tests/language.rs` | The languages a game registers, reading a catalog from a folder and from the executable, a missing or broken one, when the Language row appears, cycling it, a language the game no longer ships, the setting on disk, and a hot reload keeping the language |
 | `tests/keybinds.rs` | Key names, the generated list following rebinding and disabled features, extra and replaced sections |
 | `tests/session.rs` | The session log (limit, rewinding and forwarding, a new branch after a rollback, replacing), seen lines on disk, log lengths in checkpoints (and older checkpoints), the log in save files, the default HUD, the auto-forward delay |
 | `tests/stage.rs` | Which events start which animations (entrances, expression changes, moves, exits, `clear`, backgrounds), lengths and expiry, textures kept for fading images, finishing and resetting, the character layout |

@@ -7,11 +7,15 @@ pub enum SettingsRow {
     VoiceVolume,
     AutoDelay,
     SkipUnseen,
+    Language,
 }
 
 impl SettingsRow {
     pub fn is_slider(self) -> bool {
-        !matches!(self, SettingsRow::Display | SettingsRow::SkipUnseen)
+        !matches!(
+            self,
+            SettingsRow::Display | SettingsRow::SkipUnseen | SettingsRow::Language
+        )
     }
 }
 

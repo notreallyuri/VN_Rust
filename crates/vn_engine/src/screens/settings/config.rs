@@ -1,9 +1,9 @@
 use raylib::prelude::*;
 
 use super::SettingsRow;
-use crate::FontRole;
 use crate::PanelStyle;
 use crate::ui::{Background, ButtonStyle, SliderStyle, TextStyle};
+use crate::{FontRole, Language};
 
 #[derive(Clone, Debug)]
 pub struct SettingsConfig {
@@ -29,6 +29,9 @@ pub struct SettingsConfig {
     pub skip_label: String,
     pub skip_seen_label: String,
     pub skip_all_label: String,
+    pub language_label: String,
+    pub language_tooltip: Option<String>,
+    pub languages: Vec<Language>,
     pub voice_volume_tooltip: Option<String>,
     pub auto_delay_tooltip: Option<String>,
     pub skip_tooltip: Option<String>,
@@ -82,6 +85,12 @@ impl Default for SettingsConfig {
             skip_label: "Skip".to_string(),
             skip_seen_label: "Seen text".to_string(),
             skip_all_label: "All text".to_string(),
+            language_label: "Language".to_string(),
+            language_tooltip: Some(
+                "The language the story is read in. Lines with no translation stay as written"
+                    .to_string(),
+            ),
+            languages: Vec::new(),
             voice_volume_tooltip: Some(
                 "Voiced lines. Drag, or hover and press Left/Right".to_string(),
             ),
@@ -186,6 +195,15 @@ impl SettingsConfig {
         self
     }
 
+    pub fn language_label(mut self, label: impl Into<String>) -> Self {
+        self.language_label = label.into();
+        self
+    }
+
+    pub fn language_of(&self, code: Option<&str>) -> Option<&Language> {
+        self.languages.iter().find(|language| language.is(code))
+    }
+
     pub fn voice_row(mut self, show: bool) -> Self {
         self.voice_row = show;
         self
@@ -220,6 +238,7 @@ impl SettingsConfig {
             SettingsRow::VoiceVolume => self.voice_volume_tooltip = text,
             SettingsRow::AutoDelay => self.auto_delay_tooltip = text,
             SettingsRow::SkipUnseen => self.skip_tooltip = text,
+            SettingsRow::Language => self.language_tooltip = text,
         }
         self
     }

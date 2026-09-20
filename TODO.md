@@ -171,7 +171,7 @@ fonts and saves at once, and each of those is cheaper to change now than later.
 
 - [x] `vn translate <lang> [path]`: extracts every translatable string (dialogue, narration, choice options, and the display names in `schema.json`) into `lang/<lang>.json` beside the schema, keyed by the story file's name and a hash of the source text. Re-running keeps the translations already written, adds what is new, and marks what was edited or deleted `stale` (with the old text to work from) instead of silently keeping it. A story with errors extracts nothing
 - [x] Look translations up at runtime through the VM's `Say`/`Choice` events, falling back to the source text when one is missing (`vn_script::translate::Catalog`, `StoryVm::set_catalog`, `language()`). The lookup runs before interpolation, so `{variable}` works inside a translation
-- [ ] The engine side: `VnApp::language`, loading `lang/<code>.json` through `Assets`, and a language setting in `settings.json` changed from the settings screen without restarting
+- [x] The engine side: `VnApp::source_language` / `language(code, label)`, `lang/<code>.json` read through `Assets` (folder or embedded), a `language` setting saved in `settings.json` and applied at startup, a Language row in the settings screen when a game ships more than one, `ctx.set_language` / `apply_language`, and a hot reload that keeps it. Changing language re-renders the line being read
 - [ ] Translatable UI labels: the default screens ship their English strings as a table a game can replace or extend
 - [ ] Fonts per language with a fallback chain, and wrapping for scripts without spaces (CJK)
 - [ ] `vn check` reports missing and stale translations for a language

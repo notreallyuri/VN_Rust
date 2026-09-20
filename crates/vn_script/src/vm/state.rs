@@ -34,6 +34,27 @@ impl StoryVm {
 
     pub fn set_catalog(&mut self, catalog: Option<Catalog>) {
         self.catalog = catalog;
+        self.retranslate();
+    }
+
+    fn retranslate(&mut self) {
+        if let Some(choice_ip) = self.pending_choice {
+            self.current = Some(self.choice_event(choice_ip));
+            return;
+        }
+
+        let (Some(ip), Some(Event::Say { .. })) = (self.current_ip, &self.current) else {
+            return;
+        };
+        let Some(Instruction::Say { char_id, text }) = self.program.instructions.get(ip) else {
+            return;
+        };
+        self.current = Some(Event::Say {
+            speaker: char_id
+                .as_deref()
+                .map(|speaker| crate::interpolate(speaker, &self.variables)),
+            text: crate::interpolate(self.localized(ip, text), &self.variables),
+        });
     }
 
     pub fn catalog(&self) -> Option<&Catalog> {

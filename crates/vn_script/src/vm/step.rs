@@ -46,6 +46,7 @@ impl StoryVm {
 
             match instr {
                 Instruction::Say { char_id, text } => {
+                    self.current_ip = Some(self.ip);
                     let event = Event::Say {
                         speaker: char_id
                             .as_deref()
