@@ -202,6 +202,12 @@ else draws through, so it is cheaper now; the rest is additive.
 - [ ] Dialogue box variants: a speaker portrait bust inside the box, and a per-character box style
 - [ ] Choice presentation: images, disabled options with a reason, and hover previews
 - [ ] A custom mouse cursor, and prompts that show keyboard or gamepad glyphs depending on the last input used
+- [ ] Animated character puppets (Live2D and friends). Checked 2026-09-20:
+  - `cubism-rs` is a stale hobby wrapper and there is no `live2d-rs`; the maintained binding is `live2d-cubism-core-sys` (v0.1.0, April 2026, Cubism SDK Native v5, Windows/macOS/Linux, MIT for the binding only). `live2d-parser` reads model files in pure Rust, with no FFI
+  - Every Cubism path needs Live2D's proprietary Core binary, which can't be vendored here: each game would download the SDK and accept its licence. Free to develop with, and free to release for individuals and companies under 20M JPY a year; above that a Publication License Agreement is needed, signed at least a month before release
+  - The bindings expose the Core only (mesh deformation). Motion, physics, expressions and lip sync live in the C++ Cubism Framework, which would have to be written in Rust
+  - `inox2d` (Inochi2D in Rust, BSD-2, no proprietary blob, OpenGL and WebGL) is the open alternative, but its own README calls it a prototype that is not recommended for production, with mesh groups and animations still missing
+  - So: first a backend-agnostic seam in the engine (a character whose frames come from a renderer rather than a texture, drawn into the render target), then Live2D and Inochi2D as separate optional crates behind features. Not a dependency of `vn_engine` either way
 - [ ] Video playback (openings, endings, in-scene cutscenes): raylib has no decoder, so this needs ffmpeg or a pure-Rust decoder feeding frames into a texture, behind an optional feature so a game that doesn't use it doesn't pay for it
 
 ### Interaction
