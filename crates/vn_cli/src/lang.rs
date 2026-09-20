@@ -9,6 +9,7 @@ pub struct Status {
     pub total: usize,
     pub translated: usize,
     pub missing: Vec<Line>,
+    pub unreviewed: Vec<Line>,
     pub stale: Vec<Line>,
 }
 
@@ -30,7 +31,7 @@ impl Line {
 
 impl Status {
     pub fn is_complete(&self) -> bool {
-        self.missing.is_empty() && self.stale.is_empty()
+        self.missing.is_empty() && self.unreviewed.is_empty() && self.stale.is_empty()
     }
 }
 
@@ -70,6 +71,7 @@ pub fn status(
         total: 0,
         translated: 0,
         missing: Vec::new(),
+        unreviewed: Vec::new(),
         stale: Vec::new(),
     };
 
@@ -85,6 +87,10 @@ pub fn status(
             return;
         }
         status.total += 1;
+        if entry.needs_review() {
+            status.unreviewed.push(line());
+            return;
+        }
         match entry.translated() {
             Some(_) => status.translated += 1,
             None => status.missing.push(line()),
@@ -103,7 +109,11 @@ pub fn status(
         sort(entry, "screens".to_string());
     }
 
-    for lines in [&mut status.missing, &mut status.stale] {
+    for lines in [
+        &mut status.missing,
+        &mut status.unreviewed,
+        &mut status.stale,
+    ] {
         lines.sort_by(|a, b| {
             a.file
                 .cmp(&b.file)

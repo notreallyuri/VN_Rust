@@ -346,6 +346,14 @@ comes back as missing (empty `text`), and the entry it replaced stays in the fil
 `schema.json` goes stale the same way, by comparing `source`. Nothing is ever deleted
 from a catalog, so a rewrite that gets reverted costs no work.
 
+An entry can also carry `"fuzzy": true`, which is the translator's own flag rather than
+something extraction works out: the text is there but has not been approved, so
+`translated()` returns `None` and the line reads in the source language until the flag is
+cleared. `stale` says the story moved on; `fuzzy` says the translator is not finished.
+`vn translate --export/--import` carries both to and from a `.po` file (see
+[vn_cli's README](../vn_cli/README.md)), which is how the two flags reach a translation
+tool as `#~` and `#, fuzzy`.
+
 The file part of the key is the story file's name without its directories, because the
 same story is loaded from a folder while developing and from inside the executable in a
 release build. Two story files with the same name in different subdirectories therefore
@@ -358,9 +366,10 @@ share entries for identical lines.
 | `Catalog::refresh(&strings, &names)` | Adds what is new, refreshes line numbers, marks what is gone or edited as stale, and reports `added`, `total`, `translated`, `stale` |
 | `Catalog::read` / `write` / `to_json` / `from_json` | The file above; `write` leaves the file alone when nothing changed |
 | `Catalog::refresh_ui(&strings)` | The same for a frontend's own labels, which have no file: they are keyed by their English text alone |
-| `Catalog::text(file, source)` / `name(id, source)` / `ui_text(source)` | The translation, or `None` when it is missing or stale |
+| `Catalog::text(file, source)` / `name(id, source)` / `ui_text(source)` | The translation, or `None` when it is missing, stale or unreviewed |
 | `UiStrings` | The list of labels a frontend offers for translation (`lang/ui.json`), which `vn translate` folds into the `ui` section |
-| `Catalog::missing()` / `stale()` | For reporting (`vn check`, planned) |
+| `Catalog::missing()` / `stale()` / `needing_review()` | For reporting, as `vn check` does |
+| `Entry::translated()` / `needs_review()` | The text to show, and whether a translation is waiting on the translator |
 
 At runtime the VM translates **before** interpolating, so `{variable}` placeholders work
 inside a translation:

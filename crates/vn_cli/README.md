@@ -116,7 +116,7 @@ A file is only rewritten when it compiles and when the result compiles to the sa
 program, so formatting can't change what a story does; a file with errors is reported
 and left alone.
 
-### `vn translate <lang> [path]`
+### `vn translate <lang> [path] [--export | --import <file.po>]`
 
 Extracts every translatable string into `lang/<lang>.json` next to the game's
 `schema.json`: dialogue, narration, choice options, and the characters' display names.
@@ -143,6 +143,55 @@ as `vn check`); it defaults to the working directory. A story with errors is rep
 nothing is extracted, so a broken edit can't half-rewrite the catalog. The file format,
 how entries are keyed, and how a game loads one are in
 [vn_script's README](../vn_script/README.md#translation).
+
+#### Translating in a translation tool
+
+The catalog is the runtime format: keyed by a hash, read by the engine, and unpleasant to
+type prose into. `--export` writes `lang/<lang>.po` beside it, which
+[Poedit](https://poedit.net), Weblate, Crowdin and OmegaT all open:
+
+```sh
+cargo run -p vn_cli -- translate pt-BR examples/god_is_watching/assets --export
+```
+
+```po
+#. registrar (dialogue)
+#: 00_archive.story:10
+msgctxt "story|00_archive.story|8b225b229a290804"
+msgid "You're the new one. Sit."
+msgstr ""
+```
+
+The comment above each line says who speaks it and where it is, and entries come out in
+story order, so a translator reads the scene as the player does rather than in hash
+order. `msgctxt` is the catalog key, so a line keeps its translation when the story is
+reordered or split across files.
+
+`--import` reads a `.po` back and rewrites the catalog, then re-exports so both files
+stay in step:
+
+```sh
+cargo run -p vn_cli -- translate pt-BR examples/god_is_watching/assets --import lang/pt-BR.po
+```
+
+```text
+read 23 translations from lang/pt-BR.po
+1 marked fuzzy: kept, but not shown until reviewed
+wrote examples/god_is_watching/assets/lang/pt-BR.json
+wrote examples/god_is_watching/assets/lang/pt-BR.po
+```
+
+Two flags travel with the text, and they mean different things:
+
+| | Set by | In the `.po` | Effect |
+| --- | --- | --- | --- |
+| `fuzzy` | the translator, in their tool | `#, fuzzy` | Kept in the catalog, but the line still reads in the source language until the flag is cleared |
+| `stale` | `vn translate`, when the story moved on | `#~` obsolete | Kept so the old wording is there to work from; never shown, never re-imported |
+
+Only the source of truth changes hands: `--import` writes the catalog, so a translation
+that reached the `.po` some other way (a translation memory, a machine pass) lands in the
+game the same as one typed by hand. Nothing else in the pipeline knows about `.po` — the
+engine only ever reads the JSON.
 
 ### `vn new <directory> [--title <title>] [--engine-path <dir> | --engine-git <url>]`
 

@@ -116,6 +116,8 @@ pub struct Entry {
     pub text: String,
     #[serde(default, skip_serializing_if = "is_false")]
     pub stale: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub fuzzy: bool,
 }
 
 fn is_zero(value: &usize) -> bool {
@@ -128,7 +130,11 @@ fn is_false(value: &bool) -> bool {
 
 impl Entry {
     pub fn translated(&self) -> Option<&str> {
-        (!self.text.is_empty() && !self.stale).then_some(self.text.as_str())
+        (!self.text.is_empty() && !self.stale && !self.fuzzy).then_some(self.text.as_str())
+    }
+
+    pub fn needs_review(&self) -> bool {
+        self.fuzzy && !self.stale
     }
 }
 
@@ -275,6 +281,12 @@ impl Catalog {
     pub fn missing(&self) -> Vec<&Entry> {
         self.entries()
             .filter(|entry| !entry.stale && entry.text.is_empty())
+            .collect()
+    }
+
+    pub fn needing_review(&self) -> Vec<&Entry> {
+        self.entries()
+            .filter(|entry| entry.needs_review())
             .collect()
     }
 

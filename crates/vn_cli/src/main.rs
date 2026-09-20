@@ -4,6 +4,7 @@ mod fmt;
 mod lang;
 mod lsp;
 mod new;
+mod po;
 mod translate;
 
 use std::io;
@@ -17,7 +18,7 @@ const USAGE: &str = "usage:
   vn dump <file.story | directory>
   vn fmt <path> [--check]
   vn lsp
-  vn translate <lang> [path]
+  vn translate <lang> [path] [--export | --import <file.po>]
   vn new <directory> [--title <title>] [--engine-path <dir> | --engine-git <url>]";
 
 fn main() -> ExitCode {
@@ -28,8 +29,13 @@ fn main() -> ExitCode {
         [cmd] if cmd == "lsp" => lsp::lsp(),
         [cmd, path] if cmd == "fmt" => fmt::fmt(path, false),
         [cmd, path, flag] if cmd == "fmt" && flag == "--check" => fmt::fmt(path, true),
-        [cmd, language] if cmd == "translate" => translate::translate(language, "."),
-        [cmd, language, path] if cmd == "translate" => translate::translate(language, path),
+        [cmd, rest @ ..] if cmd == "translate" => match parse_translate(rest) {
+            Ok((language, path, exchange)) => translate::translate(language, path, exchange),
+            Err(e) => {
+                eprintln!("❌ {e}\n\n{USAGE}");
+                ExitCode::FAILURE
+            }
+        },
         [cmd, rest @ ..] if cmd == "check" => match parse_check(rest) {
             Ok((path, schema, lang)) => check::check(path, schema, lang),
             Err(e) => {
@@ -74,6 +80,30 @@ fn value<'a>(args: &mut std::slice::Iter<'a, String>, flag: &str) -> Result<&'a 
     args.next()
         .map(String::as_str)
         .ok_or_else(|| format!("{flag} needs a value"))
+}
+
+type TranslateArgs<'a> = (&'a str, &'a str, translate::Exchange);
+
+fn parse_translate(args: &[String]) -> Result<TranslateArgs<'_>, String> {
+    let (mut language, mut path) = (None, None);
+    let mut exchange = translate::Exchange::None;
+    let mut rest = args.iter();
+
+    while let Some(arg) = rest.next() {
+        match arg.as_str() {
+            "--export" => exchange = translate::Exchange::Export,
+            "--import" => {
+                exchange = translate::Exchange::Import(value(&mut rest, "--import")?.to_string())
+            }
+            _ if arg.starts_with("--") => return Err(format!("unknown option {arg}")),
+            _ if language.is_none() => language = Some(arg.as_str()),
+            _ if path.is_none() => path = Some(arg.as_str()),
+            _ => return Err(format!("unexpected argument {arg}")),
+        }
+    }
+
+    let language = language.ok_or("translate needs a language")?;
+    Ok((language, path.unwrap_or("."), exchange))
 }
 
 pub fn load_sources(path: &Path) -> io::Result<Vec<(String, String)>> {

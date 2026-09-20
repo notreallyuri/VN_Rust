@@ -133,6 +133,14 @@ fn report_translations(
                     line.source
                 );
             }
+            for line in &status.unreviewed {
+                println!(
+                    "{}: unreviewed {} translation: {:?}",
+                    line.place(),
+                    line.kind,
+                    line.source
+                );
+            }
             for line in &status.stale {
                 println!(
                     "{}: stale {} translation: {:?}",
@@ -144,11 +152,12 @@ fn report_translations(
         }
 
         println!(
-            "{}: {}/{} translated, {} missing, {} stale",
+            "{}: {}/{} translated, {} missing, {} unreviewed, {} stale",
             status.language,
             status.translated,
             status.total,
             status.missing.len(),
+            status.unreviewed.len(),
             status.stale.len(),
         );
         if lang.is_none() && !status.is_complete() {

@@ -58,10 +58,26 @@ impl Project {
     }
 
     fn translate(&self, language: &str) -> (bool, String) {
+        self.translate_with(language, &[])
+    }
+
+    fn po(&self, language: &str) -> String {
+        fs::read_to_string(self.0.join("lang").join(format!("{}.po", language))).unwrap()
+    }
+
+    fn write_po(&self, language: &str, text: &str) -> PathBuf {
+        let path = self.0.join("lang").join(format!("{}.po", language));
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, text).unwrap();
+        path
+    }
+
+    fn translate_with(&self, language: &str, extra: &[&str]) -> (bool, String) {
         let output = Command::new(env!("CARGO_BIN_EXE_vn"))
             .arg("translate")
             .arg(language)
             .arg(&self.0)
+            .args(extra)
             .output()
             .unwrap();
         let text =
@@ -185,4 +201,157 @@ fn the_catalog_lands_where_the_engine_will_look_for_it() {
     let project = Project::new();
     project.translate("ja");
     assert!(Path::new(&project.0).join("lang").join("ja.json").is_file());
+}
+
+#[test]
+fn export_writes_a_po_in_story_order_with_context() {
+    let project = Project::new();
+    let (ok, output) = project.translate_with("pt-BR", &["--export"]);
+    assert!(ok, "{}", output);
+    assert!(output.contains("lang/pt-BR.po"), "{}", output);
+
+    let po = project.po("pt-BR");
+    assert!(po.contains("\"Language: pt-BR\\n\""), "{}", po);
+    assert!(po.contains("\"Content-Type: text/plain; charset=UTF-8\\n\""));
+
+    let narration = po.find("The lamps are never put out.").unwrap();
+    let dialogue = po.find("Your hot water, miss.").unwrap();
+    assert!(
+        narration < dialogue,
+        "the po must read in story order:\n{}",
+        po
+    );
+
+    assert!(po.contains("#. mary (dialogue)"), "{}", po);
+    assert!(po.contains("#: 01.story:3"), "{}", po);
+    assert!(
+        po.contains("msgctxt \"story|01.story|"),
+        "an entry needs a key that survives a reordered story:\n{}",
+        po
+    );
+    assert!(po.contains("msgctxt \"name|mary\""), "{}", po);
+}
+
+#[test]
+fn a_translated_po_comes_back_into_the_catalog() {
+    let project = Project::new();
+    project.translate_with("pt-BR", &["--export"]);
+
+    let po = project.po("pt-BR").replace(
+        "msgid \"The lamps are never put out.\"\nmsgstr \"\"",
+        "msgid \"The lamps are never put out.\"\nmsgstr \"As lamparinas nunca se apagam.\"",
+    );
+    let path = project.write_po("pt-BR", &po);
+
+    let (ok, output) = project.translate_with("pt-BR", &["--import", path.to_str().unwrap()]);
+    assert!(ok, "{}", output);
+    assert!(output.contains("read 1 translation"), "{}", output);
+
+    let catalog = project.catalog("pt-BR");
+    assert_eq!(
+        catalog.text("01.story", "The lamps are never put out."),
+        Some("As lamparinas nunca se apagam.")
+    );
+}
+
+#[test]
+fn a_fuzzy_translation_is_kept_but_not_shown() {
+    let project = Project::new();
+    project.translate_with("pt-BR", &["--export"]);
+
+    let po = project.po("pt-BR").replace(
+        "msgid \"The lamps are never put out.\"\nmsgstr \"\"",
+        "#, fuzzy\nmsgid \"The lamps are never put out.\"\nmsgstr \"As lamparinas nunca se apagam.\"",
+    );
+    let path = project.write_po("pt-BR", &po);
+
+    let (ok, output) = project.translate_with("pt-BR", &["--import", path.to_str().unwrap()]);
+    assert!(ok, "{}", output);
+    assert!(output.contains("1 marked fuzzy"), "{}", output);
+
+    let catalog = project.catalog("pt-BR");
+    assert_eq!(
+        catalog.text("01.story", "The lamps are never put out."),
+        None,
+        "an unreviewed translation must not reach the player"
+    );
+
+    let round_tripped = project.po("pt-BR");
+    assert!(
+        round_tripped.contains("#, fuzzy"),
+        "the marker has to survive a round trip:\n{}",
+        round_tripped
+    );
+    assert!(round_tripped.contains("As lamparinas nunca se apagam."));
+}
+
+#[test]
+fn quotes_newlines_and_backslashes_survive_a_round_trip() {
+    let project = Project::new();
+    project.story(
+        "01.story",
+        "scene start:\n  \"She said \\\"no\\\", and the path C:\\\\Users closed.\"\n",
+    );
+    project.translate_with("pt-BR", &["--export"]);
+
+    let po = project.po("pt-BR");
+    assert!(
+        po.contains(r#"msgid "She said \"no\", and the path C:\\Users closed.""#),
+        "{}",
+        po
+    );
+
+    let translated = po.replace(
+        "closed.\"\nmsgstr \"\"",
+        "closed.\"\nmsgstr \"Ela disse \\\"nao\\\", e C:\\\\Users fechou.\"",
+    );
+    let path = project.write_po("pt-BR", &translated);
+    let (ok, output) = project.translate_with("pt-BR", &["--import", path.to_str().unwrap()]);
+    assert!(ok, "{}", output);
+
+    let catalog = project.catalog("pt-BR");
+    assert_eq!(
+        catalog.text(
+            "01.story",
+            "She said \"no\", and the path C:\\Users closed."
+        ),
+        Some("Ela disse \"nao\", e C:\\Users fechou.")
+    );
+}
+
+#[test]
+fn a_stale_entry_is_exported_as_obsolete_and_not_reimported() {
+    let project = Project::new();
+    project.translate_with("pt-BR", &["--export"]);
+
+    let po = project.po("pt-BR").replace(
+        "msgid \"The lamps are never put out.\"\nmsgstr \"\"",
+        "msgid \"The lamps are never put out.\"\nmsgstr \"As lamparinas nunca se apagam.\"",
+    );
+    let path = project.write_po("pt-BR", &po);
+    project.translate_with("pt-BR", &["--import", path.to_str().unwrap()]);
+
+    project.story(
+        "01.story",
+        "scene start:\n  \"The lamps are never put out down here.\"\n  mary \"Your hot water, miss.\"\n",
+    );
+    let (ok, output) = project.translate_with("pt-BR", &["--export"]);
+    assert!(ok, "{}", output);
+    assert!(output.contains("1 stale"), "{}", output);
+
+    let po = project.po("pt-BR");
+    assert!(
+        po.contains("#~ msgid \"The lamps are never put out.\""),
+        "a line the story dropped belongs in the obsolete section:\n{}",
+        po
+    );
+
+    let path = project.write_po("pt-BR", &po);
+    let (ok, output) = project.translate_with("pt-BR", &["--import", path.to_str().unwrap()]);
+    assert!(ok, "{}", output);
+    assert!(
+        !output.contains("no longer in the story were skipped"),
+        "an obsolete entry is not an error to report:\n{}",
+        output
+    );
 }
