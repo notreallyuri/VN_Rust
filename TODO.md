@@ -249,6 +249,46 @@ builds), F1 (controls) and F2 (script errors).
 - [ ] Scene jump: a debug menu listing every scene, to jump straight to one with its variables set, instead of replaying to reach it
 - [ ] A screenshot and GIF capture key for bug reports and devlogs, writing next to the existing screenshot key
 
+## M11: Documentation site
+
+A React site rather than generated API docs. The audience splits: someone writing
+`.story` files will never open `cargo doc` and should not have to, and
+`Instruction::Say { char_id, text }` tells them nothing. The comparator is Ren'Py's
+documentation, not a crate on docs.rs. Most of the prose exists already — about 4000
+lines across the READMEs — so the work is structure, navigation and search, not writing.
+
+- [ ] The site itself, in React. [Docusaurus](https://docusaurus.io) is React and built
+  for this; Next.js with MDX is the alternative if the site needs to be more than docs.
+  Either way the content stays **in this repo** as Markdown/MDX and the site renders it.
+  The READMEs are accurate today because they change in the same commit as the code; a
+  separate docs repo is where that habit dies
+- [ ] Split the content into a page tree, keeping the cross-references working:
+
+  | Source | Becomes |
+  | --- | --- |
+  | `README.md` (178 lines) | Landing page, project goals, the three-layer architecture |
+  | `SCRIPT.md` (665 lines, 12 + 38 sections) | The DSL reference: the writer's half of the site, and the part that needs the most navigation |
+  | `crates/vn_engine/README.md` (2182 lines, 47 + 23 sections) | The engine guide, as roughly ten pages. Already a book squeezed into one file |
+  | `crates/vn_script/README.md` (526 lines) | Internals, for contributors |
+  | `crates/vn_cli/README.md` (285 lines) | Tooling reference (`vn new`, `check`, `fmt`, `translate`, `lsp`) |
+  | `crates/vn_build`, `crates/vn_live2d` | Short pages under a "release and optional backends" heading |
+
+- [ ] Keep the code examples verified. `crates/vn_script/tests/spec.rs` already does this
+  for `SCRIPT.md`: it pulls every fenced block out, compiles it, and golden-tests the
+  listing and VM events against `tests/golden/script_md.txt`. That mechanism has to
+  survive the move, and the Rust snippets in the engine guide need the same treatment —
+  nothing checks those today. An engine whose character is catching mistakes before they
+  run (`did you mean 'guide'?`, `takes 2 arguments, got 1`) should not ship examples that
+  do not compile. A React site loses `mdbook test`, so this needs its own extractor in CI
+- [ ] Search. 47 top-level sections in the engine guide alone; without it the site is the
+  same "search the file" problem with nicer typography
+- [ ] One-line `///` pointers on public items, linking into the site rather than
+  repeating it: `/// Switch to the text input screen. See <docs/engine/text-input>.` This
+  is the half a site cannot do — typing `ctx.` in an editor currently shows a list of
+  names and nothing else, and the LSP can only surface what is in the source. Pointers,
+  not prose, so the convention that documentation lives in one place still holds. Do it
+  after the page tree exists, so the links have somewhere to point
+
 ## Ongoing
 
 - [x] Tests: golden tests over the SCRIPT.md examples (`crates/vn_script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `vn dump`
