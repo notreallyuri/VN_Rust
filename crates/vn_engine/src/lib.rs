@@ -11,6 +11,19 @@ pub mod screen_manager;
 pub mod screens;
 pub mod ui;
 
+pub mod prelude {
+    pub use crate::action::Action;
+    pub use crate::app::{AppError, VnApp};
+    pub use crate::context::{DrawContext, GameContext, GameView};
+    pub use crate::game::characters::Character;
+    pub use crate::overlay::{Overlay, OverlayAction, OverlayRequest};
+    pub use crate::screen::{Screen, ScreenState};
+    pub use crate::ui::TextStyle;
+    pub use crate::ui::fonts::FontRole;
+    pub use crate::ui::shape::PanelStyle;
+    pub use vn_script::{Value, VariableDef};
+}
+
 pub use data::{assets, resources, rollback, saves, session, settings, state};
 pub use frame::{effects, post, scenery, screen_transition, stage, target, viewport};
 pub use game::{audio, characters, commands, hooks, hot_reload, language, script_errors};
