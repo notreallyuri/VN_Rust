@@ -83,6 +83,8 @@ pub struct VnApp {
     screen_transition: ScreenTransitionConfig,
     design_size: Option<(i32, i32)>,
     screen_effects: ScreenEffectsConfig,
+    shaders: Vec<(String, String, f32)>,
+    render_scale: f32,
 }
 
 #[derive(Debug)]
@@ -179,6 +181,8 @@ impl VnApp {
             screen_transition: ScreenTransitionConfig::default(),
             design_size: None,
             screen_effects: ScreenEffectsConfig::default(),
+            shaders: Vec::new(),
+            render_scale: 1.0,
         }
     }
 
@@ -189,6 +193,26 @@ impl VnApp {
         file: impl Into<String>,
     ) -> Self {
         self.font_variants.push((role, variant, file.into()));
+        self
+    }
+
+    pub fn render_scale(mut self, scale: f32) -> Self {
+        self.render_scale = scale.clamp(1.0, 4.0);
+        self
+    }
+
+    pub fn shader(mut self, name: impl Into<String>, fragment: impl Into<String>) -> Self {
+        self.shaders.push((name.into(), fragment.into(), 1.0));
+        self
+    }
+
+    pub fn shader_amount(
+        mut self,
+        name: impl Into<String>,
+        fragment: impl Into<String>,
+        amount: f32,
+    ) -> Self {
+        self.shaders.push((name.into(), fragment.into(), amount));
         self
     }
 
@@ -622,6 +646,10 @@ impl VnApp {
             manager.resources.set_font(&mut rl, &thread, *role, file);
         }
 
+        for (name, fragment, amount) in &self.shaders {
+            manager.post.load(&mut rl, &thread, name, fragment, *amount);
+        }
+
         for (role, variant, file) in &self.font_variants {
             manager
                 .resources
@@ -665,11 +693,17 @@ impl VnApp {
 
             let screen = (rl.get_screen_width(), rl.get_screen_height());
             let now = rl.get_time();
-            target.resize(&mut rl, &thread, self.design_size.unwrap_or(screen));
-            let destination = crate::target::destination(target.size(), screen);
+            let layout = self.design_size.unwrap_or(screen);
+            let drawn = (
+                (layout.0 as f32 * self.render_scale).round() as i32,
+                (layout.1 as f32 * self.render_scale).round() as i32,
+            );
+            target.resize(&mut rl, &thread, drawn);
+            let destination = crate::target::destination(layout, screen);
             if target.frame().is_some() {
+                crate::viewport::set_render_scale(self.render_scale);
                 crate::viewport::set(crate::Viewport {
-                    size: target.size(),
+                    size: layout,
                     destination,
                 });
             } else {
@@ -682,6 +716,7 @@ impl VnApp {
             if starting {
                 snapshot.resize(&mut rl, &thread, target.size());
             }
+            manager.post.resize(&mut rl, &thread, target.size());
 
             let source = target.source();
             let snapshot_source = snapshot.source();
@@ -699,7 +734,13 @@ impl VnApp {
                     {
                         let mut t = d.begin_texture_mode(&thread, frame);
                         t.clear_background(self.clear_color);
-                        manager.draw(&mut t, &thread);
+                        let mut scaled = t.begin_mode2D(Camera2D {
+                            offset: Vector2::zero(),
+                            target: Vector2::zero(),
+                            rotation: 0.0,
+                            zoom: self.render_scale,
+                        });
+                        manager.draw(&mut scaled, &thread);
                     }
                     let shake = manager.effects().offset(now);
                     let shaken = Rectangle::new(
@@ -708,10 +749,14 @@ impl VnApp {
                         destination.width,
                         destination.height,
                     );
+                    let flash = manager.effects().flash_color(now);
+                    let flashing = manager.effects().flash_alpha(now) > 0.0;
+
+                    let shown = manager.post.apply(&mut d, &thread, frame, size, now);
 
                     d.clear_background(Color::BLACK);
                     d.draw_texture_pro(
-                        frame.texture(),
+                        shown.texture(),
                         source,
                         shaken,
                         Vector2::zero(),
@@ -744,14 +789,8 @@ impl VnApp {
                         }
                     }
 
-                    if manager.effects().flash_alpha(now) > 0.0 {
-                        d.draw_rectangle(
-                            0,
-                            0,
-                            screen.0,
-                            screen.1,
-                            manager.effects().flash_color(now),
-                        );
+                    if flashing {
+                        d.draw_rectangle(0, 0, screen.0, screen.1, flash);
                     }
                 }
                 None => {

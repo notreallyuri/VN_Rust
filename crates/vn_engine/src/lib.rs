@@ -14,6 +14,7 @@ pub mod hot_reload;
 pub mod layout;
 pub mod navigation;
 pub mod overlay;
+pub mod post;
 pub mod resources;
 pub mod rollback;
 pub mod saves;
@@ -55,6 +56,7 @@ pub use hot_reload::*;
 pub use layout::{Align, Anchor, Arrangement, Layout};
 pub use navigation::*;
 pub use overlay::*;
+pub use post::{Pass, PostChain};
 pub use resources::*;
 pub use rollback::*;
 pub use saves::{

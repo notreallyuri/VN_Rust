@@ -196,11 +196,12 @@ else draws through, so it is cheaper now; the rest is additive.
 ### Presentation
 
 - [x] Screen shake and flash (`with shake` / `with flash`, `ctx.shake`/`ctx.flash`): the change is instant and the frame is shaken by offsetting the render target, or washed with `flash_color`; `ScreenEffectsConfig` tunes it
-- [ ] Shader passes over the render target: blur behind panels, grain or CRT for flashbacks, a desaturation pass for endings
+- [x] Shader passes over the render target (`PostChain`, `VnApp::shader`, `ctx.shader`): named passes in registration order, with `amount`, `time` and `pixel` uniforms; `post::GRAIN`, `DESATURATE`, `BLUR` and `FXAA` ship with the engine
 - [ ] Weather and particle overlays (rain, snow, dust motes) as part of `Scenery`
 - [ ] NVL mode: full-screen text pages instead of the dialogue box, chosen per scene
 - [ ] Dialogue box variants: a speaker portrait bust inside the box, and a per-character box style
 - [ ] Choice presentation: images, disabled options with a reason, and hover previews
+- [x] Sharper edges: `VnApp::render_scale` supersamples the frame (the render target is not multisampled, so window MSAA would not help), and corner segments scale with corner size and render scale; `post::FXAA` is the cheap alternative
 - [ ] A custom mouse cursor, and prompts that show keyboard or gamepad glyphs depending on the last input used
 - [ ] Animated character puppets (Live2D and friends). On the shelf; checked 2026-09-20, start with the seam when it comes off it
   - **The seam, first and separately (~1 day).** Characters are drawn in one place, `sprite()` in `stage.rs`: a texture looked up by `character_path(id, image)` and drawn with `draw_texture_pro`. Positions, transitions and alpha all pass through it, so a trait that draws itself into a rect at an alpha is all it takes. Every backend below needs this, and the layered rig is enough to prove it

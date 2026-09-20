@@ -371,6 +371,48 @@ the distance from the bottom for content anchored there (the log reads it that w
 `overflows` says whether a bar is needed at all. `ScrollStyle` sets the step, bar width
 and colours.
 
+## Shader passes
+
+A game can register fragment shaders and switch them on while it plays. They run over the
+finished frame, in the order they were registered, between the render target and the
+window.
+
+```rust
+use vn_engine::post;
+
+VnApp::new("My Game")
+    .shader("grain", post::GRAIN)
+    .shader("desaturate", post::DESATURATE)
+```
+
+```rust
+.command("flashback", |ctx, ()| {
+    ctx.shader("grain", true);
+    ctx.shader_amount("grain", 0.25);
+    Ok(Action::None)
+})
+```
+
+`post` ships `GRAIN`, `DESATURATE`, `BLUR` and `FXAA`. A shader is a raylib fragment
+shader: `texture0` is the frame, `colDiffuse` and `fragColor` the usual raylib uniforms,
+and the engine sets `amount` (the pass strength), `time` (seconds) and `pixel` (one pixel
+in texture coordinates) when a shader declares them. A pass with an amount of 0 is
+skipped, and a shader that fails to compile is reported once and left out rather than
+silently drawing a default shader.
+
+## Sharper edges
+
+Shapes are drawn into the render target, which is not multisampled, so the window's MSAA
+would not help them. Two things do:
+
+- `VnApp::render_scale(2.0)` draws the frame at twice the size and scales it down, which
+  is supersampling: curves, thin borders and diagonal edges all soften. Layout still uses
+  the design size, so nothing moves; the cost is fill rate, four times the pixels at 2.0
+- Corner curves take their segment count from the corner size and the render scale, so a
+  bigger corner or a higher scale gets more segments
+
+`post::FXAA` is the cheaper alternative when the fill rate matters more than fidelity.
+
 ## Screen effects
 
 `shake` and `flash` in a story (SCRIPT.md 2.6) run as screen effects: the line's change

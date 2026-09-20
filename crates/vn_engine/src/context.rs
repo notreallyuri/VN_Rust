@@ -40,6 +40,7 @@ pub struct GameContext<'a> {
     pub seen: &'a mut SeenLines,
     pub(crate) screenshot_request: &'a mut bool,
     pub(crate) effects: &'a mut crate::ScreenEffects,
+    pub(crate) post: &'a mut crate::PostChain,
 }
 
 impl GameContext<'_> {
@@ -54,6 +55,18 @@ impl GameContext<'_> {
 
     pub fn close_overlays(&mut self) {
         self.overlay_requests.push(OverlayRequest::CloseAll);
+    }
+
+    pub fn shader(&mut self, name: &str, on: bool) {
+        if !self.post.set_enabled(name, on) {
+            eprintln!("⚠️ No shader named '{}'", name);
+        }
+    }
+
+    pub fn shader_amount(&mut self, name: &str, amount: f32) {
+        if !self.post.set_amount(name, amount) {
+            eprintln!("⚠️ No shader named '{}'", name);
+        }
     }
 
     pub fn shake(&mut self, seconds: f32) {

@@ -308,7 +308,8 @@ fn inset_corners(corners: &Corners, rect: Rectangle, inset: f32) -> Corners {
 }
 
 fn segments(corner: &Corner) -> usize {
-    ((corner.size / 3.0).ceil() as usize).clamp(4, 24)
+    let scale = crate::viewport::render_scale().max(1.0);
+    ((corner.size * scale / 1.2).ceil() as usize).clamp(8, 96)
 }
 
 fn corner_points(corner: &Corner, width: f32, steps: usize) -> Vec<(f32, f32)> {

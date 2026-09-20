@@ -27,6 +27,7 @@ impl Viewport {
 
 thread_local! {
     static CURRENT: Cell<Option<Viewport>> = const { Cell::new(None) };
+    static RENDER_SCALE: Cell<f32> = const { Cell::new(1.0) };
 }
 
 pub fn set(viewport: Viewport) {
@@ -46,6 +47,14 @@ pub fn size(rl: &RaylibHandle) -> Vector2 {
         Some(viewport) => Vector2::new(viewport.size.0 as f32, viewport.size.1 as f32),
         None => Vector2::new(rl.get_screen_width() as f32, rl.get_screen_height() as f32),
     }
+}
+
+pub fn render_scale() -> f32 {
+    RENDER_SCALE.with(|scale| scale.get())
+}
+
+pub fn set_render_scale(scale: f32) {
+    RENDER_SCALE.with(|current| current.set(scale.max(1.0)));
 }
 
 pub fn mouse_position(rl: &RaylibHandle) -> Vector2 {
