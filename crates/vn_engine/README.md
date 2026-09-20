@@ -77,6 +77,7 @@ doesn't hide where a name came from.
 | `story_dir(path)` | `story` | Directory of `.story` files; every one under it (recursively) is loaded into one story, in path order |
 | `initial_screen(state)` | `StartScreen` | First screen, e.g. `MainMenu` to skip the start screen |
 | `font(role, file)` | | Font from `<assets>/fonts/` for a `FontRole` (see [Fonts](#fonts)) |
+| `language_font(code, role, file)` | | Font used for a role only while that language is being read (see [Fonts](#fonts)) |
 | `start_screen(\|s\| ...)` | | Configure the default start screen |
 | `main_menu(\|m\| ...)` | | Configure the default main menu |
 | `playing(\|p\| ...)` | | Configure the default playing screen |
@@ -1087,8 +1088,9 @@ itself with `VnApp::ui_text("Filed in the archive")`.
 
 Nothing a save holds is in any one language: the log and the save slots store the
 source text, the speaker's id and the values the line was read with, and re-render
-through whatever catalog is active (see [Saves](#saves)). Fonts per language with a
-fallback chain and CJK wrapping are still to come (see TODO.md).
+through whatever catalog is active (see [Saves](#saves)). A language that needs its own
+typeface gets one with `language_font`, and text wraps by the rules of the script it is
+written in (see [Fonts](#fonts)).
 
 ## Rollback
 
@@ -1978,17 +1980,50 @@ let size = fonts.measure(FontRole::Button, text, 22.0);
 let lines = fonts.wrap(FontRole::Dialogue, text, 26.0, max_width);
 ```
 
+A language written in another script usually needs its own typeface. `language_font`
+assigns one for as long as that language is being read:
+
+```rust
+VnApp::new("My Novel")
+    .language("ja", "日本語")
+    .font(FontRole::Dialogue, "NotoSerif-Regular.ttf")
+    .language_font("ja", FontRole::Default, "NotoSerifJP-Regular.ttf")
+```
+
 Behavior:
 
-- Lookup order: the role's font, then the `Default` role's font, then the built-in font.
-- Each file loads once, however many roles use it.
+- Lookup order: the active language's font for the role, then that language's `Default`
+  font, then the role's own font, then the `Default` role's, then the built-in font. A
+  language only has to name what it actually replaces.
+- Each file loads once, however many roles and languages use it.
 - A missing or unreadable font logs a warning and the role keeps its fallback.
 - Supported formats: `.ttf` and `.otf`.
 - Glyphs are rasterized once at 64 px and scaled when drawn, with mipmaps and trilinear
   filtering so small sizes stay smooth.
 - Glyph coverage: ASCII, Latin-1, Latin Extended-A, general punctuation
-  (U+2010–U+2027: dashes, curly quotes, ellipsis) and €. Other characters draw as `?`
-  (the bundled Noto Sans has no arrow symbols, so on-screen text spells out "Left/Right").
+  (U+2010–U+2027: dashes, curly quotes, ellipsis) and €, plus every character the game
+  can actually show — read at startup from the story and from every catalog under
+  `lang/`. A Japanese catalog adds its kana and kanji and nothing else, so the atlas
+  stays the size the game needs rather than the size the script could be. Characters
+  outside that set draw as `?` (the bundled Noto Sans has no arrow symbols, so on-screen
+  text spells out "Left/Right").
+- The atlas covers every language at once, so switching language changes which font a
+  role draws with but loads nothing and drops no frame.
+
+#### Wrapping
+
+`fonts.wrap` and the span-aware `styled::wrap` break Latin text at spaces and text in
+scripts that don't use them (Chinese, Japanese, Korean, and fullwidth forms) between
+characters, with the line-break rules those scripts expect:
+
+- A line never starts with closing punctuation, a small kana or a prolonged sound mark
+  (`。`, `、`, `」`, `っ`, `ー` …), so they stay with the character they follow.
+- A line never ends with an opening bracket (`「`, `（` …).
+- A run of Latin inside CJK text stays whole, and a word longer than the line is left to
+  overflow rather than cut mid-word.
+
+`ui::wrap::units` and `ui::wrap::breaks` expose the break points on their own, for a
+screen that lays text out itself.
 - Fonts are loaded through raylib's C `LoadFontFromMemory` rather than raylib-rs'
   wrapper. The wrapper passes the glyph string's byte length as the codepoint count,
   which reads out of bounds for non-ASCII glyphs.

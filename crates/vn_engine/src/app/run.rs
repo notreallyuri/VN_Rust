@@ -133,8 +133,33 @@ impl VnApp {
         );
         manager.audio = Audio::new(manager.resources.assets().clone(), self.audio);
 
+        let catalogs: Vec<vn_script::Catalog> = self
+            .languages
+            .iter()
+            .filter_map(|language| language.code.as_deref())
+            .filter_map(|code| crate::game::language::load_catalog(&loader.assets, code).ok())
+            .collect();
+        manager
+            .resources
+            .fonts
+            .extend_charset(crate::game::language::charset(
+                manager.story.program(),
+                &catalogs,
+            ));
+        drop(catalogs);
+        manager
+            .resources
+            .fonts
+            .set_language(manager.settings.values.language.as_deref());
+
         for (role, file) in &self.fonts {
             manager.resources.set_font(&mut rl, &thread, *role, file);
+        }
+
+        for (code, role, file) in &self.language_fonts {
+            manager
+                .resources
+                .set_language_font(&mut rl, &thread, code, *role, file);
         }
 
         for (name, fragment, amount) in &self.shaders {

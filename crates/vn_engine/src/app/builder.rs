@@ -48,6 +48,7 @@ pub struct VnApp {
     pub(super) schema_file: Option<PathBuf>,
     pub(super) initial_screen: ScreenState,
     pub(super) fonts: Vec<(FontRole, String)>,
+    pub(super) language_fonts: Vec<(String, FontRole, String)>,
     pub(super) font_variants: Vec<(FontRole, FontVariant, String)>,
     pub(super) start: StartScreenConfig,
     pub(super) menu: MainMenuConfig,
@@ -103,6 +104,7 @@ impl VnApp {
             schema_file: Some(PathBuf::from(SCHEMA_FILE_NAME)),
             initial_screen: ScreenState::StartScreen,
             fonts: Vec::new(),
+            language_fonts: Vec::new(),
             font_variants: Vec::new(),
             start: StartScreenConfig::default(),
             menu: MainMenuConfig::default(),
@@ -388,6 +390,16 @@ impl VnApp {
 
     pub fn font(mut self, role: FontRole, file: impl Into<String>) -> Self {
         self.fonts.push((role, file.into()));
+        self
+    }
+
+    pub fn language_font(
+        mut self,
+        code: impl Into<String>,
+        role: FontRole,
+        file: impl Into<String>,
+    ) -> Self {
+        self.language_fonts.push((code.into(), role, file.into()));
         self
     }
 

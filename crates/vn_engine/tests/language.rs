@@ -374,3 +374,31 @@ fn a_translated_line_keeps_the_values_it_was_read_with() {
     let catalog = translated("01.story", source, "Bem-vinda, {player_name}.");
     assert_eq!(said.text(Some(&catalog)), "Bem-vinda, Mary.");
 }
+
+#[test]
+fn the_glyphs_a_font_needs_come_from_the_story_and_every_catalog() {
+    use vn_engine::game::language::charset;
+    use vn_engine::script::compile_sources;
+
+    let program = compile_sources([("story/01.story", "scene start:\n  \"Sit down.\"\n")]);
+    let plain = charset(&program, &[]);
+    assert!(plain.contains(&'S') && plain.contains(&'.'));
+    assert!(
+        !plain.contains(&'座'),
+        "nothing Japanese is in the story yet"
+    );
+
+    let catalog = translated("01.story", "Sit down.", "お座りなさい。");
+    let with_japanese = charset(&program, std::slice::from_ref(&catalog));
+    for c in "お座りなさい。".chars() {
+        assert!(
+            with_japanese.contains(&c),
+            "{:?} is shown but would have no glyph",
+            c
+        );
+    }
+    assert!(
+        with_japanese.contains(&'S'),
+        "the source language still needs its glyphs"
+    );
+}

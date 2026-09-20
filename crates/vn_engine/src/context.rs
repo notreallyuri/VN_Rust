@@ -183,6 +183,9 @@ impl GameContext<'_> {
         if code_missing(&self.settings.values.language, &catalog) {
             self.notify_error("That language could not be loaded");
         }
+        self.resources
+            .fonts
+            .set_language(catalog.as_ref().map(|catalog| catalog.language.as_str()));
         self.story.set_catalog(catalog);
     }
 

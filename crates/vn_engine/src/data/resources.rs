@@ -51,6 +51,21 @@ impl ResourceManager {
         self.fonts.assign(rl, thread, data, &source, role, file);
     }
 
+    pub fn set_language_font(
+        &mut self,
+        rl: &mut RaylibHandle,
+        thread: &RaylibThread,
+        code: &str,
+        role: FontRole,
+        file: &str,
+    ) {
+        let path = format!("fonts/{}", file);
+        let data = self.assets.read(&path);
+        let source = self.assets.describe(&path);
+        self.fonts
+            .assign_language(rl, thread, data, &source, code, role, file);
+    }
+
     pub fn set_font_variant(
         &mut self,
         rl: &mut RaylibHandle,

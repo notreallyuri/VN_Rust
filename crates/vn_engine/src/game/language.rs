@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use vn_script::{Catalog, LANG_DIR};
 
 use crate::data::assets::Assets;
@@ -38,4 +40,30 @@ pub fn load_catalog(assets: &Assets, code: &str) -> Result<Catalog, String> {
         .read_to_string(&file)
         .map_err(|e| format!("{}: {}", assets.describe(&file), e))?;
     Catalog::from_json(&json).map_err(|e| format!("{}: {}", assets.describe(&file), e))
+}
+
+pub fn charset(program: &vn_script::Program, catalogs: &[Catalog]) -> BTreeSet<char> {
+    let mut chars = BTreeSet::new();
+    let mut add = |text: &str| chars.extend(text.chars());
+
+    for instruction in &program.instructions {
+        match instruction {
+            vn_script::Instruction::Say { text, .. } => add(text),
+            vn_script::Instruction::Choice { options } => {
+                for (text, _) in options {
+                    add(text);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    for catalog in catalogs {
+        for entry in catalog.entries() {
+            add(&entry.source);
+            add(&entry.text);
+        }
+    }
+
+    chars
 }

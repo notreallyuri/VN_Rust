@@ -126,15 +126,85 @@ fn measure(fonts: &Fonts, piece: &Piece, style: &TextStyle) -> f32 {
         .x
 }
 
-fn words(text: &StyledText) -> Vec<(Vec<Piece>, bool)> {
-    let mut words: Vec<(Vec<Piece>, bool)> = Vec::new();
-    let mut current: Vec<Piece> = Vec::new();
+struct Word {
+    pieces: Vec<Piece>,
+    newline: bool,
+    space_before: bool,
+}
 
-    let push = |current: &mut Vec<Piece>, words: &mut Vec<(Vec<Piece>, bool)>, newline: bool| {
-        if !current.is_empty() || newline {
-            words.push((std::mem::take(current), newline));
+fn split(pieces: Vec<Piece>) -> Vec<Vec<Piece>> {
+    let text: String = pieces.iter().map(|piece| piece.text.as_str()).collect();
+    let breaks = crate::ui::wrap::breaks(&text);
+    if breaks.is_empty() {
+        return vec![pieces];
+    }
+
+    let mut groups: Vec<Vec<Piece>> = Vec::new();
+    let mut group: Vec<Piece> = Vec::new();
+    let mut at = 0;
+    let mut next = breaks.iter().copied().peekable();
+
+    for piece in pieces {
+        let mut rest = piece.text.as_str();
+        while let Some(&stop) = next.peek() {
+            let taken = rest.chars().count();
+            if stop >= at + taken {
+                break;
+            }
+            let cut: String = rest.chars().take(stop - at).collect();
+            group.push(Piece {
+                text: cut.clone(),
+                span: piece.span.clone(),
+            });
+            groups.push(std::mem::take(&mut group));
+            rest = &rest[cut.len()..];
+            at = stop;
+            next.next();
         }
-    };
+        if !rest.is_empty() {
+            at += rest.chars().count();
+            group.push(Piece {
+                text: rest.to_string(),
+                span: piece.span.clone(),
+            });
+        }
+    }
+
+    if !group.is_empty() {
+        groups.push(group);
+    }
+    groups
+}
+
+fn words(text: &StyledText) -> Vec<Word> {
+    let mut words: Vec<Word> = Vec::new();
+    let mut current: Vec<Piece> = Vec::new();
+    let mut space = false;
+
+    let push =
+        |current: &mut Vec<Piece>, words: &mut Vec<Word>, space: &mut bool, newline: bool| {
+            if current.is_empty() && !newline {
+                return;
+            }
+            let mut space_before = std::mem::take(space);
+            let mut groups = split(std::mem::take(current)).into_iter().peekable();
+            if groups.peek().is_none() {
+                words.push(Word {
+                    pieces: Vec::new(),
+                    newline,
+                    space_before,
+                });
+                return;
+            }
+            while let Some(pieces) = groups.next() {
+                words.push(Word {
+                    pieces,
+                    newline: newline && groups.peek().is_none(),
+                    space_before,
+                });
+                space_before = false;
+            }
+        };
 
     for span in text.spans() {
         let mut piece = String::new();
@@ -146,7 +216,7 @@ fn words(text: &StyledText) -> Vec<(Vec<Piece>, bool)> {
                         span: span.clone(),
                     });
                 }
-                push(&mut current, &mut words, true);
+                push(&mut current, &mut words, &mut space, true);
             } else if c.is_whitespace() {
                 if !piece.is_empty() {
                     current.push(Piece {
@@ -154,7 +224,8 @@ fn words(text: &StyledText) -> Vec<(Vec<Piece>, bool)> {
                         span: span.clone(),
                     });
                 }
-                push(&mut current, &mut words, false);
+                push(&mut current, &mut words, &mut space, false);
+                space = true;
             } else {
                 piece.push(c);
             }
@@ -166,7 +237,7 @@ fn words(text: &StyledText) -> Vec<(Vec<Piece>, bool)> {
             });
         }
     }
-    push(&mut current, &mut words, false);
+    push(&mut current, &mut words, &mut space, false);
     words
 }
 
@@ -183,9 +254,17 @@ pub fn wrap(
     let mut line = StyledLine::default();
     let mut width = 0.0;
 
-    for (word, newline) in words(text) {
-        let word_width: f32 = word.iter().map(|piece| measure(fonts, piece, style)).sum();
-        let spaced = if line.pieces.is_empty() { 0.0 } else { space };
+    for word in words(text) {
+        let word_width: f32 = word
+            .pieces
+            .iter()
+            .map(|piece| measure(fonts, piece, style))
+            .sum();
+        let spaced = if line.pieces.is_empty() || !word.space_before {
+            0.0
+        } else {
+            space
+        };
 
         if !line.pieces.is_empty() && width + spaced + word_width > max_width {
             lines.push(std::mem::take(&mut line));
@@ -194,6 +273,7 @@ pub fn wrap(
             line.pieces.push(Piece {
                 text: " ".to_string(),
                 span: word
+                    .pieces
                     .first()
                     .map(|piece| piece.span.clone())
                     .unwrap_or_default(),
@@ -202,9 +282,9 @@ pub fn wrap(
         }
 
         width += word_width;
-        line.pieces.extend(word);
+        line.pieces.extend(word.pieces);
 
-        if newline {
+        if word.newline {
             lines.push(std::mem::take(&mut line));
             width = 0.0;
         }

@@ -8,6 +8,7 @@ pub mod shape;
 pub mod styled;
 pub mod toast;
 pub mod tooltip;
+pub mod wrap;
 
 use raylib::prelude::*;
 

@@ -2,6 +2,10 @@
   "format_version": 1,
   "strings": [
     "\"Your hot water, miss. Miss? Are you unwell?\"",
+    "1 day ago",
+    "1 hour ago",
+    "1 minute ago",
+    "1 month ago",
     "AN ACCOUNT FROM THE ARCHIVE OF THE HOUSE  ·  1903",
     "All text",
     "Auto",
@@ -49,6 +53,7 @@
     "Loaded {slot}",
     "Log",
     "Main Menu",
+    "Making a choice",
     "Menu",
     "Music volume",
     "NEW GAME",
@@ -90,6 +95,7 @@
     "Text speed",
     "That language could not be loaded",
     "The End",
+    "The end",
     "The language the story is read in. Lines with no translation stay as written",
     "The page is blank.",
     "Turn the pages on their own (A). Tab or Ctrl skips read pages",
@@ -101,6 +107,12 @@
     "Windowed",
     "Yes",
     "Your notes, your decisions and what the Archive knows",
-    "v0.3 · made with VN_Rust"
+    "just now",
+    "v0.3 · made with VN_Rust",
+    "{n} days ago",
+    "{n} hours ago",
+    "{n} minutes ago",
+    "{n} months ago",
+    "日本語"
   ]
 }

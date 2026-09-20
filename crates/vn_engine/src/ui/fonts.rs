@@ -7,7 +7,7 @@ use raylib::{
     prelude::{RaylibDraw, RaylibFont},
     text::Font,
 };
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::ffi::CString;
 use std::io;
 
@@ -42,20 +42,38 @@ pub struct Fonts {
     builtin: Font,
     loaded: HashMap<String, Font>,
     roles: HashMap<FontRole, String>,
+    language_roles: HashMap<(String, FontRole), String>,
     variants: HashMap<(FontRole, FontVariant), String>,
+    language: Option<String>,
+    charset: BTreeSet<char>,
 }
 
 impl Fonts {
     pub(crate) fn new(rl: &mut RaylibHandle, thread: &RaylibThread) -> Self {
-        let builtin = load_font_from_memory(rl, thread, ".ttf", BUILTIN_FONT)
+        let builtin = load_font_from_memory(rl, thread, ".ttf", BUILTIN_FONT, &BTreeSet::new())
             .expect("Failed to load the built-in font");
 
         Self {
             builtin,
             loaded: HashMap::new(),
             roles: HashMap::new(),
+            language_roles: HashMap::new(),
             variants: HashMap::new(),
+            language: None,
+            charset: BTreeSet::new(),
         }
+    }
+
+    pub(crate) fn extend_charset(&mut self, chars: impl IntoIterator<Item = char>) {
+        self.charset.extend(chars);
+    }
+
+    pub fn set_language(&mut self, code: Option<&str>) {
+        self.language = code.map(str::to_string);
+    }
+
+    pub fn language(&self) -> Option<&str> {
+        self.language.as_deref()
     }
 
     pub(crate) fn load(
@@ -71,7 +89,8 @@ impl Fonts {
         }
 
         let extension = crate::data::assets::extension_of(file);
-        match data.and_then(|data| load_font_from_memory(rl, thread, &extension, &data)) {
+        let charset = &self.charset;
+        match data.and_then(|data| load_font_from_memory(rl, thread, &extension, &data, charset)) {
             Ok(font) => {
                 println!("📥 Loaded font: {}", file);
                 self.loaded.insert(file.to_string(), font);
@@ -95,6 +114,23 @@ impl Fonts {
     ) {
         if self.load(rl, thread, data, source, file) {
             self.roles.insert(role, file.to_string());
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn assign_language(
+        &mut self,
+        rl: &mut RaylibHandle,
+        thread: &RaylibThread,
+        data: io::Result<std::borrow::Cow<'static, [u8]>>,
+        source: &str,
+        code: &str,
+        role: FontRole,
+        file: &str,
+    ) {
+        if self.load(rl, thread, data, source, file) {
+            self.language_roles
+                .insert((code.to_string(), role), file.to_string());
         }
     }
 
@@ -166,9 +202,18 @@ impl Fonts {
     }
 
     pub fn get(&self, role: FontRole) -> &Font {
-        self.lookup(role)
+        self.for_language(role)
+            .or_else(|| self.for_language(FontRole::Default))
+            .or_else(|| self.lookup(role))
             .or_else(|| self.lookup(FontRole::Default))
             .unwrap_or(&self.builtin)
+    }
+
+    fn for_language(&self, role: FontRole) -> Option<&Font> {
+        let code = self.language.as_ref()?;
+        self.language_roles
+            .get(&(code.clone(), role))
+            .and_then(|file| self.loaded.get(file))
     }
 
     fn lookup(&self, role: FontRole) -> Option<&Font> {
@@ -210,29 +255,13 @@ impl Fonts {
     }
 
     pub fn wrap(&self, role: FontRole, text: &str, size: f32, max_width: f32) -> Vec<String> {
-        let mut lines = Vec::new();
-
-        for paragraph in text.split('\n') {
-            let mut line = String::new();
-
-            for word in paragraph.split_whitespace() {
-                let candidate = if line.is_empty() {
-                    word.to_string()
-                } else {
-                    format!("{} {}", line, word)
-                };
-
-                if line.is_empty() || self.measure(role, &candidate, size).x <= max_width {
-                    line = candidate;
-                } else {
-                    lines.push(std::mem::replace(&mut line, word.to_string()));
-                }
-            }
-
-            lines.push(line);
-        }
-
-        lines
+        text.split('\n')
+            .flat_map(|paragraph| {
+                crate::ui::wrap::lines(paragraph, |candidate| {
+                    self.measure(role, candidate, size).x <= max_width
+                })
+            })
+            .collect()
     }
 }
 
@@ -241,11 +270,26 @@ fn load_font_from_memory(
     _: &RaylibThread,
     extension: &str,
     data: &[u8],
+    charset: &BTreeSet<char>,
 ) -> io::Result<Font> {
     let invalid = |msg: &str| io::Error::new(io::ErrorKind::InvalidData, msg.to_string());
 
     let file_type = CString::new(extension).map_err(|_| invalid("bad file extension"))?;
-    let mut codepoints: Vec<i32> = GLYPH_RANGES.iter().flat_map(|&(a, b)| a..=b).collect();
+    let covered = |c: char| {
+        GLYPH_RANGES
+            .iter()
+            .any(|&(a, b)| (c as i32) >= a && (c as i32) <= b)
+    };
+    let mut codepoints: Vec<i32> = GLYPH_RANGES
+        .iter()
+        .flat_map(|&(a, b)| a..=b)
+        .chain(
+            charset
+                .iter()
+                .filter(|&&c| !covered(c) && !c.is_control())
+                .map(|&c| c as i32),
+        )
+        .collect();
 
     let raw = unsafe {
         ffi::LoadFontFromMemory(
