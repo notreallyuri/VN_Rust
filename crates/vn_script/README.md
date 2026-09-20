@@ -5,6 +5,19 @@ the engine, the `vn` CLI and future tooling (LSP, formatter) can all share it.
 
 The language itself is specified in [SCRIPT.md](../../SCRIPT.md).
 
+## Source layout
+
+| Path | Holds |
+| --- | --- |
+| `lexer.rs` | Tokens, indentation, string scanning |
+| `parser/` | `blocks.rs` builds scenes from the indented token stream, `statement.rs` turns one line into a `Node`, `parts.rs` parses the pieces a line is made of (dialogue, values, positions, transitions, identifiers) |
+| `condition.rs` | `if` conditions, shared by the parser and the schema |
+| `compiler.rs` | `Node`s to a flat `Program` with jump targets |
+| `vm/` | `mod.rs` holds `StoryVm` itself; `build.rs` loads and validates a story, `step.rs` is the interpreter (`advance`, `next_event`, condition evaluation), `state.rs` the variables and scene accessors, `snapshot.rs` save/restore, `event.rs` and `error.rs` the types they trade in |
+| `types/` | `Instruction`, `Node`, `Token`, `Value` and friends |
+| `schema.rs` | The registry a game exports for `vn check` and the LSP |
+| `markup.rs`, `template.rs`, `format.rs`, `suggest.rs`, `files.rs`, `diagnostics.rs` | Text tags, `{variable}` interpolation, `vn fmt`, "did you mean", story file discovery, diagnostics |
+
 ## Pipeline
 
 ```text

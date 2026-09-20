@@ -1,0 +1,423 @@
+use std::collections::{BTreeMap, HashMap};
+use std::path::PathBuf;
+
+use raylib::prelude::*;
+
+use vn_script::{SCHEMA_FILE_NAME, VariableDef};
+
+use super::{OverlayBuilder, ScreenBuilder};
+use crate::screen_transition::ScreenTransitionConfig;
+use crate::screens::{
+    ConfirmConfig, KeybindsConfig, LogConfig, MainMenuConfig, PauseMenuConfig, PlayingConfig,
+    SaveMenuConfig, SettingsConfig, StartScreenConfig, TextInputConfig,
+};
+use crate::{
+    AudioConfig, CLOSE_MESSAGE, Character, Characters, Commands, EmbeddedFile, FontRole,
+    FontVariant, FromArgs, GameContext, GameState, Hooks, Migrations, NavigationConfig, Overlay,
+    RollbackConfig, SaveMigration, Saves, Screen, ScreenEffectsConfig, ScreenState, ToastConfig,
+    TooltipConfig,
+};
+
+pub struct VnApp {
+    pub(super) title: String,
+    pub(super) width: i32,
+    pub(super) height: i32,
+    pub(super) target_fps: u32,
+    pub(super) clear_color: Color,
+    pub(super) assets: PathBuf,
+    pub(super) embedded: Option<&'static [EmbeddedFile]>,
+    pub(super) story_dir: String,
+    pub(super) schema_file: Option<PathBuf>,
+    pub(super) initial_screen: ScreenState,
+    pub(super) fonts: Vec<(FontRole, String)>,
+    pub(super) font_variants: Vec<(FontRole, FontVariant, String)>,
+    pub(super) start: StartScreenConfig,
+    pub(super) menu: MainMenuConfig,
+    pub(super) playing: PlayingConfig,
+    pub(super) overrides: HashMap<ScreenState, ScreenBuilder>,
+    pub(super) overlays: HashMap<String, OverlayBuilder>,
+    pub(super) state: GameState,
+    pub(super) commands: Commands,
+    pub(super) hooks: Hooks,
+    pub(super) saves_dir: Option<PathBuf>,
+    pub(super) save_version: u32,
+    pub(super) migrations: Migrations,
+    pub(super) autosave: bool,
+    pub(super) audio: AudioConfig,
+    pub(super) tooltips: TooltipConfig,
+    pub(super) log: LogConfig,
+    pub(super) keybinds: KeybindsConfig,
+    pub(super) navigation: NavigationConfig,
+    pub(super) save_menu: SaveMenuConfig,
+    pub(super) text_input: TextInputConfig,
+    pub(super) pause_menu: PauseMenuConfig,
+    pub(super) confirm_dialog: ConfirmConfig,
+    pub(super) settings: SettingsConfig,
+    pub(super) close_confirmation: Option<String>,
+    pub(super) rollback: RollbackConfig,
+    pub(super) toast: ToastConfig,
+    pub(super) exit_key: Option<KeyboardKey>,
+    pub(super) entry_scene: Option<String>,
+    pub(super) variables: BTreeMap<String, VariableDef>,
+    pub(super) characters: Characters,
+    pub(super) warn_missing_art: bool,
+    pub(super) hot_reload: bool,
+    pub(super) screen_transition: ScreenTransitionConfig,
+    pub(super) design_size: Option<(i32, i32)>,
+    pub(super) screen_effects: ScreenEffectsConfig,
+    pub(super) shaders: Vec<(String, String, f32)>,
+    pub(super) render_scale: f32,
+}
+
+impl VnApp {
+    pub fn new(title: impl Into<String>) -> Self {
+        Self {
+            title: title.into(),
+            width: 1280,
+            height: 720,
+            target_fps: 60,
+            clear_color: Color::BLACK,
+            assets: PathBuf::from("assets"),
+            embedded: None,
+            story_dir: "story".to_string(),
+            schema_file: Some(PathBuf::from(SCHEMA_FILE_NAME)),
+            initial_screen: ScreenState::StartScreen,
+            fonts: Vec::new(),
+            font_variants: Vec::new(),
+            start: StartScreenConfig::default(),
+            menu: MainMenuConfig::default(),
+            playing: PlayingConfig::default(),
+            overrides: HashMap::new(),
+            overlays: HashMap::new(),
+            state: GameState::default(),
+            commands: Commands::default(),
+            hooks: Hooks::default(),
+            saves_dir: None,
+            save_version: 0,
+            migrations: Migrations::default(),
+            autosave: true,
+            audio: AudioConfig::default(),
+            tooltips: TooltipConfig::default(),
+            log: LogConfig::default(),
+            keybinds: KeybindsConfig::default(),
+            navigation: NavigationConfig::default(),
+            save_menu: SaveMenuConfig::default(),
+            text_input: TextInputConfig::default(),
+            pause_menu: PauseMenuConfig::default(),
+            confirm_dialog: ConfirmConfig::default(),
+            settings: SettingsConfig::default(),
+            close_confirmation: Some(CLOSE_MESSAGE.to_string()),
+            rollback: RollbackConfig::default(),
+            toast: ToastConfig::default(),
+            exit_key: None,
+            entry_scene: None,
+            variables: BTreeMap::new(),
+            characters: Characters::default(),
+            warn_missing_art: true,
+            hot_reload: cfg!(debug_assertions),
+            screen_transition: ScreenTransitionConfig::default(),
+            design_size: None,
+            screen_effects: ScreenEffectsConfig::default(),
+            shaders: Vec::new(),
+            render_scale: 1.0,
+        }
+    }
+
+    pub fn font_variant(
+        mut self,
+        role: FontRole,
+        variant: FontVariant,
+        file: impl Into<String>,
+    ) -> Self {
+        self.font_variants.push((role, variant, file.into()));
+        self
+    }
+
+    pub fn render_scale(mut self, scale: f32) -> Self {
+        self.render_scale = scale.clamp(1.0, 4.0);
+        self
+    }
+
+    pub fn shader(mut self, name: impl Into<String>, fragment: impl Into<String>) -> Self {
+        self.shaders.push((name.into(), fragment.into(), 1.0));
+        self
+    }
+
+    pub fn shader_amount(
+        mut self,
+        name: impl Into<String>,
+        fragment: impl Into<String>,
+        amount: f32,
+    ) -> Self {
+        self.shaders.push((name.into(), fragment.into(), amount));
+        self
+    }
+
+    pub fn screen_effects(mut self, config: ScreenEffectsConfig) -> Self {
+        self.screen_effects = config;
+        self
+    }
+
+    pub fn design_size(mut self, width: i32, height: i32) -> Self {
+        self.design_size = Some((width, height));
+        self
+    }
+
+    pub fn screen_transition(mut self, transition: ScreenTransitionConfig) -> Self {
+        self.screen_transition = transition;
+        self
+    }
+
+    pub fn entry_scene(mut self, scene: impl Into<String>) -> Self {
+        self.entry_scene = Some(scene.into());
+        self
+    }
+
+    pub fn variable(mut self, name: impl Into<String>, definition: VariableDef) -> Self {
+        self.variables.insert(name.into(), definition);
+        self
+    }
+
+    pub fn character(mut self, id: impl Into<String>, character: Character) -> Self {
+        self.characters.insert(id, character);
+        self
+    }
+
+    pub fn text_input(mut self, config: impl FnOnce(TextInputConfig) -> TextInputConfig) -> Self {
+        self.text_input = config(self.text_input);
+        self
+    }
+
+    pub fn pause_menu(mut self, config: impl FnOnce(PauseMenuConfig) -> PauseMenuConfig) -> Self {
+        self.pause_menu = config(self.pause_menu);
+        self
+    }
+
+    pub fn confirm_dialog(mut self, config: impl FnOnce(ConfirmConfig) -> ConfirmConfig) -> Self {
+        self.confirm_dialog = config(self.confirm_dialog);
+        self
+    }
+
+    pub fn settings(mut self, config: impl FnOnce(SettingsConfig) -> SettingsConfig) -> Self {
+        self.settings = config(self.settings);
+        self
+    }
+
+    pub fn confirm_on_close(mut self, message: Option<&str>) -> Self {
+        self.close_confirmation = message.map(str::to_string);
+        self
+    }
+
+    pub fn rollback(mut self, config: impl FnOnce(RollbackConfig) -> RollbackConfig) -> Self {
+        self.rollback = config(self.rollback);
+        self
+    }
+
+    pub fn toast(mut self, config: impl FnOnce(ToastConfig) -> ToastConfig) -> Self {
+        self.toast = config(self.toast);
+        self
+    }
+
+    pub fn exit_key(mut self, key: Option<KeyboardKey>) -> Self {
+        self.exit_key = key;
+        self
+    }
+
+    pub fn warn_missing_art(mut self, warn: bool) -> Self {
+        self.warn_missing_art = warn;
+        self
+    }
+
+    pub fn hot_reload(mut self, enabled: bool) -> Self {
+        self.hot_reload = enabled;
+        self
+    }
+
+    pub fn saves_dir(mut self, dir: impl Into<PathBuf>) -> Self {
+        self.saves_dir = Some(dir.into());
+        self
+    }
+
+    pub fn saves_path(&self) -> PathBuf {
+        self.saves_dir
+            .clone()
+            .unwrap_or_else(|| crate::default_saves_dir(&self.title))
+    }
+
+    pub fn audio(mut self, config: impl FnOnce(AudioConfig) -> AudioConfig) -> Self {
+        self.audio = config(self.audio);
+        self
+    }
+
+    pub fn navigation(mut self, config: impl FnOnce(NavigationConfig) -> NavigationConfig) -> Self {
+        self.navigation = config(self.navigation);
+        self
+    }
+
+    pub fn keybinds(mut self, config: impl FnOnce(KeybindsConfig) -> KeybindsConfig) -> Self {
+        self.keybinds = config(self.keybinds);
+        self
+    }
+
+    pub fn log(mut self, config: impl FnOnce(LogConfig) -> LogConfig) -> Self {
+        self.log = config(self.log);
+        self
+    }
+
+    pub fn tooltips(mut self, config: impl FnOnce(TooltipConfig) -> TooltipConfig) -> Self {
+        self.tooltips = config(self.tooltips);
+        self
+    }
+
+    pub fn save_version(mut self, version: u32) -> Self {
+        self.save_version = version;
+        self
+    }
+
+    pub fn migrate_save(
+        mut self,
+        from: u32,
+        migration: impl Fn(&mut SaveMigration) -> Result<(), String> + 'static,
+    ) -> Self {
+        self.migrations.add(from, migration);
+        self
+    }
+
+    pub fn saves(&self) -> Saves {
+        Saves::new(self.saves_path(), self.title.clone())
+            .with_version(self.save_version)
+            .with_migrations(self.migrations.clone())
+            .with_autosave(self.autosave)
+    }
+
+    pub fn autosave(mut self, enabled: bool) -> Self {
+        self.autosave = enabled;
+        self
+    }
+
+    pub fn save_menu(mut self, config: impl FnOnce(SaveMenuConfig) -> SaveMenuConfig) -> Self {
+        self.save_menu = config(self.save_menu);
+        self
+    }
+
+    pub fn size(mut self, width: i32, height: i32) -> Self {
+        self.width = width;
+        self.height = height;
+        self
+    }
+
+    pub fn target_fps(mut self, fps: u32) -> Self {
+        self.target_fps = fps;
+        self
+    }
+
+    pub fn clear_color(mut self, color: Color) -> Self {
+        self.clear_color = color;
+        self
+    }
+
+    pub fn assets(mut self, root: impl Into<PathBuf>) -> Self {
+        self.assets = root.into();
+        self
+    }
+
+    pub fn embedded_assets(mut self, files: &'static [EmbeddedFile]) -> Self {
+        self.embedded = Some(files).filter(|files| !files.is_empty());
+        self
+    }
+
+    pub fn schema_file(mut self, file: Option<&str>) -> Self {
+        self.schema_file = file.map(PathBuf::from);
+        self
+    }
+
+    pub fn story_dir(mut self, dir: impl Into<String>) -> Self {
+        self.story_dir = dir.into();
+        self
+    }
+
+    pub fn initial_screen(mut self, state: ScreenState) -> Self {
+        self.initial_screen = state;
+        self
+    }
+
+    pub fn font(mut self, role: FontRole, file: impl Into<String>) -> Self {
+        self.fonts.push((role, file.into()));
+        self
+    }
+
+    pub fn start_screen(
+        mut self,
+        config: impl FnOnce(StartScreenConfig) -> StartScreenConfig,
+    ) -> Self {
+        self.start = config(self.start);
+        self
+    }
+
+    pub fn main_menu(mut self, config: impl FnOnce(MainMenuConfig) -> MainMenuConfig) -> Self {
+        self.menu = config(self.menu);
+        self
+    }
+
+    pub fn playing(mut self, config: impl FnOnce(PlayingConfig) -> PlayingConfig) -> Self {
+        self.playing = config(self.playing);
+        self
+    }
+
+    pub fn screen<S: Screen + 'static>(
+        mut self,
+        state: ScreenState,
+        build: impl Fn() -> S + 'static,
+    ) -> Self {
+        self.overrides
+            .insert(state, Box::new(move || Box::new(build())));
+        self
+    }
+
+    pub fn overlay<O: Overlay + 'static>(
+        mut self,
+        name: impl Into<String>,
+        build: impl Fn() -> O + 'static,
+    ) -> Self {
+        self.overlays
+            .insert(name.into(), Box::new(move || Box::new(build())));
+        self
+    }
+
+    pub fn state<T>(mut self, initial: T) -> Self
+    where
+        T: Clone + serde::Serialize + serde::de::DeserializeOwned + 'static,
+    {
+        self.state.insert(initial);
+        self
+    }
+
+    pub fn command<A: FromArgs + 'static>(
+        mut self,
+        name: impl Into<String>,
+        handler: impl Fn(&mut GameContext, A) -> Option<ScreenState> + 'static,
+    ) -> Self {
+        self.commands.insert(name, handler);
+        self
+    }
+
+    pub fn on_scene_enter(
+        mut self,
+        hook: impl Fn(&mut GameContext, &str) -> Option<ScreenState> + 'static,
+    ) -> Self {
+        self.hooks.on_scene_enter(hook);
+        self
+    }
+
+    pub fn on_choice(
+        mut self,
+        hook: impl Fn(&mut GameContext, usize, &str) -> Option<ScreenState> + 'static,
+    ) -> Self {
+        self.hooks.on_choice(hook);
+        self
+    }
+
+    pub fn hooks(&self) -> &Hooks {
+        &self.hooks
+    }
+}

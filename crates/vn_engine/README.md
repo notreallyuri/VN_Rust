@@ -1883,6 +1883,25 @@ Behavior:
   wrapper. The wrapper passes the glyph string's byte length as the codepoint count,
   which reads out of bounds for non-ASCII glyphs.
 
+## Source layout
+
+Most modules are one file at the crate root; the ones that grew past a few hundred lines
+are folders whose `mod.rs` only wires the parts together and re-exports them, so
+`vn_engine::ButtonStyle` (and every other name) resolves exactly as before.
+
+| Path | Holds |
+| --- | --- |
+| `app/` | `builder.rs` is the `VnApp` builder, `check.rs` the schema export and story/art validation, `run.rs` the window and the game loop, `screens.rs` the default `ScreenFactory`, `error.rs` `AppError` |
+| `button/` | `style.rs` (`ButtonStyle`, `ButtonLook`), `decor.rs` (borders, shadows, images, icons), `transform.rs` (scale/rotate/skew and its hit test), `look.rs` (the blended `Look`), `anim.rs` (hover and press state), `draw.rs` (`Button`, `draw_button`) |
+| `saves/` | `store.rs` is `Saves` (slots, files, thumbnails), `file.rs` the `SaveFile` and applying one, `migrate.rs` the version steps, `dirs.rs` where saves live, `error.rs` the errors and warnings |
+| `screens/` | One module per default screen. The big ones are folders: `playing/` (`config.rs`, `screen.rs`, `flow.rs`, `typewriter.rs`, `keys.rs`, `style.rs`), `settings/` (`config.rs`, `values.rs`, `layout.rs`, `menu.rs`, `screen.rs`) and `save_menu/` (`config.rs`, `menu.rs`, `actions.rs`, `screen.rs`). Each `config.rs` is the builder a game configures; `menu.rs`/`screen.rs` is what runs |
+| Drawing | `ui.rs`, `shape.rs`, `layout.rs`, `styled.rs`, `fonts.rs`, `ease.rs`, `scroll.rs`, `tooltip.rs`, `toast.rs` |
+| Input | `navigation.rs` (focus, keys, gamepad), `hit.rs` (shapes and picking), `image_map.rs`, `drag.rs` |
+| The frame | `target.rs`, `viewport.rs`, `post.rs`, `effects.rs`, `screen_transition.rs`, `scenery.rs`, `stage.rs` |
+| State | `saves/`, `session.rs`, `rollback.rs`, `state.rs`, `settings.rs`, `assets.rs`, `resources.rs` |
+| The game | `characters.rs`, `commands.rs`, `hooks.rs`, `audio.rs`, `hot_reload.rs`, `script_errors.rs` |
+| The loop | `app/`, `screen_manager.rs`, `context.rs`, `screen.rs`, `overlay.rs`, `action.rs` |
+
 ## Tests
 
 ```sh
