@@ -39,6 +39,7 @@ pub struct GameContext<'a> {
     pub modes: &'a mut PlayModes,
     pub seen: &'a mut SeenLines,
     pub(crate) screenshot_request: &'a mut bool,
+    pub(crate) effects: &'a mut crate::ScreenEffects,
 }
 
 impl GameContext<'_> {
@@ -53,6 +54,16 @@ impl GameContext<'_> {
 
     pub fn close_overlays(&mut self) {
         self.overlay_requests.push(OverlayRequest::CloseAll);
+    }
+
+    pub fn shake(&mut self, seconds: f32) {
+        let now = self.rl.get_time();
+        self.effects.shake(now, seconds);
+    }
+
+    pub fn flash(&mut self, seconds: f32) {
+        let now = self.rl.get_time();
+        self.effects.flash(now, seconds);
     }
 
     pub fn notify(&mut self, text: impl Into<String>) {

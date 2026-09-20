@@ -58,6 +58,7 @@ pub struct ScreenStateManager {
     thumbnail: Option<Image>,
     thumbnail_at: Option<f64>,
     screen_changed: bool,
+    pub(crate) effects: crate::ScreenEffects,
     autosave_request: bool,
     pub audio: Audio,
     pub tooltip_config: TooltipConfig,
@@ -135,6 +136,7 @@ impl ScreenStateManager {
             thumbnail: None,
             thumbnail_at: None,
             screen_changed: false,
+            effects: crate::ScreenEffects::default(),
             autosave_request: false,
             audio: Audio::silent(),
             tooltip_config: TooltipConfig::default(),
@@ -176,6 +178,7 @@ impl ScreenStateManager {
             hooks: Rc::clone(&self.hooks),
             overlay_requests: &mut overlay_requests,
             toast: &mut toast,
+            effects: &mut self.effects,
             text_request: &mut self.text_request,
             confirm_request: &mut self.confirm_request,
             thumbnail: self.thumbnail.as_ref(),
@@ -358,6 +361,10 @@ impl ScreenStateManager {
         self.thumbnail_at = Some(now);
     }
 
+    pub fn effects(&self) -> &crate::ScreenEffects {
+        &self.effects
+    }
+
     pub fn take_screen_changed(&mut self) -> bool {
         std::mem::take(&mut self.screen_changed)
     }
@@ -425,6 +432,7 @@ impl ScreenStateManager {
 
     pub fn reload_story(&mut self, story: StoryVm) {
         self.script_errors = None;
+        self.effects.clear();
         match crate::swap_story(&mut self.story, story, &mut self.rollback) {
             Ok(RestoreOutcome::Exact) => self.notify(Toast::info("Story reloaded")),
             Ok(RestoreOutcome::SceneRestarted { scene }) => self.notify(Toast::info(format!(
@@ -498,6 +506,7 @@ impl ScreenStateManager {
                 let previous = std::mem::replace(&mut self.current_state, next_state);
                 self.previous_state = Some(previous);
                 self.overlays.clear();
+                self.effects.clear();
                 self.screen_changed = true;
             }
             None => eprintln!("⚠️ No screen registered for {:?}", next_state),

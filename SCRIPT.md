@@ -100,6 +100,8 @@ background <image_id> with <transition> [seconds]
 | `fade` | like `dissolve` | through black | 1 s |
 | `slide_left` | enter from the right edge, leave to the left edge | the new one pushes the old one out to the left | 0.6 s |
 | `slide_right` | enter from the left edge, leave to the right edge | pushed out to the right | 0.6 s |
+| `shake` | the change is instant, and the screen shakes | the same | 0.4 s |
+| `flash` | the change is instant, and the screen flashes | the same | 0.3 s |
 
 - `with` goes last on the line; the length is in seconds (above 0, up to 30)
 - Showing a character who is already on screen with a new expression and `with` crossfades
@@ -107,6 +109,9 @@ background <image_id> with <transition> [seconds]
 - Without `with`, the change is instant (as before)
 - Transitions don't pause the story: the next line starts while they play, and a click
   finishes them. Rollback and loading a save show the end result at once
+- `shake` and `flash` are effects, not motions: whatever the line changes happens at once
+  and the whole screen shakes or flashes for that long. `clear with shake` or
+  `background storm with flash` are the usual ways to punctuate a moment
 - `with` can't be used as a character or image id
 
 ```story

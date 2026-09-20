@@ -530,14 +530,15 @@ fn transition_errors() {
         one_error(&in_scene("show mary happy with")),
         (
             2,
-            "`with` needs a transition: dissolve, fade, slide_left, slide_right".into()
+            "`with` needs a transition: dissolve, fade, slide_left, slide_right, shake, flash"
+                .into()
         )
     );
     assert_eq!(
         one_error(&in_scene("background hall with fdae")),
         (
             2,
-            "unknown transition `fdae` (expected dissolve, fade, slide_left, slide_right); did you mean 'fade'?"
+            "unknown transition `fdae` (expected dissolve, fade, slide_left, slide_right, shake, flash); did you mean 'fade'?"
                 .into()
         )
     );

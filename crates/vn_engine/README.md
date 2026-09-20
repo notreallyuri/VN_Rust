@@ -371,6 +371,30 @@ the distance from the bottom for content anchored there (the log reads it that w
 `overflows` says whether a bar is needed at all. `ScrollStyle` sets the step, bar width
 and colours.
 
+## Screen effects
+
+`shake` and `flash` in a story (SCRIPT.md 2.6) run as screen effects: the line's change
+happens at once and the finished frame is shaken or washed with colour. Shake offsets
+where the render target lands, so nothing inside the game moves out of place, and flash
+is drawn over the frame after it is scaled.
+
+```rust
+VnApp::new("My Game").screen_effects(ScreenEffectsConfig {
+    shake_strength: 24.0,
+    shake_frequency: 11.0,
+    flash_color: Color::WHITE,
+})
+```
+
+Commands can use them too, through the context:
+
+```rust
+.command("slam", |ctx, ()| { ctx.shake(0.4); Ok(Action::None) })
+```
+
+Effects stop on a screen change and on a hot reload, so a shake can't outlive the scene
+that started it.
+
 ## Screen transitions
 
 Changing screen crossfades by default: the frame that was on screen is copied into a

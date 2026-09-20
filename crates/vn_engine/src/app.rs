@@ -10,6 +10,7 @@ use vn_script::{
     Diagnostic, Instruction, SCHEMA_FILE_NAME, Schema, SchemaFile, StoryVm, VariableDef,
 };
 
+use crate::ScreenEffectsConfig;
 use crate::SeenLines;
 use crate::screen_transition::{ScreenTransition, ScreenTransitionConfig};
 use crate::screens::{
@@ -81,6 +82,7 @@ pub struct VnApp {
     hot_reload: bool,
     screen_transition: ScreenTransitionConfig,
     design_size: Option<(i32, i32)>,
+    screen_effects: ScreenEffectsConfig,
 }
 
 #[derive(Debug)]
@@ -176,6 +178,7 @@ impl VnApp {
             hot_reload: cfg!(debug_assertions),
             screen_transition: ScreenTransitionConfig::default(),
             design_size: None,
+            screen_effects: ScreenEffectsConfig::default(),
         }
     }
 
@@ -186,6 +189,11 @@ impl VnApp {
         file: impl Into<String>,
     ) -> Self {
         self.font_variants.push((role, variant, file.into()));
+        self
+    }
+
+    pub fn screen_effects(mut self, config: ScreenEffectsConfig) -> Self {
+        self.screen_effects = config;
         self
     }
 
@@ -600,6 +608,7 @@ impl VnApp {
         manager.saves = saves;
         manager.characters = self.characters;
         manager.toast_config = self.toast;
+        manager.effects = crate::ScreenEffects::new(self.screen_effects);
         manager.rollback = Rollback::new(self.rollback);
         manager.settings = settings;
         manager.close_confirmation = self.close_confirmation;
@@ -692,11 +701,19 @@ impl VnApp {
                         t.clear_background(self.clear_color);
                         manager.draw(&mut t, &thread);
                     }
+                    let shake = manager.effects().offset(now);
+                    let shaken = Rectangle::new(
+                        destination.x + shake.x,
+                        destination.y + shake.y,
+                        destination.width,
+                        destination.height,
+                    );
+
                     d.clear_background(Color::BLACK);
                     d.draw_texture_pro(
                         frame.texture(),
                         source,
-                        destination,
+                        shaken,
                         Vector2::zero(),
                         0.0,
                         Color::WHITE,
@@ -725,6 +742,16 @@ impl VnApp {
                         if active.finished(now) {
                             transition = None;
                         }
+                    }
+
+                    if manager.effects().flash_alpha(now) > 0.0 {
+                        d.draw_rectangle(
+                            0,
+                            0,
+                            screen.0,
+                            screen.1,
+                            manager.effects().flash_color(now),
+                        );
                     }
                 }
                 None => {

@@ -195,7 +195,7 @@ else draws through, so it is cheaper now; the rest is additive.
 
 ### Presentation
 
-- [ ] Screen shake and flash, as `with shake` / `with flash` on story lines
+- [x] Screen shake and flash (`with shake` / `with flash`, `ctx.shake`/`ctx.flash`): the change is instant and the frame is shaken by offsetting the render target, or washed with `flash_color`; `ScreenEffectsConfig` tunes it
 - [ ] Shader passes over the render target: blur behind panels, grain or CRT for flashbacks, a desaturation pass for endings
 - [ ] Weather and particle overlays (rain, snow, dust motes) as part of `Scenery`
 - [ ] NVL mode: full-screen text pages instead of the dialogue box, chosen per scene

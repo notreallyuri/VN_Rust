@@ -11,6 +11,7 @@ use crate::{
     ScreenState, Stage, StyleOverride, background_path, character_path,
 };
 use crate::{LogEntry, PanelStyle};
+use vn_script::TransitionKind;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct NamePlate {
@@ -795,6 +796,11 @@ impl PlayingScreen {
                 | Event::Background { .. }) => {
                     let now = ctx.rl.get_time();
                     self.stage.apply(&event, ctx.story, &self.config, now);
+                    match crate::stage::effect_of(&event) {
+                        Some((TransitionKind::Shake, seconds)) => ctx.shake(seconds),
+                        Some((TransitionKind::Flash, seconds)) => ctx.flash(seconds),
+                        _ => {}
+                    }
                 }
                 Event::Sound { id } => ctx.play_sound(&id),
                 Event::Voice { id } => ctx.audio.play_voice(&id),

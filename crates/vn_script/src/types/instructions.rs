@@ -77,14 +77,18 @@ pub enum TransitionKind {
     Fade,
     SlideLeft,
     SlideRight,
+    Shake,
+    Flash,
 }
 
 impl TransitionKind {
-    pub const ALL: [TransitionKind; 4] = [
+    pub const ALL: [TransitionKind; 6] = [
         TransitionKind::Dissolve,
         TransitionKind::Fade,
         TransitionKind::SlideLeft,
         TransitionKind::SlideRight,
+        TransitionKind::Shake,
+        TransitionKind::Flash,
     ];
 
     pub fn name(self) -> &'static str {
@@ -93,6 +97,8 @@ impl TransitionKind {
             TransitionKind::Fade => "fade",
             TransitionKind::SlideLeft => "slide_left",
             TransitionKind::SlideRight => "slide_right",
+            TransitionKind::Shake => "shake",
+            TransitionKind::Flash => "flash",
         }
     }
 
@@ -105,7 +111,13 @@ impl TransitionKind {
             TransitionKind::Dissolve => 500,
             TransitionKind::Fade => 1000,
             TransitionKind::SlideLeft | TransitionKind::SlideRight => 600,
+            TransitionKind::Shake => 400,
+            TransitionKind::Flash => 300,
         }
+    }
+
+    pub fn is_effect(self) -> bool {
+        matches!(self, TransitionKind::Shake | TransitionKind::Flash)
     }
 }
 

@@ -298,6 +298,7 @@ impl Stage {
                             1.0,
                         ),
                         TransitionKind::Dissolve | TransitionKind::Fade => (placed.x, 1.0 - t),
+                        TransitionKind::Shake | TransitionKind::Flash => (placed.x, 0.0),
                     };
                     sprite(d, resources, config, screen, id, &placed.image, x, alpha);
                 }
@@ -364,6 +365,10 @@ impl Stage {
                 let shift = Easing::Smooth.apply(t) * screen.x * sign;
                 backdrop(d, resources, from, 1.0, shift, screen);
                 backdrop(d, resources, current, 1.0, shift - screen.x * sign, screen);
+                0.0
+            }
+            TransitionKind::Shake | TransitionKind::Flash => {
+                backdrop(d, resources, current, 1.0, 0.0, screen);
                 0.0
             }
         }
@@ -442,4 +447,18 @@ fn sprite(
         0.0,
         tint(alpha),
     );
+}
+
+pub fn effect_of(event: &Event) -> Option<(TransitionKind, f32)> {
+    let transition = match event {
+        Event::Show { transition, .. }
+        | Event::Background { transition, .. }
+        | Event::Hide { transition, .. }
+        | Event::Clear { transition } => transition.as_ref()?,
+        _ => return None,
+    };
+    transition
+        .kind
+        .is_effect()
+        .then(|| (transition.kind, transition.seconds()))
 }
