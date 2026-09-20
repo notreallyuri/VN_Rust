@@ -257,17 +257,43 @@ A React site rather than generated API docs. The audience splits: someone writin
 documentation, not a crate on docs.rs. Most of the prose exists already — about 4000
 lines across the READMEs — so the work is structure, navigation and search, not writing.
 
-- [ ] The site itself, in React. [Docusaurus](https://docusaurus.io) is React and built
-  for this; Next.js with MDX is the alternative if the site needs to be more than docs.
-  Either way the content stays **in this repo** as Markdown/MDX and the site renders it.
-  The READMEs are accurate today because they change in the same commit as the code; a
-  separate docs repo is where that habit dies
+The model is [ui.shadcn.com](https://ui.shadcn.com): a hand-built Next.js app rather than
+a configured docs framework, which is the whole reason it does not look like everything
+else. Its beauty is restraint — near-monochrome, one accent, generous whitespace, a
+strict sidebar / content / on-this-page layout, almost nothing decorative — and its
+signature is the Preview/Code tab, the real component beside its real source. Copy the
+method, not the stack.
+
+- [ ] The site, in React, with the design owned rather than inherited. Docusaurus is the
+  opposite trade: best-in-class infrastructure (versioning, i18n, Algolia, sidebars) and a
+  theme (Infima) recognisable at a glance, where restyling means swizzling components and
+  giving up the upgrade path that justified it. [Fumadocs](https://fumadocs.dev) or plain
+  Next.js + MDX fit better, and for a stronger reason than looks: **code-block rendering
+  has to be our own code, because a compiler is going behind it** (see the playground
+  below). Revisit if the docs themselves need translating or versioning soon — that is
+  where Docusaurus earns its keep. Either way the content stays **in this repo** as
+  Markdown/MDX: the READMEs are accurate today because they change in the same commit as
+  the code, and a separate docs repo is where that habit dies
+- [ ] **A live `.story` playground — the equivalent of shadcn's Preview/Code tab, and the
+  thing that would make this site worth looking at.** `vn_script` compiles to
+  `wasm32-unknown-unknown` **unchanged** (verified 2026-09-20: `cargo check -p vn_script
+  --target wasm32-unknown-unknown` is clean). Its only dependency is `serde`, and
+  `std::fs` appears in three file-loading helpers, never in the lexer, parser, compiler or
+  VM. So an editable story block can show, live as the writer types: diagnostics with the
+  real "did you mean" suggestions, the compiled instruction listing (`vn dump`), and the
+  VM event stream. Same compiler as the engine and `vn check`, so a doc example cannot
+  drift from the language, and every `.story` sample in the site becomes runnable in place
+- [ ] `.story` syntax highlighting from the grammar we already maintain.
+  `editors/tree-sitter-story/grammar.js` compiled to WASM and run through
+  `web-tree-sitter` gives the docs exactly what nvim and the LSP show. The alternative is
+  a second grammar written for Prism (Docusaurus) or TextMate/Shiki (everyone else), kept
+  in sync by hand forever
 - [ ] Split the content into a page tree, keeping the cross-references working:
 
   | Source | Becomes |
   | --- | --- |
   | `README.md` (178 lines) | Landing page, project goals, the three-layer architecture |
-  | `SCRIPT.md` (665 lines, 12 + 38 sections) | The DSL reference: the writer's half of the site, and the part that needs the most navigation |
+  | `SCRIPT.md` (665 lines, 12 + 38 sections) | The DSL reference: the writer's half of the site, and where the playground earns the most |
   | `crates/vn_engine/README.md` (2182 lines, 47 + 23 sections) | The engine guide, as roughly ten pages. Already a book squeezed into one file |
   | `crates/vn_script/README.md` (526 lines) | Internals, for contributors |
   | `crates/vn_cli/README.md` (285 lines) | Tooling reference (`vn new`, `check`, `fmt`, `translate`, `lsp`) |
@@ -281,13 +307,19 @@ lines across the READMEs — so the work is structure, navigation and search, no
   run (`did you mean 'guide'?`, `takes 2 arguments, got 1`) should not ship examples that
   do not compile. A React site loses `mdbook test`, so this needs its own extractor in CI
 - [ ] Search. 47 top-level sections in the engine guide alone; without it the site is the
-  same "search the file" problem with nicer typography
+  same "search the file" problem with nicer typography. Algolia DocSearch is free for
+  open-source documentation and works with any of these stacks
 - [ ] One-line `///` pointers on public items, linking into the site rather than
   repeating it: `/// Switch to the text input screen. See <docs/engine/text-input>.` This
   is the half a site cannot do — typing `ctx.` in an editor currently shows a list of
   names and nothing else, and the LSP can only surface what is in the source. Pointers,
   not prose, so the convention that documentation lives in one place still holds. Do it
   after the page tree exists, so the links have somewhere to point
+
+Not in this milestone: running the **whole engine** in the browser. That means raylib
+through emscripten and `raylib-rs` on wasm, which is its own project. The script-level
+playground above is cheap precisely because `vn_script` has no rendering dependencies;
+do not let it sell the much larger one.
 
 ## Ongoing
 
