@@ -112,30 +112,31 @@ impl VnApp {
         )
         .map_err(AppError::Screen)?;
 
-        manager.state = self.state;
+        manager.world.state = self.state;
         #[cfg(feature = "character-visuals")]
         {
-            manager.resources.visuals.registry = self.visuals;
+            manager.show.resources.visuals.registry = self.visuals;
         }
         manager.commands = Rc::new(self.commands);
         manager.hooks = Rc::new(self.hooks);
-        manager.saves = saves;
-        manager.characters = self.characters;
-        manager.toast_config = self.toast;
-        manager.effects = crate::frame::effects::ScreenEffects::new(self.screen_effects);
-        manager.rollback = Rollback::new(self.rollback);
-        manager.settings = settings;
+        manager.world.saves = saves;
+        manager.world.characters = self.characters;
+        manager.show.toast_config = self.toast;
+        manager.show.effects = crate::frame::effects::ScreenEffects::new(self.screen_effects);
+        manager.world.rollback = Rollback::new(self.rollback);
+        manager.world.settings = settings;
         manager.close_confirmation = self.close_confirmation;
-        manager.tooltip_config = self.tooltips;
+        manager.show.tooltip_config = self.tooltips;
         manager.keybind_keys = self.keybinds.open_keys.clone();
-        manager.navigation = Navigation::new(self.navigation);
-        manager.seen = SeenLines::load(
+        manager.show.navigation = Navigation::new(self.navigation);
+        manager.world.seen = SeenLines::load(
             manager
+                .world
                 .saves
                 .dir()
                 .join(crate::data::session::SEEN_FILE_NAME),
         );
-        manager.audio = Audio::new(manager.resources.assets().clone(), self.audio);
+        manager.show.audio = Audio::new(manager.show.resources.assets().clone(), self.audio);
 
         let catalogs: Vec<vn_script::Catalog> = self
             .languages
@@ -144,34 +145,44 @@ impl VnApp {
             .filter_map(|code| crate::game::language::load_catalog(&loader.assets, code).ok())
             .collect();
         manager
+            .show
             .resources
             .fonts
             .extend_charset(crate::game::language::charset(
-                manager.story.program(),
+                manager.world.story.program(),
                 &catalogs,
             ));
         drop(catalogs);
         manager
+            .show
             .resources
             .fonts
-            .set_language(manager.settings.values.language.as_deref());
+            .set_language(manager.world.settings.values.language.as_deref());
 
         for (role, file) in &self.fonts {
-            manager.resources.set_font(&mut rl, &thread, *role, file);
+            manager
+                .show
+                .resources
+                .set_font(&mut rl, &thread, *role, file);
         }
 
         for (code, role, file) in &self.language_fonts {
             manager
+                .show
                 .resources
                 .set_language_font(&mut rl, &thread, code, *role, file);
         }
 
         for (name, fragment, amount) in &self.shaders {
-            manager.post.load(&mut rl, &thread, name, fragment, *amount);
+            manager
+                .show
+                .post
+                .load(&mut rl, &thread, name, fragment, *amount);
         }
 
         for (role, variant, file) in &self.font_variants {
             manager
+                .show
                 .resources
                 .set_font_variant(&mut rl, &thread, *role, *variant, file);
         }
@@ -236,7 +247,7 @@ impl VnApp {
             if starting {
                 snapshot.resize(&mut rl, &thread, target.size());
             }
-            manager.post.resize(&mut rl, &thread, target.size());
+            manager.show.post.resize(&mut rl, &thread, target.size());
 
             let source = target.source();
             let snapshot_source = snapshot.source();
@@ -262,17 +273,17 @@ impl VnApp {
                         });
                         manager.draw(&mut scaled, &thread);
                     }
-                    let shake = manager.effects().offset(now);
+                    let shake = manager.show.effects.offset(now);
                     let shaken = Rectangle::new(
                         destination.x + shake.x,
                         destination.y + shake.y,
                         destination.width,
                         destination.height,
                     );
-                    let flash = manager.effects().flash_color(now);
-                    let flashing = manager.effects().flash_alpha(now) > 0.0;
+                    let flash = manager.show.effects.flash_color(now);
+                    let flashing = manager.show.effects.flash_alpha(now) > 0.0;
 
-                    let shown = manager.post.apply(&mut d, &thread, frame, size, now);
+                    let shown = manager.show.post.apply(&mut d, &thread, frame, size, now);
 
                     d.clear_background(Color::BLACK);
                     d.draw_texture_pro(
@@ -321,7 +332,7 @@ impl VnApp {
         }
 
         manager.autosave();
-        manager.seen.save();
+        manager.world.seen.save();
         Ok(())
     }
 }

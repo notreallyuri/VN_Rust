@@ -909,6 +909,25 @@ time the screen is entered. A custom screen implements `Screen`:
 
 Switching to a state with no screen logs a warning and stays on the current one.
 
+### What the manager holds
+
+`ScreenStateManager` owns the running game. Its fields are grouped by how long they live,
+so a screen borrows two or three of them rather than thirty:
+
+| Group | Holds | Lives |
+|---|---|---|
+| `world` | `story`, `state`, `saves`, `settings`, `characters`, `rollback`, `log`, `seen`, `modes` | The playthrough; this is what a save is made of |
+| `show` | `resources`, `audio`, `navigation`, `effects`, `weather`, `post`, and the toast and tooltip configs | How it is presented |
+| `screens` | `current`, `showing`, `previous`, `factory`, `overlays` | The screen stack |
+| `frame` | The nav snapshot, the live toast and tooltip timer, the thumbnail, and whether an autosave, screenshot, quit or close was asked for | This frame, mostly |
+
+`commands`, `hooks`, `close_confirmation` and `keybind_keys` stay on the manager: the
+builder registers them once and they never change.
+
+The manager owning the world is deliberate. The alternative — each subsystem holding its
+own `Rc<RefCell<…>>` — trades a problem the compiler catches for one that panics at
+runtime, which is why there is almost no interior mutability in the engine.
+
 ### Asking the manager for something
 
 A screen holds `&mut GameContext` for the whole of `update`, so it cannot reach back into
@@ -2105,6 +2124,7 @@ contexts a screen is handed — and the rest is grouped by what it does:
 | `ui/` | Drawing. `mod.rs` is the `ui` helpers themselves (text, backgrounds, sliders, hit tests), beside `button/`, `shape.rs`, `layout.rs`, `styled.rs`, `fonts.rs`, `ease.rs`, `scroll.rs`, `tooltip.rs`, `toast.rs` |
 | `input/` | `navigation.rs` (focus, keys, gamepad), `hit.rs` (shapes and picking), `image_map.rs`, `drag.rs` |
 | `frame/` | The picture: `target.rs`, `viewport.rs`, `post.rs`, `effects.rs`, `screen_transition.rs`, `scenery.rs`, `stage.rs` |
+| `request.rs` | What a screen asks the manager to do once `update` returns |
 | `data/` | What persists: `saves/`, `session.rs`, `rollback.rs`, `state.rs`, `settings.rs`, `assets.rs`, `resources.rs` |
 | `game/` | What a game registers, and the story's side effects: `characters.rs`, `commands.rs`, `hooks.rs`, `audio.rs`, `hot_reload.rs`, `script_errors.rs` |
 | `screens/` | One module per default screen |
