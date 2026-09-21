@@ -3,6 +3,7 @@ use std::process::ExitCode;
 use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::Color;
 use vn_engine::screens::prelude::*;
+use vn_engine::ui::cursor::CursorStyle;
 use vn_engine::ui::layout::Anchor;
 use vn_engine::ui::shape::Corners;
 
@@ -77,6 +78,12 @@ fn main() -> ExitCode {
         .assets(ASSETS_ROOT)
         .embedded_assets(vn_engine::embedded_assets!())
         .clear_color(style::INK)
+        .cursor(
+            CursorStyle::new("cursor.png")
+                .hand("cursor_hand.png")
+                .size(28.0)
+                .hotspot(0.128, 0.094),
+        )
         .source_language("English")
         .language("pt-BR", "Português (BR)")
         .audio(|a| a.menu_music("title").fade_seconds(1.5))
