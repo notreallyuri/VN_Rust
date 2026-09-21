@@ -80,6 +80,15 @@ impl Default for TextInputConfig {
 }
 
 impl TextInputConfig {
+    pub fn field(&self, screen: Vector2) -> Rectangle {
+        Rectangle::new(
+            (screen.x - self.box_width) / 2.0,
+            screen.y * 0.47,
+            self.box_width,
+            self.box_height,
+        )
+    }
+
     pub fn prompt_text(mut self, style: TextStyle) -> Self {
         self.prompt_text = style;
         self
@@ -183,6 +192,9 @@ impl Screen for TextInputScreen {
     fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
         ui::load_background(&mut ctx, self.config.background.as_ref());
         self.time = ctx.rl.get_time();
+        if ui::is_hovered(ctx.rl, self.config.field(ui::screen_size(ctx.rl))) {
+            ctx.cursor(crate::ui::cursor::CursorKind::Text);
+        }
 
         if self.request.is_none() {
             match ctx.take_text_request() {
@@ -246,12 +258,7 @@ impl Screen for TextInputScreen {
             &config.prompt_text,
         );
 
-        let field = Rectangle::new(
-            (screen.x - config.box_width) / 2.0,
-            screen.y * 0.47,
-            config.box_width,
-            config.box_height,
-        );
+        let field = config.field(screen);
         config.input_box.draw(d, field);
 
         let style = &config.input_text;

@@ -21,6 +21,7 @@ pub struct Hotspot {
     idle: Option<Highlight>,
     hovered: Option<Highlight>,
     enabled: Option<EnabledCheck>,
+    cursor: Option<crate::ui::cursor::CursorKind>,
 }
 
 impl Hotspot {
@@ -34,7 +35,13 @@ impl Hotspot {
             idle: None,
             hovered: None,
             enabled: None,
+            cursor: None,
         }
+    }
+
+    pub fn cursor(mut self, kind: crate::ui::cursor::CursorKind) -> Self {
+        self.cursor = Some(kind);
+        self
     }
 
     pub fn label(mut self, text: impl Into<String>) -> Self {
@@ -269,6 +276,16 @@ impl ImageMap {
             .collect();
         let pointer = crate::frame::viewport::mouse_position(ctx.rl);
         let hovered = self.topmost(area, pointer, &enabled);
+        let under = self.topmost(area, pointer, &vec![true; enabled.len()]);
+        match (hovered, under) {
+            (Some(index), _) => ctx.cursor(
+                self.hotspots[index]
+                    .cursor
+                    .unwrap_or(crate::ui::cursor::CursorKind::Hand),
+            ),
+            (None, Some(_)) => ctx.cursor(crate::ui::cursor::CursorKind::NotAllowed),
+            (None, None) => {}
+        }
 
         if hovered != self.entered {
             self.entered = hovered;

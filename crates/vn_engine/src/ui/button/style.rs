@@ -105,6 +105,7 @@ pub struct ButtonStyle {
     pub transition: f32,
     pub hover_sound: Option<String>,
     pub click_sound: Option<String>,
+    pub cursor: Option<crate::ui::cursor::CursorKind>,
 }
 
 impl Default for ButtonStyle {
@@ -131,11 +132,17 @@ impl Default for ButtonStyle {
             transition: 0.0,
             hover_sound: None,
             click_sound: None,
+            cursor: None,
         }
     }
 }
 
 impl ButtonStyle {
+    pub fn cursor(mut self, kind: crate::ui::cursor::CursorKind) -> Self {
+        self.cursor = Some(kind);
+        self
+    }
+
     pub fn size(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;

@@ -171,6 +171,10 @@ impl GameContext<'_> {
         self.requests.push(Request::Cursor(kind));
     }
 
+    pub fn override_cursor(&mut self, kind: Option<crate::ui::cursor::CursorKind>) {
+        self.requests.push(Request::OverrideCursor(kind));
+    }
+
     pub fn tooltip_text(&mut self, text: impl Into<String>) {
         self.requests.push(Request::Tooltip(text.into()));
     }
@@ -231,6 +235,7 @@ impl GameContext<'_> {
     pub fn load(&mut self, slot: &str) -> Result<LoadReport, SaveError> {
         let file = self.saves.read(slot)?;
         let report = crate::data::saves::apply(&file, self.story, self.state)?;
+        self.override_cursor(None);
         #[cfg(feature = "character-visuals")]
         self.resources.visuals.reset();
         self.log.replace(file.log.clone());

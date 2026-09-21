@@ -3,7 +3,7 @@ use std::process::ExitCode;
 use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::Color;
 use vn_engine::screens::prelude::*;
-use vn_engine::ui::cursor::CursorStyle;
+use vn_engine::ui::cursor::{CursorKind, CursorStyle};
 use vn_engine::ui::layout::Anchor;
 use vn_engine::ui::shape::Corners;
 
@@ -81,8 +81,16 @@ fn main() -> ExitCode {
         .cursor(
             CursorStyle::new("cursor.png")
                 .hand("cursor_hand.png")
+                .picture(CursorKind::Text, "cursor_text.png")
+                .picture(CursorKind::Grab, "cursor_grab.png")
+                .picture(CursorKind::Grabbing, "cursor_grabbing.png")
+                .picture(CursorKind::NotAllowed, "cursor_no.png")
                 .size(28.0)
-                .hotspot(0.128, 0.094),
+                .hotspot(0.128, 0.094)
+                .hotspot_for(CursorKind::Text, 0.5, 0.5)
+                .hotspot_for(CursorKind::Grab, 0.5, 0.5)
+                .hotspot_for(CursorKind::Grabbing, 0.5, 0.5)
+                .hotspot_for(CursorKind::NotAllowed, 6.0 / 61.0, 6.0 / 64.0),
         )
         .source_language("English")
         .language("pt-BR", "Português (BR)")

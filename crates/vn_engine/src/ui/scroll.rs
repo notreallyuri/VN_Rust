@@ -117,6 +117,21 @@ impl Scroll {
         ))
     }
 
+    pub fn cursor(
+        &self,
+        rl: &RaylibHandle,
+        area: Rectangle,
+        style: &ScrollStyle,
+    ) -> Option<crate::ui::cursor::CursorKind> {
+        if self.dragging {
+            return Some(crate::ui::cursor::CursorKind::Grabbing);
+        }
+        let mouse = crate::frame::viewport::mouse_position(rl);
+        self.thumb(area, style)
+            .filter(|thumb| thumb.check_collision_point_rec(mouse))
+            .map(|_| crate::ui::cursor::CursorKind::Grab)
+    }
+
     pub fn input(&mut self, rl: &RaylibHandle, area: Rectangle, style: &ScrollStyle) {
         let mouse = crate::frame::viewport::mouse_position(rl);
 

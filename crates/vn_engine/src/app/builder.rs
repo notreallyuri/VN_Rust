@@ -53,6 +53,7 @@ pub struct VnApp {
     pub(super) language_fonts: Vec<(String, FontRole, String)>,
     pub(super) prompts: crate::input::prompts::Prompts,
     pub(super) cursor: Option<crate::ui::cursor::CursorStyle>,
+    pub(super) cursor_shapes: bool,
     pub(super) font_variants: Vec<(FontRole, FontVariant, String)>,
     pub(super) start: StartScreenConfig,
     pub(super) menu: MainMenuConfig,
@@ -113,6 +114,7 @@ impl VnApp {
             language_fonts: Vec::new(),
             prompts: Default::default(),
             cursor: None,
+            cursor_shapes: true,
             font_variants: Vec::new(),
             start: StartScreenConfig::default(),
             menu: MainMenuConfig::default(),
@@ -423,6 +425,11 @@ impl VnApp {
 
     pub fn cursor(mut self, style: crate::ui::cursor::CursorStyle) -> Self {
         self.cursor = Some(style);
+        self
+    }
+
+    pub fn cursor_shapes(mut self, on: bool) -> Self {
+        self.cursor_shapes = on;
         self
     }
 

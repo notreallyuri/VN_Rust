@@ -40,6 +40,7 @@ impl Action {
     pub fn run(&self, ctx: &mut GameContext) -> Option<ScreenState> {
         match self {
             Action::NewGame => {
+                ctx.override_cursor(None);
                 #[cfg(feature = "character-visuals")]
                 ctx.resources.visuals.reset();
                 ctx.log.clear();

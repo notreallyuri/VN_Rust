@@ -8,6 +8,7 @@ pub enum Request {
     Toast(Toast),
     Tooltip(String),
     Cursor(CursorKind),
+    OverrideCursor(Option<CursorKind>),
     Autosave,
     Screenshot,
 }
@@ -42,7 +43,8 @@ impl Requests {
             match request {
                 Request::Overlay(overlay) => resolved.overlays.push(overlay),
                 Request::Tooltip(text) => resolved.tooltip = Some(text),
-                Request::Cursor(kind) => resolved.cursor = resolved.cursor.max(kind),
+                Request::Cursor(kind) => resolved.cursor = resolved.cursor.stronger(kind),
+                Request::OverrideCursor(kind) => resolved.cursor_override = Some(kind),
                 Request::Toast(toast) => resolved.toast = Some(toast),
                 Request::Autosave => resolved.autosave = true,
                 Request::Screenshot => resolved.screenshot = true,
@@ -58,6 +60,7 @@ pub struct Resolved {
     pub tooltip: Option<String>,
     pub toast: Option<Toast>,
     pub cursor: CursorKind,
+    pub cursor_override: Option<Option<CursorKind>>,
     pub autosave: bool,
     pub screenshot: bool,
 }

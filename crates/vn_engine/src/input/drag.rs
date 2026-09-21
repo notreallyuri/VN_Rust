@@ -1,3 +1,4 @@
+use crate::ui::cursor::CursorKind;
 use std::rc::Rc;
 
 use raylib::prelude::*;
@@ -385,6 +386,13 @@ impl DragBoard {
                 if cancelled {
                     return self.cancel();
                 }
+                let refused = self
+                    .target_at(area, pointer)
+                    .is_some_and(|target| !self.allowances(held.item, &ctx.view())[target]);
+                ctx.cursor(match refused {
+                    true => CursorKind::NotAllowed,
+                    false => CursorKind::Grabbing,
+                });
                 let holding =
                     !released && ctx.rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT);
                 if holding {
@@ -404,7 +412,13 @@ impl DragBoard {
             .iter()
             .map(|item| item.is_enabled(&view))
             .collect();
-        let hovered = self.item_at(area, pointer).filter(|&index| enabled[index]);
+        let under = self.item_at(area, pointer);
+        let hovered = under.filter(|&index| enabled[index]);
+        match (hovered, under) {
+            (Some(_), _) => ctx.cursor(CursorKind::Grab),
+            (None, Some(_)) => ctx.cursor(CursorKind::NotAllowed),
+            (None, None) => {}
+        }
 
         let rects: Vec<Rectangle> = self
             .items

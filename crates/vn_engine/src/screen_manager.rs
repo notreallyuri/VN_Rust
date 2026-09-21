@@ -78,6 +78,7 @@ pub struct Screens {
     pub previous: Option<ScreenState>,
     pub factory: Box<dyn ScreenFactory>,
     overlays: Vec<(String, Box<dyn Overlay>)>,
+    cursor_override: Option<(ScreenState, crate::ui::cursor::CursorKind)>,
 }
 
 #[derive(Default)]
@@ -106,7 +107,7 @@ pub struct ScreenStateManager {
     pub close_confirmation: Option<String>,
     pub keybind_keys: Vec<KeyboardKey>,
     pub prompts: crate::input::prompts::Prompts,
-    pub(crate) cursor: Option<crate::ui::cursor::HardwareCursor>,
+    pub(crate) pointer: Option<crate::ui::cursor::Pointer>,
     script_errors: Option<ScriptErrors>,
     text_request: Option<TextRequest>,
     confirm_request: Option<Confirm>,
@@ -179,6 +180,7 @@ impl ScreenStateManager {
                 previous: None,
                 factory,
                 overlays: Vec::new(),
+                cursor_override: None,
             },
             frame: Frame::default(),
             commands: Rc::new(Commands::default()),
@@ -186,7 +188,7 @@ impl ScreenStateManager {
             close_confirmation: Some(CLOSE_MESSAGE.to_string()),
             keybind_keys: vec![KeyboardKey::KEY_F1],
             prompts: Default::default(),
-            cursor: None,
+            pointer: Some(crate::ui::cursor::Pointer::system()),
             script_errors: None,
             text_request: None,
             confirm_request: None,
@@ -260,6 +262,9 @@ impl ScreenStateManager {
             }
         }
         self.frame.cursor = asked.cursor;
+        if let Some(kind) = asked.cursor_override {
+            self.screens.cursor_override = kind.map(|kind| (self.screens.showing.clone(), kind));
+        }
         self.frame.autosave |= asked.autosave;
         self.frame.screenshot |= asked.screenshot;
         let (tooltip, toast) = (asked.tooltip, asked.toast);
@@ -299,8 +304,9 @@ impl ScreenStateManager {
             errors.toggle();
         }
 
-        if let Some(cursor) = &mut self.cursor {
-            cursor.update(rl, self.frame.cursor, self.frame.nav.device);
+        let cursor = self.effective_cursor();
+        if let Some(pointer) = &mut self.pointer {
+            pointer.update(rl, cursor, self.frame.nav.device);
         }
 
         if self.world.settings.values.fullscreen != self.frame.fullscreen {
@@ -568,6 +574,19 @@ impl ScreenStateManager {
         self.screens.overlays.clear();
     }
 
+    fn effective_cursor(&self) -> crate::ui::cursor::CursorKind {
+        crate::ui::cursor::effective(
+            self.screens.cursor_override.as_ref(),
+            &self.screens.showing,
+            !self.screens.overlays.is_empty(),
+            self.frame.cursor,
+        )
+    }
+
+    pub fn cursor(&self) -> crate::ui::cursor::CursorKind {
+        self.effective_cursor()
+    }
+
     fn transition_to(&mut self, next_state: ScreenState) {
         if next_state == ScreenState::Quit {
             self.frame.quit = true;
@@ -584,6 +603,7 @@ impl ScreenStateManager {
                 self.screens.overlays.clear();
                 self.show.effects.clear();
                 self.show.weather = None;
+                self.screens.cursor_override = None;
                 self.frame.changed = true;
             }
             None => eprintln!("⚠️ No screen registered for {:?}", next_state),

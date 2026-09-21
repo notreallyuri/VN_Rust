@@ -149,12 +149,19 @@ impl VnApp {
         manager.show.tooltip_config = self.tooltips;
         manager.keybind_keys = self.keybinds.open_keys.clone();
         manager.prompts = prompts;
-        if let Some(style) = self.cursor {
-            match crate::ui::cursor::HardwareCursor::load(style, manager.show.resources.assets()) {
-                Ok(cursor) => manager.cursor = Some(cursor),
-                Err(e) => eprintln!("⚠️ Could not load the cursor ({}); using the system one", e),
+        manager.pointer = match (self.cursor, self.cursor_shapes) {
+            (Some(style), _) => {
+                match crate::ui::cursor::Pointer::pictures(style, manager.show.resources.assets()) {
+                    Ok(pointer) => Some(pointer),
+                    Err(e) => {
+                        eprintln!("⚠️ Could not load the cursor ({}); using the system one", e);
+                        Some(crate::ui::cursor::Pointer::system())
+                    }
+                }
             }
-        }
+            (None, true) => Some(crate::ui::cursor::Pointer::system()),
+            (None, false) => None,
+        };
         manager.show.navigation = Navigation::new(self.navigation);
         manager.world.seen = SeenLines::load(
             manager

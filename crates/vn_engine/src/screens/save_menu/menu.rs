@@ -243,6 +243,13 @@ impl SaveMenu {
 
         let rects = self.slot_rects(screen);
         let hovered = rects.iter().position(|rect| ui::is_hovered(ctx.rl, *rect));
+        if let Some(index) = hovered {
+            let loadable = self.mode != SaveMenuMode::Load || self.occupied(index);
+            ctx.cursor(match loadable {
+                true => crate::ui::cursor::CursorKind::Hand,
+                false => crate::ui::cursor::CursorKind::NotAllowed,
+            });
+        }
 
         let mut targets = rects.clone();
         targets.push(back);

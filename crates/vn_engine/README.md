@@ -1436,34 +1436,105 @@ to show a picture instead.
 word. It changes on the first input of that kind: a gamepad button makes it `Gamepad`,
 typing makes it `Keyboard`, and moving or clicking the mouse makes it `Mouse`.
 
-### Custom cursor
+### Cursors
+
+The engine asks for a cursor wherever it means something, and the operating system draws
+it — so it moves at the display's refresh with the latest pointer position, never trails
+the game loop, and stays out of screen shake, shader passes and supersampling.
+
+| `CursorKind` | Where the engine asks for it |
+| --- | --- |
+| `Arrow` | Everywhere else |
+| `Text` | Over the text input field |
+| `Hand` | Over anything clickable: buttons, menu items, choices, HUD buttons, image-map hotspots, save slots |
+| `Grab` | Over something that can be dragged: a `DragBoard` item, a settings slider, a scroll thumb |
+| `Grabbing` | While dragging one |
+| `NotAllowed` | Over something that can't be used right now: a disabled menu item or hotspot or draggable, an empty slot on the Load screen, a drop target that refuses the item being dragged |
+| `Custom("name")` | Wherever a game says so (see below) |
+| `Hidden` | Wherever a game says so |
+
+When several things ask in the same frame the strongest wins — `Hidden`, then
+`NotAllowed`, `Grabbing`, `Grab`, `Custom`, `Hand`, `Text`, `Arrow` — so dragging over a
+target that refuses the item shows not-allowed rather than the closed hand. The cursor
+hides while the keyboard or a gamepad is in use and comes back when the mouse moves.
+
+**With no configuration** these become the system's own shapes: pointing hand, I-beam,
+the move arrows while grabbing, and the not-allowed sign (the system has no open or closed
+hand, so `Grab` uses the pointing hand). `VnApp::cursor_shapes(false)` keeps the plain
+arrow everywhere instead.
+
+**With pictures of your own:**
 
 ```rust
-.cursor(CursorStyle::new("cursor.png").hand("cursor_hand.png").size(28.0))
+.cursor(
+    CursorStyle::new("cursor.png")
+        .hand("cursor_hand.png")
+        .picture(CursorKind::Text, "cursor_text.png")
+        .picture(CursorKind::Grab, "cursor_grab.png")
+        .picture(CursorKind::Grabbing, "cursor_grabbing.png")
+        .picture(CursorKind::NotAllowed, "cursor_no.png")
+        .size(28.0)
+        .hotspot(0.128, 0.094)
+        .hotspot_for(CursorKind::Text, 0.5, 0.5)
+        .hotspot_for(CursorKind::Grab, 0.5, 0.5),
+)
 ```
 
-The picture becomes the operating system's cursor, not something the game draws. That is
-what makes it feel native: the OS moves it at the display's refresh with the latest
-pointer position, independently of the game loop, so it never trails a frame behind. It
-also stays out of the picture — screen shake, shader passes and supersampling apply to
-the game, never to the pointer.
+Only the arrow is required. A state without a picture borrows the nearest one:
+`Grabbing` → `Grab` → `Hand` → `Arrow`, `Custom` → `Hand`, and `Text` and `NotAllowed`
+→ `Arrow`. So an arrow and a hand already cover every state sensibly.
 
-Files come from `<assets>/ui/` unless the name contains a `/`. `size(px)` is its height
-at the design size, and it is rebuilt when the window's scale changes, so it grows with
-the game like the rest of the interface: 28 px in a 720p window is 84 px at 4K (never
-under 8 or over 256). The width follows the picture's ratio. `hotspot(x, y)` is the point
-that clicks, as a fraction of the picture — the default `(0, 0)` is the top-left corner.
+`hotspot(x, y)` is the point that clicks, as a fraction of the picture, for every picture
+that doesn't set its own with `hotspot_for` — an arrow clicks at its tip, but an I-beam
+or a hand at its centre. A state that borrows another's picture uses that picture's
+hotspot. Files come from `<assets>/ui/` unless the name contains a `/`. `size(px)` is the
+height at the design size; the cursors are rebuilt when the window's scale changes, so
+28 px in a 720p window is 84 px at 4K (never under 8 or over 256). A picture that can't
+be read logs a warning and falls back to the system shapes.
 
-With a `hand` picture, the cursor changes over anything clickable: buttons ask for it
-while hovered, through the same request list screens use for everything else, and the
-hand wins if anything in the frame asked for it. A custom screen asks with
-`ctx.cursor(CursorKind::Hand)`.
+#### Choosing the cursor yourself
 
-It is hidden while the keyboard or a gamepad is in use and comes back when the mouse
-moves. A picture that can't be read logs a warning and leaves the system cursor alone.
+**For one element**, set it on the element. A button, menu item, choice or HUD button
+takes it through its style; an image-map hotspot directly:
 
-This uses GLFW's custom cursors, which raylib's desktop build includes, so it works on
-Windows, macOS, and Linux under X11 and Wayland.
+```rust
+.item(MenuItem::new("Examine", action).style(|b| b.cursor(CursorKind::Custom("examine"))))
+Hotspot::new("desk", shape).cursor(CursorKind::Custom("examine"))
+```
+
+`Custom` names a picture you registered with `.picture(CursorKind::Custom("examine"),
+"magnifier.png")` — the point-and-click convention of a magnifier over what can be looked
+at and a speech bubble over who can be talked to.
+
+**For a custom screen**, ask every frame, exactly like the built-in widgets:
+`ctx.cursor(CursorKind::Grab)`. It takes part in the priority above.
+
+**To force one regardless**, override it:
+
+```rust
+ctx.override_cursor(Some(CursorKind::Hidden));
+ctx.override_cursor(None);
+```
+
+An override beats everything the widgets ask for, and it belongs to the screen that set
+it: it is ignored while an overlay such as the pause menu is open, and dropped when the
+screen changes, on New Game and on loading a save — so a cutscene that hides the cursor
+can't leave a menu without one. From a story, register a command that maps names to your
+kinds (a `Custom` name is a `&'static str`, so match rather than build it):
+
+```rust
+.command("cursor", |ctx, (name,): (String,)| {
+    ctx.override_cursor(match name.as_str() {
+        "hidden" => Some(CursorKind::Hidden),
+        "examine" => Some(CursorKind::Custom("examine")),
+        _ => None,
+    });
+    None
+})
+```
+
+This uses GLFW, which raylib's desktop build includes, so it works on Windows, macOS, and
+Linux under X11 and Wayland.
 
 `NavigationConfig` (`.navigation(|n| ...)`):
 
@@ -2307,6 +2378,7 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
 | `tests/assets.rs` | Folders and embedded files answering the same (reads, path normalization, listings), descriptions, a story loaded only from embedded files, which source a build picks |
 | `tests/dialogue_box.rs` | Per-character box styles layering over the game's base without altering it, a bust reserving room and moving the text, aspect ratio and floor placement, `rise`/`sink`, and a character with no bust |
+| `tests/cursor.rs` | The strongest request of a frame winning in any order, the picture fallback chain, custom cursors by name, a hotspot per picture, forced cursors belonging to their screen and yielding to overlays, and the system shapes |
 | `tests/prompts.rs` | Pad families recognised from their reported names, a DualSense told to press Cross, Nintendo labels following button position, whole-word translation, symbol overrides per family; prompt tokens following the device, mouse wording falling back to the keyboard's, unknown tokens left visible, the hand cursor winning over the arrow, and the cursor's size in window pixels, growing with the window and clamped to what the OS accepts |
 | `tests/request.rs` | What a screen asks the manager for: overlay requests keeping their order, the last tooltip and toast of a frame winning, asking twice doing the work once, and a quiet frame asking for nothing |
 | `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups; weather staying on screen over a long run, replaying identically from the clock, spreading out with varied depth, capped counts, and absurd times |

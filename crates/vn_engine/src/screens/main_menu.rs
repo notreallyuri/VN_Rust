@@ -385,6 +385,11 @@ pub(crate) fn clicked_item(
     let hovered = placement
         .iter()
         .position(|(rect, style)| ui::button::button_hovered(ctx.rl, *rect, style));
+    if let Some(index) = hovered
+        && !enabled[index]
+    {
+        ctx.cursor(crate::ui::cursor::CursorKind::NotAllowed);
+    }
 
     let mut clicked = None;
     for (index, (rect, style)) in placement.iter().enumerate() {

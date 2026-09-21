@@ -113,12 +113,16 @@ impl SettingsMenu {
                 area.width + config.slider.knob_radius * 2.0,
                 area.height,
             );
+            if grab.check_collision_point_rec(mouse) && self.dragging.is_none() {
+                ctx.cursor(crate::ui::cursor::CursorKind::Grab);
+            }
             if pressed && grab.check_collision_point_rec(mouse) {
                 self.dragging = Some(row);
             }
         }
 
         if let Some(row) = self.dragging {
+            ctx.cursor(crate::ui::cursor::CursorKind::Grabbing);
             let index = rows.iter().position(|&r| r == row);
             if let Some(control) = index.map(|i| controls[i]) {
                 let fraction = ui::slider_fraction(config.slider_area(control), mouse.x);

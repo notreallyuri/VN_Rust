@@ -279,6 +279,9 @@ impl Overlay for LogOverlay {
         let area = config.entries_area(screen);
         self.scroll.extent(area.height, self.content.get());
         self.scroll.input(ctx.rl, area, &config.scroll);
+        if let Some(kind) = self.scroll.cursor(ctx.rl, area, &config.scroll) {
+            ctx.cursor(kind);
+        }
 
         let page = self.scroll.page();
         let mut delta = 0.0;

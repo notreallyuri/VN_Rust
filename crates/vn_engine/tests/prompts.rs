@@ -93,7 +93,7 @@ fn the_cursor_is_sized_in_window_pixels_and_grows_with_the_window() {
         .hotspot(0.128, 0.094);
     let natural = Vector2::new(47.0, 64.0);
 
-    let native = style.pixels(natural, 1.0);
+    let native = style.pixels(CursorKind::Arrow, natural, 1.0);
     assert_eq!(
         native.height, 28,
         "at the design size it is the size asked for"
@@ -105,7 +105,7 @@ fn the_cursor_is_sized_in_window_pixels_and_grows_with_the_window() {
         "the hotspot lands on the tip"
     );
 
-    let four_k = style.pixels(natural, 3.0);
+    let four_k = style.pixels(CursorKind::Arrow, natural, 3.0);
     assert_eq!(
         four_k.height, 84,
         "a 4K window gets a cursor three times as tall"
@@ -115,24 +115,32 @@ fn the_cursor_is_sized_in_window_pixels_and_grows_with_the_window() {
 
 #[test]
 fn a_cursor_size_stays_within_what_the_os_will_accept() {
-    let tiny = CursorStyle::new("a.png")
-        .size(1.0)
-        .pixels(Vector2::new(10.0, 10.0), 1.0);
+    let tiny = CursorStyle::new("a.png").size(1.0).pixels(
+        CursorKind::Arrow,
+        Vector2::new(10.0, 10.0),
+        1.0,
+    );
     assert_eq!(tiny.height, 8);
-    let huge = CursorStyle::new("a.png")
-        .size(400.0)
-        .pixels(Vector2::new(10.0, 10.0), 4.0);
+    let huge = CursorStyle::new("a.png").size(400.0).pixels(
+        CursorKind::Arrow,
+        Vector2::new(10.0, 10.0),
+        4.0,
+    );
     assert_eq!(huge.height, 256);
-    let broken = CursorStyle::new("a.png")
-        .size(28.0)
-        .pixels(Vector2::new(10.0, 10.0), f32::NAN);
+    let broken = CursorStyle::new("a.png").size(28.0).pixels(
+        CursorKind::Arrow,
+        Vector2::new(10.0, 10.0),
+        f32::NAN,
+    );
     assert_eq!(
         broken.height, 28,
         "a bad scale falls back to the design size"
     );
-    let corner = CursorStyle::new("a.png")
-        .hotspot(1.0, 1.0)
-        .pixels(Vector2::new(10.0, 10.0), 1.0);
+    let corner = CursorStyle::new("a.png").hotspot(1.0, 1.0).pixels(
+        CursorKind::Arrow,
+        Vector2::new(10.0, 10.0),
+        1.0,
+    );
     assert!(
         corner.hot_x < corner.width && corner.hot_y < corner.height,
         "hotspot stays inside"
@@ -142,11 +150,11 @@ fn a_cursor_size_stays_within_what_the_os_will_accept() {
 #[test]
 fn a_cursor_without_a_hand_picture_keeps_using_the_arrow() {
     let plain = CursorStyle::new("arrow.png");
-    assert_eq!(plain.file(CursorKind::Arrow), "arrow.png");
-    assert_eq!(plain.file(CursorKind::Hand), "arrow.png");
+    assert_eq!(plain.file(CursorKind::Arrow), Some("arrow.png"));
+    assert_eq!(plain.file(CursorKind::Hand), Some("arrow.png"));
 
     let both = CursorStyle::new("arrow.png").hand("hand.png");
-    assert_eq!(both.file(CursorKind::Hand), "hand.png");
+    assert_eq!(both.file(CursorKind::Hand), Some("hand.png"));
 }
 
 #[test]
