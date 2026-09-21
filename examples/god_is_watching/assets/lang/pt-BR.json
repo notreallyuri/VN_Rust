@@ -1697,6 +1697,11 @@
       "source": "Cancel",
       "text": ""
     },
+    "040e8442afb4e6bc": {
+      "kind": "ui",
+      "source": "1 minute ago",
+      "text": ""
+    },
     "04e627f6b730c47f": {
       "kind": "ui",
       "source": "KEYBOARD / MOUSE",
@@ -1782,6 +1787,11 @@
       "source": "Slow",
       "text": "Lento"
     },
+    "3a7250589527abe0": {
+      "kind": "ui",
+      "source": "1 day ago",
+      "text": ""
+    },
     "3e8e9eca77782ea3": {
       "kind": "ui",
       "source": "Quick save failed: {reason}",
@@ -1832,6 +1842,11 @@
       "source": "Sound effects. Drag, or hover and press Left/Right",
       "text": ""
     },
+    "5671d0428f25ea5b": {
+      "kind": "ui",
+      "source": "{advance} to see the credits",
+      "text": ""
+    },
     "591bf2c6ccc5e3d9": {
       "kind": "ui",
       "source": "\"Your hot water, miss. Miss? Are you unwell?\"",
@@ -1872,9 +1887,19 @@
       "source": "Skip",
       "text": "Saltar"
     },
+    "6aeb97350dfcc10f": {
+      "kind": "ui",
+      "source": "Português (BR)",
+      "text": ""
+    },
     "7031bd6aa046d492": {
       "kind": "ui",
       "source": "What Skip passes over: only lines you've read, or everything",
+      "text": ""
+    },
+    "70dd0a3f2e548518": {
+      "kind": "ui",
+      "source": "1 month ago",
       "text": ""
     },
     "76ff67b9000cd513": {
@@ -1925,6 +1950,12 @@
     "847a9a36ceb98a6f": {
       "kind": "ui",
       "source": "Click to see the credits",
+      "text": "",
+      "stale": true
+    },
+    "8850e3cf6d23d1a0": {
+      "kind": "ui",
+      "source": "{n} minutes ago",
       "text": ""
     },
     "8919e77217b65e0c": {
@@ -1997,6 +2028,11 @@
       "source": "Settings",
       "text": "Definições"
     },
+    "a3bcdb18fb5b4772": {
+      "kind": "ui",
+      "source": "1 hour ago",
+      "text": ""
+    },
     "a6acbbd56bd34c9d": {
       "kind": "ui",
       "source": "Instant",
@@ -2010,6 +2046,11 @@
     "ac06e1e1b0ce6ae4": {
       "kind": "ui",
       "source": "English",
+      "text": ""
+    },
+    "ac5458023b9b2232": {
+      "kind": "ui",
+      "source": "The end",
       "text": ""
     },
     "aded2949d5578183": {
@@ -2047,6 +2088,11 @@
       "source": "CONTINUE",
       "text": ""
     },
+    "bc604c61ce329661": {
+      "kind": "ui",
+      "source": "Making a choice",
+      "text": ""
+    },
     "bec42be1f406e41d": {
       "kind": "ui",
       "source": "Empty",
@@ -2062,6 +2108,11 @@
       "source": "Overwrite {slot}?",
       "text": ""
     },
+    "d0d7c1026326ff26": {
+      "kind": "ui",
+      "source": "just now",
+      "text": ""
+    },
     "d1d8bf6abf3381e3": {
       "kind": "ui",
       "source": "Story reloaded",
@@ -2075,6 +2126,11 @@
     "d5ff0b79f4c57c20": {
       "kind": "ui",
       "source": "Quick load failed: {reason}",
+      "text": ""
+    },
+    "d725481d494f3ed6": {
+      "kind": "ui",
+      "source": "{n} months ago",
       "text": ""
     },
     "d741f451ce04a27c": {
@@ -2137,6 +2193,11 @@
       "source": "Close the evidence",
       "text": ""
     },
+    "e7f730db159820e2": {
+      "kind": "ui",
+      "source": "{n} days ago",
+      "text": ""
+    },
     "e8b7f7a5ebc6a0e7": {
       "kind": "ui",
       "source": "GAMEPAD",
@@ -2155,6 +2216,11 @@
     "f30b2646cc72b446": {
       "kind": "ui",
       "source": "Controls",
+      "text": ""
+    },
+    "f95ab72f5dc249e6": {
+      "kind": "ui",
+      "source": "{n} hours ago",
       "text": ""
     },
     "f9d2b7525abe6234": {

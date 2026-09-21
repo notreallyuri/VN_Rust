@@ -18,7 +18,6 @@
     "CREDITS",
     "Cancel",
     "Case file",
-    "Click to see the credits",
     "Close the case file",
     "Close the evidence",
     "Controls",
@@ -109,10 +108,10 @@
     "Your notes, your decisions and what the Archive knows",
     "just now",
     "v0.3 · made with VN_Rust",
+    "{advance} to see the credits",
     "{n} days ago",
     "{n} hours ago",
     "{n} minutes ago",
-    "{n} months ago",
-    "日本語"
+    "{n} months ago"
   ]
 }
