@@ -169,7 +169,7 @@ fn main() -> ExitCode {
             .indicator(|i| style::plate(i).border(1.0, style::BRASS))
             .indicator_text(style::section(15.0))
             .end_title_text(heading(60.0))
-            .end_hint("Click to see the credits")
+            .end_hint("{advance} to see the credits")
             .end_hint_text(style::label(20.0))
             .after_end(credits.clone())
             .hud_button_style(|b| style::hud_button(b.size(112.0, 30.0)))

@@ -452,7 +452,7 @@ impl Screen for PlayingScreen {
                 ui::draw_text_centered(
                     d,
                     fonts,
-                    ctx.label(&config.end_hint),
+                    &ctx.prompt(&config.end_hint),
                     Vector2::new(screen.x / 2.0, screen.y * 0.52),
                     &config.end_hint_text,
                 );

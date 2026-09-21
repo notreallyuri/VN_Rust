@@ -1,4 +1,5 @@
 pub mod button;
+pub mod cursor;
 pub mod ease;
 pub mod fonts;
 pub mod labels;
@@ -21,6 +22,7 @@ pub mod prelude {
         Border, Button, ButtonIcon, ButtonImage, ButtonLook, ButtonStyle, IconSide, Shadow, Slice,
         StyleOverride, TextAlign, TextOverflow, Transform,
     };
+    pub use super::cursor::{CursorKind, CursorStyle};
     pub use super::ease::{Easing, Tween, lerp};
     pub use super::fonts::{FontRole, FontVariant, Fonts};
     pub use super::layout::{Align, Anchor, Arrangement, Layout};

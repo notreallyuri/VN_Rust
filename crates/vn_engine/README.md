@@ -1373,6 +1373,56 @@ focused row gets a light band, `focus_color`). The start screen accepts any key 
 gamepad button. HUD buttons are for the mouse; the pause menu covers the same actions.
 Text input needs a keyboard.
 
+### Prompts that name the right control
+
+A line telling the player what to press is wrong for two thirds of them. Write the
+control as a token and the engine fills it in with whatever was used last:
+
+```rust
+.playing(|p| p.end_hint("{advance} to see the credits"))
+```
+
+| Last used | Shows |
+| --- | --- |
+| Mouse | `click to see the credits` |
+| Keyboard | `Space to see the credits` |
+| Gamepad | `A to see the credits` |
+
+Built-in tokens, taken from the same configuration the controls overlay reads, so
+rebinding a key changes the prompt too: `{advance}`, `{accept}`, `{pause}`, `{log}`,
+`{hide}`, `{auto}`, `{skip}`, `{back}`, `{forward}`. A game adds its own with
+`VnApp::prompt("examine", Prompt::new("E", "X").mouse("right click"))`, and a custom
+screen resolves one with `ctx.prompt(text)`.
+
+The token is filled in *after* the text is translated, so a translator moves `{advance}`
+wherever that language wants it, exactly like `{variable}` in dialogue. A token with no
+prompt behind it is left in the text rather than blanked, so a typo is visible.
+
+`ctx.nav.device` (and `DrawContext::device`) is the `InputDevice` itself — `Mouse`,
+`Keyboard` or `Gamepad` — for a screen that wants to swap a whole glyph rather than a
+word. It changes on the first input of that kind: a gamepad button makes it `Gamepad`,
+typing makes it `Keyboard`, and moving or clicking the mouse makes it `Mouse`.
+
+### Custom cursor
+
+```rust
+.cursor(CursorStyle::new("cursor.png").hand("cursor_hand.png").size(28.0))
+```
+
+The system cursor is hidden and the picture is drawn above everything, from
+`<assets>/ui/` unless the name contains a `/`. `size(px)` is its height; the width
+follows the picture's ratio. `hotspot(x, y)` is the point that sits on the pointer, as a
+fraction of the picture — the default `(0, 0)` is the top-left corner, `(0.5, 0.5)`
+centres it.
+
+With a `hand` picture, the cursor changes over anything clickable: buttons ask for it
+while hovered (through the same request list screens use for everything else), and the
+hand wins if anything in the frame asked for it. A custom screen asks with
+`ctx.cursor(CursorKind::Hand)`.
+
+The cursor is drawn only while the mouse is the last thing used, so it disappears when
+the player picks up a gamepad and comes back when they touch the mouse.
+
 `NavigationConfig` (`.navigation(|n| ...)`):
 
 | Option | Default |
@@ -2215,6 +2265,7 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
 | `tests/assets.rs` | Folders and embedded files answering the same (reads, path normalization, listings), descriptions, a story loaded only from embedded files, which source a build picks |
 | `tests/dialogue_box.rs` | Per-character box styles layering over the game's base without altering it, a bust reserving room and moving the text, aspect ratio and floor placement, `rise`/`sink`, and a character with no bust |
+| `tests/prompts.rs` | Prompt tokens following the device, mouse wording falling back to the keyboard's, unknown tokens left visible, the hand cursor winning over the arrow, and cursor scaling and hotspots |
 | `tests/request.rs` | What a screen asks the manager for: overlay requests keeping their order, the last tooltip and toast of a frame winning, asking twice doing the work once, and a quiet frame asking for nothing |
 | `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups; weather staying on screen over a long run, replaying identically from the clock, spreading out with varied depth, capped counts, and absurd times |
 | `tests/shape.rs` | Corner outlines for each shape, round versus scooped hit tests, size capping and relative roundness, per-corner shapes, `PanelStyle`, the dialogue box's placement and the name plate |

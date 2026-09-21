@@ -5,6 +5,7 @@ use raylib::prelude::*;
 use crate::context::{DrawContext, GameContext};
 use crate::data::rollback::RollbackConfig;
 use crate::input::navigation::{Focus, NavigationConfig};
+use crate::input::prompts::{Prompt, Prompts};
 use crate::overlay::{Overlay, OverlayAction};
 use crate::screens::playing::PlayingConfig;
 use crate::ui;
@@ -509,4 +510,51 @@ impl Overlay for KeybindsOverlay {
             .focused(ctx.shows_focus(&self.focus, 0))
             .draw(d, ctx, self.back_rect(screen));
     }
+}
+
+pub fn default_prompts(
+    playing: &PlayingConfig,
+    rollback: &RollbackConfig,
+    navigation: &NavigationConfig,
+) -> Prompts {
+    let keys = &playing.keys;
+    let pad = |name: &'static str| match navigation.gamepad {
+        true => name.to_string(),
+        false => String::new(),
+    };
+    let first = |list: &[KeyboardKey]| list.first().copied().map(key_name).unwrap_or_default();
+
+    let mut prompts = Prompts::default();
+    let mut add = |token: &str, keyboard: String, gamepad: String| {
+        if !keyboard.is_empty() || !gamepad.is_empty() {
+            prompts.insert(token, Prompt::new(keyboard, gamepad));
+        }
+    };
+
+    add("advance", first(&playing.advance_keys), pad("A"));
+    add("accept", first(&navigation.accept_keys), pad("A"));
+    let pause = playing.pause_key.map(key_name).unwrap_or_default();
+    add("pause", pause, pad("Start"));
+    add("log", first(&keys.log), pad("Y"));
+    add("hide", first(&keys.hide), pad("Select"));
+    add("auto", first(&keys.auto), pad(""));
+    add("skip", first(&keys.skip_toggle), pad("RT"));
+    add("back", first(&rollback.back_keys), pad("LB"));
+    add("forward", first(&rollback.forward_keys), pad("RB"));
+
+    if let Some(prompt) = prompts.get("advance").cloned() {
+        prompts.insert("advance", prompt.mouse("click"));
+    }
+    if let Some(prompt) = prompts.get("accept").cloned() {
+        prompts.insert("accept", prompt.mouse("click"));
+    }
+    if rollback.mouse_wheel {
+        for (token, wheel) in [("back", "wheel up"), ("forward", "wheel down")] {
+            if let Some(prompt) = prompts.get(token).cloned() {
+                prompts.insert(token, prompt.mouse(wheel));
+            }
+        }
+    }
+
+    prompts
 }

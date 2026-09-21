@@ -51,6 +51,8 @@ pub struct VnApp {
     pub(super) initial_screen: ScreenState,
     pub(super) fonts: Vec<(FontRole, String)>,
     pub(super) language_fonts: Vec<(String, FontRole, String)>,
+    pub(super) prompts: crate::input::prompts::Prompts,
+    pub(super) cursor: Option<crate::ui::cursor::CursorStyle>,
     pub(super) font_variants: Vec<(FontRole, FontVariant, String)>,
     pub(super) start: StartScreenConfig,
     pub(super) menu: MainMenuConfig,
@@ -109,6 +111,8 @@ impl VnApp {
             initial_screen: ScreenState::StartScreen,
             fonts: Vec::new(),
             language_fonts: Vec::new(),
+            prompts: Default::default(),
+            cursor: None,
             font_variants: Vec::new(),
             start: StartScreenConfig::default(),
             menu: MainMenuConfig::default(),
@@ -404,6 +408,20 @@ impl VnApp {
 
     pub fn font(mut self, role: FontRole, file: impl Into<String>) -> Self {
         self.fonts.push((role, file.into()));
+        self
+    }
+
+    pub fn cursor(mut self, style: crate::ui::cursor::CursorStyle) -> Self {
+        self.cursor = Some(style);
+        self
+    }
+
+    pub fn prompt(
+        mut self,
+        token: impl Into<String>,
+        prompt: crate::input::prompts::Prompt,
+    ) -> Self {
+        self.prompts.insert(token, prompt);
         self
     }
 

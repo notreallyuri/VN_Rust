@@ -228,7 +228,8 @@ impl Screen for StartScreen {
             let level = 0.65 + 0.35 * wave;
             prompt.color = prompt.color.alpha(level * prompt.color.a as f32 / 255.0);
         }
-        ui::draw_text_centered(d, fonts, ctx.label(&config.prompt), center, &prompt);
+        let text = ctx.prompt(&config.prompt);
+        ui::draw_text_centered(d, fonts, &text, center, &prompt);
 
         if let Some(footer) = &config.footer {
             let size = fonts.measure(config.footer_text.font, footer, config.footer_text.size);

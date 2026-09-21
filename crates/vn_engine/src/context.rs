@@ -43,6 +43,7 @@ pub struct GameContext<'a> {
     pub(crate) thumbnail: Option<&'a Image>,
     pub(crate) audio: &'a mut Audio,
     pub nav: NavInput,
+    pub(crate) prompts: &'a crate::input::prompts::Prompts,
     pub log: &'a mut SessionLog,
     pub modes: &'a mut PlayModes,
     pub seen: &'a mut SeenLines,
@@ -166,6 +167,10 @@ impl GameContext<'_> {
         }
     }
 
+    pub fn cursor(&mut self, kind: crate::ui::cursor::CursorKind) {
+        self.requests.push(Request::Cursor(kind));
+    }
+
     pub fn tooltip_text(&mut self, text: impl Into<String>) {
         self.requests.push(Request::Tooltip(text.into()));
     }
@@ -198,6 +203,10 @@ impl GameContext<'_> {
 
     pub fn label<'a>(&'a self, text: &'a str) -> &'a str {
         crate::ui::labels::label(self.story, text)
+    }
+
+    pub fn prompt(&self, text: &str) -> String {
+        self.prompts.fill(self.label(text), self.nav.device)
     }
 
     pub fn message(&self, text: &str, fields: &[(&str, &str)]) -> String {
@@ -281,6 +290,8 @@ pub struct DrawContext<'a> {
     pub log: &'a SessionLog,
     pub modes: PlayModes,
     pub weather: Option<crate::frame::scenery::Weather>,
+    pub device: crate::input::navigation::InputDevice,
+    pub(crate) prompts: &'a crate::input::prompts::Prompts,
 }
 
 impl DrawContext<'_> {
@@ -294,6 +305,10 @@ impl DrawContext<'_> {
 
     pub fn label<'a>(&'a self, text: &'a str) -> &'a str {
         crate::ui::labels::label(self.story, text)
+    }
+
+    pub fn prompt(&self, text: &str) -> String {
+        self.prompts.fill(self.label(text), self.device)
     }
 
     pub fn message(&self, text: &str, fields: &[(&str, &str)]) -> String {

@@ -89,6 +89,7 @@ pub struct Frame {
     thumbnail_at: Option<f64>,
     autosave: bool,
     screenshot: bool,
+    cursor: crate::ui::cursor::CursorKind,
     changed: bool,
     quit: bool,
     closing: bool,
@@ -104,6 +105,8 @@ pub struct ScreenStateManager {
     pub hooks: Rc<Hooks>,
     pub close_confirmation: Option<String>,
     pub keybind_keys: Vec<KeyboardKey>,
+    pub prompts: crate::input::prompts::Prompts,
+    pub cursor: Option<crate::ui::cursor::CursorStyle>,
     script_errors: Option<ScriptErrors>,
     text_request: Option<TextRequest>,
     confirm_request: Option<Confirm>,
@@ -182,6 +185,8 @@ impl ScreenStateManager {
             hooks: Rc::new(Hooks::default()),
             close_confirmation: Some(CLOSE_MESSAGE.to_string()),
             keybind_keys: vec![KeyboardKey::KEY_F1],
+            prompts: Default::default(),
+            cursor: None,
             script_errors: None,
             text_request: None,
             confirm_request: None,
@@ -216,6 +221,7 @@ impl ScreenStateManager {
             thumbnail: self.frame.thumbnail.as_ref(),
             audio: &mut self.show.audio,
             nav: self.frame.nav,
+            prompts: &self.prompts,
             log: &mut self.world.log,
             modes: &mut self.world.modes,
             seen: &mut self.world.seen,
@@ -253,6 +259,7 @@ impl ScreenStateManager {
                 OverlayRequest::CloseAll => self.screens.overlays.clear(),
             }
         }
+        self.frame.cursor = asked.cursor;
         self.frame.autosave |= asked.autosave;
         self.frame.screenshot |= asked.screenshot;
         let (tooltip, toast) = (asked.tooltip, asked.toast);
@@ -377,6 +384,31 @@ impl ScreenStateManager {
         {
             crate::ui::tooltip::draw_tooltip(d, ctx.fonts(), text, config);
         }
+
+        self.draw_cursor(d);
+    }
+
+    fn draw_cursor(&self, d: &mut RaylibDrawHandle) {
+        let Some(style) = &self.cursor else {
+            return;
+        };
+        if self.frame.nav.device != crate::input::navigation::InputDevice::Mouse {
+            return;
+        }
+        let path = crate::ui::cursor::path(style.file(self.frame.cursor));
+        let Some(texture) = self.show.resources.texture(&path) else {
+            return;
+        };
+        let natural = Vector2::new(texture.width as f32, texture.height as f32);
+        let at = crate::frame::viewport::mouse_position(d);
+        d.draw_texture_pro(
+            texture,
+            Rectangle::new(0.0, 0.0, natural.x, natural.y),
+            style.rect(at, natural),
+            Vector2::zero(),
+            0.0,
+            Color::WHITE,
+        );
     }
 
     fn capture_thumbnail(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
@@ -458,6 +490,8 @@ impl ScreenStateManager {
             log: &self.world.log,
             modes: self.world.modes,
             weather: self.show.weather,
+            device: self.frame.nav.device,
+            prompts: &self.prompts,
         }
     }
 

@@ -59,6 +59,10 @@ pub fn button_clicked(ctx: &mut GameContext, rect: Rectangle, style: &ButtonStyl
     let pressed = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
     let released = rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT);
 
+    if hovered {
+        ctx.cursor(crate::ui::cursor::CursorKind::Hand);
+    }
+
     if pressed && hovered {
         PRESSED.with(|p| *p.borrow_mut() = Some(key));
     }

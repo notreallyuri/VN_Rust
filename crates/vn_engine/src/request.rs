@@ -1,4 +1,5 @@
 use crate::overlay::OverlayRequest;
+use crate::ui::cursor::CursorKind;
 use crate::ui::toast::Toast;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -6,6 +7,7 @@ pub enum Request {
     Overlay(OverlayRequest),
     Toast(Toast),
     Tooltip(String),
+    Cursor(CursorKind),
     Autosave,
     Screenshot,
 }
@@ -40,6 +42,7 @@ impl Requests {
             match request {
                 Request::Overlay(overlay) => resolved.overlays.push(overlay),
                 Request::Tooltip(text) => resolved.tooltip = Some(text),
+                Request::Cursor(kind) => resolved.cursor = resolved.cursor.max(kind),
                 Request::Toast(toast) => resolved.toast = Some(toast),
                 Request::Autosave => resolved.autosave = true,
                 Request::Screenshot => resolved.screenshot = true,
@@ -54,6 +57,7 @@ pub struct Resolved {
     pub overlays: Vec<OverlayRequest>,
     pub tooltip: Option<String>,
     pub toast: Option<Toast>,
+    pub cursor: CursorKind,
     pub autosave: bool,
     pub screenshot: bool,
 }

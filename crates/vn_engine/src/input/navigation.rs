@@ -1,7 +1,26 @@
 use raylib::prelude::*;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum InputDevice {
+    #[default]
+    Mouse,
+    Keyboard,
+    Gamepad,
+}
+
+impl InputDevice {
+    pub fn name(self) -> &'static str {
+        match self {
+            InputDevice::Mouse => "mouse",
+            InputDevice::Keyboard => "keyboard",
+            InputDevice::Gamepad => "gamepad",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct NavInput {
+    pub device: InputDevice,
     pub up: bool,
     pub down: bool,
     pub left: bool,
@@ -186,6 +205,7 @@ pub struct Navigation {
     pub config: NavigationConfig,
     repeaters: [Repeater; 4],
     pointer: bool,
+    device: InputDevice,
 }
 
 impl Default for Navigation {
@@ -202,13 +222,20 @@ impl Navigation {
             config,
             repeaters: [Repeater::default(); 4],
             pointer: true,
+            device: InputDevice::Mouse,
         }
+    }
+
+    pub fn device(&self) -> InputDevice {
+        self.device
     }
 
     pub fn read(&mut self, rl: &RaylibHandle) -> NavInput {
         if !self.config.enabled {
+            self.device = InputDevice::Mouse;
             return NavInput {
                 pointer: true,
+                device: InputDevice::Mouse,
                 ..NavInput::default()
             };
         }
@@ -235,6 +262,9 @@ impl Navigation {
             alt: once(&config.alt_keys),
             ..NavInput::default()
         };
+
+        let typed = input.any_key();
+        let mut padded = false;
 
         if config.gamepad
             && let Some(pad) = (0..GAMEPADS).find(|&pad| rl.is_gamepad_available(pad))
@@ -275,6 +305,7 @@ impl Navigation {
             input.log |= pressed(GAMEPAD_BUTTON_RIGHT_FACE_UP);
             input.skip_held = down(GAMEPAD_BUTTON_RIGHT_TRIGGER_2)
                 || rl.get_gamepad_axis_movement(pad, GamepadAxis::GAMEPAD_AXIS_RIGHT_TRIGGER) > 0.5;
+            padded = input.any_key() && !typed || input.skip_held;
         }
 
         let mouse_used = rl.get_mouse_delta() != Vector2::zero()
@@ -286,7 +317,17 @@ impl Navigation {
         } else if mouse_used {
             self.pointer = true;
         }
+
+        if padded {
+            self.device = InputDevice::Gamepad;
+        } else if typed {
+            self.device = InputDevice::Keyboard;
+        } else if mouse_used {
+            self.device = InputDevice::Mouse;
+        }
+
         input.pointer = self.pointer;
+        input.device = self.device;
         input
     }
 }

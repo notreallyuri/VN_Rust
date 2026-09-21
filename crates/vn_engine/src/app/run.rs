@@ -87,6 +87,22 @@ impl VnApp {
 
         self.settings.languages = self.languages.clone();
 
+        let mut prompts = crate::screens::keybinds::default_prompts(
+            &self.playing,
+            &self.rollback,
+            &self.navigation,
+        );
+        for token in self
+            .prompts
+            .tokens()
+            .map(str::to_string)
+            .collect::<Vec<_>>()
+        {
+            if let Some(prompt) = self.prompts.get(&token) {
+                prompts.insert(token, prompt.clone());
+            }
+        }
+
         let factory = DefaultScreens {
             title: self.title,
             save_menu: Rc::new(self.save_menu),
@@ -131,6 +147,18 @@ impl VnApp {
         manager.close_confirmation = self.close_confirmation;
         manager.show.tooltip_config = self.tooltips;
         manager.keybind_keys = self.keybinds.open_keys.clone();
+        manager.prompts = prompts;
+        if let Some(style) = self.cursor {
+            for kind in [
+                crate::ui::cursor::CursorKind::Arrow,
+                crate::ui::cursor::CursorKind::Hand,
+            ] {
+                let path = crate::ui::cursor::path(style.file(kind));
+                manager.show.resources.get_or_load(&path, &mut rl, &thread);
+            }
+            rl.hide_cursor();
+            manager.cursor = Some(style);
+        }
         manager.show.navigation = Navigation::new(self.navigation);
         manager.world.seen = SeenLines::load(
             manager
