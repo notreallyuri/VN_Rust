@@ -1900,7 +1900,9 @@ variables it interpolates. The menu renders it through the active catalog and th
 character registry, so the slots and their time stamps ("5 minutes ago", built from
 `Elapsed` and filled in by `ctx.message`) are in whatever language is on now, not the one
 the save was written in. Saves at `format_version` 1 have a `summary` string instead,
-which is shown as it was stored.
+which is shown as it was stored, and their log is brought forward on load: each line
+keeps the text it was shown with, as its source, with no story file behind it, so it
+reads exactly as it did and simply doesn't follow a language change.
 
 ### Autosave
 

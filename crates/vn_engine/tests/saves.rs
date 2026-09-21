@@ -710,3 +710,46 @@ fn failed_migration_reports_its_version() {
         "This save couldn't be updated for this version of the game."
     );
 }
+
+#[test]
+fn a_save_from_the_old_format_keeps_its_log() {
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let (vm, state) = played_game();
+    saves.save("1", &vm, &state).unwrap();
+
+    let path = dir.0.join("1.json");
+    let mut json: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+    let file = json.as_object_mut().unwrap();
+    file.insert("format_version".into(), 1.into());
+    file.insert("summary".into(), "middle line".into());
+    file.remove("point");
+    file.insert(
+        "log".into(),
+        serde_json::json!([
+            {"line": {"speaker": null, "text": "October, 1903."}},
+            {"line": {"speaker": "mary", "text": "Your hot water, miss."}},
+            {"choice": {"text": "Read everything first"}},
+        ]),
+    );
+    fs::write(&path, serde_json::to_string_pretty(&json).unwrap()).unwrap();
+
+    let file = saves
+        .read("1")
+        .expect("a save written before the log kept source text must still load");
+    assert_eq!(
+        file.format_version, SAVE_FORMAT_VERSION,
+        "and is brought up to date"
+    );
+    let shown: Vec<String> = file.log.iter().map(|e| e.said().text(None)).collect();
+    assert_eq!(
+        shown,
+        [
+            "October, 1903.",
+            "Your hot water, miss.",
+            "Read everything first"
+        ],
+        "old lines show exactly as they were written"
+    );
+}

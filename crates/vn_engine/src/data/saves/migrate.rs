@@ -151,5 +151,31 @@ impl SaveMigration<'_> {
 }
 
 pub(super) fn format_migrations() -> Migrations {
-    Migrations::default()
+    let mut migrations = Migrations::default();
+    migrations.add(1, |migration| {
+        migration.spoken_log();
+        Ok(())
+    });
+    migrations
+}
+
+impl SaveMigration<'_> {
+    fn spoken_log(&mut self) {
+        let Some(Json::Array(entries)) = self.json.get_mut("log") else {
+            return;
+        };
+        for entry in entries.iter_mut() {
+            let Json::Object(entry) = entry else {
+                continue;
+            };
+            for kind in ["line", "choice"] {
+                if let Some(Json::Object(fields)) = entry.get_mut(kind)
+                    && !fields.contains_key("source")
+                    && let Some(text) = fields.remove("text")
+                {
+                    fields.insert("source".into(), text);
+                }
+            }
+        }
+    }
 }
