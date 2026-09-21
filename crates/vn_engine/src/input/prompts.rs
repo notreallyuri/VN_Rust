@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::input::navigation::InputDevice;
+use crate::input::pad::{PadFamily, PadLabels};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Prompt {
@@ -35,6 +36,7 @@ impl Prompt {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Prompts {
     entries: BTreeMap<String, Prompt>,
+    pub pad_labels: PadLabels,
 }
 
 impl Prompts {
@@ -54,11 +56,22 @@ impl Prompts {
         self.entries.keys().map(String::as_str)
     }
 
-    pub fn fill(&self, template: &str, device: InputDevice) -> String {
-        let fields: Vec<(&str, &str)> = self
+    pub fn fill(&self, template: &str, device: InputDevice, pad: PadFamily) -> String {
+        let fields: Vec<(&str, String)> = self
             .entries
             .iter()
-            .map(|(token, prompt)| (token.as_str(), prompt.for_device(device)))
+            .map(|(token, prompt)| {
+                let label = prompt.for_device(device);
+                let label = match device {
+                    InputDevice::Gamepad => self.pad_labels.translate(label, pad),
+                    _ => label.to_string(),
+                };
+                (token.as_str(), label)
+            })
+            .collect();
+        let fields: Vec<(&str, &str)> = fields
+            .iter()
+            .map(|(token, label)| (*token, label.as_str()))
             .collect();
         crate::ui::labels::fill(template, &fields)
     }

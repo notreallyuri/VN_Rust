@@ -206,7 +206,8 @@ impl GameContext<'_> {
     }
 
     pub fn prompt(&self, text: &str) -> String {
-        self.prompts.fill(self.label(text), self.nav.device)
+        self.prompts
+            .fill(self.label(text), self.nav.device, self.nav.pad)
     }
 
     pub fn message(&self, text: &str, fields: &[(&str, &str)]) -> String {
@@ -291,6 +292,7 @@ pub struct DrawContext<'a> {
     pub modes: PlayModes,
     pub weather: Option<crate::frame::scenery::Weather>,
     pub device: crate::input::navigation::InputDevice,
+    pub pad: crate::input::pad::PadFamily,
     pub(crate) prompts: &'a crate::input::prompts::Prompts,
 }
 
@@ -308,7 +310,11 @@ impl DrawContext<'_> {
     }
 
     pub fn prompt(&self, text: &str) -> String {
-        self.prompts.fill(self.label(text), self.device)
+        self.prompts.fill(self.label(text), self.device, self.pad)
+    }
+
+    pub fn pad_label(&self, text: &str) -> String {
+        self.prompts.pad_labels.translate(text, self.pad)
     }
 
     pub fn message(&self, text: &str, fields: &[(&str, &str)]) -> String {

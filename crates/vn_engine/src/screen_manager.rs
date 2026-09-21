@@ -491,6 +491,7 @@ impl ScreenStateManager {
             modes: self.world.modes,
             weather: self.show.weather,
             device: self.frame.nav.device,
+            pad: self.frame.nav.pad,
             prompts: &self.prompts,
         }
     }

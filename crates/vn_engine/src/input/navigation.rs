@@ -21,6 +21,7 @@ impl InputDevice {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct NavInput {
     pub device: InputDevice,
+    pub pad: crate::input::pad::PadFamily,
     pub up: bool,
     pub down: bool,
     pub left: bool,
@@ -206,6 +207,7 @@ pub struct Navigation {
     repeaters: [Repeater; 4],
     pointer: bool,
     device: InputDevice,
+    pad: Option<(i32, crate::input::pad::PadFamily)>,
 }
 
 impl Default for Navigation {
@@ -223,7 +225,12 @@ impl Navigation {
             repeaters: [Repeater::default(); 4],
             pointer: true,
             device: InputDevice::Mouse,
+            pad: None,
         }
+    }
+
+    pub fn pad(&self) -> crate::input::pad::PadFamily {
+        self.pad.map(|(_, family)| family).unwrap_or_default()
     }
 
     pub fn device(&self) -> InputDevice {
@@ -269,6 +276,10 @@ impl Navigation {
         if config.gamepad
             && let Some(pad) = (0..GAMEPADS).find(|&pad| rl.is_gamepad_available(pad))
         {
+            if self.pad.is_none_or(|(index, _)| index != pad) {
+                let name = rl.get_gamepad_name(pad).unwrap_or_default();
+                self.pad = Some((pad, crate::input::pad::PadFamily::detect(&name)));
+            }
             use GamepadButton::*;
             let pressed = |button| rl.is_gamepad_button_pressed(pad, button);
             let down = |button| rl.is_gamepad_button_down(pad, button);
@@ -328,6 +339,7 @@ impl Navigation {
 
         input.pointer = self.pointer;
         input.device = self.device;
+        input.pad = self.pad();
         input
     }
 }

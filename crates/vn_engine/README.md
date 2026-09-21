@@ -1398,6 +1398,39 @@ The token is filled in *after* the text is translated, so a translator moves `{a
 wherever that language wants it, exactly like `{variable}` in dialogue. A token with no
 prompt behind it is left in the text rather than blanked, so a typo is visible.
 
+#### Which gamepad
+
+Gamepad wording is written in Xbox terms — `A`, `B`, `X`, `Y`, `LB`, `RB`, `LT`, `RT`,
+`LS`, `RS`, `Start`, `Select` — and translated to the pad that is actually connected,
+recognised from the name it reports:
+
+| Written | PlayStation (DualSense, DualShock) | Nintendo (Switch Pro, Joy-Con) |
+| --- | --- | --- |
+| `A` `B` `X` `Y` | Cross, Circle, Square, Triangle | B, A, Y, X |
+| `LB` `RB` `LT` `RT` | L1, R1, L2, R2 | L, R, ZL, ZR |
+| `Start` `Select` | Options, Create | +, - |
+
+Anything else keeps the Xbox names. Only whole button words change, so `RT (hold)`
+becomes `R2 (hold)` and `D-pad, left stick` is left alone. That applies to prompts and to
+the gamepad column of the controls overlay, including rows a game adds itself, so an
+existing `.row("E, Esc", "B", "Close")` is right on every pad without being rewritten.
+
+The Nintendo column is not a mistake. Buttons are matched by *position*, so the bottom
+face button that accepts is the one printed **B** on a Switch pad, and that is the label
+the player needs to find it.
+
+PlayStation symbols are spelled out because the bundled fonts have no ✕ ○ □ △. A game
+that ships a font with them can use them:
+
+```rust
+.pad_label(PadFamily::PlayStation, PadButton::FaceDown, "✕")
+.pad_label(PadFamily::PlayStation, PadButton::FaceRight, "○")
+```
+
+Labels given this way are added to the glyph atlas, so they draw as long as the font has
+them. `ctx.nav.pad` (and `DrawContext::pad`) is the `PadFamily` for a screen that wants
+to show a picture instead.
+
 `ctx.nav.device` (and `DrawContext::device`) is the `InputDevice` itself — `Mouse`,
 `Keyboard` or `Gamepad` — for a screen that wants to swap a whole glyph rather than a
 word. It changes on the first input of that kind: a gamepad button makes it `Gamepad`,
@@ -2265,7 +2298,7 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
 | `tests/assets.rs` | Folders and embedded files answering the same (reads, path normalization, listings), descriptions, a story loaded only from embedded files, which source a build picks |
 | `tests/dialogue_box.rs` | Per-character box styles layering over the game's base without altering it, a bust reserving room and moving the text, aspect ratio and floor placement, `rise`/`sink`, and a character with no bust |
-| `tests/prompts.rs` | Prompt tokens following the device, mouse wording falling back to the keyboard's, unknown tokens left visible, the hand cursor winning over the arrow, and cursor scaling and hotspots |
+| `tests/prompts.rs` | Pad families recognised from their reported names, a DualSense told to press Cross, Nintendo labels following button position, whole-word translation, symbol overrides per family; prompt tokens following the device, mouse wording falling back to the keyboard's, unknown tokens left visible, the hand cursor winning over the arrow, and cursor scaling and hotspots |
 | `tests/request.rs` | What a screen asks the manager for: overlay requests keeping their order, the last tooltip and toast of a frame winning, asking twice doing the work once, and a quiet frame asking for nothing |
 | `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups; weather staying on screen over a long run, replaying identically from the clock, spreading out with varied depth, capped counts, and absurd times |
 | `tests/shape.rs` | Corner outlines for each shape, round versus scooped hit tests, size capping and relative roundness, per-corner shapes, `PanelStyle`, the dialogue box's placement and the name plate |

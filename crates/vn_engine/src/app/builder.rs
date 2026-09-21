@@ -411,6 +411,16 @@ impl VnApp {
         self
     }
 
+    pub fn pad_label(
+        mut self,
+        family: crate::input::pad::PadFamily,
+        button: crate::input::pad::PadButton,
+        label: impl Into<String>,
+    ) -> Self {
+        self.prompts.pad_labels.set(family, button, label);
+        self
+    }
+
     pub fn cursor(mut self, style: crate::ui::cursor::CursorStyle) -> Self {
         self.cursor = Some(style);
         self

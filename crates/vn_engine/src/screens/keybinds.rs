@@ -477,8 +477,12 @@ impl Overlay for KeybindsOverlay {
 
                 for row in &section.rows {
                     let keys = ui::fit_text(fonts, &config.key_text, &row.keys, keys_width - 12.0);
-                    let gamepad =
-                        ui::fit_text(fonts, &config.key_text, &row.gamepad, pad_width - 12.0);
+                    let gamepad = ui::fit_text(
+                        fonts,
+                        &config.key_text,
+                        &ctx.pad_label(&row.gamepad),
+                        pad_width - 12.0,
+                    );
                     let action = ui::fit_text(
                         fonts,
                         &config.action_text,

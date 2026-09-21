@@ -92,6 +92,7 @@ impl VnApp {
             &self.rollback,
             &self.navigation,
         );
+        prompts.pad_labels = self.prompts.pad_labels.clone();
         for token in self
             .prompts
             .tokens()
@@ -183,6 +184,12 @@ impl VnApp {
                 manager.world.story.program(),
                 &catalogs,
             ));
+        let pad_glyphs: String = manager.prompts.pad_labels.overrides().collect();
+        manager
+            .show
+            .resources
+            .fonts
+            .extend_charset(pad_glyphs.chars());
         drop(catalogs);
         manager
             .show
