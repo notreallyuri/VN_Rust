@@ -223,9 +223,28 @@ else draws through, so it is cheaper now; the rest is additive.
 
 ### Extras
 
-- [ ] Persistent data across playthroughs, next to the existing `seen.json`: unlocked endings, CG and tracks
-- [ ] A CG gallery and a music room, as default screens a game can enable
-- [ ] Achievements with a toast on unlock, reusing `ScreenManager::notify`
+Galleries, music rooms and achievements are game features: every game designs its own,
+and the engine already has the pieces (custom screens, image maps, buttons, audio,
+`ctx.notify`). What the engine owes them is the two things a game can't build properly
+on its own — somewhere to keep data that outlives a playthrough, and a record of what the
+player has seen.
+
+- [ ] Storage that persists across playthroughs, typed like `GameState` but global:
+  `VnApp::persistent(T::default())` and `ctx.persistent.get_mut::<T>()`. It lives next
+  to `seen.json`, is written atomically, survives New Game and loading, is never part of
+  a save and is never rolled back. Today there is nowhere to put such data, which is why
+  the example's achievements are wrong: they live in `Journal`, registered with
+  `.state(...)`, so they are saved per slot and `Action::NewGame` wipes them with
+  `ctx.state.reset()`. `seen.json` becomes the engine's own use of the same mechanism
+  rather than a one-off
+- [ ] Records of what has ever been shown, kept by the engine the way it keeps seen
+  lines: backgrounds, character images and music tracks, in any playthrough, readable by
+  games. The engine sees every `show`, `background` and `music` as it happens; a game
+  would have to intercept each one itself. A gallery or a music room is then a custom
+  screen asking "has this been seen?"
+- [ ] Gallery, music room and achievements in the example, built from those two, as proof
+  the primitives are enough — and as recipes for the documentation site. Moving the
+  achievements onto persistent storage fixes them
 
 ### Accessibility
 
