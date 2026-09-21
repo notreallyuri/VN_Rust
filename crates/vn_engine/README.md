@@ -1442,19 +1442,28 @@ typing makes it `Keyboard`, and moving or clicking the mouse makes it `Mouse`.
 .cursor(CursorStyle::new("cursor.png").hand("cursor_hand.png").size(28.0))
 ```
 
-The system cursor is hidden and the picture is drawn above everything, from
-`<assets>/ui/` unless the name contains a `/`. `size(px)` is its height; the width
-follows the picture's ratio. `hotspot(x, y)` is the point that sits on the pointer, as a
-fraction of the picture — the default `(0, 0)` is the top-left corner, `(0.5, 0.5)`
-centres it.
+The picture becomes the operating system's cursor, not something the game draws. That is
+what makes it feel native: the OS moves it at the display's refresh with the latest
+pointer position, independently of the game loop, so it never trails a frame behind. It
+also stays out of the picture — screen shake, shader passes and supersampling apply to
+the game, never to the pointer.
+
+Files come from `<assets>/ui/` unless the name contains a `/`. `size(px)` is its height
+at the design size, and it is rebuilt when the window's scale changes, so it grows with
+the game like the rest of the interface: 28 px in a 720p window is 84 px at 4K (never
+under 8 or over 256). The width follows the picture's ratio. `hotspot(x, y)` is the point
+that clicks, as a fraction of the picture — the default `(0, 0)` is the top-left corner.
 
 With a `hand` picture, the cursor changes over anything clickable: buttons ask for it
-while hovered (through the same request list screens use for everything else), and the
+while hovered, through the same request list screens use for everything else, and the
 hand wins if anything in the frame asked for it. A custom screen asks with
 `ctx.cursor(CursorKind::Hand)`.
 
-The cursor is drawn only while the mouse is the last thing used, so it disappears when
-the player picks up a gamepad and comes back when they touch the mouse.
+It is hidden while the keyboard or a gamepad is in use and comes back when the mouse
+moves. A picture that can't be read logs a warning and leaves the system cursor alone.
+
+This uses GLFW's custom cursors, which raylib's desktop build includes, so it works on
+Windows, macOS, and Linux under X11 and Wayland.
 
 `NavigationConfig` (`.navigation(|n| ...)`):
 
@@ -2298,7 +2307,7 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/settings.rs` | Settings files, the typewriter, text speeds, slider positions and arrow-key steps for each row, slider math, tooltip timing, when closing the window asks |
 | `tests/assets.rs` | Folders and embedded files answering the same (reads, path normalization, listings), descriptions, a story loaded only from embedded files, which source a build picks |
 | `tests/dialogue_box.rs` | Per-character box styles layering over the game's base without altering it, a bust reserving room and moving the text, aspect ratio and floor placement, `rise`/`sink`, and a character with no bust |
-| `tests/prompts.rs` | Pad families recognised from their reported names, a DualSense told to press Cross, Nintendo labels following button position, whole-word translation, symbol overrides per family; prompt tokens following the device, mouse wording falling back to the keyboard's, unknown tokens left visible, the hand cursor winning over the arrow, and cursor scaling and hotspots |
+| `tests/prompts.rs` | Pad families recognised from their reported names, a DualSense told to press Cross, Nintendo labels following button position, whole-word translation, symbol overrides per family; prompt tokens following the device, mouse wording falling back to the keyboard's, unknown tokens left visible, the hand cursor winning over the arrow, and the cursor's size in window pixels, growing with the window and clamped to what the OS accepts |
 | `tests/request.rs` | What a screen asks the manager for: overlay requests keeping their order, the last tooltip and toast of a frame winning, asking twice doing the work once, and a quiet frame asking for nothing |
 | `tests/scenery.rs` | Background motion over a period, letterbox slide-in and bars, the `Scenery` builder, main menu buttons in the bottom bar with separators, HUD groups; weather staying on screen over a long run, replaying identically from the clock, spreading out with varied depth, capped counts, and absurd times |
 | `tests/shape.rs` | Corner outlines for each shape, round versus scooped hit tests, size capping and relative roundness, per-corner shapes, `PanelStyle`, the dialogue box's placement and the name plate |

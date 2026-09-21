@@ -87,25 +87,55 @@ fn a_hand_anywhere_in_the_frame_beats_the_arrow() {
 }
 
 #[test]
-fn the_cursor_is_scaled_to_its_size_and_hung_from_its_hotspot() {
-    let style = CursorStyle::new("arrow.png").size(32.0);
-    let natural = Vector2::new(64.0, 128.0);
+fn the_cursor_is_sized_in_window_pixels_and_grows_with_the_window() {
+    let style = CursorStyle::new("arrow.png")
+        .size(28.0)
+        .hotspot(0.128, 0.094);
+    let natural = Vector2::new(47.0, 64.0);
 
-    let tip = style.rect(Vector2::new(100.0, 200.0), natural);
-    assert_eq!(tip.height, 32.0, "height is the size asked for");
-    assert_eq!(tip.width, 16.0, "and the width keeps the ratio");
+    let native = style.pixels(natural, 1.0);
     assert_eq!(
-        (tip.x, tip.y),
-        (100.0, 200.0),
-        "the default hotspot is the corner"
+        native.height, 28,
+        "at the design size it is the size asked for"
+    );
+    assert_eq!(native.width, 21, "and the width keeps the picture's ratio");
+    assert_eq!(
+        (native.hot_x, native.hot_y),
+        (3, 3),
+        "the hotspot lands on the tip"
     );
 
-    let centred = CursorStyle::new("arrow.png").size(32.0).hotspot(0.5, 0.5);
-    let middle = centred.rect(Vector2::new(100.0, 200.0), natural);
+    let four_k = style.pixels(natural, 3.0);
     assert_eq!(
-        (middle.x, middle.y),
-        (92.0, 184.0),
-        "a centred hotspot sits on the point"
+        four_k.height, 84,
+        "a 4K window gets a cursor three times as tall"
+    );
+    assert_eq!((four_k.hot_x, four_k.hot_y), (8, 8));
+}
+
+#[test]
+fn a_cursor_size_stays_within_what_the_os_will_accept() {
+    let tiny = CursorStyle::new("a.png")
+        .size(1.0)
+        .pixels(Vector2::new(10.0, 10.0), 1.0);
+    assert_eq!(tiny.height, 8);
+    let huge = CursorStyle::new("a.png")
+        .size(400.0)
+        .pixels(Vector2::new(10.0, 10.0), 4.0);
+    assert_eq!(huge.height, 256);
+    let broken = CursorStyle::new("a.png")
+        .size(28.0)
+        .pixels(Vector2::new(10.0, 10.0), f32::NAN);
+    assert_eq!(
+        broken.height, 28,
+        "a bad scale falls back to the design size"
+    );
+    let corner = CursorStyle::new("a.png")
+        .hotspot(1.0, 1.0)
+        .pixels(Vector2::new(10.0, 10.0), 1.0);
+    assert!(
+        corner.hot_x < corner.width && corner.hot_y < corner.height,
+        "hotspot stays inside"
     );
 }
 

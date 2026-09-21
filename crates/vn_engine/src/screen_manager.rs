@@ -106,7 +106,7 @@ pub struct ScreenStateManager {
     pub close_confirmation: Option<String>,
     pub keybind_keys: Vec<KeyboardKey>,
     pub prompts: crate::input::prompts::Prompts,
-    pub cursor: Option<crate::ui::cursor::CursorStyle>,
+    pub(crate) cursor: Option<crate::ui::cursor::HardwareCursor>,
     script_errors: Option<ScriptErrors>,
     text_request: Option<TextRequest>,
     confirm_request: Option<Confirm>,
@@ -299,6 +299,10 @@ impl ScreenStateManager {
             errors.toggle();
         }
 
+        if let Some(cursor) = &mut self.cursor {
+            cursor.update(rl, self.frame.cursor, self.frame.nav.device);
+        }
+
         if self.world.settings.values.fullscreen != self.frame.fullscreen {
             rl.toggle_borderless_windowed();
             self.frame.fullscreen = self.world.settings.values.fullscreen;
@@ -384,31 +388,6 @@ impl ScreenStateManager {
         {
             crate::ui::tooltip::draw_tooltip(d, ctx.fonts(), text, config);
         }
-
-        self.draw_cursor(d);
-    }
-
-    fn draw_cursor(&self, d: &mut RaylibDrawHandle) {
-        let Some(style) = &self.cursor else {
-            return;
-        };
-        if self.frame.nav.device != crate::input::navigation::InputDevice::Mouse {
-            return;
-        }
-        let path = crate::ui::cursor::path(style.file(self.frame.cursor));
-        let Some(texture) = self.show.resources.texture(&path) else {
-            return;
-        };
-        let natural = Vector2::new(texture.width as f32, texture.height as f32);
-        let at = crate::frame::viewport::mouse_position(d);
-        d.draw_texture_pro(
-            texture,
-            Rectangle::new(0.0, 0.0, natural.x, natural.y),
-            style.rect(at, natural),
-            Vector2::zero(),
-            0.0,
-            Color::WHITE,
-        );
     }
 
     fn capture_thumbnail(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {

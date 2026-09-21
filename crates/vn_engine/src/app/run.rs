@@ -150,15 +150,10 @@ impl VnApp {
         manager.keybind_keys = self.keybinds.open_keys.clone();
         manager.prompts = prompts;
         if let Some(style) = self.cursor {
-            for kind in [
-                crate::ui::cursor::CursorKind::Arrow,
-                crate::ui::cursor::CursorKind::Hand,
-            ] {
-                let path = crate::ui::cursor::path(style.file(kind));
-                manager.show.resources.get_or_load(&path, &mut rl, &thread);
+            match crate::ui::cursor::HardwareCursor::load(style, manager.show.resources.assets()) {
+                Ok(cursor) => manager.cursor = Some(cursor),
+                Err(e) => eprintln!("⚠️ Could not load the cursor ({}); using the system one", e),
             }
-            rl.hide_cursor();
-            manager.cursor = Some(style);
         }
         manager.show.navigation = Navigation::new(self.navigation);
         manager.world.seen = SeenLines::load(
