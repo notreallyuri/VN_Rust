@@ -62,6 +62,8 @@ impl ScreenFactory for DefaultScreens {
                 SaveMenuMode::Load,
             ))),
             ScreenState::TextInput => Some(Box::new(TextInputScreen::new(self.text_input.clone()))),
+            #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+            ScreenState::Video => Some(Box::new(crate::video::VideoScreen::new())),
             ScreenState::Settings => Some(Box::new(SettingsScreen::new(self.settings.clone()))),
             _ => None,
         }

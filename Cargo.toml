@@ -21,3 +21,6 @@ vn_build = { path = "crates/vn_build" }
 raylib = "5.5.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
+
+[profile.dev.package.rav1d]
+opt-level = 3

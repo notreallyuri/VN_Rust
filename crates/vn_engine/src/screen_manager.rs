@@ -37,6 +37,8 @@ pub fn close_needs_confirmation(state: &ScreenState, story: &StoryVm) -> bool {
     match state {
         ScreenState::StartScreen | ScreenState::MainMenu | ScreenState::Quit => false,
         ScreenState::Playing | ScreenState::TextInput => !ended,
+        #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+        ScreenState::Video => !ended,
         _ => story.current().is_some() && !ended,
     }
 }
@@ -109,6 +111,9 @@ pub struct ScreenStateManager {
     pub prompts: crate::input::prompts::Prompts,
     pub(crate) pointer: Option<crate::ui::cursor::Pointer>,
     script_errors: Option<ScriptErrors>,
+    autosave_pending: bool,
+    #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+    video_request: Option<crate::video::VideoRequest>,
     text_request: Option<TextRequest>,
     confirm_request: Option<Confirm>,
 }
@@ -190,6 +195,9 @@ impl ScreenStateManager {
             prompts: Default::default(),
             pointer: Some(crate::ui::cursor::Pointer::system()),
             script_errors: None,
+            autosave_pending: false,
+            #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+            video_request: None,
             text_request: None,
             confirm_request: None,
         })
@@ -201,6 +209,10 @@ impl ScreenStateManager {
         self.show.resources.load_requested(rl, thread);
         self.frame.nav = self.show.navigation.read(rl);
         let mut requests = crate::request::Requests::default();
+
+        self.screens
+            .current
+            .set_paused(!self.screens.overlays.is_empty(), now);
 
         let ctx = GameContext {
             rl,
@@ -218,6 +230,9 @@ impl ScreenStateManager {
             effects: &mut self.show.effects,
             weather: &mut self.show.weather,
             post: &mut self.show.post,
+            autosave_pending: &mut self.autosave_pending,
+            #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+            video_request: &mut self.video_request,
             text_request: &mut self.text_request,
             confirm_request: &mut self.confirm_request,
             thumbnail: self.frame.thumbnail.as_ref(),
@@ -296,6 +311,9 @@ impl ScreenStateManager {
             self.frame.closing = false;
         }
 
+        self.screens
+            .current
+            .set_paused(!self.screens.overlays.is_empty(), now);
         self.update_music(rl.get_frame_time());
 
         if let Some(errors) = &mut self.script_errors
@@ -327,9 +345,16 @@ impl ScreenStateManager {
         };
 
         let settings = &self.world.settings.values;
+        let music_gain = settings.music_gain();
+        #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+        let music_gain = if self.screens.showing == ScreenState::Video {
+            0.0
+        } else {
+            music_gain
+        };
         self.show
             .audio
-            .set_volumes(settings.music_gain(), settings.sound_gain());
+            .set_volumes(music_gain, settings.sound_gain());
         self.show.audio.set_voice_volume(settings.voice_gain());
         self.show.audio.play_music(wanted.as_deref());
         self.show.audio.update(dt);
@@ -430,6 +455,10 @@ impl ScreenStateManager {
     }
 
     pub fn autosave(&self) {
+        #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+        if self.screens.showing == ScreenState::Video {
+            return;
+        }
         crate::data::saves::autosave(
             &self.world.saves,
             crate::data::saves::SaveParts {
@@ -528,6 +557,12 @@ impl ScreenStateManager {
         #[cfg(feature = "character-visuals")]
         self.show.resources.visuals.reset();
 
+        #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+        if self.screens.showing == ScreenState::Video {
+            self.video_request = None;
+            self.transition_to(ScreenState::Playing);
+        }
+
         if self.screens.showing == ScreenState::Playing
             && let Some(screen) = self.screens.factory.create_screen(&ScreenState::Playing)
         {
@@ -606,7 +641,13 @@ impl ScreenStateManager {
                 self.screens.cursor_override = None;
                 self.frame.changed = true;
             }
-            None => eprintln!("⚠️ No screen registered for {:?}", next_state),
+            None => {
+                eprintln!("⚠️ No screen registered for {:?}", next_state);
+                #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+                if next_state == ScreenState::Video {
+                    self.video_request = None;
+                }
+            }
         }
     }
 }

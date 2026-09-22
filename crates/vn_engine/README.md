@@ -2147,6 +2147,112 @@ From code, `ctx.play_sound(id)` plays a sound (from a command, say) and `ctx.mus
 track playing. `Audio` holds the device, streams and cached sounds; the audio device is
 opened once and kept for the whole program.
 
+## Video playback
+
+Video dependencies are optional. Enable `video` for the Rust AV1/Vorbis backend
+(`video-portable` without x86 SIMD), or `video-ffmpeg` for the FFmpeg backend. If both are enabled, FFmpeg is selected; there
+is no automatic fallback after a decoding error. With neither enabled, the engine
+has no video decoder dependency.
+
+```toml
+vn_engine = { path = "../VN_Rust/crates/vn_engine", features = ["video"] }
+```
+
+The Rust backend decodes in software on every platform, including macOS, with
+rav1d's SIMD code. On x86/x86-64 that needs [nasm](https://www.nasm.us/) at build
+time (`pacman -S nasm`, `apt install nasm`, `brew install nasm`); ARM64 needs only
+the C compiler. `video-portable` is the same backend without x86 SIMD, for building
+where nasm is unavailable; it decodes several times slower, so don't ship it.
+Decoding uses one thread fewer than the machine has cores, between two and four.
+The workspace builds rav1d at `opt-level = 3` even in debug profiles, so a game
+using this engine as a path dependency should add the same to its own workspace
+manifest:
+
+```toml
+[profile.dev.package.rav1d]
+opt-level = 3
+```
+
+Register a command using the existing story command system:
+
+```rust
+use vn_engine::video::VideoRequest;
+
+let app = app.command("video", |ctx, (file,): (String,)| {
+    ctx.play_video(VideoRequest::new(format!("videos/{file}")))
+});
+```
+
+```story
+scene opening:
+  call video opening.webm
+  "The story continues after the movie."
+```
+
+Paths are relative to the asset root. `VideoRequest` supports `.skippable(false)`,
+`.volume(0.5)` and `.after(ScreenState::MainMenu)`; its default destination is
+`Playing`. Click, Enter, Escape or gamepad A/B skips a skippable movie. Space or
+Start pauses/resumes it. Overlays, including the window-close confirmation, pause
+playback. Closing the window during a movie asks for confirmation, as it does during
+the story. "Loading video…" appears only if a movie takes more than half a second to
+start. The default cutscene screen has no save/load or rollback controls.
+
+Starting a movie stops voice playback and establishes a rollback barrier. A scene
+that opens with a movie still autosaves at its first line after the movie. Music
+continues underneath at zero volume and becomes audible again when the cutscene
+ends. Movie audio uses the sound-volume setting. Autosave is suppressed while the
+video screen is active, including on quit; the previous autosave is preserved.
+An earlier save replays the command when reached again. Movie positions and decoder
+state are not serialized. Successful story hot reload cancels the current movie.
+Missing, malformed or unsupported movies display an error notification and return
+to the requested screen. A custom `ScreenFactory` that returns no screen for
+`ScreenState::Video` skips the movie with a console warning.
+
+The Rust backend accepts AV1 in WebM/Matroska, with optional mono/stereo Vorbis
+audio at 8–192 kHz. Laced audio blocks, which mkvmerge writes by default, are
+supported. Video must be 8-bit SDR YUV420/422/444 using BT.601 or BT.709.
+Opus requires the FFmpeg feature. A baseline export is:
+
+```sh
+ffmpeg -i input.mov -c:v libaom-av1 -crf 30 -b:v 0 -pix_fmt yuv420p -c:a libvorbis -ac 2 opening.webm
+```
+
+FFmpeg supports the codecs available in the linked build, with an engine-enforced
+exception: **H.264 and H.265/HEVC are rejected on desktop**, including inside MP4 or
+Matroska. Changing the filename does not bypass the check. The policy reserves
+those codecs for browser WASM targets; browser video playback itself is not yet
+implemented, and WASI does not receive the exception. VP9/Opus WebM and AV1/Vorbis
+WebM are exercised by the decoder tests.
+
+`video-ffmpeg` links to FFmpeg 9 development libraries through `ffmpeg-next`; it does
+not download, trim or bundle FFmpeg. Linux needs matching development libraries,
+`pkg-config` and libclang. Windows/macOS also need a compatible FFmpeg development
+installation; follow the binding's build instructions for the chosen toolchain.
+Distribute matching runtime libraries with the game. Use an appropriate LGPL build
+and follow [FFmpeg's distribution guidance](https://www.ffmpeg.org/legal.html).
+The runtime codec restriction does not change the license of the linked libraries.
+
+Both backends decode on a worker thread and share bounded buffering (half a second
+of video and audio ahead, at most 64 MiB of frames), a bilinear-filtered letterboxed
+texture, streamed stereo PCM and a clock driven by the audio callback’s sample count. Silent
+playback uses a monotonic clock. This first implementation converts pixels to RGBA
+on the CPU, supports up to 4096×2160 pixels, and expects interleaved local media.
+HDR tone mapping, rotation metadata, subtitles, seeking, looping and GPU decoding
+are not implemented. The Rust backend reads embedded bytes directly; FFmpeg stages
+embedded media in an automatically removed temporary file, requiring writable temp
+storage. Folder assets are opened directly by both backends.
+
+Run the small playback example:
+
+```sh
+cargo run -p vn_engine --example video --features video
+cargo run -p vn_engine --example video --features video-ffmpeg -- vp9-opus.webm
+```
+
+The example also accepts `--embedded`, `--silent` and `--smoke` (muted audio and
+exit after returning to the story). The fixtures are generated test patterns and
+a sine wave, with generation instructions beside them.
+
 ## Lower level: ScreenStateManager
 
 `VnApp` is built on `ScreenStateManager`, which a game can drive itself for a custom loop:

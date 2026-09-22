@@ -58,7 +58,7 @@ impl PlayingScreen {
                 Event::Sound { id } => ctx.play_sound(&id),
                 Event::Voice { id } => ctx.audio.play_voice(&id),
                 Event::SceneEnter { scene } => {
-                    self.autosave_pending = true;
+                    *ctx.autosave_pending = true;
                     if let Some(next) = ctx.run_scene_hooks(&scene) {
                         return Some(next);
                     }
@@ -77,7 +77,7 @@ impl PlayingScreen {
                     self.show(event, Some(typed));
                     ctx.rollback
                         .record_with_log(ctx.story, ctx.state, Some(ctx.log.len()));
-                    if std::mem::take(&mut self.autosave_pending) {
+                    if std::mem::take(ctx.autosave_pending) {
                         ctx.autosave();
                     }
                     return None;

@@ -38,6 +38,9 @@ pub struct GameContext<'a> {
     pub(crate) commands: Rc<Commands>,
     pub(crate) hooks: Rc<Hooks>,
     pub(crate) requests: &'a mut crate::request::Requests,
+    pub(crate) autosave_pending: &'a mut bool,
+    #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+    pub(crate) video_request: &'a mut Option<crate::video::VideoRequest>,
     pub(crate) text_request: &'a mut Option<TextRequest>,
     pub(crate) confirm_request: &'a mut Option<Confirm>,
     pub(crate) thumbnail: Option<&'a Image>,
@@ -53,6 +56,15 @@ pub struct GameContext<'a> {
 }
 
 impl GameContext<'_> {
+    #[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+    pub fn play_video(&mut self, request: crate::video::VideoRequest) -> Option<ScreenState> {
+        self.audio.stop_voice();
+        self.modes.skip = false;
+        self.rollback.mark_barrier();
+        *self.video_request = Some(request);
+        Some(ScreenState::Video)
+    }
+
     pub fn open_overlay(&mut self, name: impl Into<String>) {
         self.requests
             .push(Request::Overlay(OverlayRequest::Open(name.into())));

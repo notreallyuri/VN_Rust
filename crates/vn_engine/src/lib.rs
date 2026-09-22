@@ -11,6 +11,8 @@ pub mod screen;
 pub mod screen_manager;
 pub mod screens;
 pub mod ui;
+#[cfg(any(feature = "video-portable", feature = "video-ffmpeg"))]
+pub mod video;
 
 pub mod prelude {
     pub use crate::action::Action;
