@@ -1,6 +1,8 @@
+use std::cell::Cell;
 use std::collections::VecDeque;
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{LazyLock, Mutex};
+use std::time::Instant;
 
 use raylib::ffi;
 
@@ -9,6 +11,23 @@ use super::decode::{Result, error};
 static ACTIVE: Mutex<Option<Pcm>> = Mutex::new(None);
 static PLAYED: AtomicU64 = AtomicU64::new(0);
 static CLOCK: AtomicU64 = AtomicU64::new(0);
+static CHUNK: AtomicU64 = AtomicU64::new(0);
+static CALLED_AT: AtomicU64 = AtomicU64::new(0);
+static EPOCH: LazyLock<Instant> = LazyLock::new(Instant::now);
+
+fn nanos() -> u64 {
+    EPOCH.elapsed().as_nanos() as u64
+}
+
+fn smoothed(frames: u64, chunk: u64, elapsed: f64, rate: u32, playing: bool) -> f64 {
+    let rate = f64::from(rate);
+    let ahead = if playing {
+        elapsed.clamp(0.0, chunk as f64 / rate)
+    } else {
+        0.0
+    };
+    frames as f64 / rate + ahead
+}
 
 struct Pcm {
     rate: u32,
@@ -85,6 +104,8 @@ unsafe extern "C" fn render(buffer: *mut std::ffi::c_void, frames: u32) {
         pcm.render(at, output);
     }
     PLAYED.store(at + frames as u64, Ordering::Release);
+    CHUNK.store(frames as u64, Ordering::Relaxed);
+    CALLED_AT.store(nanos(), Ordering::Relaxed);
     CLOCK.store(at, Ordering::Release);
 }
 
@@ -93,6 +114,7 @@ pub(super) struct Sound {
     rate: u32,
     started: bool,
     paused: bool,
+    last_clock: Cell<f64>,
 }
 
 impl Sound {
@@ -105,6 +127,7 @@ impl Sound {
             *active = Some(Pcm::new(rate));
         }
         PLAYED.store(0, Ordering::Release);
+        CHUNK.store(0, Ordering::Relaxed);
         CLOCK.store(0, Ordering::Release);
         let stream = unsafe { ffi::LoadAudioStream(rate, 32, 2) };
         if !unsafe { ffi::IsAudioStreamValid(stream) } {
@@ -120,6 +143,7 @@ impl Sound {
             rate,
             started: false,
             paused: false,
+            last_clock: Cell::new(0.0),
         })
     }
 
@@ -185,7 +209,19 @@ impl Sound {
     }
 
     pub fn clock(&self) -> f64 {
-        CLOCK.load(Ordering::Acquire) as f64 / self.rate as f64
+        let frames = CLOCK.load(Ordering::Acquire);
+        let elapsed = nanos().saturating_sub(CALLED_AT.load(Ordering::Relaxed)) as f64 / 1e9;
+        let chunk = CHUNK.load(Ordering::Relaxed);
+        let now = smoothed(
+            frames,
+            chunk,
+            elapsed,
+            self.rate,
+            self.started && !self.paused,
+        );
+        let clock = self.last_clock.get().max(now);
+        self.last_clock.set(clock);
+        clock
     }
 
     pub fn pause(&mut self, paused: bool) {
@@ -244,6 +280,15 @@ mod tests {
         assert!(sound.clock() > paused);
         drop(sound);
         assert!(Sound::new(48000).is_ok());
+    }
+
+    #[test]
+    fn clock_fills_gaps_between_callbacks_without_passing_the_chunk() {
+        assert_eq!(smoothed(1000, 500, 0.0, 1000, true), 1.0);
+        assert_eq!(smoothed(1000, 500, 0.25, 1000, true), 1.25);
+        assert_eq!(smoothed(1000, 500, 2.0, 1000, true), 1.5);
+        assert_eq!(smoothed(1000, 500, 0.25, 1000, false), 1.0);
+        assert_eq!(smoothed(1000, 500, -1.0, 1000, true), 1.0);
     }
 
     #[test]

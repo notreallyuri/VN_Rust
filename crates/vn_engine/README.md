@@ -2234,7 +2234,8 @@ The runtime codec restriction does not change the license of the linked librarie
 
 Both backends decode on a worker thread and share bounded buffering (half a second
 of video and audio ahead, at most 64 MiB of frames), a bilinear-filtered letterboxed
-texture, streamed stereo PCM and a clock driven by the audio callback’s sample count. Silent
+texture, streamed stereo PCM and a clock driven by the audio callback’s sample count,
+interpolated between callbacks so it advances every frame. Silent
 playback uses a monotonic clock. This first implementation converts pixels to RGBA
 on the CPU, supports up to 4096×2160 pixels, and expects interleaved local media.
 HDR tone mapping, rotation metadata, subtitles, seeking, looping and GPU decoding
