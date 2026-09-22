@@ -60,6 +60,7 @@ pub struct World {
     pub rollback: Rollback,
     pub log: SessionLog,
     pub seen: SeenLines,
+    pub persistent: crate::data::persistent::Persistent,
     pub modes: PlayModes,
 }
 
@@ -167,6 +168,7 @@ impl ScreenStateManager {
                 rollback: Rollback::default(),
                 log: SessionLog::default(),
                 seen: SeenLines::in_memory(),
+                persistent: crate::data::persistent::Persistent::in_memory(),
                 modes: PlayModes::default(),
             },
             show: Presentation {
@@ -242,6 +244,7 @@ impl ScreenStateManager {
             log: &mut self.world.log,
             modes: &mut self.world.modes,
             seen: &mut self.world.seen,
+            persistent: &mut self.world.persistent,
         };
 
         let next_state = match self.screens.overlays.last_mut() {
@@ -315,6 +318,7 @@ impl ScreenStateManager {
             .current
             .set_paused(!self.screens.overlays.is_empty(), now);
         self.update_music(rl.get_frame_time());
+        self.world.persistent.save_if_due(now);
 
         if let Some(errors) = &mut self.script_errors
             && rl.is_key_pressed(SCRIPT_ERRORS_KEY)
@@ -496,6 +500,7 @@ impl ScreenStateManager {
             resources: &self.show.resources,
             story: &self.world.story,
             state: &self.world.state,
+            persistent: &self.world.persistent,
             saves: &self.world.saves,
             characters: &self.world.characters,
             settings: &self.world.settings.values,

@@ -170,6 +170,14 @@ impl VnApp {
                 .dir()
                 .join(crate::data::session::SEEN_FILE_NAME),
         );
+        manager.world.persistent = self.persistent;
+        manager.world.persistent.load(
+            manager
+                .world
+                .saves
+                .dir()
+                .join(crate::data::persistent::PERSISTENT_FILE_NAME),
+        );
         manager.show.audio = Audio::new(manager.show.resources.assets().clone(), self.audio);
 
         let catalogs: Vec<vn_script::Catalog> = self
@@ -373,6 +381,7 @@ impl VnApp {
 
         manager.autosave();
         manager.world.seen.save();
+        manager.world.persistent.save();
         Ok(())
     }
 }

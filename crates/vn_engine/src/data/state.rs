@@ -159,6 +159,23 @@ impl GameState {
         Ok(PendingState { values, report })
     }
 
+    pub(crate) fn restore(&mut self, saved: &BTreeMap<String, Json>) -> Vec<StateError> {
+        let mut failed = Vec::new();
+        for (key, entry) in &mut self.entries {
+            if let Some(json) = saved.get(key) {
+                match (entry.load)(json.clone()) {
+                    Ok(value) => entry.value = value,
+                    Err(source) => failed.push(StateError {
+                        key: key.clone(),
+                        source,
+                    }),
+                }
+            }
+        }
+        failed.sort_by(|a, b| a.key.cmp(&b.key));
+        failed
+    }
+
     pub fn apply(&mut self, pending: PendingState) -> StateLoadReport {
         for (key, value) in pending.values {
             if let Some(entry) = self.entries.get_mut(&key) {

@@ -61,6 +61,7 @@ pub struct VnApp {
     pub(super) overrides: HashMap<ScreenState, ScreenBuilder>,
     pub(super) overlays: HashMap<String, OverlayBuilder>,
     pub(super) state: GameState,
+    pub(super) persistent: crate::data::persistent::Persistent,
     pub(super) commands: Commands,
     pub(super) hooks: Hooks,
     pub(super) saves_dir: Option<PathBuf>,
@@ -122,6 +123,7 @@ impl VnApp {
             overrides: HashMap::new(),
             overlays: HashMap::new(),
             state: GameState::default(),
+            persistent: crate::data::persistent::Persistent::in_memory(),
             commands: Commands::default(),
             hooks: Hooks::default(),
             saves_dir: None,
@@ -495,6 +497,14 @@ impl VnApp {
         T: Clone + serde::Serialize + serde::de::DeserializeOwned + 'static,
     {
         self.state.insert(initial);
+        self
+    }
+
+    pub fn persistent<T>(mut self, initial: T) -> Self
+    where
+        T: Clone + serde::Serialize + serde::de::DeserializeOwned + 'static,
+    {
+        self.persistent.insert(initial);
         self
     }
 

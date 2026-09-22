@@ -6,7 +6,21 @@ use serde::{Deserialize, Serialize};
 pub struct Journal {
     notes: Vec<String>,
     decisions: Vec<String>,
-    achievements: BTreeSet<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct Achievements {
+    unlocked: BTreeSet<String>,
+}
+
+impl Achievements {
+    pub fn unlock(&mut self, key: &str) -> bool {
+        self.unlocked.insert(key.to_string())
+    }
+
+    pub fn unlocked(&self) -> impl Iterator<Item = &str> {
+        self.unlocked.iter().map(String::as_str)
+    }
 }
 
 impl Journal {
@@ -22,10 +36,6 @@ impl Journal {
         self.decisions.push(text.to_string());
     }
 
-    pub fn unlock(&mut self, key: &str) -> bool {
-        self.achievements.insert(key.to_string())
-    }
-
     pub fn notes(&self) -> impl Iterator<Item = &str> {
         self.notes.iter().map(String::as_str)
     }
@@ -33,10 +43,6 @@ impl Journal {
     pub fn recent_decisions(&self, count: usize) -> impl Iterator<Item = &str> {
         let skip = self.decisions.len().saturating_sub(count);
         self.decisions.iter().skip(skip).map(String::as_str)
-    }
-
-    pub fn achievements(&self) -> impl Iterator<Item = &str> {
-        self.achievements.iter().map(String::as_str)
     }
 }
 

@@ -197,11 +197,13 @@ fn menu_items_can_be_disabled() {
     let mut story = StoryVm::from_source("scene a:\n  \"hi\"\n");
     let state = GameState::default();
     let settings = Settings::default();
+    let persistent = vn_engine::data::persistent::Persistent::in_memory();
 
     let view = |story: &StoryVm| {
         let view = GameView {
             story,
             state: &state,
+            persistent: &persistent,
             saves: &saves,
             settings: &settings,
         };

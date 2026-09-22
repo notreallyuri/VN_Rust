@@ -62,6 +62,7 @@ Where each feature is used, so the example can be read as a reference.
 | Validation, `vn check`, schema export | The story is checked at startup; `assets/schema.json` is refreshed in debug builds for `vn check` |
 | Commands with typed arguments | `give_item`, `ask_name`, `note`, `unlock`, `search` and `assemble` in `src/main.rs` |
 | Game state by type | `Evidence` (`src/evidence.rs`), `Journal` (`src/journal.rs`) and `Desk` (`src/desk.rs`: what has been examined, and what goes in the report), saved with the game |
+| Persistent storage | `Achievements` (`src/journal.rs`), registered with `.persistent(...)`: shared by every save slot, kept through New Game and loading, and written to `persistent.json` beside the saves |
 | Text input | `ask_name` opens the engine's text input screen, pre-filled with "Archivist" |
 | Hooks | `on_scene_enter` announces each chapter as a notification; `on_choice` records every decision in the journal |
 | Custom screens and overlays | Evidence (a screen, HUD button or E), Case file (an overlay: variables, notes, recent decisions, what is going in the report), Credits (ending reached, achievements), the study (`src/screens/search.rs`) and the report desk (`src/screens/report_desk.rs`) |
@@ -69,7 +70,7 @@ Where each feature is used, so the example can be read as a reference.
 | Drag and drop | `call assemble` opens the report desk (`src/screens/report_desk.rs`): every filed item is a card to drag into "Report 222" or "Back in Box 14". The report tray refuses Box 14 itself (`DropTarget::accepts`), and says so; the cards' places come from `Desk`, so a drop is a change to the game's own state |
 | HUD buttons | Evidence and Case file as small plates at the top-right (a `hud_group("top", ..)`), Log, Auto and Menu as a quiet row of icon labels under the dialogue box (`hud_layout` anchored at the bottom) |
 | Title card and main menu | One shot for both: the title background slowly pushing in and drifting (`Scenery::motion`, `pan`), a vignette, letterbox bars that slide in on the start screen, "GOD IS WATCHING" in tracked capitals (`TextStyle::spacing`). "PRESS ANY KEY" pulses in the bottom bar; pressing it keeps the shot and fades the menu into the same bar (`buttons_in_bar`, `intro`): text links with an underline on hover and brass diamonds between them (`separator`) |
-| Rollback and barriers | Wheel / Page Up-Down; `choice final:` and `commit` in the story; `unlock` is a blocked command, so an achievement can't be rolled back |
+| Rollback and barriers | Wheel / Page Up-Down; `choice final:` and `commit` in the story; `unlock` is a blocked command, so rollback stops at the moment an achievement is earned (the achievement itself lives outside the save, so rollback couldn't undo it anyway) |
 | Saves | Six slots in a 2-column grid with thumbnails and Delete, quick save/load (F5/F9), rollback history stored in saves, saved in the platform data directory (`~/.local/share/god_is_watching` on Linux) |
 | Autosave and Continue | An autosave on every new scene and on quit; the main menu's Continue (`Action::Continue`) picks up the newest save after a restart |
 | Audio | `.audio(\|a\| a.menu_music("title").fade_seconds(1.5))`: the title theme on the start screen and menu, story tracks crossfading in play; volume sliders in Settings, with `page_turn` as the sample sound |

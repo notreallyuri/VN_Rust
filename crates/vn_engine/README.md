@@ -1659,6 +1659,39 @@ return `Option`. `Action::NewGame` resets every registered value to the one pass
 
 Story variables (`set`, `add`, conditions) live in the VM instead: `ctx.story.variables()`.
 
+## Persistent storage
+
+Some data belongs to the player rather than to a playthrough: achievements, unlocked
+gallery pictures, endings reached, a "cleared once" flag. Register it with
+`.persistent(T)` instead of `.state(T)`:
+
+```rust
+#[derive(Clone, Default, Serialize, Deserialize)]
+struct Achievements { unlocked: BTreeSet<String> }
+
+VnApp::new("My Novel").persistent(Achievements::default())
+
+ctx.persistent.get_mut::<Achievements>().unlocked.insert("ending_report".into());
+ctx.persistent.get::<Achievements>()     // in draw, and in menu conditions (GameView)
+```
+
+It works like game state (`get`, `get_mut`, `try_get`, `try_get_mut`, keyed by type
+name), with the opposite lifetime: one copy shared by every save slot, never part of a
+save, never rolled back, and untouched by New Game, loading and hot reload.
+
+It lives in `persistent.json` beside the saves and `seen.json`. Borrowing a value with
+`get_mut` marks the store changed; it is written at most once a second while it keeps
+changing, and on quit, only when the contents differ, through a temporary file and a
+rename so a crash can't leave half a file. Values of types the game no longer registers
+are kept. A value that no longer fits its type falls back to its default on its own,
+and the original file is copied to `persistent.json.bak` first, as is a damaged file.
+A file from a newer version of the format is read but never overwritten.
+
+For a custom loop, `manager.world.persistent` is a `Persistent`: `insert` each type,
+then `load` the path, and call `save` on quit. Adding the store gave `GameView` and
+`DrawContext` a `persistent` field, so code that builds a `GameView` by hand (tests,
+usually) needs `persistent: &Persistent::in_memory()`.
+
 ## Commands
 
 `call <name> <args...>` in a story runs the handler registered under that name. The

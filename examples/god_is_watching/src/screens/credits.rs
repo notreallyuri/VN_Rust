@@ -3,7 +3,7 @@ use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
 use vn_engine::ui::button::ButtonStyle;
 
-use crate::journal::{Journal, achievement_name};
+use crate::journal::{Achievements, achievement_name};
 use crate::style;
 
 const LINES: [&str; 5] = [
@@ -103,8 +103,12 @@ impl Screen for CreditsScreen {
             y += 40.0;
         }
 
-        let journal = ctx.state.get::<Journal>();
-        let achievements: Vec<&str> = journal.achievements().map(achievement_name).collect();
+        let achievements: Vec<&str> = ctx
+            .persistent
+            .get::<Achievements>()
+            .unlocked()
+            .map(achievement_name)
+            .collect();
         if !achievements.is_empty() {
             ui::draw_text_centered(
                 d,

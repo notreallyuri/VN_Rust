@@ -236,14 +236,16 @@ and the engine already has the pieces (custom screens, image maps, buttons, audi
 on its own — somewhere to keep data that outlives a playthrough, and a record of what the
 player has seen.
 
-- [ ] Storage that persists across playthroughs, typed like `GameState` but global:
+- [x] Storage that persists across playthroughs, typed like `GameState` but global:
   `VnApp::persistent(T::default())` and `ctx.persistent.get_mut::<T>()`. It lives next
   to `seen.json`, is written atomically, survives New Game and loading, is never part of
   a save and is never rolled back. Today there is nowhere to put such data, which is why
   the example's achievements are wrong: they live in `Journal`, registered with
   `.state(...)`, so they are saved per slot and `Action::NewGame` wipes them with
   `ctx.state.reset()`. `seen.json` becomes the engine's own use of the same mechanism
-  rather than a one-off
+  rather than a one-off. Done: `.persistent(T)` and `ctx.persistent`, stored in
+  `persistent.json`; `seen.json` keeps its format and shares the atomic writer; the
+  example's `Achievements` moved onto it
 - [ ] Records of what has ever been shown, kept by the engine the way it keeps seen
   lines: backgrounds, character images and music tracks, in any playthrough, readable by
   games. The engine sees every `show`, `background` and `music` as it happens; a game

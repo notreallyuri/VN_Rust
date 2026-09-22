@@ -210,16 +210,8 @@ impl SeenLines {
         if self.unsaved == 0 && path.exists() {
             return;
         }
-        let result = (|| {
-            if let Some(dir) = path.parent() {
-                fs::create_dir_all(dir)?;
-            }
-            let json = serde_json::to_string(&self.keys).expect("seen lines serialize");
-            let temp = path.with_extension("json.tmp");
-            fs::write(&temp, json)?;
-            fs::rename(&temp, path)
-        })();
-        match result {
+        let json = serde_json::to_string(&self.keys).expect("seen lines serialize");
+        match super::persistent::write_atomic(path, json.as_bytes()) {
             Ok(()) => self.unsaved = 0,
             Err(e) => eprintln!("⚠️ Could not save {}: {}", path.display(), e),
         }

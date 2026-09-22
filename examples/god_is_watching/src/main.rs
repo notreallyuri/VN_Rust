@@ -16,7 +16,7 @@ mod style;
 
 use desk::Desk;
 use evidence::Evidence;
-use journal::{Journal, achievement_name, chapter_title};
+use journal::{Achievements, Journal, achievement_name, chapter_title};
 
 const ASSETS_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 const CASE_FILE: &str = "case_file";
@@ -57,7 +57,7 @@ fn assemble(_ctx: &mut GameContext, _: ()) -> Option<ScreenState> {
 }
 
 fn unlock(ctx: &mut GameContext, (key,): (String,)) -> Option<ScreenState> {
-    if ctx.state.get_mut::<Journal>().unlock(&key) {
+    if ctx.persistent.get_mut::<Achievements>().unlock(&key) {
         ctx.notify(achievement_name(&key));
     }
     None
@@ -100,6 +100,7 @@ fn main() -> ExitCode {
         .font(FontRole::Speaker, "NotoSerif-Regular.ttf")
         .state(Evidence::default())
         .state(Journal::default())
+        .persistent(Achievements::default())
         .state(Desk::default())
         .command("give_item", give_item)
         .command("ask_name", ask_name)

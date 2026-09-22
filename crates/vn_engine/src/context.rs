@@ -50,6 +50,7 @@ pub struct GameContext<'a> {
     pub log: &'a mut SessionLog,
     pub modes: &'a mut PlayModes,
     pub seen: &'a mut SeenLines,
+    pub persistent: &'a mut crate::data::persistent::Persistent,
     pub(crate) effects: &'a mut crate::frame::effects::ScreenEffects,
     pub(crate) weather: &'a mut Option<crate::frame::scenery::Weather>,
     pub(crate) post: &'a mut crate::frame::post::PostChain,
@@ -168,6 +169,7 @@ impl GameContext<'_> {
         GameView {
             story: self.story,
             state: self.state,
+            persistent: self.persistent,
             saves: self.saves,
             settings: &self.settings.values,
         }
@@ -292,6 +294,7 @@ fn code_missing(code: &Option<String>, catalog: &Option<vn_script::Catalog>) -> 
 pub struct GameView<'a> {
     pub story: &'a StoryVm,
     pub state: &'a GameState,
+    pub persistent: &'a crate::data::persistent::Persistent,
     pub saves: &'a Saves,
     pub settings: &'a Settings,
 }
@@ -300,6 +303,7 @@ pub struct DrawContext<'a> {
     pub resources: &'a ResourceManager,
     pub story: &'a StoryVm,
     pub state: &'a GameState,
+    pub persistent: &'a crate::data::persistent::Persistent,
     pub saves: &'a Saves,
     pub characters: &'a Characters,
     pub settings: &'a Settings,
@@ -346,6 +350,7 @@ impl DrawContext<'_> {
         GameView {
             story: self.story,
             state: self.state,
+            persistent: self.persistent,
             saves: self.saves,
             settings: self.settings,
         }
