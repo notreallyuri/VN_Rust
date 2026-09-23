@@ -20,6 +20,12 @@
         "Bool": false
       }
     },
+    "cases_closed": {
+      "ty": "Int",
+      "default": {
+        "Int": 0
+      }
+    },
     "ending": {
       "ty": {
         "Enum": [
@@ -186,6 +192,13 @@
       "optional": [],
       "rest": null
     },
+    "close_case": {
+      "required": [
+        "Word"
+      ],
+      "optional": [],
+      "rest": null
+    },
     "give_item": {
       "required": [
         "Word"
@@ -199,6 +212,11 @@
       "required": [
         "Word"
       ],
+      "optional": [],
+      "rest": null
+    },
+    "remember_cases": {
+      "required": [],
       "optional": [],
       "rest": null
     },

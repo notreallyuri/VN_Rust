@@ -8,6 +8,14 @@ scene archive_start:
   "The lamps are never put out down here. Paper is cheaper than daylight."
   show registrar neutral at right with dissolve
   registrar "You're the new one. Sit."
+  call remember_cases
+  if cases_closed == 3:
+    registrar "No. The ledger has your hand in it already. Every way this box can close, you have closed it."
+    registrar "And still you come back down the stairs. Sit."
+  else:
+    if cases_closed > 0:
+      registrar "Odd. There's a closing entry for Box fourteen in this ledger, and it looks like your hand."
+      registrar "I don't remember you. The ledger does. Sit."
   registrar "I don't keep names I haven't needed yet. Write yours in the ledger."
   call ask_name player_name
   registrar "{player_name}. Good. Now forget it. Nobody down here will use it."

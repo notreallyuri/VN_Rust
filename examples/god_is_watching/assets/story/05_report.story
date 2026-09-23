@@ -31,6 +31,7 @@ scene ending_report:
   music ending
   set ending = report
   call unlock ending_report
+  call close_case report
   {player_name} "A boy with a blessing. The blood is Von Lucis. He doesn't know what he does."
   registrar "Thank you, {player_name}. That is what an archive is for."
   remove registrar with dissolve
@@ -45,6 +46,7 @@ scene ending_silence:
   music ending
   set ending = silence
   call unlock ending_silence
+  call close_case silence
   {player_name} "Nothing the House needs. An old man, twenty-one children and a very quiet wing."
   if suspicion >= 2:
     registrar "You initialled a blank in the Von Lucis register. You wanted to go there before you'd read a page."
@@ -60,6 +62,7 @@ scene ending_keeper:
   music ending
   set ending = keeper
   call unlock ending_keeper
+  call close_case keeper
   {player_name} "Nothing."
   registrar "Nothing."
   {player_name} "An old man, twenty-one children and a very quiet wing. I'd like to be the one who keeps watching it."

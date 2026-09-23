@@ -8,6 +8,27 @@ pub struct Journal {
     decisions: Vec<String>,
 }
 
+pub const ENDINGS: [&str; 3] = ["report", "silence", "keeper"];
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct CaseLedger {
+    endings: BTreeSet<String>,
+}
+
+impl CaseLedger {
+    pub fn close(&mut self, ending: &str) {
+        self.endings.insert(ending.to_string());
+    }
+
+    pub fn has(&self, ending: &str) -> bool {
+        self.endings.contains(ending)
+    }
+
+    pub fn closed(&self) -> usize {
+        self.endings.len()
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Achievements {
     unlocked: BTreeSet<String>,
@@ -54,6 +75,15 @@ pub fn note_text(key: &str) -> &'static str {
         }
         "hot_water" => "\"Your hot water, miss.\" Sister Clara is Adelaide Roque.",
         _ => "An unreadable note.",
+    }
+}
+
+pub fn ending_name(key: &str) -> &'static str {
+    match key {
+        "report" => "The report",
+        "silence" => "The silence",
+        "keeper" => "The keeper",
+        _ => "An unknown ending",
     }
 }
 

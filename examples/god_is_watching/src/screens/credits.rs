@@ -3,7 +3,7 @@ use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
 use vn_engine::ui::button::ButtonStyle;
 
-use crate::journal::{Achievements, achievement_name};
+use crate::journal::{Achievements, CaseLedger, ENDINGS, achievement_name, ending_name};
 use crate::style;
 
 const LINES: [&str; 5] = [
@@ -86,19 +86,34 @@ impl Screen for CreditsScreen {
             y += 36.0;
         }
 
-        let ending = ctx
-            .story
-            .variable("ending")
-            .map(ToString::to_string)
-            .filter(|ending| ending != "none");
+        let this_time = ctx.story.variable("ending").map(ToString::to_string);
+        let ledger = ctx.persistent.get::<CaseLedger>();
         y += 30.0;
-        if let Some(ending) = ending {
+        if ledger.closed() > 0 {
             ui::draw_text_centered(
                 d,
                 fonts,
-                &format!("ENDING REACHED: {}", ending.to_uppercase()),
+                &format!("ENDINGS FOUND: {} OF {}", ledger.closed(), ENDINGS.len()),
                 Vector2::new(screen.x / 2.0, y),
                 &self.section,
+            );
+            y += 32.0;
+            let endings: Vec<String> = ENDINGS
+                .iter()
+                .map(|&ending| match ledger.has(ending) {
+                    true if this_time.as_deref() == Some(ending) => {
+                        format!("{} (this time)", ending_name(ending))
+                    }
+                    true => ending_name(ending).to_string(),
+                    false => "???".to_string(),
+                })
+                .collect();
+            ui::draw_text_centered(
+                d,
+                fonts,
+                &endings.join("   ·   "),
+                Vector2::new(screen.x / 2.0, y),
+                &self.achievement,
             );
             y += 40.0;
         }

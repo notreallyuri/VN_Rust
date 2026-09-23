@@ -75,4 +75,5 @@ pub fn register(app: VnApp) -> VnApp {
         "ending",
         VariableDef::enumeration(["none", "report", "silence", "keeper"], "none"),
     )
+    .variable("cases_closed", VariableDef::int(0))
 }

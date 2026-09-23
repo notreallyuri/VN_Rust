@@ -16,7 +16,7 @@ mod style;
 
 use desk::Desk;
 use evidence::Evidence;
-use journal::{Achievements, Journal, achievement_name, chapter_title};
+use journal::{Achievements, CaseLedger, Journal, achievement_name, chapter_title};
 
 const ASSETS_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 const CASE_FILE: &str = "case_file";
@@ -63,6 +63,27 @@ fn unlock(ctx: &mut GameContext, (key,): (String,)) -> Option<ScreenState> {
     None
 }
 
+fn close_case(ctx: &mut GameContext, (ending,): (String,)) -> Option<ScreenState> {
+    if journal::ENDINGS.contains(&ending.as_str()) {
+        ctx.persistent.get_mut::<CaseLedger>().close(&ending);
+    } else {
+        eprintln!(
+            "⚠️ close_case: '{}' is not one of {:?}",
+            ending,
+            journal::ENDINGS
+        );
+    }
+    None
+}
+
+fn remember_cases(ctx: &mut GameContext, _: ()) -> Option<ScreenState> {
+    let closed = ctx.persistent.get::<CaseLedger>().closed() as i32;
+    if let Err(e) = ctx.story.set_variable("cases_closed", Value::Int(closed)) {
+        eprintln!("⚠️ remember_cases: {}", e);
+    }
+    None
+}
+
 fn link(label: &'static str, action: Action) -> MenuItem {
     MenuItem::new(label, action).style(move |b| b.size(style::link_width(label), 36.0))
 }
@@ -101,11 +122,14 @@ fn main() -> ExitCode {
         .state(Evidence::default())
         .state(Journal::default())
         .persistent(Achievements::default())
+        .persistent(CaseLedger::default())
         .state(Desk::default())
         .command("give_item", give_item)
         .command("ask_name", ask_name)
         .command("note", note)
         .command("unlock", unlock)
+        .command("close_case", close_case)
+        .command("remember_cases", remember_cases)
         .command("search", search)
         .command("assemble", assemble)
         .on_scene_enter(|ctx, scene| {
@@ -154,7 +178,11 @@ fn main() -> ExitCode {
                 )
                 .item(link("LOAD", Action::Goto(ScreenState::Load)))
                 .item(link("SETTINGS", Action::Goto(ScreenState::Settings)))
-                .item(link("CREDITS", Action::Goto(credits.clone())))
+                .item(
+                    link("CREDITS", Action::Goto(credits.clone()))
+                        .enabled_if(|view| view.persistent.get::<CaseLedger>().closed() > 0)
+                        .tooltip("Close the case once to open the credits"),
+                )
                 .item(
                     MenuItem::new("EXIT", Action::confirm("Leave the Archive?", Action::Quit))
                         .style(|b| {
