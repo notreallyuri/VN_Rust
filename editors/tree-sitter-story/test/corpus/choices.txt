@@ -1,0 +1,83 @@
+==================
+A plain option
+==================
+
+scene start:
+  choice:
+    "Agree":
+      jump next
+
+---
+
+(source_file
+  (scene
+    name: (identifier)
+    (block
+      (choice_statement
+        (choice_option
+          text: (string
+            (string_content))
+          (block
+            (jump_statement
+              scene: (identifier))))))))
+
+==================
+An option with a condition and a reason
+==================
+
+scene start:
+  choice:
+    "Open the door" when has_key == true "The door is locked":
+      jump inside
+
+---
+
+(source_file
+  (scene
+    name: (identifier)
+    (block
+      (choice_statement
+        (choice_option
+          text: (string
+            (string_content))
+          (option_condition
+            condition: (comparison
+              variable: (identifier)
+              value: (boolean))
+            reason: (string
+              (string_content)))
+          (block
+            (jump_statement
+              scene: (identifier))))))))
+
+==================
+A string compared in the condition is not the reason
+==================
+
+scene start:
+  choice:
+    "Enter" unless name == "mary" image door preview hall:
+      jump inside
+
+---
+
+(source_file
+  (scene
+    name: (identifier)
+    (block
+      (choice_statement
+        (choice_option
+          text: (string
+            (string_content))
+          (option_condition
+            condition: (comparison
+              variable: (identifier)
+              value: (string
+                (string_content))))
+          (option_image
+            image: (identifier))
+          (option_preview
+            image: (identifier))
+          (block
+            (jump_statement
+              scene: (identifier))))))))

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use super::{Event, StoryVm, VmError};
-use crate::{Comparison, Condition, Instruction, Value, interpolate};
+use super::{ChoiceOption, Event, StoryVm, VmError};
+use crate::{ChoiceArm, Comparison, Condition, Instruction, SceneMode, Value, interpolate};
 
 const MAX_SILENT_STEPS: usize = 100_000;
 
@@ -56,7 +56,15 @@ impl StoryVm {
                     self.ip += 1;
                     return event;
                 }
-                Instruction::Choice { options } if options.is_empty() => self.ip += 1,
+                Instruction::Choice { options, after } if self.offered(options).is_empty() => {
+                    if !options.is_empty() {
+                        eprintln!(
+                            "⚠️ Skipping the choice on line {}: every option is unavailable",
+                            self.program.line(self.ip)
+                        );
+                    }
+                    self.ip = *after;
+                }
                 Instruction::Choice { .. } => {
                     self.pending_choice = Some(self.ip);
                     return self.choice_event(self.ip);
@@ -204,19 +212,48 @@ impl StoryVm {
     pub fn choose(&mut self, index: usize) -> Result<(), VmError> {
         let choice_ip = self.pending_choice.ok_or(VmError::NoChoicePending)?;
 
-        let Some(Instruction::Choice { options }) = self.program.instructions.get(choice_ip) else {
+        let Some(Instruction::Choice { options, .. }) = self.program.instructions.get(choice_ip)
+        else {
             unreachable!("pending_choice always points at a Choice");
         };
 
-        let (_, target) = options.get(index).ok_or(VmError::ChoiceOutOfRange {
+        let arm = options.get(index).ok_or(VmError::ChoiceOutOfRange {
             index,
             options: options.len(),
         })?;
 
-        self.ip = *target;
+        if !self.available(arm) {
+            return Err(VmError::ChoiceUnavailable { index });
+        }
+
+        self.ip = arm.target;
         self.pending_choice = None;
         self.current = None;
         Ok(())
+    }
+
+    pub(super) fn available(&self, arm: &ChoiceArm) -> bool {
+        match &arm.gate {
+            None => true,
+            Some(gate) => gate.passes(evaluate(&gate.condition, &self.variables)),
+        }
+    }
+
+    pub(super) fn offered(&self, options: &[ChoiceArm]) -> Vec<usize> {
+        options
+            .iter()
+            .enumerate()
+            .filter(|(_, arm)| {
+                self.available(arm) || arm.gate.as_ref().is_some_and(|gate| !gate.hides())
+            })
+            .map(|(index, _)| index)
+            .collect()
+    }
+
+    pub fn scene_mode(&self) -> SceneMode {
+        self.current_scene
+            .as_deref()
+            .map_or_else(SceneMode::default, |scene| self.program.scene_mode(scene))
     }
 
     pub fn set_scene_events(&mut self, enabled: bool) {
@@ -247,16 +284,36 @@ impl StoryVm {
     }
 
     pub(super) fn choice_event(&self, choice_ip: usize) -> Event {
-        let Some(Instruction::Choice { options }) = self.program.instructions.get(choice_ip) else {
+        let Some(Instruction::Choice { options, .. }) = self.program.instructions.get(choice_ip)
+        else {
             unreachable!("pending_choice always points at a Choice");
         };
 
-        Event::Choice {
-            options: options
-                .iter()
-                .map(|(text, _)| interpolate(self.localized(choice_ip, text), &self.variables))
-                .collect(),
-        }
+        let options = self
+            .offered(options)
+            .into_iter()
+            .map(|index| {
+                let arm = &options[index];
+                let enabled = self.available(arm);
+                ChoiceOption {
+                    text: interpolate(self.localized(choice_ip, &arm.text), &self.variables),
+                    index,
+                    enabled,
+                    reason: arm
+                        .gate
+                        .as_ref()
+                        .and_then(|gate| gate.reason.as_deref())
+                        .filter(|_| !enabled)
+                        .map(|reason| {
+                            interpolate(self.localized(choice_ip, reason), &self.variables)
+                        }),
+                    image: arm.image.clone(),
+                    preview: arm.preview.clone(),
+                }
+            })
+            .collect();
+
+        Event::Choice { options }
     }
 }
 

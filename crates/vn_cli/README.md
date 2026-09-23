@@ -119,7 +119,8 @@ and left alone.
 ### `vn translate <lang> [path] [--export | --import <file.po>]`
 
 Extracts every translatable string into `lang/<lang>.json` next to the game's
-`schema.json`: dialogue, narration, choice options, and the characters' display names.
+`schema.json`: dialogue, narration, choice options, the reasons a choice option is
+unavailable (`when` / `unless`, SCRIPT.md 4.4), and the characters' display names.
 Run it again whenever the story changes — it keeps the translations already written,
 adds entries for new strings, and marks as `stale` the ones whose source has been edited
 or deleted.

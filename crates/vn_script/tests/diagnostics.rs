@@ -279,7 +279,7 @@ fn string_escapes() {
         .filter_map(|i| match i {
             vn_script::Instruction::Say { text, .. } => Some(text.clone()),
             vn_script::Instruction::Set { value, .. } => Some(value.to_string()),
-            vn_script::Instruction::Choice { options } => Some(options[0].0.clone()),
+            vn_script::Instruction::Choice { options, .. } => Some(options[0].text.clone()),
             _ => None,
         })
         .collect();
@@ -632,4 +632,97 @@ fn background_statements() {
             "`background` is a keyword and can't be a character id".into()
         )
     );
+}
+
+#[test]
+fn an_option_modifier_must_be_one_the_parser_knows() {
+    let (line, message) =
+        one_error("scene start:\n  choice:\n    \"A\" whn flag == true:\n      \"a\"\n");
+    assert_eq!(line, 3);
+    assert!(message.contains("unexpected `whn"), "{}", message);
+    assert!(message.contains("did you mean 'when'?"), "{}", message);
+}
+
+#[test]
+fn an_option_takes_one_condition_and_one_of_each_picture() {
+    for (source, expected) in [
+        (
+            "\"A\" when a == true unless b == true:",
+            "a choice option takes one `when` or `unless` condition",
+        ),
+        (
+            "\"A\" image one image two:",
+            "a choice option takes one `image`",
+        ),
+        ("\"A\" when:", "`when` needs a condition"),
+        ("\"A\" image:", "`image` needs a picture"),
+        (
+            "\"A\" when a == true \"\":",
+            "the reason an option is unavailable can't be empty",
+        ),
+    ] {
+        let source = format!("scene start:\n  choice:\n    {}\n      \"a\"\n", source);
+        let (_, message) = one_error(&source);
+        assert!(
+            message.contains(expected),
+            "{}\nexpected: {}",
+            message,
+            expected
+        );
+    }
+}
+
+#[test]
+fn a_scene_mode_must_be_adv_or_nvl() {
+    let (line, message) = one_error("scene start nvel:\n  \"a\"\n");
+    assert_eq!(line, 1);
+    assert!(message.contains("unknown scene mode `nvel`"), "{}", message);
+    assert!(message.contains("did you mean 'nvl'?"), "{}", message);
+}
+
+#[test]
+fn a_reason_is_told_apart_from_a_string_compared_in_the_condition() {
+    let program = compile_source(
+        "scene start:\n  choice:\n    \"A\" when name == \"mary\":\n      \"a\"\n    \"B\" when name == \"mary\" \"Only Mary may.\":\n      \"b\"\n",
+    );
+    assert!(program.diagnostics.iter().all(|d| !d.is_error()));
+
+    let vn_script::Instruction::Choice { options, .. } = &program.instructions[0] else {
+        panic!("the first instruction is the choice");
+    };
+    assert_eq!(options[0].gate.as_ref().unwrap().reason, None);
+    assert_eq!(
+        options[1].gate.as_ref().unwrap().reason.as_deref(),
+        Some("Only Mary may.")
+    );
+}
+
+#[test]
+fn a_choice_where_every_option_can_be_hidden_is_a_warning() {
+    let warnings: Vec<String> = compile_source(
+        "scene start:\n  choice:\n    \"A\" when flag == true:\n      \"a\"\n    \"B\" unless flag == true:\n      \"b\"\n",
+    )
+    .diagnostics
+    .into_iter()
+    .filter(|d| d.severity == Severity::Warning)
+    .map(|d| d.message)
+    .collect();
+    assert!(
+        warnings.is_empty(),
+        "the compiler stays quiet: {:?}",
+        warnings
+    );
+
+    let program = compile_source(
+        "scene start:\n  choice:\n    \"A\" when flag == true:\n      \"a\"\n    \"B\" unless flag == true:\n      \"b\"\n",
+    );
+    let schema = vn_script::Schema::default();
+    let warnings: Vec<String> = schema
+        .validate(&program)
+        .into_iter()
+        .filter(|d| d.severity == Severity::Warning)
+        .map(|d| d.message)
+        .collect();
+    assert_eq!(warnings.len(), 1, "{:?}", warnings);
+    assert!(warnings[0].contains("empty choice"), "{}", warnings[0]);
 }

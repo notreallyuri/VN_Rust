@@ -199,9 +199,22 @@ else draws through, so it is cheaper now; the rest is additive.
 - [x] Screen shake and flash (`with shake` / `with flash`, `ctx.shake`/`ctx.flash`): the change is instant and the frame is shaken by offsetting the render target, or washed with `flash_color`; `ScreenEffectsConfig` tunes it
 - [x] Shader passes over the render target (`PostChain`, `VnApp::shader`, `ctx.shader`): named passes in registration order, with `amount`, `time` and `pixel` uniforms; `post::GRAIN`, `DESATURATE`, `BLUR` and `FXAA` ship with the engine
 - [x] Weather and particle overlays (`Weather::rain`/`snow`/`dust`): `Scenery::weather` on the menus, `ctx.weather` during a scene. Each particle's position comes from the clock and its index like `Motion::at`, so there is no simulation state, nothing in a save and nothing for rollback to desynchronise; not restored by a load, the same as `ctx.shader`
-- [ ] NVL mode: full-screen text pages instead of the dialogue box, chosen per scene
+- [x] NVL mode: full-screen text pages instead of the dialogue box, chosen per scene
+  (`scene <id> nvl:`, `Program::scene_modes` / `StoryVm::scene_mode`, `NvlStyle`). The
+  page is rebuilt each frame from the log's lines for the current scene, so it is saved,
+  rolled back and retranslated with everything else and the engine stores no page of its
+  own; it turns over when the next line no longer fits. The notebook chapter of the
+  example opens in NVL
 - [x] Dialogue box variants: `Character::box_style(|b| ...)` layers a character's own box over the game's base, inheriting what it does not name; `DialogueBoxStyle::bust` plus `Character::bust(file)` draws a portrait inside the box and moves the text out of its way, keeping its aspect ratio and standing on the box's floor, with `rise`/`sink` to break the edges
-- [ ] Choice presentation: images, disabled options with a reason, and hover previews
+- [x] Choice presentation: `"text" when <cond> "reason"` / `unless` gates an option in the
+  story — without a reason it is not offered at all, with one it is drawn disabled, with
+  the reason as its tooltip, the `NotAllowed` cursor and no focus. `image <id>` and
+  `preview <id>` name `choices/<id>.png` and `previews/<id>.png`; `ChoiceImageStyle` fills
+  the button or puts an icon beside the label, `ChoicePreviewStyle` draws the hovered or
+  focused option's preview. `Event::Choice` now carries a `ChoiceOption` per offered
+  option (its own `index`, `enabled`, `reason`, `image`, `preview`), and `choose` refuses
+  an option whose condition fails; `vn check` warns when every option of a choice can be
+  hidden. Save format 3, migrating the old choices in mid-choice saves
 - [x] Sharper edges: `VnApp::render_scale` supersamples the frame (the render target is not multisampled, so window MSAA would not help), and corner segments scale with corner size and render scale; `post::FXAA` is the cheap alternative
 - [x] Cursor states wherever they mean something — `Text` over the text field, `Hand` over anything clickable including image-map hotspots and save slots, `Grab`/`Grabbing` for drag boards, sliders and scroll thumbs, `NotAllowed` over disabled items, empty load slots and refusing drop targets — merged by priority, falling back through the pictures a game supplies, with a hotspot per picture. Without pictures they drive the system's own shapes. Games choose their own per element (`ButtonStyle::cursor`, `Hotspot::cursor`, `CursorKind::Custom`), per frame (`ctx.cursor`) or regardless (`ctx.override_cursor`, owned by the screen that set it)
 - [x] A custom mouse cursor (`VnApp::cursor`, `CursorStyle`: hotspot, size, an optional hand over anything clickable, hidden while a gamepad is in use) and prompts that name the right control: `Navigation` now tracks the last `InputDevice`, and `ctx.prompt("{advance} to go on")` fills tokens from the same config the controls overlay reads, after translation so the token can move

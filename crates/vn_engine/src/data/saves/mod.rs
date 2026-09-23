@@ -12,7 +12,7 @@ pub use store::*;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub const SAVE_FORMAT_VERSION: u32 = 2;
+pub const SAVE_FORMAT_VERSION: u32 = 3;
 pub const QUICK_SLOT: &str = "quick";
 pub const AUTO_SLOT: &str = "auto";
 pub const THUMBNAIL_WIDTH: i32 = 320;

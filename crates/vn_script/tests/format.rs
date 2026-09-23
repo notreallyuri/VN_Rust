@@ -108,3 +108,30 @@ fn the_fixture_survives_formatting_and_is_stable() {
     assert_eq!(once, format(&once));
     same_story(ALL_FEATURES, &once);
 }
+
+#[test]
+fn option_conditions_get_spaces_around_their_operators() {
+    let source = "scene start:\n  choice:\n    \"Open\"when has_key==true\"The door is locked\":\n      \"a\"\n";
+    assert_eq!(
+        format(source),
+        "scene start:\n  choice:\n    \"Open\" when has_key == true \"The door is locked\":\n      \"a\"\n"
+    );
+    same_story(source, &format(source));
+}
+
+#[test]
+fn option_pictures_keep_their_order() {
+    let source = "scene start:\n  choice:\n    \"North\"   image north    preview north_view:\n      \"a\"\n";
+    assert_eq!(
+        format(source),
+        "scene start:\n  choice:\n    \"North\" image north preview north_view:\n      \"a\"\n"
+    );
+    same_story(source, &format(source));
+}
+
+#[test]
+fn a_scene_mode_survives_formatting() {
+    let source = "scene start    nvl:\n      \"One.\"\n";
+    assert_eq!(format(source), "scene start nvl:\n  \"One.\"\n");
+    same_story(source, &format(source));
+}

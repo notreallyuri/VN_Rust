@@ -25,6 +25,8 @@ pub struct Context<'a> {
     pub schema: Option<&'a Schema>,
     pub scenes: Vec<String>,
     pub backgrounds: Vec<String>,
+    pub choices: Vec<String>,
+    pub previews: Vec<String>,
     pub music: Vec<String>,
     pub sounds: Vec<String>,
     pub voices: Vec<String>,
@@ -154,6 +156,10 @@ pub fn complete(prefix: &str, ctx: &Context) -> Vec<Item> {
         };
     }
 
+    if let Some(rest) = after_option_text(prefix) {
+        return option_modifiers(rest, ctx);
+    }
+
     let words: Vec<&str> = prefix.split_whitespace().collect();
     let typing = !prefix.ends_with(char::is_whitespace) && !words.is_empty();
     let before: &[&str] = if typing {
@@ -197,6 +203,7 @@ pub fn complete(prefix: &str, ctx: &Context) -> Vec<Item> {
         ["add", _] => items(["+=", "-="], ItemKind::Operator),
         ["call"] => ctx.commands(),
         ["choice"] => items(["final:"], ItemKind::Keyword),
+        ["scene", _] => items(["nvl:", "adv:"], ItemKind::Keyword),
         ["if", ..] => {
             let last = before.last().copied().unwrap_or_default();
             let second = before.len().checked_sub(2).map(|i| before[i]);
@@ -210,6 +217,40 @@ pub fn complete(prefix: &str, ctx: &Context) -> Vec<Item> {
             }
         }
         _ => Vec::new(),
+    }
+}
+
+fn after_option_text(prefix: &str) -> Option<&str> {
+    let trimmed = prefix.trim_start();
+    if !trimmed.starts_with('"') {
+        return None;
+    }
+    let (_, used) = vn_script::scan_string(trimmed).ok()?;
+    Some(&trimmed[used..])
+}
+
+fn option_modifiers(rest: &str, ctx: &Context) -> Vec<Item> {
+    let words: Vec<&str> = rest.split_whitespace().collect();
+    let typing = !rest.ends_with(char::is_whitespace) && !words.is_empty();
+    let before: &[&str] = if typing {
+        &words[..words.len() - 1]
+    } else {
+        &words
+    };
+
+    match before {
+        [.., "image"] => items(ctx.choices.clone(), ItemKind::Asset),
+        [.., "preview"] => items(ctx.previews.clone(), ItemKind::Asset),
+        [] => items(["when", "unless", "image", "preview"], ItemKind::Keyword),
+        [.., last] if ctx.is_variable(last) => {
+            items(["==", "!=", ">=", "<=", ">", "<"], ItemKind::Operator)
+        }
+        ["when"] | ["unless"] | [.., "&&"] | [.., "||"] => ctx.variables(None),
+        [.., "==" | "!="] => match before.len().checked_sub(2).map(|i| before[i]) {
+            Some(variable) => ctx.values(variable),
+            None => Vec::new(),
+        },
+        _ => items(["image", "preview"], ItemKind::Keyword),
     }
 }
 

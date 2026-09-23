@@ -753,3 +753,33 @@ fn a_save_from_the_old_format_keeps_its_log() {
         "old lines show exactly as they were written"
     );
 }
+
+#[test]
+fn a_save_made_mid_choice_before_options_carried_their_index_still_loads() {
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let (vm, state) = played_game();
+    saves.save("1", &vm, &state).unwrap();
+
+    let path = dir.0.join("1.json");
+    let mut json: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+    let file = json.as_object_mut().unwrap();
+    file.insert("format_version".into(), 2.into());
+    file["story"]["current"] = serde_json::json!({
+        "Choice": { "options": ["Open the letter", "Leave it sealed"] }
+    });
+    fs::write(&path, serde_json::to_string_pretty(&json).unwrap()).unwrap();
+
+    let file = saves
+        .read("1")
+        .expect("a save written before options carried their index must still load");
+    assert_eq!(file.format_version, SAVE_FORMAT_VERSION);
+
+    let Some(Event::Choice { options }) = &file.story.current else {
+        panic!("the save is waiting on a choice");
+    };
+    assert_eq!(options[1].text, "Leave it sealed");
+    assert_eq!(options[1].index, 1, "the position becomes the index");
+    assert!(options[1].enabled);
+}

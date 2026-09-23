@@ -49,8 +49,12 @@ Where each feature is used, so the example can be read as a reference.
 | String escapes `\"` | The sealed letter (`"\"Von Lucis. Three days.\""`), choice options like `"Write \"a miracle\""` |
 | `choice:` | Throughout |
 | `choice final:` | The register column is written in ink (`box_the_register`) and the final report (`report_start`) |
+| `when` on an option, with a reason | "Ask about folio 41" is offered greyed out, with "You never got to the folio the page was torn from" as its tooltip, until the torn page has been read (`ilde_office`) |
+| `when` on an option, without a reason | The third answer to the Registrar is not there at all until the archivist has recognised Clara and earned the boy's trust (`report_start`) |
+| `preview <id>` on an option | Each of the three final answers shows where it ends (`report_start`) |
+| `scene <id> nvl:` | The administrator's notebook opens as a full-screen page (`notebook_start`) |
 | `commit` | Signing the visitors' book at Santa Ilde (`ilde_leaving`) |
-| `if` / `else`, `&&`, `\|\|`, nested blocks | `if verdict == miracle \|\| verdict == sin:`, `if read_letter == true && saw_torn_page == true:`, a `choice` inside an `if` (`ilde_office`) |
+| `if` / `else`, `&&`, `\|\|`, nested blocks | `if verdict == miracle \|\| verdict == sin:`, `if read_letter == true && saw_torn_page == true:`, `if believed_moriarty == true:` inside a choice option (`ilde_office`) |
 | `set` for bool, enum and string values; `add` with `+=` / `-=` | `set read_letter = true`, `set approach = bold`, `add trust -= 1` |
 | `call` with typed arguments | `call give_item field_report 19` (word + optional count), `call ask_name player_name`, `call note folio_41`, `call unlock ending_keeper`, `call search study` and `call assemble`, which open a screen and come back to the same line |
 
@@ -135,6 +139,7 @@ cargo build --release -p god_is_watching --target x86_64-pc-windows-gnu
 | `characters/<character>/<image>.png` | 23 cartoon portraits, 1024×1536 with transparency, generated with ChatGPT |
 | `fonts/` | Noto Serif (OFL, `fonts/OFL.txt`) |
 | `ui/` | The choice frames (96×96, nine-slice with 16 px borders) and the 64×64 white HUD icons, drawn by `tools/generate_art.py` |
+| `previews/<id>.png` | What the three final answers lead to, 480×270, cut down from the backgrounds by `tools/generate_art.py` |
 | `music/<track>.ogg` | 5 tracks, CC0 (sources in `AUDIO_CREDITS.md`) |
 | `sounds/<id>.ogg` | 7 sounds from Kenney's RPG Audio, CC0 (`AUDIO_CREDITS.md`) |
 | `schema.json` | Exported registries (refreshed by debug runs, or `cargo run -p god_is_watching -- --export-schema`), used by `vn check` |
@@ -159,8 +164,9 @@ The September 2026 restyle's original portraits are backed up under
 palette of `style.rs`:
 
 ```sh
-python3 examples/god_is_watching/tools/generate_art.py                 # the UI frames and icons
-python3 examples/god_is_watching/tools/generate_art.py --only choice   # some of them
+python3 examples/god_is_watching/tools/generate_art.py                   # the UI frames, icons and previews
+python3 examples/god_is_watching/tools/generate_art.py --only choice     # some of them
+python3 examples/god_is_watching/tools/generate_art.py --only previews   # the ending previews, from the backgrounds
 ```
 
 It also still has the painted placeholder backgrounds and silhouette portraits the game

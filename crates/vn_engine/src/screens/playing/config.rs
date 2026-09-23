@@ -3,8 +3,9 @@ use std::rc::Rc;
 use raylib::prelude::*;
 use vn_script::Position;
 
-use super::{DialogueBoxStyle, PlayingKeys};
+use super::{ChoiceImageStyle, ChoicePreviewStyle, DialogueBoxStyle, NvlStyle, PlayingKeys};
 use crate::action::Action;
+use crate::data::resources::{choice_path, preview_path};
 use crate::screen::ScreenState;
 use crate::screens::log::LOG_OVERLAY;
 use crate::screens::pause_menu::PAUSE_OVERLAY;
@@ -71,6 +72,9 @@ pub struct PlayingConfig {
     pub choice_button: ButtonStyle,
     pub choice_style: Option<ChoiceStyle>,
     pub choice_layout: Layout,
+    pub choice_image: ChoiceImageStyle,
+    pub choice_preview: ChoicePreviewStyle,
+    pub nvl: NvlStyle,
     pub end_title: String,
     pub end_title_text: TextStyle,
     pub end_hint: String,
@@ -113,6 +117,9 @@ impl Default for PlayingConfig {
                 .font(FontRole::Choice),
             choice_style: None,
             choice_layout: Layout::default().spacing(16.0),
+            choice_image: ChoiceImageStyle::default(),
+            choice_preview: ChoicePreviewStyle::default(),
+            nvl: NvlStyle::default(),
             end_title: "The End".to_string(),
             end_title_text: TextStyle::new(FontRole::Title, 56.0, Color::RAYWHITE),
             end_hint: "Click to return to the menu".to_string(),
@@ -195,6 +202,49 @@ impl PlayingConfig {
             Some(ChoiceStyle(style)) => style(index, text, self.choice_button.clone()),
             None => self.choice_button.clone(),
         }
+    }
+
+    pub fn choice_image(
+        mut self,
+        style: impl FnOnce(ChoiceImageStyle) -> ChoiceImageStyle,
+    ) -> Self {
+        self.choice_image = style(self.choice_image);
+        self
+    }
+
+    pub fn choice_preview(
+        mut self,
+        style: impl FnOnce(ChoicePreviewStyle) -> ChoicePreviewStyle,
+    ) -> Self {
+        self.choice_preview = style(self.choice_preview);
+        self
+    }
+
+    pub fn nvl(mut self, style: impl FnOnce(NvlStyle) -> NvlStyle) -> Self {
+        self.nvl = style(self.nvl);
+        self
+    }
+
+    pub fn option_style(&self, option: &vn_script::ChoiceOption) -> ButtonStyle {
+        let style = self.choice_style_for(option.index, &option.text);
+        match &option.image {
+            Some(image) => self.choice_image.apply(style, choice_path(image)),
+            None => style,
+        }
+    }
+
+    pub fn option_pictures(&self, options: &[vn_script::ChoiceOption]) -> Vec<String> {
+        options
+            .iter()
+            .flat_map(|option| {
+                option
+                    .image
+                    .as_deref()
+                    .map(choice_path)
+                    .into_iter()
+                    .chain(option.preview.as_deref().map(preview_path))
+            })
+            .collect()
     }
 
     pub fn hud_style(&self, index: usize) -> ButtonStyle {

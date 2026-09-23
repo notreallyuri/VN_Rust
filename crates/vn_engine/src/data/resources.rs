@@ -24,6 +24,14 @@ pub fn bust_path(file: &str) -> String {
     }
 }
 
+pub fn choice_path(image: &str) -> String {
+    format!("choices/{}.png", image).to_lowercase()
+}
+
+pub fn preview_path(image: &str) -> String {
+    format!("previews/{}.png", image).to_lowercase()
+}
+
 pub fn background_path(image: &str) -> String {
     format!("backgrounds/{}.png", image).to_lowercase()
 }

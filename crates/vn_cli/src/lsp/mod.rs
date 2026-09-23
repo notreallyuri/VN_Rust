@@ -279,6 +279,8 @@ impl Server {
             schema: project.schema.as_ref().map(|file| &file.schema),
             scenes,
             backgrounds: project.asset_ids("backgrounds", &["png"]),
+            choices: project.asset_ids("choices", &["png"]),
+            previews: project.asset_ids("previews", &["png"]),
             music: project.asset_ids("music", &audio),
             sounds: project.asset_ids("sounds", &audio),
             voices: project.asset_ids("voice", &audio),

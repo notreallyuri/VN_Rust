@@ -15,6 +15,29 @@ scene <scene_id>:
 - Scenes are jump targets
 - Execution starts at a designated entry scene (e.g. start)
 
+### 1.2 Text mode
+
+```story
+scene <scene_id> nvl:
+```
+
+A scene is `adv` by default: one line at a time in the dialogue box. `nvl` reads the
+scene as full-screen pages instead, each line printed below the last.
+
+```story
+scene ruins nvl:
+  "The corridor narrows."
+  mary "I have been here before."
+  "Her voice does not echo."
+```
+
+- `adv` and `nvl` are the only modes; `adv` is what you get by writing nothing
+- The page starts empty when the scene begins and turns over when it is full
+- The mode belongs to the scene, so a jump changes it, and a save or a rollback restores
+  it without storing anything of its own
+- The page is built from the lines the player has read, so it survives a load and steps
+  back with rollback
+
 ## 2. Character Presentation
 
 ### 2.1 Show a character
@@ -269,6 +292,9 @@ choice:
 - No fall through
 - No implicit behavior
 - A quoted line ending in `:` outside a `choice:` block is an error, not narration
+- Between the option's text and its `:` come the modifiers of 4.4 and 4.5, each at most
+  once, in any order. `when`, `unless`, `image` and `preview` mean what they say only
+  there; everywhere else they are ordinary words
 
 ### 4.3 Example
 
@@ -281,6 +307,59 @@ choice:
   "Disagree":
     "You shake your head."
     jump argument_scene
+```
+
+### 4.4 Conditions on an option
+
+```story
+choice:
+  "<option_text>" when <condition>:
+    <block>
+  "<option_text>" unless <condition> "<reason>":
+    <block>
+```
+
+- `when` offers the option only while the condition holds; `unless` is its opposite
+- Without a reason, an option whose condition fails is not shown at all
+- With a reason, it is shown but cannot be taken, and the reason is what the player reads
+  when they point at it. Reasons are translated like any other line
+- The conditions are the ones `if` takes (8.4), variables included
+- `vn check` warns when every option of a choice can be hidden: a choice with nothing
+  left to offer is skipped at runtime
+
+```story
+set has_key = true
+choice:
+  "Open the door" when has_key == true "The door is locked":
+    "The lock gives."
+  "Look through the window" unless curtains == true:
+    "You see a table, and nothing else."
+  "Turn back":
+    "You leave the way you came."
+```
+
+### 4.5 Pictures on an option
+
+```story
+choice:
+  "<option_text>" image <image_id>:
+    <block>
+  "<option_text>" preview <image_id>:
+    <block>
+```
+
+- `image` draws `choices/<image_id>.png` on the option itself; the game decides whether
+  that fills the button or sits beside the label as an icon
+- `preview` shows `previews/<image_id>.png` while the option is under the pointer or has
+  the focus
+- Both are ids like every other asset (6.1), not paths
+
+```story
+choice:
+  "The north road" image north preview north_view:
+    "Stones, and then trees."
+  "The river path" image river:
+    "Water, loud enough to hide a voice."
 ```
 
 ## 5. Scene transition

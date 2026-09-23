@@ -37,10 +37,11 @@ fn scene_body(source: &str) -> Vec<Node> {
 fn fixture_parses_and_compiles() {
     let (scenes, diagnostics) = parse(ALL_FEATURES);
     assert_eq!(diagnostics, []);
-    assert_eq!(scenes.len(), 2);
+    assert_eq!(scenes.len(), 3);
 
     let program = Compiler::new().compile(scenes);
-    assert_eq!(program.scene_order, ["start", "second_scene"]);
+    assert_eq!(program.scene_order, ["start", "second_scene", "nvl_scene"]);
+    assert_eq!(program.scene_mode("nvl_scene"), vn_script::SceneMode::Nvl);
     assert!(program.unknown_jump_targets().is_empty());
 }
 
@@ -227,4 +228,50 @@ fn final_choices_compile_a_commit_into_every_option() {
         .filter(|i| matches!(i, vn_script::Instruction::Commit))
         .count();
     assert_eq!(commits, 2);
+}
+
+#[test]
+fn a_scene_header_carries_its_mode() {
+    let (scenes, diagnostics) = parse("scene start nvl:\n  \"One.\"\n");
+    assert!(
+        diagnostics.iter().all(|d| !d.is_error()),
+        "{:?}",
+        diagnostics
+    );
+    assert!(matches!(
+        scenes[0].node,
+        Node::Scene {
+            mode: vn_script::SceneMode::Nvl,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn an_option_keeps_its_condition_and_pictures() {
+    let (scenes, diagnostics) = parse(
+        "scene start:\n  choice:\n    \"Open\" unless locked == true \"It is locked\" image door preview hall:\n      \"a\"\n",
+    );
+    assert!(
+        diagnostics.iter().all(|d| !d.is_error()),
+        "{:?}",
+        diagnostics
+    );
+
+    let Node::Scene { body, .. } = &scenes[0].node else {
+        panic!("a scene");
+    };
+    let Node::ChoiceBlock { options, .. } = &body[0].node else {
+        panic!("a choice");
+    };
+
+    let gate = options[0].gate.as_ref().expect("a condition");
+    assert!(gate.negated);
+    assert_eq!(
+        gate.condition,
+        test("locked", Comparison::Equal, Value::Bool(true))
+    );
+    assert_eq!(gate.reason.as_deref(), Some("It is locked"));
+    assert_eq!(options[0].image.as_deref(), Some("door"));
+    assert_eq!(options[0].preview.as_deref(), Some("hall"));
 }

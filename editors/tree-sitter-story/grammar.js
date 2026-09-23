@@ -22,7 +22,16 @@ module.exports = grammar({
 
     comment: _ => token(seq('#', /[^\n]*/)),
 
-    scene: $ => seq('scene', field('name', $.identifier), ':', $._newline, optional($.block)),
+    scene: $ => seq(
+      'scene',
+      field('name', $.identifier),
+      optional(field('mode', $.scene_mode)),
+      ':',
+      $._newline,
+      optional($.block),
+    ),
+
+    scene_mode: _ => choice('adv', 'nvl'),
 
     block: $ => seq($._indent, repeat1($._statement), $._dedent),
 
@@ -116,7 +125,23 @@ module.exports = grammar({
       $._dedent,
     ),
 
-    choice_option: $ => seq(field('text', $.string), ':', $._newline, optional($.block)),
+    choice_option: $ => seq(
+      field('text', $.string),
+      repeat(choice($.option_condition, $.option_image, $.option_preview)),
+      ':',
+      $._newline,
+      optional($.block),
+    ),
+
+    option_condition: $ => seq(
+      field('keyword', choice('when', 'unless')),
+      field('condition', $._condition),
+      optional(field('reason', $.string)),
+    ),
+
+    option_image: $ => seq('image', field('image', $.identifier)),
+
+    option_preview: $ => seq('preview', field('image', $.identifier)),
 
     if_statement: $ => seq(
       'if',

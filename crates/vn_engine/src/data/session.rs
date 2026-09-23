@@ -19,6 +19,8 @@ pub struct PlayModes {
 pub struct Spoken {
     #[serde(default)]
     pub file: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub scene: String,
     pub source: String,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub fields: BTreeMap<String, String>,
@@ -31,6 +33,12 @@ impl Spoken {
             source,
             story.variables(),
         )
+        .in_scene(story.current_scene().unwrap_or_default())
+    }
+
+    pub fn in_scene(mut self, scene: impl Into<String>) -> Self {
+        self.scene = scene.into();
+        self
     }
 
     pub fn with_variables(file: &str, source: &str, variables: &HashMap<String, Value>) -> Self {
@@ -43,6 +51,7 @@ impl Spoken {
             .collect();
         Self {
             file: file.to_string(),
+            scene: String::new(),
             source: source.to_string(),
             fields,
         }

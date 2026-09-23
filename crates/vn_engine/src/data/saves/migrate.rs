@@ -156,10 +156,50 @@ pub(super) fn format_migrations() -> Migrations {
         migration.spoken_log();
         Ok(())
     });
+    migrations.add(2, |migration| {
+        migration.choice_options();
+        Ok(())
+    });
     migrations
 }
 
 impl SaveMigration<'_> {
+    fn choice_options(&mut self) {
+        let Json::Object(file) = &mut *self.json else {
+            return;
+        };
+
+        let mut stories: Vec<&mut Json> = Vec::new();
+        for (key, value) in file.iter_mut() {
+            match (key.as_str(), value) {
+                ("story", story) => stories.push(story),
+                ("rollback", Json::Array(checkpoints)) => {
+                    stories.extend(checkpoints.iter_mut().filter_map(|c| c.get_mut("story")))
+                }
+                _ => {}
+            }
+        }
+
+        for story in stories {
+            let Some(Json::Array(options)) = story
+                .get_mut("current")
+                .and_then(|current| current.get_mut("Choice"))
+                .and_then(|choice| choice.get_mut("options"))
+            else {
+                continue;
+            };
+            for (index, option) in options.iter_mut().enumerate() {
+                let Json::String(text) = option else {
+                    continue;
+                };
+                let mut rewritten = serde_json::Map::new();
+                rewritten.insert("text".into(), Json::String(std::mem::take(text)));
+                rewritten.insert("index".into(), Json::from(index));
+                *option = Json::Object(rewritten);
+            }
+        }
+    }
+
     fn spoken_log(&mut self) {
         let Some(Json::Array(entries)) = self.json.get_mut("log") else {
             return;

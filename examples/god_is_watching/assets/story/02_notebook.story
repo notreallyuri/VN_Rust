@@ -1,7 +1,7 @@
 # God Is Watching -- Chapter II: The Notebook
 # J. Moriarty's notebook (Santa Ilde, 1894) and the 1901 conversation, from Francis's copy.
 
-scene notebook_start:
+scene notebook_start nvl:
   background archive_office with fade
   music archive
   "Report two hundred and fourteen has an annex: a copy of the administrator's notebook, made by our man Francis in one night."

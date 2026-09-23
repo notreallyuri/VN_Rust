@@ -1,4 +1,4 @@
-use super::instructions::{Condition, Position, Transition, Value};
+use super::instructions::{Condition, OptionGate, Position, SceneMode, Transition, Value};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TokenKind {
@@ -32,10 +32,13 @@ pub struct Token {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct ChoiceOption {
+pub struct OptionNode {
     pub text: String,
     pub line: usize,
     pub body: Vec<Stmt>,
+    pub gate: Option<OptionGate>,
+    pub image: Option<String>,
+    pub preview: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -48,6 +51,7 @@ pub struct Stmt {
 pub enum Node {
     Scene {
         id: String,
+        mode: SceneMode,
         body: Vec<Stmt>,
     },
     Show {
@@ -82,7 +86,7 @@ pub enum Node {
         text: String,
     },
     ChoiceBlock {
-        options: Vec<ChoiceOption>,
+        options: Vec<OptionNode>,
         final_choice: bool,
     },
     If {

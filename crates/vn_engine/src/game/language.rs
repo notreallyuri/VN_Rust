@@ -49,9 +49,13 @@ pub fn charset(program: &vn_script::Program, catalogs: &[Catalog]) -> BTreeSet<c
     for instruction in &program.instructions {
         match instruction {
             vn_script::Instruction::Say { text, .. } => add(text),
-            vn_script::Instruction::Choice { options } => {
-                for (text, _) in options {
-                    add(text);
+            vn_script::Instruction::Choice { options, .. } => {
+                for arm in options {
+                    add(&arm.text);
+                    if let Some(reason) = arm.gate.as_ref().and_then(|gate| gate.reason.as_deref())
+                    {
+                        add(reason);
+                    }
                 }
             }
             _ => {}

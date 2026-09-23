@@ -71,3 +71,19 @@ scene second_scene:
   music none
   show gabriel worried
   "Things just got darker."
+
+  # Conditions and pictures on an option (SCRIPT.md 4.4, 4.5)
+  choice:
+    "Open the letter" when met_mary == true "You have not met her yet" image letter:
+      "You break the seal."
+    "Read the margin" unless route == good preview margin_note:
+      "The handwriting is not hers."
+    "Put it down":
+      "You leave it where it was."
+      jump nvl_scene
+
+
+# Full-screen text pages (SCRIPT.md 1.2)
+scene nvl_scene nvl:
+  "The corridor narrows."
+  "Her voice does not echo."

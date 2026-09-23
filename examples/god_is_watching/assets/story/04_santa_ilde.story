@@ -29,23 +29,24 @@ scene ilde_office:
   moriarty "Ask your questions. I'll tell you which ones I've forgotten the answers to."
   if saw_torn_page == true:
     "The folio number is on the tip of your tongue."
-    choice:
-      "Ask about folio 41":
-        show moriarty wary with dissolve
-        {player_name} "What was in the boy's cloths, Mr. Moriarty? Folio 41?"
-        moriarty "Who else has read that page?"
-        if believed_moriarty == true:
-          add trust += 1
-          {player_name} "Only me. And I underlined what you said to Francis."
-          moriarty "Then you already know what I'd say. A boy. Not a family."
-        else:
-          add trust -= 1
-          {player_name} "The field post."
-          moriarty "Then you have your answer, and so do they."
-      "Keep it to yourself":
-        "You keep the number to yourself. He watches you do it."
   else:
     moriarty "No questions? The last ones had a list."
+
+  choice:
+    "Ask about folio 41" when saw_torn_page == true "You never got to the folio the page was torn from":
+      show moriarty wary with dissolve
+      {player_name} "What was in the boy's cloths, Mr. Moriarty? Folio 41?"
+      moriarty "Who else has read that page?"
+      if believed_moriarty == true:
+        add trust += 1
+        {player_name} "Only me. And I underlined what you said to Francis."
+        moriarty "Then you already know what I'd say. A boy. Not a family."
+      else:
+        add trust -= 1
+        {player_name} "The field post."
+        moriarty "Then you have your answer, and so do they."
+    "Keep it to yourself":
+      "You keep the number to yourself. He watches you do it."
   jump ilde_nursery
 
 scene ilde_nursery:

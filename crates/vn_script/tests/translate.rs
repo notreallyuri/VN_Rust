@@ -11,6 +11,10 @@ const STORY: &str = r#"scene start:
       "You put it back."
 "#;
 
+fn option(text: &str, index: usize) -> vn_script::ChoiceOption {
+    vn_script::ChoiceOption::new(text, index)
+}
+
 fn program(source: &str) -> vn_script::Program {
     compile_sources([("story/01_box.story", source)])
 }
@@ -231,7 +235,7 @@ fn the_vm_reads_lines_out_of_the_catalog() {
     assert_eq!(
         vm.advance(),
         Event::Choice {
-            options: vec!["Abrir a carta".into(), "Leave it sealed".into()],
+            options: vec![option("Abrir a carta", 0), option("Leave it sealed", 1)],
         }
     );
 }
@@ -306,7 +310,7 @@ fn changing_the_catalog_retranslates_the_choice_on_screen() {
     assert_eq!(
         vm.current(),
         Some(&Event::Choice {
-            options: vec!["Abrir a carta".into(), "Leave it sealed".into()],
+            options: vec![option("Abrir a carta", 0), option("Leave it sealed", 1)],
         })
     );
 

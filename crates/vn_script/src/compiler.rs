@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::diagnostics::Diagnostic;
-use crate::types::{Instruction, Location, Node, Program, Stmt};
+use crate::types::{ChoiceArm, Instruction, Location, Node, Program, SceneMode, Stmt};
 use crate::{parse_program, tokenize};
 
 pub fn compile_source(source: &str) -> Program {
@@ -40,6 +40,7 @@ pub struct Compiler {
     scenes: HashMap<String, usize>,
     scene_order: Vec<String>,
     scene_locations: HashMap<String, Location>,
+    scene_modes: HashMap<String, SceneMode>,
     diagnostics: Vec<Diagnostic>,
     file: usize,
     line: usize,
@@ -62,9 +63,9 @@ impl Compiler {
 
     pub fn compile_scenes(&mut self, scenes: Vec<Stmt>) {
         for scene in scenes {
-            if let Node::Scene { id, body } = scene.node {
+            if let Node::Scene { id, mode, body } = scene.node {
                 self.line = scene.line;
-                self.compile_scene(id, body);
+                self.compile_scene(id, mode, body);
             }
         }
     }
@@ -77,6 +78,7 @@ impl Compiler {
             scenes: self.scenes,
             scene_order: self.scene_order,
             scene_locations: self.scene_locations,
+            scene_modes: self.scene_modes,
             diagnostics: Vec::new(),
         };
 
@@ -106,7 +108,7 @@ impl Compiler {
         }
     }
 
-    fn compile_scene(&mut self, id: String, body: Vec<Stmt>) {
+    fn compile_scene(&mut self, id: String, mode: SceneMode, body: Vec<Stmt>) {
         let location = self.here_location();
 
         if let Some(first) = self.scene_locations.get(&id) {
@@ -128,6 +130,9 @@ impl Compiler {
 
         self.scenes.insert(id.clone(), self.instructions.len());
         self.scene_locations.insert(id.clone(), location);
+        if mode != SceneMode::default() {
+            self.scene_modes.insert(id.clone(), mode);
+        }
         self.scene_order.push(id);
 
         self.compile_body(body);
@@ -230,7 +235,13 @@ impl Compiler {
                 let mut exit_jumps = Vec::new();
 
                 for option in options {
-                    options_map.push((option.text, self.here()));
+                    options_map.push(ChoiceArm {
+                        text: option.text,
+                        target: self.here(),
+                        gate: option.gate,
+                        image: option.image,
+                        preview: option.preview,
+                    });
 
                     if final_choice {
                         self.line = option.line;
@@ -250,6 +261,7 @@ impl Compiler {
 
                 self.instructions[choice_index] = Instruction::Choice {
                     options: options_map,
+                    after: end_index,
                 };
                 self.line = choice_line;
             }

@@ -73,12 +73,12 @@ impl StoryVm {
     }
 
     pub fn choice_source(&self, index: usize) -> Option<&str> {
-        let Some(Instruction::Choice { options }) =
+        let Some(Instruction::Choice { options, .. }) =
             self.program.instructions.get(self.pending_choice?)
         else {
             return None;
         };
-        options.get(index).map(|(text, _)| text.as_str())
+        options.get(index).map(|arm| arm.text.as_str())
     }
 
     pub fn catalog(&self) -> Option<&Catalog> {

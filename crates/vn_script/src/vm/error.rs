@@ -5,6 +5,7 @@ pub enum VmError {
     UnknownScene(String),
     NoChoicePending,
     ChoiceOutOfRange { index: usize, options: usize },
+    ChoiceUnavailable { index: usize },
     UnknownVariable(String),
     TypeMismatch { variable: String, message: String },
 }
@@ -16,6 +17,9 @@ impl fmt::Display for VmError {
             VmError::NoChoicePending => write!(f, "no choice is waiting for an answer"),
             VmError::ChoiceOutOfRange { index, options } => {
                 write!(f, "choice {} is out of range ({} options)", index, options)
+            }
+            VmError::ChoiceUnavailable { index } => {
+                write!(f, "choice {} is not available right now", index)
             }
             VmError::UnknownVariable(id) => write!(f, "unknown variable '{}'", id),
             VmError::TypeMismatch { variable, message } => {

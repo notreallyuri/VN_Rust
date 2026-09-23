@@ -1,0 +1,34 @@
+==================
+A scene in NVL mode
+==================
+
+scene ruins nvl:
+  "The corridor narrows."
+
+---
+
+(source_file
+  (scene
+    name: (identifier)
+    mode: (scene_mode)
+    (block
+      (narration
+        text: (string
+          (string_content))))))
+
+==================
+A scene without a mode
+==================
+
+scene hall:
+  "Back."
+
+---
+
+(source_file
+  (scene
+    name: (identifier)
+    (block
+      (narration
+        text: (string
+          (string_content))))))

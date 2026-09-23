@@ -65,6 +65,9 @@ A whole `.story` file compiles into one `Program`:
   `program.line(i)` and `program.file(i)` read it; `file` indexes `files`.
 - `files`: source file names, in compile order (empty for `compile_source`).
 - `scene_locations`: where each scene is defined.
+- `scene_modes`: the scenes written `scene <id> nvl:`; `scene_mode(id)` answers
+  `SceneMode::Adv` for every scene that is not in it, so a program from before modes
+  existed reads the same.
 - `scenes`: scene id → index of the scene's first instruction.
 - `scene_order`: scene ids in file order. The first is the default **entry scene**.
 - `diagnostics`: problems found while lexing, parsing and compiling.
@@ -85,8 +88,13 @@ Compilation rules:
 - A duplicate scene id is an error diagnostic; the first definition is kept.
 - `Program::unknown_jump_targets()` lists `jump`s to scenes that don't exist
   (validation reports them as errors).
-- A choice block compiles to `Choice { options: [(text, start)] }`, then each option's
-  body followed by a `Goto` to the end of the block.
+- A choice block compiles to `Choice { options: [ChoiceArm], after }`, then each option's
+  body followed by a `Goto` to the end of the block. `after` is that end, where the VM
+  goes when every option is gated away. A `ChoiceArm` is the option's `text` and `target`
+  plus what the writer put between the text and the `:`: `gate` (an `OptionGate` of a
+  `condition`, whether it was `unless` rather than `when`, and the `reason` that makes a
+  failed option visible-but-disabled instead of hidden), `image` and `preview`. All three
+  are skipped when serializing, so choices without them fingerprint as they did before.
 - `show <c> <i> at <position>` compiles to `Show { char_id, img_id, position: Some(..) }`;
   without `at`, `position` is `None` and isn't serialized, so scene fingerprints (and
   saves) from before positions existed stay valid. `background <id>` / `background none`
@@ -180,8 +188,9 @@ The lexer:
   `choice:` are keywords). A token's `payload` is the rest of the line. The keyword
   table (`keyword`, `keyword_name`, `is_keyword`) is shared with the parser.
 - reads quoted text with `scan_string`, which handles the `\"` and `\\` escapes. A quoted
-  line followed by `:` is a `ChoiceOption`; anything else quoted is `Narration`, so
-  narration whose text ends in `:` stays narration.
+  line whose rest ends with `:` is a `ChoiceOption` — the rest is where `when`, `unless`,
+  `image` and `preview` live — and anything else quoted is `Narration`, so narration whose
+  text ends in `:` stays narration.
 - reports tabs in indentation and drops that line, so the lines after it still parse in
   the right block.
 
@@ -393,7 +402,7 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | Event | Blocking | Meaning |
 | --- | --- | --- |
 | `Say { speaker, text }` | yes | A line of dialogue (`speaker: None` is narration) |
-| `Choice { options }` | yes | Waits for `choose(index)`; `advance` returns the same choice until then |
+| `Choice { options }` | yes | Waits for `choose(index)`; `advance` returns the same choice until then. Each `ChoiceOption` carries its `text`, the `index` to pass to `choose`, whether it is `enabled`, the `reason` it is not, and its `image` / `preview`. Options hidden by a `when`/`unless` without a reason are not in the list, so `index` is the option's place in the story, not in `options` |
 | `End` | yes | The story is over; `advance` keeps returning `End` until `reset` |
 | `Show { character, image, position, transition }` | no | Already applied to `active_characters()` (and `position()` when `at` was used). `transition` is the `with` of that line, if any |
 | `Background { image, transition }` | no | Already applied to `background()`; `None` for `background none` |
@@ -435,7 +444,12 @@ The VM emits one `Event` per `advance()` call. The frontend decides how to prese
 | `set_scene_events(bool)` | Emit `Event::SceneEnter` (off by default) |
 
 `VmError` values: `UnknownScene(id)`, `NoChoicePending`, `ChoiceOutOfRange { index, options }`,
+`ChoiceUnavailable { index }` (the option's condition does not hold),
 `UnknownVariable(id)`, `TypeMismatch { variable, message }`.
+
+`scene_mode()` reports the mode of the scene the story is in (`SceneMode::Adv` or `Nvl`),
+which a frontend reads to decide how to draw the line. It is derived from the program and
+the current scene, so nothing about it is stored in a snapshot.
 
 A typical frontend loop:
 
@@ -507,13 +521,13 @@ cargo test -p vn_script
 | File | Covers |
 | --- | --- |
 | `tests/lexer.rs` | Every token kind, comment and blank-line skipping |
-| `tests/parser.rs` | Conditions (every operator, `&&`/` | | ` precedence, enum and string literals, operators inside strings), `set`/`add`, interpolated speakers, `choice final:`, and the fixture compiling |
+| `tests/parser.rs` | Conditions (every operator, `&&`/` | | ` precedence, enum and string literals, operators inside strings), `set`/`add`, interpolated speakers, `choice final:`, and the fixture compiling, a scene's mode, and an option's condition, reason and pictures |
 | `tests/diagnostics.rs` | Every parse error with its exact line and message, recovery (no follow-on errors, empty blocks don't swallow siblings, tabs), string escapes, file names in multi-file diagnostics |
 | `tests/suggest.rs` | Edit distance, `closest` limits, keyword hints, suggestions for unknown scenes, images and entry scenes |
 | `tests/template.rs` | Interpolation of every value type, unset variables, `{{`/`}}`, malformed braces |
 | `tests/snapshot.rs` | Snapshot round trips (mid-scene, at a choice, JSON), edits to other scenes, edits to the saved scene, missing scenes |
 | `tests/schema.rs` | Validation of every registry (unknown names, types, enum members, images, command arity and kinds), line numbers inside branches, defaults, typed `set_variable`, entry scene, old saves with new variables, and the example story directory, `prepare`, schema files (round trip, unchanged writes, missing fields, newer formats) |
-| `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, music state and sound events (and music in snapshots), the fixture playing through, the example playing through all three chapters, `story_files` (recursive, sorted, `.story` only) |
+| `tests/vm.rs` | Scene entry, `current()`, jumps, choice branches, end of story, reset, `start_at`, loop guard, condition evaluation (including strings), `set`/`add`, interpolation in text, speakers and choices, music state and sound events (and music in snapshots), the fixture playing through, the example playing through all three chapters, `story_files` (recursive, sorted, `.story` only), gated options (hidden, disabled with their reason, `unless`, a choice with nothing left, the pictures an option carries) and the scene's mode |
 | `tests/translate.rs` | What gets extracted and with which kind, how entries are keyed, file names normalized across loaders, a second extraction adding nothing, an edited line going stale while the rest is kept, a renamed character, JSON round trips and newer formats, and the VM reading lines out of a catalog (with fallback and interpolation) |
 | `tests/spec.rs` | Every example in SCRIPT.md: it must compile without diagnostics, and its compiled instructions and the events the VM produces (first option of every choice) must match `tests/golden/script_md.txt`. Blocks with `<placeholders>` are syntax templates and skipped; fragments are wrapped in a scene and `...` lines become narration |
 | `tests/fixtures/all_features.story` | Golden input covering every construct in SCRIPT.md |

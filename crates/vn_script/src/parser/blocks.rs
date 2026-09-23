@@ -1,8 +1,10 @@
 use crate::diagnostics::Diagnostic;
-use crate::types::parser::{ChoiceOption, Node, Stmt, Token, TokenKind};
+use crate::suggest::did_you_mean;
+use crate::types::instructions::SceneMode;
+use crate::types::parser::{Node, OptionNode, Stmt, Token, TokenKind};
 
 use super::parts::identifier;
-use super::statement::{keyword_speaker, option_text, parse_statement};
+use super::statement::{keyword_speaker, parse_option, parse_statement};
 use crate::condition::parse_condition;
 use crate::lexer::keyword_name;
 
@@ -97,7 +99,12 @@ impl<'a> Parser<'a> {
     pub(super) fn scene(&mut self, start: usize) -> (Option<Stmt>, usize) {
         let token = &self.tokens[start];
 
-        let id = self.header(token, "`scene <id>`").and_then(|id| {
+        let header = self.header(token, "`scene <id>`");
+        let mode = header
+            .and_then(|header| self.scene_mode(token.line, header))
+            .unwrap_or_default();
+        let id = header.and_then(|header| {
+            let id = header.split_whitespace().next().unwrap_or_default();
             let id = identifier(id, "scene id", token.line);
             self.report(id)
         });
@@ -117,9 +124,42 @@ impl<'a> Parser<'a> {
 
         let scene = id.map(|id| Stmt {
             line: token.line,
-            node: Node::Scene { id, body },
+            node: Node::Scene { id, mode, body },
         });
         (scene, next)
+    }
+
+    fn scene_mode(&mut self, line: usize, header: &str) -> Option<SceneMode> {
+        let names = SceneMode::ALL.map(SceneMode::name);
+        match header.split_whitespace().collect::<Vec<&str>>()[..] {
+            [_] | [] => Some(SceneMode::Adv),
+            [_, mode] => match SceneMode::from_name(mode) {
+                Some(mode) => Some(mode),
+                None => {
+                    self.error(
+                        line,
+                        format!(
+                            "unknown scene mode `{}` (expected {}){}",
+                            mode,
+                            names.join(" or "),
+                            did_you_mean(mode, names)
+                        ),
+                    );
+                    None
+                }
+            },
+            [_, _, ref extra @ ..] => {
+                self.error(
+                    line,
+                    format!(
+                        "`scene <id>` takes one mode ({}); unexpected `{}`",
+                        names.join(" or "),
+                        extra.join(" ")
+                    ),
+                );
+                None
+            }
+        }
     }
 
     pub(super) fn blocks(&mut self, start: usize, indent: usize) -> (Vec<Stmt>, usize) {
@@ -267,12 +307,15 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
-            let text = self.report(option_text(option));
+            let parts = self.report(parse_option(option));
             let (body, next) = self.body(i, "choice option");
-            options.extend(text.map(|text| ChoiceOption {
-                text,
+            options.extend(parts.map(|parts| OptionNode {
+                text: parts.text,
                 line: option.line,
                 body,
+                gate: parts.gate,
+                image: parts.image,
+                preview: parts.preview,
             }));
             i = next;
         }

@@ -22,6 +22,10 @@ impl Project {
         fs::create_dir_all(root.join("backgrounds")).unwrap();
         fs::write(root.join("backgrounds/hall.png"), b"").unwrap();
         fs::write(root.join("backgrounds/study.png"), b"").unwrap();
+        fs::create_dir_all(root.join("choices")).unwrap();
+        fs::write(root.join("choices/door.png"), b"").unwrap();
+        fs::create_dir_all(root.join("previews")).unwrap();
+        fs::write(root.join("previews/hall_view.png"), b"").unwrap();
 
         let mut schema = Schema::default();
         schema.variables.insert("trust".into(), VariableDef::int(0));
@@ -296,6 +300,47 @@ fn completion_knows_the_registries_and_the_scenes() {
 
     let first = client.completion_labels(&start, 1, 2);
     assert!(first.contains(&"jump".to_string()) && first.contains(&"mary".to_string()));
+    assert!(client.stop());
+}
+
+#[test]
+fn completion_knows_what_a_choice_option_takes() {
+    let project = Project::new();
+    let text = "scene start nvl:\n  choice:\n    \"Open\" \n    \"Open\" when \n    \"Open\" when trust \n    \"Open\" image \n    \"Open\" preview \n";
+    let start = project.story("01.story", text);
+
+    let mut client = Client::start();
+    client.open(&start, text);
+    client.diagnostics(1);
+
+    assert_eq!(
+        client.completion_labels(&start, 2, 11),
+        ["image", "preview", "unless", "when"]
+    );
+    assert_eq!(
+        client.completion_labels(&start, 3, 16),
+        ["met", "route", "trust"]
+    );
+    assert_eq!(
+        client.completion_labels(&start, 4, 22),
+        ["!=", "<", "<=", "==", ">", ">="]
+    );
+    assert_eq!(client.completion_labels(&start, 5, 17), ["door"]);
+    assert_eq!(client.completion_labels(&start, 6, 19), ["hall_view"]);
+    assert!(client.stop());
+}
+
+#[test]
+fn completion_offers_the_scene_modes() {
+    let project = Project::new();
+    let text = "scene start \n  \"one\"\n";
+    let start = project.story("01.story", text);
+
+    let mut client = Client::start();
+    client.open(&start, text);
+    client.diagnostics(1);
+
+    assert_eq!(client.completion_labels(&start, 0, 12), ["adv:", "nvl:"]);
     assert!(client.stop());
 }
 

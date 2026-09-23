@@ -172,24 +172,34 @@ impl PlayingScreen {
 
                 let mut clicked = None;
                 let mut hovered = None;
-                for (index, (rect, option)) in rects.iter().zip(options).enumerate() {
-                    let style = self.config.choice_style_for(index, option);
+                for (at, (rect, option)) in rects.iter().zip(options).enumerate() {
+                    let style = self.config.option_style(option);
                     if ui::button::button_hovered(ctx.rl, *rect, &style) {
-                        hovered = Some(index);
+                        hovered = Some(at);
+                        if !option.enabled {
+                            ctx.cursor(crate::ui::cursor::CursorKind::NotAllowed);
+                            if let Some(reason) = &option.reason {
+                                ctx.tooltip_text(reason.clone());
+                            }
+                        }
                     }
-                    if ui::button::button_clicked(ctx, *rect, &style) && clicked.is_none() {
-                        clicked = Some(index);
+                    if option.enabled
+                        && ui::button::button_clicked(ctx, *rect, &style)
+                        && clicked.is_none()
+                    {
+                        clicked = Some(at);
                     }
                 }
-                let enabled = vec![true; rects.len()];
+                let enabled: Vec<bool> = options.iter().map(|option| option.enabled).collect();
                 let accepted = self
                     .choice_focus
                     .update(&ctx.nav, &rects, &enabled, hovered);
                 let clicked = clicked.or(accepted);
 
                 match clicked {
-                    Some(index) => {
-                        let text = options[index].clone();
+                    Some(at) => {
+                        let index = options[at].index;
+                        let text = options[at].text.clone();
                         let said = ctx
                             .story
                             .choice_source(index)
@@ -270,6 +280,45 @@ impl PlayingScreen {
     }
 }
 
+impl PlayingScreen {
+    fn previewed<'a>(
+        &self,
+        rl: &RaylibHandle,
+        options: &'a [vn_script::ChoiceOption],
+        rects: &[Rectangle],
+    ) -> Option<&'a str> {
+        let under_mouse = rects.iter().position(|rect| ui::is_hovered(rl, *rect));
+        let at = under_mouse.or_else(|| self.choice_focus.index())?;
+        options.get(at)?.preview.as_deref()
+    }
+}
+
+fn draw_preview(
+    d: &mut RaylibDrawHandle,
+    ctx: &DrawContext,
+    style: &super::ChoicePreviewStyle,
+    preview: &str,
+    screen: Vector2,
+) {
+    let path = crate::data::resources::preview_path(preview);
+    let Some(texture) = ctx.resources.texture(&path) else {
+        return;
+    };
+
+    let panel = style.rect(screen);
+    style.panel.draw(d, panel);
+
+    let natural = Vector2::new(texture.width as f32, texture.height as f32);
+    d.draw_texture_pro(
+        texture,
+        Rectangle::new(0.0, 0.0, natural.x, natural.y),
+        style.picture_rect(panel, natural),
+        Vector2::zero(),
+        0.0,
+        Color::WHITE,
+    );
+}
+
 impl Screen for PlayingScreen {
     fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
         let next = self.update_story(&mut ctx);
@@ -303,6 +352,11 @@ impl Screen for PlayingScreen {
         if let Some(image) = ctx.story.background() {
             ctx.resources
                 .get_or_load(&background_path(image), ctx.rl, ctx.thread);
+        }
+        if let Some(Event::Choice { options }) = &self.current {
+            for path in self.config.option_pictures(options) {
+                ctx.resources.get_or_load(&path, ctx.rl, ctx.thread);
+            }
         }
         for path in self.stage.texture_paths() {
             #[cfg(feature = "character-visuals")]
@@ -362,7 +416,14 @@ impl Screen for PlayingScreen {
             ui::draw_text(d, fonts, label, Vector2::new(28.0, 22.0), style);
         }
 
+        let nvl = ctx.story.scene_mode().is_nvl();
+        if nvl {
+            let visible = matches!(self.current, Some(Event::Say { .. })).then_some(self.visible);
+            super::nvl::draw(d, ctx, config, screen, visible.flatten());
+        }
+
         match &self.current {
+            Some(Event::Say { .. }) if nvl => {}
             Some(Event::Say { speaker, text }) => {
                 let style = ctx
                     .characters
@@ -431,12 +492,16 @@ impl Screen for PlayingScreen {
             }
             Some(Event::Choice { options }) => {
                 let rects = config.choice_rects(options.len(), screen);
-                for (index, (option, rect)) in options.iter().zip(rects).enumerate() {
-                    let style = config.choice_style_for(index, option);
-                    let label = vn_script::markup::plain(option);
+                for (at, (option, rect)) in options.iter().zip(&rects).enumerate() {
+                    let style = config.option_style(option);
+                    let label = vn_script::markup::plain(&option.text);
                     ui::button::Button::new(&label, &style)
-                        .focused(ctx.shows_focus(&self.choice_focus, index))
-                        .draw(d, ctx, rect);
+                        .focused(ctx.shows_focus(&self.choice_focus, at))
+                        .disabled(!option.enabled)
+                        .draw(d, ctx, *rect);
+                }
+                if let Some(preview) = self.previewed(d, options, &rects) {
+                    draw_preview(d, ctx, &config.choice_preview, preview, screen);
                 }
             }
             Some(Event::End) => {

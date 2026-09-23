@@ -1,5 +1,8 @@
+use crate::condition::parse_condition;
 use crate::diagnostics::Diagnostic;
 use crate::lexer::scan_string;
+use crate::suggest::did_you_mean;
+use crate::types::instructions::{Condition, OptionGate};
 use crate::types::parser::{Node, Token, TokenKind};
 
 use super::parts::{
@@ -7,16 +10,195 @@ use super::parts::{
     split_with,
 };
 
+const OPTION_MODIFIERS: [&str; 4] = ["when", "unless", "image", "preview"];
+
 pub(super) fn keyword_speaker(keyword: &str) -> String {
     format!("`{}` is a keyword and can't be a character id", keyword)
 }
 
-pub(super) fn option_text(token: &Token) -> Result<String, Diagnostic> {
-    let (text, _) = scan_string(&token.payload).map_err(|e| Diagnostic::error(token.line, e))?;
+pub(super) struct OptionParts {
+    pub text: String,
+    pub gate: Option<OptionGate>,
+    pub image: Option<String>,
+    pub preview: Option<String>,
+}
+
+pub(super) fn parse_option(token: &Token) -> Result<OptionParts, Diagnostic> {
+    let line = token.line;
+    let error = |message: String| Diagnostic::error(line, message);
+
+    let (text, used) = scan_string(&token.payload).map_err(|e| Diagnostic::error(token.line, e))?;
     if text.trim().is_empty() {
-        return Err(Diagnostic::error(token.line, "choice option text is empty"));
+        return Err(error("choice option text is empty".into()));
     }
-    Ok(text)
+
+    let rest = token.payload[used..].trim_end();
+    let rest = rest
+        .strip_suffix(':')
+        .ok_or_else(|| error("a choice option ends with `:`".into()))?;
+
+    let mut parts = OptionParts {
+        text,
+        gate: None,
+        image: None,
+        preview: None,
+    };
+
+    for (keyword, segment) in modifiers(rest, line)? {
+        match keyword {
+            "when" | "unless" => {
+                if parts.gate.is_some() {
+                    return Err(error(
+                        "a choice option takes one `when` or `unless` condition".into(),
+                    ));
+                }
+                let (condition, reason) = condition_and_reason(keyword, segment, line)?;
+                parts.gate = Some(OptionGate {
+                    condition,
+                    negated: keyword == "unless",
+                    reason,
+                });
+            }
+            "image" => {
+                if parts.image.is_some() {
+                    return Err(error("a choice option takes one `image`".into()));
+                }
+                parts.image = Some(picture(keyword, segment, "choice image", line)?);
+            }
+            "preview" => {
+                if parts.preview.is_some() {
+                    return Err(error("a choice option takes one `preview`".into()));
+                }
+                parts.preview = Some(picture(keyword, segment, "preview image", line)?);
+            }
+            _ => unreachable!("only the option modifiers are collected"),
+        }
+    }
+
+    Ok(parts)
+}
+
+fn picture(keyword: &str, segment: &str, what: &str, line: usize) -> Result<String, Diagnostic> {
+    match segment.split_whitespace().collect::<Vec<&str>>()[..] {
+        [id] => identifier(id, what, line),
+        [] => Err(Diagnostic::error(
+            line,
+            format!("`{}` needs a picture: `{} <id>`", keyword, keyword),
+        )),
+        [_, ref extra @ ..] => Err(Diagnostic::error(
+            line,
+            format!(
+                "`{}` takes one picture; unexpected `{}`",
+                keyword,
+                extra.join(" ")
+            ),
+        )),
+    }
+}
+
+fn condition_and_reason(
+    keyword: &str,
+    segment: &str,
+    line: usize,
+) -> Result<(Condition, Option<String>), Diagnostic> {
+    if segment.trim().is_empty() {
+        return Err(Diagnostic::error(
+            line,
+            format!(
+                "`{}` needs a condition, like `{} has_key == true`",
+                keyword, keyword
+            ),
+        ));
+    }
+
+    if let Some((before, reason)) = trailing_string(segment)
+        && !before.trim().is_empty()
+        && let Ok(condition) = parse_condition(before, line)
+    {
+        if reason.trim().is_empty() {
+            return Err(Diagnostic::error(
+                line,
+                "the reason an option is unavailable can't be empty",
+            ));
+        }
+        return Ok((condition, Some(reason)));
+    }
+
+    parse_condition(segment, line).map(|condition| (condition, None))
+}
+
+fn trailing_string(segment: &str) -> Option<(&str, String)> {
+    let mut at = 0;
+    let mut last = None;
+
+    while at < segment.len() {
+        let tail = &segment[at..];
+        let c = tail.chars().next()?;
+        if c == '"' {
+            let (text, used) = scan_string(tail).ok()?;
+            last = Some((at, at + used, text));
+            at += used;
+        } else {
+            at += c.len_utf8();
+        }
+    }
+
+    let (start, end, text) = last?;
+    (segment[end..].trim().is_empty()).then(|| (&segment[..start], text))
+}
+
+fn modifiers(rest: &str, line: usize) -> Result<Vec<(&str, &str)>, Diagnostic> {
+    let mut marks: Vec<(usize, &str)> = Vec::new();
+    let mut at = 0;
+
+    while at < rest.len() {
+        let tail = &rest[at..];
+        let c = tail.chars().next().expect("the tail is not empty");
+
+        if c.is_whitespace() {
+            at += c.len_utf8();
+            continue;
+        }
+
+        if c == '"' {
+            let (_, used) = scan_string(tail).map_err(|e| Diagnostic::error(line, e))?;
+            at += used;
+            continue;
+        }
+
+        let end = tail
+            .find(|c: char| c.is_whitespace() || c == '"')
+            .unwrap_or(tail.len());
+        if OPTION_MODIFIERS.contains(&&tail[..end]) {
+            marks.push((at, &tail[..end]));
+        }
+        at += end;
+    }
+
+    let leading = match marks.first() {
+        Some(&(start, _)) => &rest[..start],
+        None => rest,
+    };
+    if !leading.trim().is_empty() {
+        let word = leading.split_whitespace().next().unwrap_or_default();
+        return Err(Diagnostic::error(
+            line,
+            format!(
+                "unexpected `{}` after the option text (a choice option takes `when`, `unless`, `image` and `preview`){}",
+                leading.trim(),
+                did_you_mean(word, OPTION_MODIFIERS)
+            ),
+        ));
+    }
+
+    Ok(marks
+        .iter()
+        .enumerate()
+        .map(|(i, &(start, keyword))| {
+            let end = marks.get(i + 1).map_or(rest.len(), |&(next, _)| next);
+            (keyword, rest[start + keyword.len()..end].trim())
+        })
+        .collect())
 }
 
 pub(super) fn words(payload: &str) -> Vec<&str> {

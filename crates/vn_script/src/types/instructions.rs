@@ -70,6 +70,39 @@ impl std::fmt::Display for Position {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SceneMode {
+    #[default]
+    Adv,
+    Nvl,
+}
+
+impl SceneMode {
+    pub const ALL: [SceneMode; 2] = [SceneMode::Adv, SceneMode::Nvl];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            SceneMode::Adv => "adv",
+            SceneMode::Nvl => "nvl",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|mode| mode.name() == name)
+    }
+
+    pub fn is_nvl(self) -> bool {
+        self == SceneMode::Nvl
+    }
+}
+
+impl std::fmt::Display for SceneMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TransitionKind {
@@ -203,6 +236,70 @@ impl std::fmt::Display for Condition {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OptionGate {
+    pub condition: Condition,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub negated: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+impl OptionGate {
+    pub fn keyword(&self) -> &'static str {
+        match self.negated {
+            true => "unless",
+            false => "when",
+        }
+    }
+
+    pub fn passes(&self, met: bool) -> bool {
+        met != self.negated
+    }
+
+    pub fn hides(&self) -> bool {
+        self.reason.is_none()
+    }
+}
+
+impl std::fmt::Display for OptionGate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.keyword(), self.condition)?;
+        match &self.reason {
+            Some(reason) => write!(f, " \"{}\"", reason),
+            None => Ok(()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ChoiceArm {
+    pub text: String,
+    pub target: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gate: Option<OptionGate>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview: Option<String>,
+}
+
+impl ChoiceArm {
+    pub fn new(text: impl Into<String>, target: usize) -> Self {
+        Self {
+            text: text.into(),
+            target,
+            gate: None,
+            image: None,
+            preview: None,
+        }
+    }
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Instruction {
     Show {
@@ -239,7 +336,8 @@ pub enum Instruction {
         jump_to_index: usize,
     },
     Choice {
-        options: Vec<(String, usize)>,
+        options: Vec<ChoiceArm>,
+        after: usize,
     },
     Set {
         var_id: String,
@@ -277,6 +375,8 @@ pub struct Program {
     pub scene_order: Vec<String>,
     #[serde(default)]
     pub scene_locations: HashMap<String, Location>,
+    #[serde(default)]
+    pub scene_modes: HashMap<String, SceneMode>,
     #[serde(skip)]
     pub diagnostics: Vec<crate::Diagnostic>,
 }
@@ -305,6 +405,10 @@ impl Program {
                 .and_then(|file| self.files.iter().position(|f| f == file))
         };
         diagnostics.sort_by_key(|d| (file_order(d), d.line));
+    }
+
+    pub fn scene_mode(&self, scene_id: &str) -> SceneMode {
+        self.scene_modes.get(scene_id).copied().unwrap_or_default()
     }
 
     pub fn entry_scene(&self) -> Option<&str> {
@@ -362,11 +466,15 @@ impl Instruction {
                 condition: condition.clone(),
                 jump_to_index: shift(*jump_to_index),
             },
-            Instruction::Choice { options } => Instruction::Choice {
+            Instruction::Choice { options, after } => Instruction::Choice {
                 options: options
                     .iter()
-                    .map(|(text, target)| (text.clone(), shift(*target)))
+                    .map(|arm| ChoiceArm {
+                        target: shift(arm.target),
+                        ..arm.clone()
+                    })
                     .collect(),
+                after: shift(*after),
             },
             other => other.clone(),
         }
@@ -388,10 +496,22 @@ pub struct SceneInstruction {
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Instruction::Choice { options } => {
+            Instruction::Choice { options, .. } => {
                 let options: Vec<String> = options
                     .iter()
-                    .map(|(text, index)| format!("'{}'->{}", text, index))
+                    .map(|arm| {
+                        let mut out = format!("'{}'->{}", arm.text, arm.target);
+                        if let Some(gate) = &arm.gate {
+                            out.push_str(&format!(" {}", gate));
+                        }
+                        if let Some(image) = &arm.image {
+                            out.push_str(&format!(" image {}", image));
+                        }
+                        if let Some(preview) = &arm.preview {
+                            out.push_str(&format!(" preview {}", preview));
+                        }
+                        out
+                    })
                     .collect();
                 write!(f, "CHOICE [{}]", options.join(", "))
             }
@@ -458,14 +578,16 @@ impl Program {
                     .get(*scene)
                     .copied()
                     .unwrap_or_default();
+                let head = match self.scene_mode(scene) {
+                    SceneMode::Adv => scene.to_string(),
+                    mode => format!("{} {}", scene, mode),
+                };
                 match self.file_name(location.file).filter(|f| !f.is_empty()) {
                     Some(file) => out.push_str(&format!(
                         "\nscene {}:  ({}:{})\n",
-                        scene, file, location.line
+                        head, file, location.line
                     )),
-                    None => {
-                        out.push_str(&format!("\nscene {}:  (line {})\n", scene, location.line))
-                    }
+                    None => out.push_str(&format!("\nscene {}:  (line {})\n", head, location.line)),
                 }
             }
             out.push_str(&format!("{:03}: {}\n", index, instruction));

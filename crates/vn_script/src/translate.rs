@@ -19,6 +19,7 @@ pub enum StringKind {
     Dialogue,
     Narration,
     Choice,
+    Reason,
     Name,
     Ui,
 }
@@ -29,6 +30,7 @@ impl StringKind {
             StringKind::Dialogue => "dialogue",
             StringKind::Narration => "narration",
             StringKind::Choice => "choice",
+            StringKind::Reason => "reason",
             StringKind::Name => "name",
             StringKind::Ui => "ui",
         }
@@ -78,15 +80,24 @@ pub fn extract(program: &Program) -> Vec<Source> {
                 speaker: char_id.clone(),
                 text: text.clone(),
             }),
-            Instruction::Choice { options } => {
-                for (text, _) in options {
+            Instruction::Choice { options, .. } => {
+                for arm in options {
                     strings.push(Source {
                         file: file.clone(),
                         line: location.line,
                         kind: StringKind::Choice,
                         speaker: None,
-                        text: text.clone(),
+                        text: arm.text.clone(),
                     });
+                    if let Some(reason) = arm.gate.as_ref().and_then(|gate| gate.reason.clone()) {
+                        strings.push(Source {
+                            file: file.clone(),
+                            line: location.line,
+                            kind: StringKind::Reason,
+                            speaker: None,
+                            text: reason,
+                        });
+                    }
                 }
             }
             _ => {}

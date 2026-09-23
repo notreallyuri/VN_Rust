@@ -1,5 +1,9 @@
 use vn_script::{Event, StoryVm, Value, VmError};
 
+fn option(text: &str, index: usize) -> vn_script::ChoiceOption {
+    vn_script::ChoiceOption::new(text, index)
+}
+
 fn say(speaker: Option<&str>, text: &str) -> Event {
     Event::Say {
         speaker: speaker.map(str::to_string),
@@ -64,7 +68,7 @@ fn choice_exits_land_in_the_same_scene() {
         assert_eq!(
             vm.advance_until_blocking(),
             Event::Choice {
-                options: vec!["Left".into(), "Right".into()],
+                options: vec![option("Left", 0), option("Right", 1)],
             }
         );
 
@@ -199,8 +203,15 @@ fn play_to_the_end(vm: &mut StoryVm, last_choice: usize) -> std::collections::BT
             Event::Choice { options } => {
                 let last = options
                     .iter()
-                    .any(|o| o.starts_with("\"A boy with a blessing"));
-                vm.choose(if last { last_choice } else { 0 }).unwrap();
+                    .any(|o| o.text.starts_with("\"A boy with a blessing"));
+                let taken = match last {
+                    true => last_choice,
+                    false => options
+                        .iter()
+                        .position(|o| o.enabled)
+                        .expect("a choice offers something to take"),
+                };
+                vm.choose(options[taken].index).unwrap();
             }
             _ => lines += 1,
         }
@@ -247,12 +258,16 @@ fn the_hidden_ending_needs_the_clues() {
             Event::End => break,
             Event::Choice { options } => {
                 offered = options.len();
-                let index = options.iter().position(|o| {
-                    o.starts_with("Leave it")
-                        || o.starts_with("Let the margin")
-                        || o.starts_with("Thank her")
-                });
-                vm.choose(index.unwrap_or(0)).unwrap();
+                let at = options
+                    .iter()
+                    .position(|o| {
+                        o.text.starts_with("Leave it")
+                            || o.text.starts_with("Let the margin")
+                            || o.text.starts_with("Thank her")
+                    })
+                    .or_else(|| options.iter().position(|o| o.enabled))
+                    .expect("a choice offers something to take");
+                vm.choose(options[at].index).unwrap();
             }
             _ => {}
         }
@@ -394,7 +409,10 @@ fn fixture_plays_through() {
                 lines.push(text);
             }
             Event::Call { command, .. } => calls.push(command),
-            Event::Choice { .. } => vm.choose(1).unwrap(),
+            Event::Choice { options } => {
+                let last = options.last().expect("a choice has options");
+                vm.choose(last.index).unwrap()
+            }
             Event::End => break,
             _ => {}
         }
@@ -406,7 +424,9 @@ fn fixture_plays_through() {
     assert!(lines.contains(&"Nice to meet you, Yuri.".to_string()));
     assert!(speakers.contains(&"Yuri".to_string()));
     assert!(lines.contains(&"You shake your head.".to_string()));
-    assert_eq!(lines.last().unwrap(), "Things just got darker.");
+    assert!(lines.contains(&"Things just got darker.".to_string()));
+    assert!(lines.contains(&"You leave it where it was.".to_string()));
+    assert_eq!(lines.last().unwrap(), "Her voice does not echo.");
     assert_eq!(calls, ["give_item", "unlock_route", "ask_name"]);
     assert_eq!(vm.variable("affection"), Some(&Value::Int(-1)));
 }
@@ -442,7 +462,7 @@ scene start:
     assert_eq!(
         vm.advance(),
         Event::Choice {
-            options: vec!["Ask Yuri's age".into()],
+            options: vec![option("Ask Yuri's age", 0)],
         }
     );
 }
@@ -852,4 +872,121 @@ fn a_show_without_a_position_serializes_as_before() {
         serde_json::to_string(&show).unwrap(),
         r#"{"Show":{"char_id":"mary","img_id":"tired"}}"#
     );
+}
+
+const GATED: &str = r#"scene start:
+  choice:
+    "Open the door" when has_key == true "The door is locked":
+      "It opens."
+    "Look through the window" unless curtains == true:
+      "You see a table."
+    "Turn back":
+      "You leave."
+"#;
+
+fn gated() -> StoryVm {
+    let mut vm = StoryVm::from_source(GATED);
+    vm.set_schema(schema_with([
+        ("has_key", vn_script::VariableDef::bool(false)),
+        ("curtains", vn_script::VariableDef::bool(false)),
+    ]));
+    vm
+}
+
+fn schema_with<const N: usize>(
+    variables: [(&str, vn_script::VariableDef); N],
+) -> vn_script::Schema {
+    let mut schema = vn_script::Schema::default();
+    for (name, def) in variables {
+        schema.variables.insert(name.to_string(), def);
+    }
+    schema
+}
+
+fn offered(vm: &mut StoryVm) -> Vec<vn_script::ChoiceOption> {
+    match vm.advance_until_blocking() {
+        Event::Choice { options } => options,
+        other => panic!("expected a choice, got {:?}", other),
+    }
+}
+
+#[test]
+fn an_option_with_a_reason_is_offered_but_disabled() {
+    let mut vm = gated();
+    let options = offered(&mut vm);
+
+    assert_eq!(options[0].text, "Open the door");
+    assert!(!options[0].enabled);
+    assert_eq!(options[0].reason.as_deref(), Some("The door is locked"));
+    assert_eq!(vm.choose(0), Err(VmError::ChoiceUnavailable { index: 0 }));
+}
+
+#[test]
+fn an_option_without_a_reason_is_hidden_until_its_condition_holds() {
+    let mut vm = gated();
+    vm.set_variable("curtains", Value::Bool(true)).unwrap();
+    let options = offered(&mut vm);
+
+    let texts: Vec<&str> = options.iter().map(|o| o.text.as_str()).collect();
+    assert_eq!(texts, ["Open the door", "Turn back"]);
+    assert_eq!(options[1].index, 2, "the index is the one to choose");
+
+    vm.choose(options[1].index).unwrap();
+    assert_eq!(vm.advance(), narration("You leave."));
+}
+
+#[test]
+fn a_met_condition_leaves_the_option_alone() {
+    let mut vm = gated();
+    vm.set_variable("has_key", Value::Bool(true)).unwrap();
+    let options = offered(&mut vm);
+
+    assert!(options[0].enabled);
+    assert_eq!(options[0].reason, None);
+    vm.choose(0).unwrap();
+    assert_eq!(vm.advance(), narration("It opens."));
+}
+
+#[test]
+fn a_choice_whose_options_are_all_hidden_is_skipped() {
+    let mut vm = StoryVm::from_source(
+        "scene start:\n  choice:\n    \"A\" when flag == true:\n      \"a\"\n    \"B\" when flag == true:\n      \"b\"\n  \"after\"\n",
+    );
+    vm.set_schema(schema_with([("flag", vn_script::VariableDef::bool(false))]));
+
+    assert_eq!(vm.advance_until_blocking(), narration("after"));
+}
+
+#[test]
+fn an_option_carries_its_pictures() {
+    let mut vm = StoryVm::from_source(
+        "scene start:\n  choice:\n    \"The north road\" image north preview north_view:\n      \"You walk north.\"\n",
+    );
+    let options = offered(&mut vm);
+
+    assert_eq!(options[0].image.as_deref(), Some("north"));
+    assert_eq!(options[0].preview.as_deref(), Some("north_view"));
+}
+
+#[test]
+fn a_scene_chooses_nvl_mode_in_its_header() {
+    let vm = StoryVm::from_source(
+        "scene start nvl:\n  \"One.\"\n  jump hall\n\nscene hall:\n  \"Two.\"\n",
+    );
+
+    assert_eq!(vm.program().scene_mode("start"), vn_script::SceneMode::Nvl);
+    assert_eq!(vm.program().scene_mode("hall"), vn_script::SceneMode::Adv);
+    assert!(vm.scene_mode().is_nvl(), "the entry scene is in NVL mode");
+}
+
+#[test]
+fn the_mode_follows_the_scene_the_story_is_in() {
+    let mut vm = StoryVm::from_source(
+        "scene start:\n  \"One.\"\n  jump hall\n\nscene hall nvl:\n  \"Two.\"\n",
+    );
+
+    vm.advance_until_blocking();
+    assert!(!vm.scene_mode().is_nvl());
+    vm.advance_until_blocking();
+    assert!(vm.scene_mode().is_nvl());
 }

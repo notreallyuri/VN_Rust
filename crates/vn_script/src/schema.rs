@@ -268,6 +268,11 @@ impl<'a> Checker<'a> {
             .push(Diagnostic::error(line, message).with_file(self.file));
     }
 
+    fn warn(&mut self, line: usize, message: String) {
+        self.diagnostics
+            .push(Diagnostic::warning(line, message).with_file(self.file));
+    }
+
     fn instruction(&mut self, line: usize, instruction: &Instruction) {
         match instruction {
             Instruction::Jump { scene_id } => {
@@ -312,9 +317,25 @@ impl<'a> Checker<'a> {
                     }
                 }
             }
-            Instruction::Choice { options } => {
-                for (text, _) in options {
-                    self.interpolations(line, text);
+            Instruction::Choice { options, .. } => {
+                for arm in options {
+                    self.interpolations(line, &arm.text);
+                    if let Some(gate) = &arm.gate {
+                        self.condition(line, &gate.condition);
+                        if let Some(reason) = &gate.reason {
+                            self.interpolations(line, reason);
+                        }
+                    }
+                }
+                if !options.is_empty()
+                    && options
+                        .iter()
+                        .all(|arm| arm.gate.as_ref().is_some_and(|gate| gate.hides()))
+                {
+                    self.warn(
+                        line,
+                        "every option here can be hidden, which would leave the player with an empty choice; give at least one option a reason or no condition".to_string(),
+                    );
                 }
             }
             Instruction::Show {

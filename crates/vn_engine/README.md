@@ -189,7 +189,9 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
   shows all of it, the next click continues. Lines shown again (coming back to the
   screen, rollback, loading) appear whole. Words are wrapped for the full line up front,
   so they don't jump between lines while typing.
-- `Choice`: one button per option, centered vertically.
+- `Choice`: one button per option, centered vertically. Options the story has gated with
+  `when`/`unless` are greyed out with their reason as a tooltip, or left out entirely
+  (see [Choices](#choices)).
 - `End`: an end title and hint; continuing goes to `after_end`.
 - The story's `background` fills the window (scaled to cover it, cropping the edges if
   the aspect ratio differs); without one, the `background` option is drawn.
@@ -211,6 +213,9 @@ inventory screen) shows the same line or choice again, using `StoryVm::current()
 | `dialogue_text(style)` | Dialogue font 26 px white |
 | `choice_button(\|b\| ...)`, `choice_spacing(px)` | 720×56, Choice font; 16 |
 | `choice_layout(\|l\| ...)` | a column centered in the window, inside the dialogue box's margin |
+| `choice_image(\|i\| ...)` | `ChoiceImageStyle`: an option's `image` fills its button, white tint (see [Choices](#choices)) |
+| `choice_preview(\|p\| ...)` | `ChoicePreviewStyle`: 360×240 anchored top-right, 40 from the edges, 10 of padding, black at 200 alpha |
+| `nvl(\|n\| ...)` | `NvlStyle`: margin 60, padding 40, at most 1100 wide, 14 between lines, black at 200 alpha (see [NVL pages](#nvl-pages)) |
 | `end_title(text)`, `end_title_text(style)` | "The End", Title font 56 px |
 | `end_hint(text)`, `end_hint_text(style)` | "Click to return to the menu", Menu font 20 px gray |
 | `advance_keys(keys)` | Space, Enter |
@@ -305,6 +310,76 @@ The picture keeps its aspect ratio, is never drawn wider than `width`, and stand
 box's floor. The text area loses `width + gap * 2` whichever side the bust is on, so
 switching sides never reflows the line. A character with no bust leaves the box as it is,
 and a bust whose file is missing draws the usual placeholder and warns at startup.
+
+#### Choices
+
+A `choice:` option carries what the story decided about it (SCRIPT.md 4.4, 4.5) and the
+screen presents it:
+
+- **Unavailable options.** `"Open the door" when has_key == true "The door is locked"`
+  draws the button in its `disabled` look, refuses clicks and keyboard focus, shows the
+  `NotAllowed` cursor and puts the reason in a [tooltip](#tooltips). An option gated
+  without a reason never reaches the screen. The reason comes from the story, so it is
+  translated with everything else.
+- **Pictures.** `image <id>` loads `<assets>/choices/<id>.png`, `preview <id>` loads
+  `<assets>/previews/<id>.png`. Both are loaded while the choice is on screen and drawn
+  as the placeholder if they are missing, like any other texture.
+- **Previews.** The preview of the option under the pointer — or of the focused one when
+  playing with a keyboard or gamepad — is drawn in its panel, scaled to fit and keeping
+  its aspect ratio.
+
+```rust
+.playing(|p| {
+    p.choice_image(|i| i.icon().size(36.0).gap(14.0))
+        .choice_preview(|v| v.size(420.0, 260.0).anchor(Anchor::Right).margin(48.0))
+})
+```
+
+| `ChoiceImageStyle` | Default |
+|---|---|
+| `fill()` / `icon()` | `fill()`: the picture is the button's background, nine-slicing and all (see [Buttons](#buttons)) |
+| `size(px)`, `side(IconSide)`, `gap(px)` | 32, `Left`, 12 — icon mode only |
+| `tint(color)` | white |
+
+| `ChoicePreviewStyle` | Default |
+|---|---|
+| `size(w, h)` | 360×240 |
+| `anchor(Anchor)`, `margin(px)` | `TopRight`, 40 from the window's edges |
+| `padding(px)` | 10 between the panel and the picture |
+| `panel(\|p\| ...)` | black at 200 alpha |
+
+`choice_button_for(|index, text, style| ...)` still styles each option first; the
+picture is layered on the style it returns, and `index` is the option's place in the
+story, not on screen, so it does not move when an option is hidden.
+
+#### NVL pages
+
+A scene written `scene <id> nvl:` is read as full-screen pages instead of one line in the
+dialogue box. The page is the lines of the current scene, printed one under the other,
+with the newest typing out as usual; when the next line no longer fits, the page turns
+over and starts again from that line.
+
+The engine keeps no page of its own: it is built each frame from the
+[log](#log) of what the player has read, which is saved, translated and rolled back
+already. So a load lands on the same page, rollback steps back through it, and changing
+language redraws it.
+
+```rust
+.playing(|p| p.nvl(|n| n.margin(80.0).padding(48.0).max_width(Some(960.0)).color(INK)))
+```
+
+| `NvlStyle` | Default |
+|---|---|
+| `margin(px)`, `padding(px)` | 60 from the window's edges, 40 inside the panel |
+| `max_width(Option<px>)` | `Some(1100)`; a narrower page is centered |
+| `entry_spacing(px)` | 14 between lines |
+| `panel(\|p\| ...)` (or `color(c)`) | black at 200 alpha |
+| `rect(screen)`, `text_area(rect)`, `page_start(heights, height)` | where the page sits, where its text goes, and which line the last page starts at |
+
+Speaker names and colours are the ones from `speaker_text` and the character registry,
+and the text is drawn with `dialogue_text`, so an NVL scene inherits the game's
+typography. Choices, the HUD, the log and everything else work as they do in ADV mode,
+and the page stays on screen behind a choice.
 
 ## Styles
 
@@ -2519,7 +2594,7 @@ together and re-exports them:
 | `app/` | `builder.rs` is the `VnApp` builder, `check.rs` the schema export and story/art validation, `run.rs` the window and the game loop, `screens.rs` the default `ScreenFactory`, `error.rs` `AppError` |
 | `ui/button/` | `style.rs` (`ButtonStyle`, `ButtonLook`), `decor.rs` (borders, shadows, images, icons), `transform.rs` (scale/rotate/skew and its hit test), `look.rs` (the blended `Look`), `anim.rs` (hover and press state), `draw.rs` (`Button`, `draw_button`) |
 | `data/saves/` | `store.rs` is `Saves` (slots, files, thumbnails), `file.rs` the `SaveFile` and applying one, `migrate.rs` the version steps, `dirs.rs` where saves live, `error.rs` the errors and warnings |
-| `screens/playing/` | `config.rs`, `screen.rs`, `flow.rs`, `typewriter.rs`, `keys.rs`, `style.rs` |
+| `screens/playing/` | `config.rs`, `screen.rs`, `flow.rs`, `typewriter.rs`, `keys.rs`, `style.rs` (the dialogue box), `choice.rs` (option pictures and previews), `nvl.rs` (full-screen pages) |
 | `screens/settings/` | `config.rs`, `values.rs`, `layout.rs`, `menu.rs`, `screen.rs` |
 | `screens/save_menu/` | `config.rs`, `menu.rs`, `actions.rs`, `screen.rs` |
 
@@ -2560,3 +2635,5 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/hit.rs` | Shapes in fractions of an area (rectangles, circles, polygons, pixels read off an image), hit testing, picking the topmost, cutting a concave outline into triangles (with a windowed check that its notch stays empty), layered looks, label placement |
 | `tests/image_map.rs` | Hotspots found by id and by point, overlapping hotspots, hotspots disabled by the game state, what a hotspot carries, the default style |
 | `tests/drag.rs` | Items and targets under a point, a held item following the pointer, drops on a target, on nothing and on one that refuses, cancelling, validity rules reading the item and the game, replacing the item list |
+| `tests/choices.rs` | An option's picture filling its button or becoming its icon, a game's own choice style kept underneath, both pictures of every option loaded, and a preview fitted inside its panel |
+| `tests/nvl.rs` | Where a page sits (centred, limited, letterboxed by its margin), the padding its text loses, and where the last page starts once the lines no longer fit |

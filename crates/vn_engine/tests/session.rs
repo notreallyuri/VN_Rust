@@ -151,3 +151,20 @@ fn the_default_hud_is_log_auto_and_skip() {
         1.5 + 10.0 * 0.02
     );
 }
+
+#[test]
+fn a_logged_line_remembers_the_scene_it_was_said_in() {
+    let mut story = StoryVm::from_source(
+        "scene intro:\n  mary \"One.\"\n  jump hall\n\nscene hall:\n  mary \"Two.\"\n",
+    );
+
+    story.advance_until_blocking();
+    let (_, source) = story.current_say().expect("a line");
+    assert_eq!(Spoken::capture(&story, source).scene, "intro");
+
+    story.advance_until_blocking();
+    let (_, source) = story.current_say().expect("a line");
+    let said = Spoken::capture(&story, source);
+    assert_eq!(said.scene, "hall", "an NVL page starts over on a new scene");
+    assert_eq!(said.text(None), "Two.");
+}

@@ -85,7 +85,7 @@ pub fn tokenize(input: &str) -> (Vec<Token>, Vec<Diagnostic>) {
 
 fn quoted_kind(line: &str) -> TokenKind {
     match scan_string(line) {
-        Ok((_, used)) if line[used..].trim() == ":" => TokenKind::ChoiceOption,
+        Ok((_, used)) if line[used..].trim_end().ends_with(':') => TokenKind::ChoiceOption,
         _ => TokenKind::Narration,
     }
 }

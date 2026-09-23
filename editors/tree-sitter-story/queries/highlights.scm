@@ -24,11 +24,15 @@
   "else"
   "choice"
   "final"
+  "when"
+  "unless"
 ] @keyword.conditional
 
 [
   "at"
   "with"
+  "image"
+  "preview"
 ] @keyword.operator
 
 [
@@ -49,6 +53,14 @@
 
 (scene
   name: (identifier) @label)
+
+(scene_mode) @keyword.modifier
+
+(option_image
+  image: (identifier) @constant)
+
+(option_preview
+  image: (identifier) @constant)
 
 (jump_statement
   scene: (identifier) @label)

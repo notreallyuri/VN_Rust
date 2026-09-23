@@ -2,7 +2,24 @@
 # events the VM produces (taking the first option of every choice).
 # Regenerate with: UPDATE_GOLDEN=1 cargo test -p vn_script --test spec
 
-======== SCRIPT.md:45  2.3 Positions
+======== SCRIPT.md:27  1.2 Text mode
+scene ruins nvl:
+  "The corridor narrows."
+  mary "I have been here before."
+  "Her voice does not echo."
+-------- instructions
+scene ruins nvl:  (line 1)
+000: SAY [NARRATOR]: "The corridor narrows."
+001: SAY [mary]: "I have been here before."
+002: SAY [NARRATOR]: "Her voice does not echo."
+003: END
+-------- events
+> Say { speaker: None, text: "The corridor narrows." }
+> Say { speaker: Some("mary"), text: "I have been here before." }
+> Say { speaker: None, text: "Her voice does not echo." }
+> End
+
+======== SCRIPT.md:68  2.3 Positions
 scene example:
   show mary tired at left
   show hugo neutral at right
@@ -22,7 +39,7 @@ scene example:  (line 1)
 > Show { character: "mary", image: "angry", position: None, transition: None }
 > End
 
-======== SCRIPT.md:62  2.4 Remove characters
+======== SCRIPT.md:85  2.4 Remove characters
 scene example:
   clear
 -------- instructions
@@ -33,7 +50,7 @@ scene example:  (line 1)
 > Clear { transition: None }
 > End
 
-======== SCRIPT.md:81  2.5 Backgrounds
+======== SCRIPT.md:104  2.5 Backgrounds
 scene the_study:
   background study_night
   show hugo tired at center
@@ -50,7 +67,7 @@ scene the_study:  (line 1)
 > Say { speaker: None, text: "Father burns them in the study fireplace." }
 > End
 
-======== SCRIPT.md:117  2.6 Transitions
+======== SCRIPT.md:140  2.6 Transitions
 scene example:
   background santa_ilde_courtyard with fade
   show moriarty older at right with dissolve
@@ -78,7 +95,7 @@ scene example:  (line 1)
 > Hide { character: "moriarty", transition: Some(Transition { kind: SlideLeft, millis: None }) }
 > End
 
-======== SCRIPT.md:145  2.7 Music and sound
+======== SCRIPT.md:168  2.7 Music and sound
 scene the_door:
   background santa_ilde_door
   music santa_ilde
@@ -98,7 +115,7 @@ scene the_door:  (line 1)
 > Say { speaker: None, text: "August 9th. A young woman came to the door after midnight." }
 > End
 
-======== SCRIPT.md:190  3.5 Variable interpolation
+======== SCRIPT.md:213  3.5 Variable interpolation
 scene example:
   mary "Nice to meet you, {player_name}."
   {player_name} "Nice to meet you, Mary."
@@ -119,11 +136,11 @@ scene example:  (line 1)
 > Say { speaker: Some("mary"), text: "Nice to meet you, {player_name}." }
 > Say { speaker: Some("{player_name}"), text: "Nice to meet you, Mary." }
 > Say { speaker: None, text: "You have {coins} coins." }
-> Choice { options: ["Tell {player_name}'s story"] }
+> Choice { options: ["Tell {player_name}'s story"#0] }
 > Say { speaker: None, text: "..." }
 > End
 
-======== SCRIPT.md:217  3.7 Strings
+======== SCRIPT.md:240  3.7 Strings
 scene example:
   mary "The sign says \"Closed\"."
 -------- instructions
@@ -134,7 +151,7 @@ scene example:  (line 1)
 > Say { speaker: Some("mary"), text: "The sign says \"Closed\"." }
 > End
 
-======== SCRIPT.md:237  3.8 Text tags
+======== SCRIPT.md:260  3.8 Text tags
 scene example:
   registrar "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street."
 -------- instructions
@@ -145,7 +162,7 @@ scene example:  (line 1)
 > Say { speaker: Some("registrar"), text: "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street." }
 > End
 
-======== SCRIPT.md:275  4.3 Example
+======== SCRIPT.md:301  4.3 Example
 scene example:
   choice:
     "Agree":
@@ -166,11 +183,57 @@ scene example:  (line 1)
 006: GOTO 7
 007: END
 -------- events
-> Choice { options: ["Agree", "Disagree"] }
+> Choice { options: ["Agree"#0, "Disagree"#1] }
 > Say { speaker: None, text: "You nod silently." }
 > End
 
-======== SCRIPT.md:354  7. Full Minimal Example (Valid script)
+======== SCRIPT.md:330  4.4 Conditions on an option
+scene example:
+  set has_key = true
+  choice:
+    "Open the door" when has_key == true "The door is locked":
+      "The lock gives."
+    "Look through the window" unless curtains == true:
+      "You see a table, and nothing else."
+    "Turn back":
+      "You leave the way you came."
+-------- instructions
+scene example:  (line 1)
+000: SET has_key = true
+001: CHOICE ['Open the door'->2 when has_key == true "The door is locked", 'Look through the window'->4 unless curtains == true, 'Turn back'->6]
+002: SAY [NARRATOR]: "The lock gives."
+003: GOTO 8
+004: SAY [NARRATOR]: "You see a table, and nothing else."
+005: GOTO 8
+006: SAY [NARRATOR]: "You leave the way you came."
+007: GOTO 8
+008: END
+-------- events
+> Choice { options: ["Open the door"#0, "Look through the window"#1, "Turn back"#2] }
+> Say { speaker: None, text: "The lock gives." }
+> End
+
+======== SCRIPT.md:357  4.5 Pictures on an option
+scene example:
+  choice:
+    "The north road" image north preview north_view:
+      "Stones, and then trees."
+    "The river path" image river:
+      "Water, loud enough to hide a voice."
+-------- instructions
+scene example:  (line 1)
+000: CHOICE ['The north road'->1 image north preview north_view, 'The river path'->3 image river]
+001: SAY [NARRATOR]: "Stones, and then trees."
+002: GOTO 5
+003: SAY [NARRATOR]: "Water, loud enough to hide a voice."
+004: GOTO 5
+005: END
+-------- events
+> Choice { options: ["The north road"#0 image: north preview: north_view, "The river path"#1 image: river] }
+> Say { speaker: None, text: "Stones, and then trees." }
+> End
+
+======== SCRIPT.md:433  7. Full Minimal Example (Valid script)
 scene start:
   show gabriel serious
 
@@ -214,13 +277,13 @@ scene second_scene:  (line 18)
 > Say { speaker: Some("gabriel"), text: "This is a really interesting format." }
 > Show { character: "mary", image: "serious", position: None, transition: None }
 > Say { speaker: Some("mary"), text: "Is the parser working?" }
-> Choice { options: ["Yes", "No"] }
+> Choice { options: ["Yes"#0, "No"#1] }
 > Say { speaker: None, text: "The room goes silent." }
 > Show { character: "gabriel", image: "worried", position: None, transition: None }
 > Say { speaker: None, text: "Things just got darker." }
 > End
 
-======== SCRIPT.md:434  8.2.3 Examples
+======== SCRIPT.md:513  8.2.3 Examples
 scene example:
   set met_mary = true
   set route = good
@@ -234,7 +297,7 @@ scene example:  (line 1)
 -------- events
 > End
 
-======== SCRIPT.md:443  8.2.3 Examples
+======== SCRIPT.md:522  8.2.3 Examples
 scene example:
   call ask_name player_name
   mary "Nice to meet you, {player_name}."
@@ -248,7 +311,7 @@ scene example:  (line 1)
 > Say { speaker: Some("mary"), text: "Nice to meet you, {player_name}." }
 > End
 
-======== SCRIPT.md:467  8.3.2 Examples
+======== SCRIPT.md:546  8.3.2 Examples
 scene example:
   add affection += 1
   add affection -= 2
@@ -260,7 +323,7 @@ scene example:  (line 1)
 -------- events
 > End
 
-======== SCRIPT.md:509  8.4.2 Example
+======== SCRIPT.md:588  8.4.2 Example
 scene example:
   if affection >= 3 && met_mary == true:
     mary "You remembered."
@@ -277,7 +340,7 @@ scene example:  (line 1)
 > Say { speaker: Some("mary"), text: "You forgot." }
 > End
 
-======== SCRIPT.md:548  8.8 Minimal Example (Variables + Choices)
+======== SCRIPT.md:627  8.8 Minimal Example (Variables + Choices)
 scene start:
   if met_mary == true:
     mary "Nice to see you again."
@@ -306,10 +369,10 @@ scene start:  (line 1)
 010: END
 -------- events
 > Say { speaker: Some("mary"), text: "Hello." }
-> Choice { options: ["Be kind", "Say nothing"] }
+> Choice { options: ["Be kind"#0, "Say nothing"#1] }
 > End
 
-======== SCRIPT.md:592  9.3 Example
+======== SCRIPT.md:671  9.3 Example
 scene example:
   call give_item stick 1
   call unlock_route good
@@ -323,7 +386,7 @@ scene example:  (line 1)
 > Call { command: "unlock_route", args: ["good"] }
 > End
 
-======== SCRIPT.md:605  10.1 Commit
+======== SCRIPT.md:684  10.1 Commit
 scene example:
   commit
 -------- instructions
@@ -334,7 +397,7 @@ scene example:  (line 1)
 > Commit
 > End
 
-======== SCRIPT.md:614  10.2 Final choices
+======== SCRIPT.md:693  10.2 Final choices
 scene example:
   choice final:
     "Keep the letter":
@@ -352,12 +415,12 @@ scene example:  (line 1)
 006: GOTO 7
 007: END
 -------- events
-> Choice { options: ["Keep the letter", "Burn the letter"] }
+> Choice { options: ["Keep the letter"#0, "Burn the letter"#1] }
 > Commit
 > Say { speaker: None, text: "..." }
 > End
 
-======== SCRIPT.md:633  10.3 Rules
+======== SCRIPT.md:712  10.3 Rules
 scene example:
   choice:
     "Spare him":
@@ -375,6 +438,6 @@ scene example:  (line 1)
 005: GOTO 6
 006: END
 -------- events
-> Choice { options: ["Spare him", "Pull the trigger"] }
+> Choice { options: ["Spare him"#0, "Pull the trigger"#1] }
 > Say { speaker: None, text: "He runs into the night." }
 > End

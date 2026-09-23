@@ -245,11 +245,23 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
           "type": "block",
+          "named": true
+        },
+        {
+          "type": "option_condition",
+          "named": true
+        },
+        {
+          "type": "option_image",
+          "named": true
+        },
+        {
+          "type": "option_preview",
           "named": true
         }
       ]
@@ -527,6 +539,86 @@
     }
   },
   {
+    "type": "option_condition",
+    "named": true,
+    "fields": {
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "and_condition",
+            "named": true
+          },
+          {
+            "type": "comparison",
+            "named": true
+          },
+          {
+            "type": "or_condition",
+            "named": true
+          }
+        ]
+      },
+      "keyword": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "unless",
+            "named": false
+          },
+          {
+            "type": "when",
+            "named": false
+          }
+        ]
+      },
+      "reason": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "option_image",
+    "named": true,
+    "fields": {
+      "image": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "option_preview",
+    "named": true,
+    "fields": {
+      "image": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "or_condition",
     "named": true,
     "fields": {
@@ -598,6 +690,16 @@
     "type": "scene",
     "named": true,
     "fields": {
+      "mode": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "scene_mode",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -619,6 +721,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "scene_mode",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "set_statement",
@@ -854,6 +961,10 @@
     "named": false
   },
   {
+    "type": "adv",
+    "named": false
+  },
+  {
     "type": "at",
     "named": false
   },
@@ -907,6 +1018,10 @@
     "named": false
   },
   {
+    "type": "image",
+    "named": false
+  },
+  {
     "type": "jump",
     "named": false
   },
@@ -921,6 +1036,14 @@
   {
     "type": "number",
     "named": true
+  },
+  {
+    "type": "nvl",
+    "named": false
+  },
+  {
+    "type": "preview",
+    "named": false
   },
   {
     "type": "remove",
@@ -951,7 +1074,15 @@
     "named": false
   },
   {
+    "type": "unless",
+    "named": false
+  },
+  {
     "type": "voice",
+    "named": false
+  },
+  {
+    "type": "when",
     "named": false
   },
   {

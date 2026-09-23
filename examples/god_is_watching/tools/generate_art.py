@@ -618,6 +618,28 @@ UI = {
 }
 
 
+PREVIEWS = {
+    "ending_report": "santa_ilde_courtyard",
+    "ending_silence": "archive_office",
+    "ending_keeper": "nursery",
+}
+
+PREVIEW_SIZE = (480, 270)
+
+
+def preview(source):
+    picture = Image.open(source).convert("RGB")
+    width, height = picture.size
+    wanted = PREVIEW_SIZE[0] / PREVIEW_SIZE[1]
+    if width / height > wanted:
+        cut = int(height * wanted)
+        box = ((width - cut) // 2, 0, (width - cut) // 2 + cut, height)
+    else:
+        cut = int(width / wanted)
+        box = (0, (height - cut) // 2, width, (height - cut) // 2 + cut)
+    return picture.resize(PREVIEW_SIZE, Image.LANCZOS, box=box)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--assets", default=str(Path(__file__).resolve().parent.parent / "assets"))
@@ -642,6 +664,18 @@ def main():
             path.parent.mkdir(parents=True, exist_ok=True)
             portrait(color, {**base, **overrides}).save(path, optimize=True)
             print(f"wrote {path}")
+
+    for name, source in PREVIEWS.items():
+        if args.only and name not in args.only and "previews" not in args.only:
+            continue
+        background = assets / "backgrounds" / f"{source}.png"
+        if not background.exists():
+            print(f"skipped {name}: {background} is missing")
+            continue
+        path = assets / "previews" / f"{name}.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        preview(background).save(path, optimize=True)
+        print(f"wrote {path}")
 
     for name, paint in UI.items():
         if args.only and name not in args.only and "ui" not in args.only:

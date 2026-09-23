@@ -118,10 +118,11 @@ fn normalize(text: &str) -> String {
         None => (text, false),
     };
 
-    let spaced = matches!(
-        keyword(first_word(body)),
-        Some(TokenKind::If | TokenKind::Set | TokenKind::Add)
-    );
+    let spaced = body.starts_with('"')
+        || matches!(
+            keyword(first_word(body)),
+            Some(TokenKind::If | TokenKind::Set | TokenKind::Add)
+        );
 
     let mut line = atoms(body, spaced).join(" ");
     if colon {

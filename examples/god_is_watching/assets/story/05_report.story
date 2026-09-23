@@ -13,19 +13,14 @@ scene report_start:
 
   if recognized_clara == true && trust >= 2:
     "You think of a wooden horse, a woman who waited nine years, and a man who kept a promise he couldn't remember making."
-    choice final:
-      "\"A boy with a blessing. The Von Lucis blood.\"":
-        jump ending_report
-      "\"Nothing the House needs.\"":
-        jump ending_silence
-      "\"Nothing.\" Then go back":
-        jump ending_keeper
-  else:
-    choice final:
-      "\"A boy with a blessing. The Von Lucis blood.\"":
-        jump ending_report
-      "\"Nothing the House needs.\"":
-        jump ending_silence
+
+  choice final:
+    "\"A boy with a blessing. The Von Lucis blood.\"" preview ending_report:
+      jump ending_report
+    "\"Nothing the House needs.\"" preview ending_silence:
+      jump ending_silence
+    "\"Nothing.\" Then go back" when recognized_clara == true && trust >= 2 preview ending_keeper:
+      jump ending_keeper
 
 scene ending_report:
   music ending
