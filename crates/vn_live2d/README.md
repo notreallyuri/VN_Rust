@@ -4,9 +4,9 @@ Experimental first milestone for Live2D Cubism integration: a native adapter, a
 raylib viewer, and the engine seam it registers through. A character is backed by a
 model with `VnApp::character_visual`, its appearances join the schema so `show mary
 happy` validates, `New Game` and hot reload drop the models, and loading a save or
-rolling back restarts the ones still on screen. **The C++
-bridge has not been compiled or run against the proprietary Core, so none of that
-path is verified end to end.** Every failure falls back to the PNG character art.
+rolling back restarts the ones still on screen. The C++ bridge now compiles and
+renders against the proprietary Core, though the story-facing path has still only
+been exercised through the viewer. Every failure falls back to the PNG character art.
 
 The dependency runs one way: `vn_live2d` uses `vn_engine`, never the reverse. The
 seam lives behind `vn_engine`'s `character-visuals` feature, which is off by
@@ -22,13 +22,26 @@ Cubism's motion blending, expressions, and physics to Rust.
 - The engine seam compiles, lints and tests with `--features character-visuals`;
   that is not part of a default workspace build, so check it explicitly:
   `cargo test -p vn_engine --features character-visuals --lib`.
-- Rust native bindings and the viewer have been type-checked without linking Core.
+- The bridge compiles against Cubism SDK for Native 5-r.5 (Core 6.0.1) and the viewer
+  renders Haru, Mao, Hiyori and Natori fully textured, with clipping masks, on Mesa
+  26.2 / AMD, OpenGL 4.6 core. No GL errors, and the host's red and green markers
+  still bracket the model, so the state save/restore holds.
+- Three faults only a real run could show, all fixed here: `SetIsPremultipliedAlpha`
+  does not exist in 5-r.5 (the setter is an `IsPremultipliedAlpha` overload); the
+  shader loader signature takes `csmSizeInt*`, not `int*`; and the Framework asks for
+  `GL_LINEAR_MIPMAP_LINEAR` when it draws, so model textures without mipmaps are
+  incomplete and sample as pure black. Textures are now mipmapped and filtered
+  trilinearly, as the SDK's own sample does.
+- The embedded shaders are ported from GLSL 1.20 to 3.30 core as they are copied.
+  Mesa accepts the originals in a core context, but they are not legal there, and a
+  stricter driver would leave the host's shader bound and draw a black silhouette.
 - The SDK-independent GPU test passes with a real OpenGL 3.3 core context under
   Xvfb: drawing through VBOs, restoring host GL state (including on exceptions),
   and recreating the compatibility resources.
-- **The complete C++ bridge has not yet been compiled or run against Core.** A
-  local SDK is required for that next step. Model rendering, clipping, physics,
-  expression playback, and the viewer remain unverified end to end.
+- **Still unverified:** motions, expressions and physics in motion (only the first
+  frames have been watched), resize, failed loads, repeated destruction, several
+  models at once, post-processing, and the story-facing seam with a real game.
+  Nothing is checked automatically: there are no GPU regression tests yet.
 
 ## SDK setup
 
@@ -40,7 +53,6 @@ Point `CUBISM_SDK_ROOT` at the directory containing:
 
 ```text
 Core/include/Live2DCubismCore.h
-Core/include/Live2DCubismCore.hpp
 Core/lib/linux/x86_64/libLive2DCubismCore.a
 Framework/CMakeLists.txt
 Framework/src/Rendering/OpenGL/Shaders/Standard/
@@ -62,7 +74,8 @@ The viewer draws into the engine's `RenderTarget`, then composites it with rayli
 It draws a red square before Cubism and a green square afterward. Resize the
 window; press M for motions, E for expressions, Space to pause, and R to destroy
 and reload the model. An optional final integer limits the number of frames for
-smoke testing. This is a developer probe, not the final game-facing API.
+smoke testing, and `VN_SHOT=/path/frame.png` writes frame 120 to a file, which is how
+the renders above were checked. This is a developer probe, not the final game-facing API.
 
 ## Design
 
@@ -113,10 +126,11 @@ xvfb-run -a /tmp/vn-live2d-core-profile-test
 
 ## Next milestone
 
-1. Compile and run the full bridge with the pinned SDK and representative models.
-   Check masks, inverted masks, blending, expressions, motions, and physics;
-   multiple models; resize; failed loads; repeated destruction; screenshots; and
-   post-processing. Add model-dependent GPU regression checks once verified.
+1. Continue the first real run. Four models draw correctly with masks; still to check
+   are inverted masks and blending modes, expressions, motions and physics over time,
+   multiple models at once, resize, failed loads, repeated destruction, screenshots
+   and post-processing. Add model-dependent GPU regression checks, now that `VN_SHOT`
+   makes a frame comparable.
 2. Prove the seam carries a second backend. It has only ever had this one behind
    it, so `CharacterVisual` is still a hypothesis about the abstraction. It also
    has no channel for per-frame parameters, which is what voice-driven lip sync

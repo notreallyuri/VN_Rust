@@ -233,10 +233,13 @@ impl<'sdk> Model<'sdk> {
                 .ok_or_else(|| Error(format!("texture has no extension: {path}")))?;
             let image = Image::load_image_from_mem(&format!(".{extension}"), &assets.files[path])
                 .map_err(|e| Error(format!("{path}: {e}")))?;
-            let texture = rl
+            let mut texture = rl
                 .load_texture_from_image(thread, &image)
                 .map_err(|e| Error(format!("{path}: {e}")))?;
-            texture.set_texture_filter(thread, TextureFilter::TEXTURE_FILTER_BILINEAR);
+            // The Framework asks for GL_LINEAR_MIPMAP_LINEAR when it draws, so a
+            // texture without mipmaps is incomplete and samples as black.
+            texture.gen_texture_mipmaps();
+            texture.set_texture_filter(thread, TextureFilter::TEXTURE_FILTER_TRILINEAR);
             call(|error, capacity| unsafe {
                 vn_model_texture(handle.as_ptr(), slot as u32, texture.id, error, capacity)
             })?;

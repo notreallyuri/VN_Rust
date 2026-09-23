@@ -75,7 +75,7 @@ struct VnModel final : CubismUserModel {
         settings->GetLayoutMap(layout);
         _modelMatrix->SetupFromLayout(layout);
         CreateRenderer(1, 1);
-        GetRenderer<Renderer>()->SetIsPremultipliedAlpha(false);
+        GetRenderer<Renderer>()->IsPremultipliedAlpha(false);
         _model->Update();
     }
 

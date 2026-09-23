@@ -7,6 +7,34 @@ fn run(command: &mut Command) {
     assert!(status.success(), "Cubism native build failed: {command:?}");
 }
 
+// The SDK ships GLSL 1.20 shaders, which a 3.3 core context cannot compile: a
+// failed program leaves the host's shader bound and the model draws as a
+// silhouette. Port the embedded copies; the SDK's own files are never touched.
+fn core_profile_shader(name: &str, bytes: &[u8]) -> Vec<u8> {
+    let source = String::from_utf8(bytes.to_vec())
+        .unwrap_or_else(|_| panic!("{name} is not UTF-8; expected Framework 5-r.5 shaders"));
+    assert!(
+        !source.contains("#version") || source.contains("#version 120"),
+        "{name}: expected a GLSL 1.20 shader from Framework 5-r.5"
+    );
+    let vertex = name.ends_with(".vert");
+    let mut ported = source
+        .replace("#version 120", "#version 330 core")
+        .replace("attribute ", "in ")
+        .replace("varying ", if vertex { "out " } else { "in " })
+        .replace("texture2D(", "texture(")
+        .replace("gl_FragColor", "vn_FragColor");
+    // Blend modes arrive as version-less chunks compiled with the shader above them.
+    if !vertex && ported.contains("#version 330 core") {
+        ported = ported.replacen(
+            "#version 330 core",
+            "#version 330 core\nout vec4 vn_FragColor;",
+            1,
+        );
+    }
+    ported.into_bytes()
+}
+
 fn main() {
     println!("cargo:rerun-if-env-changed=CUBISM_SDK_ROOT");
     println!("cargo:rerun-if-changed=native");
@@ -53,11 +81,11 @@ fn main() {
         .collect();
     paths.sort();
     let mut header = String::from(
-        "#pragma once\n#include <cstring>\n#include <cstdlib>\nstatic unsigned char* vn_shader(const std::string path, int* size) {\n",
+        "#pragma once\n#include <cstring>\n#include <cstdlib>\nstatic unsigned char* vn_shader(const std::string path, unsigned int* size) {\n",
     );
     for (i, path) in paths.iter().enumerate() {
         let name = path.file_name().unwrap().to_str().unwrap();
-        let bytes = fs::read(path).unwrap();
+        let bytes = core_profile_shader(name, &fs::read(path).unwrap());
         let data = bytes
             .iter()
             .map(u8::to_string)

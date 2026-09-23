@@ -1,8 +1,27 @@
 //! Native integration probe, deliberately separate from the story engine.
 use vn_engine::data::assets::Assets;
 use vn_engine::frame::target::RenderTarget;
+use vn_engine::raylib::ffi;
 use vn_engine::raylib::prelude::*;
 use vn_live2d::{Model, ModelAssets, with_cubism};
+
+fn screenshot(path: &str) {
+    let path = std::ffi::CString::new(path).expect("VN_SHOT path");
+    unsafe {
+        ffi::rlDrawRenderBatchActive();
+        let (width, height) = (ffi::rlGetFramebufferWidth(), ffi::rlGetFramebufferHeight());
+        let pixels = ffi::rlReadScreenPixels(width, height);
+        let image = ffi::Image {
+            data: pixels.cast(),
+            width,
+            height,
+            mipmaps: 1,
+            format: ffi::PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 as i32,
+        };
+        ffi::ExportImage(image, path.as_ptr());
+        ffi::MemFree(pixels.cast());
+    }
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -94,6 +113,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Color::WHITE,
             );
             frames += 1;
+            if let Ok(shot) = std::env::var("VN_SHOT")
+                && frames == 120
+            {
+                screenshot(&shot);
+            }
         }
         Ok(())
     })?;
