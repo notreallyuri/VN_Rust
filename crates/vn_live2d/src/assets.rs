@@ -48,6 +48,42 @@ pub struct ModelAssets {
     pub(crate) files: BTreeMap<String, Vec<u8>>,
 }
 
+const SAMPLE_MODELS: [u64; 8] = [
+    0x054b_bbad_2095_d29d,
+    0xf7d3_0941_2e4f_7038,
+    0xe479_8e62_93a0_4880,
+    0xe32d_176e_8785_e470,
+    0xe09a_f04b_8f19_9a2d,
+    0x079f_dd96_83d4_84da,
+    0x1edb_c322_af7b_648a,
+    0x7144_b685_d28e_48aa,
+];
+
+fn fingerprint(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+        (hash ^ u64::from(*byte)).wrapping_mul(0x100_0000_01b3)
+    })
+}
+
+pub fn is_sample_model(moc: &[u8]) -> bool {
+    SAMPLE_MODELS.contains(&fingerprint(moc))
+}
+
+fn sample_model_guard(path: &str, moc: &[u8]) -> Result<(), Error> {
+    if !is_sample_model(moc) {
+        return Ok(());
+    }
+    if cfg!(debug_assertions) {
+        eprintln!(
+            "⚠️ {path} is a Live2D sample model: fine while developing, but it cannot be shipped, and a release build refuses to load it"
+        );
+        return Ok(());
+    }
+    Err(Error(format!(
+        "{path} is a Live2D sample model, which may not be redistributed; ship a model you hold the rights to"
+    )))
+}
+
 impl ModelAssets {
     pub fn load(assets: &Assets, manifest_path: &str) -> Result<Self, Error> {
         let manifest_path = resolve("", manifest_path)?;
@@ -107,6 +143,9 @@ impl ModelAssets {
                 if !value.is_object() {
                     return Err(Error(format!("{resolved}: expected a JSON object")));
                 }
+            }
+            if path == &refs.moc {
+                sample_model_guard(&resolved, &bytes)?;
             }
             files.insert(path.clone(), bytes);
         }

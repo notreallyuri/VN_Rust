@@ -112,3 +112,15 @@ fn incorrect_manifest_version_is_rejected() {
     manifest["Version"] = 2.into();
     assert!(failure(&serde_json::to_vec(&manifest).unwrap()).contains("Version 3"));
 }
+
+#[test]
+fn live2d_sample_models_are_recognised_by_their_moc() {
+    let sample = std::path::Path::new(&std::env::var("CUBISM_SDK_ROOT").unwrap_or_default())
+        .join("Samples/Resources/Hiyori/Hiyori.moc3");
+    let Ok(moc) = std::fs::read(&sample) else {
+        eprintln!("skipped: set CUBISM_SDK_ROOT to check against the real sample models");
+        return;
+    };
+    assert!(vn_live2d::is_sample_model(&moc), "Hiyori is a sample model");
+    assert!(!vn_live2d::is_sample_model(b"a model of your own"));
+}

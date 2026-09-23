@@ -104,6 +104,21 @@ the renders above were checked. This is a developer probe, not the final game-fa
   the SDK's location or the process working directory. Redistributing a binary
   still requires the applicable SDK notices and terms.
 
+## Sample models are development-only
+
+Live2D's sample models (Haru, Hiyori, Mao, Mark, Natori, Ren, Rice, Wanko) come under
+the Free Material License, which forbids redistributing them. `ModelAssets::load`
+recognises all eight by the fingerprint of their `.moc3`, whatever they have been
+renamed to. A debug build warns and carries on, so they stay useful while developing;
+a release build refuses to load them, so they cannot leave in a shipped game. Use
+models you hold the rights to for anything you publish. `is_sample_model` exposes the
+same check.
+
+The SDK itself is different: Core links statically into the binary and the Framework
+compiles into it, so players install nothing, and Core's static library is on Live2D's
+redistributable list. A Cubism SDK Release License is required only for businesses
+with annual gross revenue of 10M JPY or more; see `LICENSE.md` in the SDK.
+
 ## Tests
 
 Without Core:

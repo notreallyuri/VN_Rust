@@ -3,7 +3,7 @@
 
 mod assets;
 mod character;
-pub use assets::{Expression, ModelAssets, ModelSettings, Motion};
+pub use assets::{Expression, ModelAssets, ModelSettings, Motion, is_sample_model};
 pub use character::{Appearance, Live2dCharacter};
 
 #[cfg(feature = "engine")]
