@@ -10,6 +10,9 @@ use crate::data::assets::Assets;
 pub trait CharacterVisual {
     fn size(&self) -> Vector2;
     fn update(&mut self, seconds: f32) -> Result<(), String>;
+    fn restart(&mut self) -> Result<(), String> {
+        Ok(())
+    }
     fn draw(&mut self, draw: &mut RaylibDrawHandle, frame: VisualFrame) -> Result<(), String>;
 }
 
@@ -149,6 +152,17 @@ impl CharacterVisuals {
         self.instances.get_mut().clear();
     }
 
+    pub fn restart(&mut self) {
+        for (key, instance) in self.instances.get_mut() {
+            if let Instance::Ready(visual) = instance
+                && let Err(error) = visual.restart()
+            {
+                report(key, &error);
+                *instance = Instance::Failed;
+            }
+        }
+    }
+
     pub fn prepare(
         &mut self,
         keys: impl IntoIterator<Item = VisualKey>,
@@ -271,6 +285,7 @@ mod tests {
     struct Trace {
         loaded: Vec<String>,
         updated: Vec<(String, f32)>,
+        restarted: Vec<String>,
         dropped: Vec<String>,
     }
 
@@ -278,6 +293,12 @@ mod tests {
         name: String,
         trace: Rc<RefCell<Trace>>,
         fail_update: bool,
+    }
+
+    impl Mock {
+        fn fails_restart(&self) -> bool {
+            self.name == "restart_error"
+        }
     }
 
     impl CharacterVisual for Mock {
@@ -291,6 +312,14 @@ mod tests {
                 .push((self.name.clone(), seconds));
             if self.fail_update {
                 Err("update failed".into())
+            } else {
+                Ok(())
+            }
+        }
+        fn restart(&mut self) -> Result<(), String> {
+            self.trace.borrow_mut().restarted.push(self.name.clone());
+            if self.fails_restart() {
+                Err("restart failed".into())
             } else {
                 Ok(())
             }
@@ -374,6 +403,35 @@ mod tests {
         assert_eq!(trace.borrow().updated[0].1, 0.1);
         visuals.prepare_with([], 0.02, |key| load(&trace, key));
         assert_eq!(trace.borrow().dropped, ["happy"]);
+    }
+
+    #[test]
+    fn rolling_back_restarts_the_models_on_screen_instead_of_reloading_them() {
+        let trace = Rc::new(RefCell::new(Trace::default()));
+        let mut visuals = CharacterVisuals::default();
+        let keys = [
+            VisualKey::new("mary", "happy"),
+            VisualKey::new("hugo", "restart_error"),
+        ];
+        let sorted = |names: &[String]| {
+            let mut names = names.to_vec();
+            names.sort();
+            names
+        };
+        visuals.prepare_with(keys.clone(), 0.02, |key| load(&trace, key));
+        assert_eq!(sorted(&trace.borrow().loaded), ["happy", "restart_error"]);
+
+        visuals.restart();
+        assert_eq!(sorted(&trace.borrow().restarted), ["happy", "restart_error"]);
+        assert_eq!(
+            trace.borrow().dropped,
+            ["restart_error"],
+            "only the model that failed to restart is released"
+        );
+
+        let fallback = visuals.prepare_with(keys, 0.02, |key| load(&trace, key));
+        assert_eq!(sorted(&trace.borrow().loaded), ["happy", "restart_error"]);
+        assert_eq!(fallback, [VisualKey::new("hugo", "restart_error")]);
     }
 
     #[test]

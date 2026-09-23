@@ -3,7 +3,8 @@
 Experimental first milestone for Live2D Cubism integration: a native adapter, a
 raylib viewer, and the engine seam it registers through. A character is backed by a
 model with `VnApp::character_visual`, its appearances join the schema so `show mary
-happy` validates, and `New Game`, loading and rollback reset the models. **The C++
+happy` validates, `New Game` and hot reload drop the models, and loading a save or
+rolling back restarts the ones still on screen. **The C++
 bridge has not been compiled or run against the proprietary Core, so none of that
 path is verified end to end.** Every failure falls back to the PNG character art.
 
@@ -74,7 +75,7 @@ smoke testing. This is a developer probe, not the final game-facing API.
   borrow that session and cannot escape its closure or move across threads.
   Destruction releases native model resources before textures and the SDK.
 - `Model` exposes motion selection, expression selection, persistent parameter
-  overrides, update, and drawing. Physics and pose evaluation follow motion and
+  overrides, restart, update, and drawing. Physics and pose evaluation follow motion and
   expression updates. Animation time is capped at 100 ms per update after a stall.
   Audio referenced by motion files, automatic breathing, and voice-driven lip sync
   are not implemented in this milestone.
@@ -120,9 +121,14 @@ xvfb-run -a /tmp/vn-live2d-core-profile-test
    it, so `CharacterVisual` is still a hypothesis about the abstraction. It also
    has no channel for per-frame parameters, which is what voice-driven lip sync
    would need.
-3. Replace the reset-everything rollback. `flow.rs` drops every instance on each
-   rollback step, so stepping back reloads each model's moc, textures, motions and
-   physics. Correct, and far too slow to keep.
+3. ~~Replace the reset-everything rollback.~~ Done: `CharacterVisual::restart` returns a
+   model to its appearance's preset (expression, motion, parameters) without touching
+   the moc, textures or physics. Rollback and loading a save restart the models that
+   stay on screen instead of dropping them; New Game and hot reload still drop
+   everything, since the assets themselves may have changed. A model that fails to
+   restart falls back to its PNG, like any other failure. The default implementation
+   does nothing, so a backend without transient state need not implement it. Not yet
+   run against Core.
 4. Save logical appearance/parameter state and restore it on load and rollback,
    initially restarting transient idle animation and physics. Define pause, skip,
    hot reload, and custom-screen behavior before claiming story integration.

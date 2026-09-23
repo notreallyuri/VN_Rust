@@ -135,7 +135,7 @@ impl PlayingScreen {
 
         if moved {
             #[cfg(feature = "character-visuals")]
-            ctx.resources.visuals.reset();
+            ctx.resources.visuals.restart();
             self.current = ctx.story.current().cloned();
             self.typewriter = None;
             self.stage.reset(ctx.story, &self.config);

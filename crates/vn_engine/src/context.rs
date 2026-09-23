@@ -271,7 +271,7 @@ impl GameContext<'_> {
         let report = crate::data::saves::apply(&file, self.story, self.state)?;
         self.override_cursor(None);
         #[cfg(feature = "character-visuals")]
-        self.resources.visuals.reset();
+        self.resources.visuals.restart();
         self.log.replace(file.log.clone());
         self.modes.skip = false;
 
