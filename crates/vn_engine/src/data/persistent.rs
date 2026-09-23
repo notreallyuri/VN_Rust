@@ -7,6 +7,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as Json;
 
+use super::session::SeenArt;
 use super::state::GameState;
 
 pub const PERSISTENT_FILE_NAME: &str = "persistent.json";
@@ -20,7 +21,6 @@ struct File {
     values: BTreeMap<String, Json>,
 }
 
-#[derive(Default)]
 pub struct Persistent {
     path: Option<PathBuf>,
     state: GameState,
@@ -29,9 +29,38 @@ pub struct Persistent {
     saved_at: Option<f64>,
 }
 
+impl Default for Persistent {
+    fn default() -> Self {
+        let mut state = GameState::default();
+        state.insert(SeenArt::default());
+        Self {
+            path: None,
+            state,
+            stored: BTreeMap::new(),
+            dirty: false,
+            saved_at: None,
+        }
+    }
+}
+
 impl Persistent {
     pub fn in_memory() -> Self {
         Self::default()
+    }
+
+    pub fn seen_art(&self) -> &SeenArt {
+        self.get()
+    }
+
+    pub fn has_seen(&self, key: &str) -> bool {
+        self.seen_art().contains(key)
+    }
+
+    pub fn mark_seen(&mut self, key: impl Into<String>) {
+        let key = key.into();
+        if !self.has_seen(&key) {
+            self.get_mut::<SeenArt>().insert(key);
+        }
     }
 
     pub fn insert<T>(&mut self, initial: T)

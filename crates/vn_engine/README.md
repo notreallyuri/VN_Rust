@@ -1687,6 +1687,36 @@ are kept. A value that no longer fits its type falls back to its default on its 
 and the original file is copied to `persistent.json.bak` first, as is a damaged file.
 A file from a newer version of the format is read but never overwritten.
 
+### What the player has seen
+
+The engine keeps a record of art and music that has ever been shown, in the same
+store. It records what it performs itself, as it performs it:
+
+| Shown by the story | Recorded as |
+| --- | --- |
+| `background archive_office` | `bg:archive_office` |
+| `show mary tired` | `char:mary/tired` |
+| `music archive` | `music:archive` |
+
+A game adds anything it draws itself — a picture on a custom screen, an image-map
+close-up, an ending card — with its own key, which is how a gallery entry gets
+unlocked at a chosen moment rather than whenever the art happened to appear:
+
+```rust
+ctx.mark_seen("cg:kitchen_01");        // in a command or a screen
+ctx.has_seen("cg:kitchen_01")          // in update and in draw
+ctx.seen_art().keys()                  // everything seen, for a gallery
+```
+
+Keys are plain strings and the engine reads nothing into them: the prefixes above are
+just what it writes for its own entries. It keeps no categories, order, titles or
+unlock rules, because a gallery differs in every game — tabs per character, sets with
+"5 of 12 found", locked entries drawn as silhouettes. That structure belongs to the
+game, usually as a table mapping keys to whatever it wants to show, and a game that
+prefers to unlock entries by hand can ignore the automatic entries entirely and keep
+its own set in `ctx.persistent`. `examples/god_is_watching` builds a gallery and a
+music room this way.
+
 For a custom loop, `manager.world.persistent` is a `Persistent`: `insert` each type,
 then `load` the path, and call `save` on quit. Adding the store gave `GameView` and
 `DrawContext` a `persistent` field, so code that builds a `GameView` by hand (tests,

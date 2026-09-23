@@ -47,6 +47,15 @@ impl PlayingScreen {
                 | Event::Hide { .. }
                 | Event::Clear { .. }
                 | Event::Background { .. }) => {
+                    match &event {
+                        Event::Show {
+                            character, image, ..
+                        } => ctx.mark_seen(crate::data::session::character_key(character, image)),
+                        Event::Background {
+                            image: Some(image), ..
+                        } => ctx.mark_seen(crate::data::session::background_key(image)),
+                        _ => {}
+                    }
                     let now = ctx.rl.get_time();
                     self.stage.apply(&event, ctx.story, &self.config, now);
                     match crate::frame::stage::effect_of(&event) {

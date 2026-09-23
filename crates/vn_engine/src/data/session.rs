@@ -146,6 +146,45 @@ impl SessionLog {
     }
 }
 
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct SeenArt {
+    keys: BTreeSet<String>,
+}
+
+impl SeenArt {
+    pub fn contains(&self, key: &str) -> bool {
+        self.keys.contains(key)
+    }
+
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        self.keys.iter().map(String::as_str)
+    }
+
+    pub fn len(&self) -> usize {
+        self.keys.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.keys.is_empty()
+    }
+
+    pub(crate) fn insert(&mut self, key: String) {
+        self.keys.insert(key);
+    }
+}
+
+pub fn background_key(image: &str) -> String {
+    format!("bg:{image}")
+}
+
+pub fn character_key(character: &str, image: &str) -> String {
+    format!("char:{character}/{image}")
+}
+
+pub fn music_key(track: &str) -> String {
+    format!("music:{track}")
+}
+
 #[derive(Debug, Default)]
 pub struct SeenLines {
     path: Option<PathBuf>,

@@ -66,6 +66,18 @@ impl GameContext<'_> {
         Some(ScreenState::Video)
     }
 
+    pub fn mark_seen(&mut self, key: impl Into<String>) {
+        self.persistent.mark_seen(key);
+    }
+
+    pub fn has_seen(&self, key: &str) -> bool {
+        self.persistent.has_seen(key)
+    }
+
+    pub fn seen_art(&self) -> &crate::data::session::SeenArt {
+        self.persistent.seen_art()
+    }
+
     pub fn open_overlay(&mut self, name: impl Into<String>) {
         self.requests
             .push(Request::Overlay(OverlayRequest::Open(name.into())));
@@ -236,6 +248,14 @@ impl GameContext<'_> {
         self.audio.play_sound(id);
     }
 
+    pub fn play_music(&mut self, track: Option<&str>) {
+        if let Some(track) = track {
+            self.persistent
+                .mark_seen(crate::data::session::music_key(track));
+        }
+        self.audio.play_music(track);
+    }
+
     pub fn music(&self) -> Option<&str> {
         self.audio.music()
     }
@@ -318,6 +338,14 @@ pub struct DrawContext<'a> {
 }
 
 impl DrawContext<'_> {
+    pub fn has_seen(&self, key: &str) -> bool {
+        self.persistent.has_seen(key)
+    }
+
+    pub fn seen_art(&self) -> &crate::data::session::SeenArt {
+        self.persistent.seen_art()
+    }
+
     pub fn pointer_over(&self, rl: &RaylibHandle, rect: Rectangle) -> bool {
         self.interactive && crate::ui::is_hovered(rl, rect)
     }

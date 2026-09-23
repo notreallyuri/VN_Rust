@@ -246,11 +246,14 @@ player has seen.
   rather than a one-off. Done: `.persistent(T)` and `ctx.persistent`, stored in
   `persistent.json`; `seen.json` keeps its format and shares the atomic writer; the
   example's `Achievements` moved onto it
-- [ ] Records of what has ever been shown, kept by the engine the way it keeps seen
+- [x] Records of what has ever been shown, kept by the engine the way it keeps seen
   lines: backgrounds, character images and music tracks, in any playthrough, readable by
   games. The engine sees every `show`, `background` and `music` as it happens; a game
   would have to intercept each one itself. A gallery or a music room is then a custom
-  screen asking "has this been seen?"
+  screen asking "has this been seen?". Done: `SeenArt` in the persistent store, written
+  as `bg:`/`char:`/`music:` keys, plus `ctx.mark_seen` for art a game shows itself, since
+  most galleries unlock at a chosen moment. The engine keeps no categories, order or
+  unlock rules: that structure differs in every game and belongs to it
 - [ ] Gallery, music room and achievements in the example, built from those two, as proof
   the primitives are enough — and as recipes for the documentation site. Moving the
   achievements onto persistent storage fixes them

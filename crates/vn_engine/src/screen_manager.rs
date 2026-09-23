@@ -360,6 +360,11 @@ impl ScreenStateManager {
             .audio
             .set_volumes(music_gain, settings.sound_gain());
         self.show.audio.set_voice_volume(settings.voice_gain());
+        if let Some(track) = &wanted {
+            self.world
+                .persistent
+                .mark_seen(crate::data::session::music_key(track));
+        }
         self.show.audio.play_music(wanted.as_deref());
         self.show.audio.update(dt);
     }

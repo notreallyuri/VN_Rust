@@ -10,9 +10,11 @@ use vn_engine::action::Action;
 use vn_engine::context::{DrawContext, GameContext};
 use vn_engine::data::persistent::{PERSISTENT_FILE_NAME, Persistent};
 use vn_engine::data::saves::Saves;
+use vn_engine::data::session::{background_key, character_key, music_key};
 use vn_engine::data::state::GameState;
 use vn_engine::screen::{Screen, ScreenState};
 use vn_engine::screen_manager::{ScreenFactory, ScreenStateManager};
+use vn_engine::screens::playing::{PlayingConfig, PlayingScreen};
 use vn_engine::script::StoryVm;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -197,7 +199,7 @@ fn set_chapter(ctx: &mut GameContext, number: u32) {
 }
 
 #[test]
-#[ignore = "opens a window; run with --ignored on a machine with a display"]
+#[ignore = "opens a window; run with --ignored --test-threads=1 on a machine with a display"]
 fn new_game_loading_and_rollback_leave_persistent_values_alone() {
     let path = file("engine");
     let dir = path.parent().unwrap().to_path_buf();
@@ -273,4 +275,70 @@ fn new_game_loading_and_rollback_leave_persistent_values_alone() {
         !saved.state.contains_key("Achievements"),
         "a save never holds persistent values"
     );
+}
+
+#[test]
+fn a_game_can_mark_its_own_art_seen_and_it_persists() {
+    let path = file("marked");
+    let mut store = open(&path);
+    store.mark_seen("cg:kitchen_01");
+    store.mark_seen("cg:kitchen_01");
+    store.mark_seen("ending_card:keeper");
+    assert!(store.has_seen("cg:kitchen_01"));
+    assert!(!store.has_seen("cg:never"));
+    assert_eq!(store.seen_art().len(), 2);
+    store.save();
+
+    let store = open(&path);
+    assert_eq!(
+        store.seen_art().keys().collect::<Vec<_>>(),
+        ["cg:kitchen_01", "ending_card:keeper"]
+    );
+}
+
+struct PlayingFactory;
+
+impl ScreenFactory for PlayingFactory {
+    fn create_screen(&self, _: &ScreenState) -> Option<Box<dyn Screen>> {
+        Some(Box::new(PlayingScreen::new(Rc::new(
+            PlayingConfig::default(),
+        ))))
+    }
+}
+
+#[test]
+#[ignore = "opens a window; run with --ignored --test-threads=1 on a machine with a display"]
+fn the_engine_records_the_art_and_music_a_story_shows() {
+    let path = file("shown");
+    let dir = path.parent().unwrap().to_path_buf();
+    let (mut rl, thread) = raylib::init().size(64, 64).title("seen art").build();
+    rl.set_trace_log(TraceLogLevel::LOG_WARNING);
+    let story = StoryVm::from_source(
+        "scene a:\n  background archive_office\n  music archive\n  show mary tired at center\n  \"A line.\"\n",
+    );
+    let mut manager = ScreenStateManager::with_story(
+        &mut rl,
+        &thread,
+        ScreenState::Playing,
+        Box::new(PlayingFactory),
+        dir.clone(),
+        story,
+    )
+    .unwrap();
+    manager.world.saves = Saves::new(&dir, "Test");
+    manager.world.persistent.load(&path);
+
+    for _ in 0..3 {
+        manager.update(&mut rl, &thread);
+    }
+    manager.world.persistent.save();
+
+    let seen = open(&path);
+    for key in [
+        background_key("archive_office"),
+        character_key("mary", "tired"),
+        music_key("archive"),
+    ] {
+        assert!(seen.has_seen(&key), "{key} was not recorded");
+    }
 }
