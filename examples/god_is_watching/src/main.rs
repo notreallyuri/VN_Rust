@@ -10,6 +10,7 @@ use vn_engine::ui::shape::Corners;
 mod cast;
 mod desk;
 mod evidence;
+mod gallery;
 mod journal;
 mod screens;
 mod style;
@@ -90,6 +91,7 @@ fn link(label: &'static str, action: Action) -> MenuItem {
 
 fn main() -> ExitCode {
     let credits = ScreenState::Custom("credits".into());
+    let gallery = ScreenState::Custom("gallery".into());
     let evidence_screen = ScreenState::Custom("evidence".into());
     let heading = |size| TextStyle::new(FontRole::Title, size, style::PARCHMENT);
 
@@ -178,6 +180,7 @@ fn main() -> ExitCode {
                 )
                 .item(link("LOAD", Action::Goto(ScreenState::Load)))
                 .item(link("SETTINGS", Action::Goto(ScreenState::Settings)))
+                .item(link("GALLERY", Action::Goto(gallery.clone())))
                 .item(
                     link("CREDITS", Action::Goto(credits.clone()))
                         .enabled_if(|view| view.persistent.get::<CaseLedger>().closed() > 0)
@@ -350,6 +353,7 @@ fn main() -> ExitCode {
                 .seconds(3.0)
         })
         .screen(credits, screens::CreditsScreen::new)
+        .screen(gallery, screens::GalleryScreen::new)
         .screen(evidence_screen, screens::EvidenceScreen::new)
         .screen(
             ScreenState::Custom(SEARCH.to_string()),

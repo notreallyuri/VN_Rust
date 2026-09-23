@@ -254,7 +254,7 @@ player has seen.
   as `bg:`/`char:`/`music:` keys, plus `ctx.mark_seen` for art a game shows itself, since
   most galleries unlock at a chosen moment. The engine keeps no categories, order or
   unlock rules: that structure differs in every game and belongs to it
-- [ ] Gallery, music room and achievements in the example, built from those two, as proof
+- [x] Gallery, music room and achievements in the example, built from those two, as proof
   the primitives are enough — and as recipes for the documentation site. Moving the
   achievements onto persistent storage fixes them
 

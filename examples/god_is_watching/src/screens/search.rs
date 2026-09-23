@@ -68,6 +68,9 @@ impl Screen for SearchScreen {
             if ctx.state.get_mut::<Desk>().examine(&picked.id) {
                 ctx.play_sound("page_turn");
             }
+            if room == "study" && picked.id == "desk" {
+                ctx.mark_seen(crate::gallery::STUDY_DESK);
+            }
             return picked.screen;
         }
 
