@@ -1,9 +1,19 @@
-use std::collections::BTreeSet;
+use std::cell::RefCell;
+use std::collections::{BTreeSet, VecDeque};
 use std::fs;
 use std::path::PathBuf;
+use std::rc::Rc;
 
+use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
+use vn_engine::action::Action;
+use vn_engine::context::{DrawContext, GameContext};
 use vn_engine::data::persistent::{PERSISTENT_FILE_NAME, Persistent};
+use vn_engine::data::saves::Saves;
+use vn_engine::data::state::GameState;
+use vn_engine::screen::{Screen, ScreenState};
+use vn_engine::screen_manager::{ScreenFactory, ScreenStateManager};
+use vn_engine::script::StoryVm;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 struct Achievements {
@@ -134,4 +144,133 @@ fn a_damaged_file_is_backed_up_and_replaced_on_the_next_write() {
     store.get_mut::<Endings>().reached = 1;
     store.save();
     assert_eq!(open(&path).get::<Endings>().reached, 1);
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+struct Chapter {
+    number: u32,
+}
+
+type Step = Box<dyn FnOnce(&mut GameContext) -> Option<ScreenState>>;
+
+struct Script(Rc<RefCell<VecDeque<Step>>>);
+
+impl Screen for Script {
+    fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
+        let step = self.0.borrow_mut().pop_front();
+        step.map_or(Some(ScreenState::Quit), |step| step(&mut ctx))
+    }
+
+    fn draw(&self, _: &mut RaylibDrawHandle, _: &DrawContext) {}
+}
+
+struct Scripted(Rc<RefCell<VecDeque<Step>>>);
+
+impl ScreenFactory for Scripted {
+    fn create_screen(&self, _: &ScreenState) -> Option<Box<dyn Screen>> {
+        Some(Box::new(Script(Rc::clone(&self.0))))
+    }
+}
+
+fn unlocked(ctx: &GameContext) -> Vec<String> {
+    ctx.persistent
+        .get::<Achievements>()
+        .unlocked
+        .iter()
+        .cloned()
+        .collect()
+}
+
+fn unlock(ctx: &mut GameContext, key: &str) {
+    ctx.persistent
+        .get_mut::<Achievements>()
+        .unlocked
+        .insert(key.into());
+}
+
+fn chapter(ctx: &GameContext) -> u32 {
+    ctx.state.get::<Chapter>().number
+}
+
+fn set_chapter(ctx: &mut GameContext, number: u32) {
+    ctx.state.get_mut::<Chapter>().number = number;
+}
+
+#[test]
+#[ignore = "opens a window; run with --ignored on a machine with a display"]
+fn new_game_loading_and_rollback_leave_persistent_values_alone() {
+    let path = file("engine");
+    let dir = path.parent().unwrap().to_path_buf();
+    let steps: Vec<Step> = vec![
+        Box::new(|ctx| {
+            ctx.story.advance();
+            set_chapter(ctx, 1);
+            ctx.rollback.record_with_log(ctx.story, ctx.state, None);
+            unlock(ctx, "a");
+            ctx.save("1").unwrap();
+            None
+        }),
+        Box::new(|ctx| Action::NewGame.run(ctx)),
+        Box::new(|ctx| {
+            assert_eq!(chapter(ctx), 0, "New Game resets game state");
+            assert_eq!(unlocked(ctx), ["a"], "New Game keeps persistent values");
+            unlock(ctx, "b");
+            ctx.load("1").unwrap();
+            None
+        }),
+        Box::new(|ctx| {
+            assert_eq!(chapter(ctx), 1, "loading restores game state");
+            assert_eq!(unlocked(ctx), ["a", "b"], "loading keeps persistent values");
+            set_chapter(ctx, 2);
+            ctx.story.advance();
+            ctx.rollback.record_with_log(ctx.story, ctx.state, None);
+            unlock(ctx, "c");
+            assert!(ctx.rollback.back(ctx.story, ctx.state));
+            assert_eq!(chapter(ctx), 1, "rollback restores game state");
+            assert_eq!(
+                unlocked(ctx),
+                ["a", "b", "c"],
+                "rollback keeps persistent values"
+            );
+            Some(ScreenState::Quit)
+        }),
+    ];
+    let steps = Rc::new(RefCell::new(VecDeque::from(steps)));
+
+    let (mut rl, thread) = raylib::init().size(64, 64).title("persistent").build();
+    rl.set_trace_log(TraceLogLevel::LOG_WARNING);
+    let story = StoryVm::from_source("scene a:\n  \"one\"\n  \"two\"\n");
+    let mut manager = ScreenStateManager::with_story(
+        &mut rl,
+        &thread,
+        ScreenState::Playing,
+        Box::new(Scripted(Rc::clone(&steps))),
+        dir.clone(),
+        story,
+    )
+    .unwrap();
+    let mut state = GameState::default();
+    state.insert(Chapter::default());
+    manager.world.state = state;
+    manager.world.saves = Saves::new(&dir, "Test");
+    manager.world.persistent.insert(Achievements::default());
+    manager.world.persistent.load(&path);
+
+    while !manager.quit_requested() {
+        manager.update(&mut rl, &thread);
+    }
+    manager.world.persistent.save();
+    assert!(steps.borrow().is_empty(), "every step ran");
+
+    let stored = open(&path);
+    assert_eq!(
+        stored.get::<Achievements>().unlocked,
+        BTreeSet::from(["a".into(), "b".into(), "c".into()])
+    );
+    let saved = manager.world.saves.read("1").unwrap();
+    assert!(saved.state.contains_key("Chapter"));
+    assert!(
+        !saved.state.contains_key("Achievements"),
+        "a save never holds persistent values"
+    );
 }
