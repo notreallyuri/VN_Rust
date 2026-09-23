@@ -11,6 +11,7 @@ use crate::ui::TextStyle;
 use crate::ui::button::ButtonStyle;
 use crate::ui::fonts::FontRole;
 use crate::ui::shape::PanelStyle;
+use crate::ui::theme::Theme;
 
 pub const CONFIRM_OVERLAY: &str = "confirm";
 
@@ -313,5 +314,16 @@ impl Overlay for ConfirmDialog {
         ui::button::Button::new(confirm_label, &config.confirm_button)
             .focused(ctx.shows_focus(&self.focus, CONFIRM))
             .draw(d, ctx, layout.confirm);
+    }
+}
+
+impl ConfirmConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.message_text = theme.text(&theme.body, self.message_text);
+        self.cancel_button = theme.buttons(&theme.button, self.cancel_button);
+        self.confirm_button = theme.buttons(&theme.danger, self.confirm_button);
+        self.panel = theme.surface(&theme.panel, self.panel);
+        self.backdrop = theme.dim(self.backdrop);
+        self
     }
 }

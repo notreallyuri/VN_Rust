@@ -6,6 +6,7 @@ use crate::ui::button::ButtonStyle;
 use crate::ui::fonts::FontRole;
 use crate::ui::layout::{Anchor, Layout};
 use crate::ui::shape::PanelStyle;
+use crate::ui::theme::Theme;
 use crate::ui::{Background, TextStyle};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -281,6 +282,21 @@ impl SaveMenuConfig {
 
     pub fn background(mut self, background: Background) -> Self {
         self.background = Some(background);
+        self
+    }
+}
+
+impl SaveMenuConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.title_text = theme.text(&theme.title, self.title_text);
+        self.slot_title_text = theme.text(&theme.label, self.slot_title_text);
+        self.slot_summary_text = theme.text(&theme.label, self.slot_summary_text);
+        self.back_button = theme.buttons(&theme.button, self.back_button);
+        self.delete_button = theme.buttons(&theme.danger, self.delete_button);
+        self.slot_panel = theme.surface(&theme.inset, self.slot_panel);
+        self.panel = self.panel.map(|panel| theme.surface(&theme.panel, panel));
+        self.backdrop = theme.dim(self.backdrop);
+        self.background = theme.behind(self.background);
         self
     }
 }

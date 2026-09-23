@@ -5,6 +5,7 @@ use crate::game::language::Language;
 use crate::ui::button::ButtonStyle;
 use crate::ui::fonts::FontRole;
 use crate::ui::shape::PanelStyle;
+use crate::ui::theme::Theme;
 use crate::ui::{Background, SliderStyle, TextStyle};
 
 #[derive(Clone, Debug)]
@@ -297,6 +298,21 @@ impl SettingsConfig {
 
     pub fn background(mut self, background: Background) -> Self {
         self.background = Some(background);
+        self
+    }
+}
+
+impl SettingsConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.title_text = theme.text(&theme.title, self.title_text);
+        self.label_text = theme.text(&theme.label, self.label_text);
+        self.value_text = theme.text(&theme.label, self.value_text);
+        self.value_button = theme.buttons(&theme.button, self.value_button);
+        self.back_button = theme.buttons(&theme.button, self.back_button);
+        self.sample_box = theme.surface(&theme.inset, self.sample_box);
+        self.panel = self.panel.map(|panel| theme.surface(&theme.panel, panel));
+        self.backdrop = theme.dim(self.backdrop);
+        self.background = theme.behind(self.background);
         self
     }
 }

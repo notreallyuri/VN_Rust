@@ -15,6 +15,7 @@ use crate::ui::fonts::FontRole;
 use crate::ui::fonts::Fonts;
 use crate::ui::layout::{Anchor, Layout};
 use crate::ui::shape::{Corners, PanelStyle};
+use crate::ui::theme::Theme;
 use crate::ui::{Background, TextStyle};
 
 type EnabledCheck = Rc<dyn Fn(&GameView) -> bool>;
@@ -552,5 +553,16 @@ impl Screen for MainMenuScreen {
                 .opacity(buttons_fade)
                 .draw(d, ctx, rect);
         }
+    }
+}
+
+impl MainMenuConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.title_text = theme.text(&theme.title, self.title_text);
+        self.subtitle_text = theme.text(&theme.label, self.subtitle_text);
+        self.button = theme.buttons(&theme.button, self.button);
+        self.panel = self.panel.map(|panel| theme.surface(&theme.panel, panel));
+        self.background = theme.behind(self.background);
+        self
     }
 }

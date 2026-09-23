@@ -5,6 +5,7 @@ use crate::ui::TextStyle;
 use crate::ui::button::Border;
 use crate::ui::fonts::{FontRole, Fonts};
 use crate::ui::shape::PanelStyle;
+use crate::ui::theme::Theme;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TooltipConfig {
@@ -139,5 +140,13 @@ pub fn draw_tooltip(d: &mut RaylibDrawHandle, fonts: &Fonts, text: &str, config:
             y + config.padding + i as f32 * line_height,
         );
         ui::draw_text(d, fonts, line, position, style);
+    }
+}
+
+impl TooltipConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.text = theme.text(&theme.label, self.text);
+        self.panel = theme.surface(&theme.plate, self.panel);
+        self
     }
 }

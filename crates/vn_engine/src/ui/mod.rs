@@ -7,6 +7,7 @@ pub mod layout;
 pub mod scroll;
 pub mod shape;
 pub mod styled;
+pub mod theme;
 pub mod toast;
 pub mod tooltip;
 pub mod wrap;
@@ -54,6 +55,12 @@ impl TextStyle {
 
     pub fn spacing(mut self, spacing: f32) -> Self {
         self.spacing = spacing;
+        self
+    }
+
+    pub fn themed(mut self, role: crate::ui::theme::TextRole) -> Self {
+        self.font = role.font;
+        self.color = role.color;
         self
     }
 

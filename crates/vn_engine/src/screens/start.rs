@@ -7,6 +7,7 @@ use crate::frame::scenery::Scenery;
 use crate::screen::{Screen, ScreenState};
 use crate::ui;
 use crate::ui::fonts::{FontRole, Fonts};
+use crate::ui::theme::Theme;
 use crate::ui::{Background, TextStyle};
 
 #[derive(Clone, Debug)]
@@ -237,5 +238,16 @@ impl Screen for StartScreen {
             let position = Vector2::new(screen.x - size.x - margin, screen.y - size.y - margin);
             ui::draw_text(d, fonts, ctx.label(footer), position, &config.footer_text);
         }
+    }
+}
+
+impl StartScreenConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.title_text = theme.text(&theme.title, self.title_text);
+        self.subtitle_text = theme.text(&theme.label, self.subtitle_text);
+        self.prompt_text = theme.text(&theme.section, self.prompt_text);
+        self.footer_text = theme.text(&theme.label, self.footer_text);
+        self.background = theme.behind(self.background);
+        self
     }
 }

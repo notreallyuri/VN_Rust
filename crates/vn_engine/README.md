@@ -95,6 +95,8 @@ doesn't hide where a name came from.
 | `navigation(\|n\| ...)` | on | Configure keyboard and gamepad navigation (see [Keyboard and gamepad](#keyboard-and-gamepad)) |
 | `exit_key(Option<key>)` | `None` | A key that closes the window. Off by default, so Esc can open the pause menu |
 | `state(value)` | | Register game state (see [Game state](#game-state)) |
+| `theme(\|t\| ...)` | | The look every default screen starts from (see [Theme](#theme)); comes before the screens it styles |
+| `with(setup)` | | Hands the builder to a function and takes it back, for splitting a long chain into `fn setup(app: VnApp) -> VnApp` pieces |
 | `command(name, handler)` | | Handle `call <name> ...` from stories (see [Commands](#commands)) |
 | `variable(name, VariableDef)` | | Register a story variable (see [Registries and validation](#registries-and-validation)) |
 | `character(id, Character)` | | Register a character |
@@ -381,6 +383,68 @@ and the text is drawn with `dialogue_text`, so an NVL scene inherits the game's
 typography. Choices, the HUD, the log and everything else work as they do in ADV mode,
 and the page stays on screen behind a choice.
 
+## Theme
+
+Every default screen starts from the engine's own look. `theme(|t| ...)` replaces that
+starting point with the game's, so a palette is written once instead of in each screen's
+config:
+
+```rust
+VnApp::new("God Is Watching")
+    .theme(|t| {
+        t.panel(style::frame)
+            .inset(style::inset)
+            .plate(style::plate)
+            .backdrop(style::BACKDROP)
+            .button(style::button)
+            .danger(style::danger_button)
+            .title(FontRole::Title, style::PARCHMENT)
+            .section(FontRole::Menu, style::BRASS)
+            .body(FontRole::Dialogue, style::TEXT)
+            .label(FontRole::Menu, style::MUTED)
+            .background(style::background("backgrounds/title.png"))
+    })
+```
+
+| Role | Where it lands |
+| --- | --- |
+| `panel(\|p\| ...)` | The framed panel of every screen that has one: the dialogue box, the NVL page, the choice preview, pause, confirm, save/load, settings, text input, keybinds, the log |
+| `inset(\|p\| ...)` | Recessed areas: save slots, the settings sample box, the text input field |
+| `plate(\|p\| ...)` | Small plates: the name plate, the skip/auto indicator, tooltips, toasts |
+| `backdrop(color)` | The dimmer behind a screen that covers the game |
+| `button(\|b\| ...)`, `danger(\|b\| ...)` | Every default button, and the ones for irreversible actions (Delete, and a confirm dialog's yes) |
+| `title`, `section`, `body`, `label` (font, color) | The four text roles the screens draw with |
+| `background(bg)` | The background of the screens that show one, where the game has not set another |
+
+**A theme carries look, never geometry.** A text role sets the font and colour and leaves
+each screen's size alone, because a heading and a hint are different sizes on purpose. A
+button role sets everything about how a button is painted — colours, corners, borders,
+hover, focus and pressed looks, sounds, and its label's font and size, so buttons match
+each other — and leaves width, height, padding, alignment, icon and cursor to the screen. So a theme never moves anything, and
+`Theme::default()` has no opinion at all — a role a game does not set stays exactly as the
+engine had it.
+
+A theme is the *starting point*, so anything a screen's own config says afterwards wins:
+
+```rust
+.theme(style::theme)
+.log(|l| l.narration_text(style::body(19.0).color(style::MUTED)))
+```
+
+Because of that order, `theme(...)` comes before the screens it styles; calling it after
+one of them panics rather than quietly overwriting what the game just set.
+
+The same order has one consequence worth knowing: **a theme paints what a screen has when
+it runs.** A panel a screen only *might* have (`main_menu`, `save_menu`, `settings` and
+`text_input` draw one only if the game asks for one) and a name plate the game adds in
+`.playing(|p| p.dialogue_box(|b| b.name_plate(...)))` do not exist yet, so they carry
+their own style:
+
+```rust
+.save_menu(|s| s.panel(style::frame))
+.playing(|p| p.dialogue_box(|b| b.name_plate(|n| n.panel(style::plate))))
+```
+
 ## Styles
 
 | Type | Fields / builder methods |
@@ -392,6 +456,7 @@ and the page stays on screen behind a choice.
 | `PanelStyle::new(color)` | See [Shapes and panels](#shapes-and-panels) |
 | `Corners` | See [Shapes and panels](#shapes-and-panels) |
 | `Background` | `Color(color)` fills the screen; `Image(path)` covers it with an asset (scaled, cropping the edges if the aspect ratio differs) |
+| `Theme::default()` | See [Theme](#theme) |
 
 ## Shapes and panels
 
@@ -2573,7 +2638,7 @@ contexts a screen is handed — and the rest is grouped by what it does:
 | Path | Holds |
 | --- | --- |
 | `lib.rs`, `app/`, `screen_manager.rs`, `context.rs`, `screen.rs`, `overlay.rs`, `action.rs` | The loop, and what it hands a screen each frame |
-| `ui/` | Drawing. `mod.rs` is the `ui` helpers themselves (text, backgrounds, sliders, hit tests), beside `button/`, `shape.rs`, `layout.rs`, `styled.rs`, `fonts.rs`, `ease.rs`, `scroll.rs`, `tooltip.rs`, `toast.rs` |
+| `ui/` | Drawing. `mod.rs` is the `ui` helpers themselves (text, backgrounds, sliders, hit tests), beside `button/`, `shape.rs`, `layout.rs`, `styled.rs`, `fonts.rs`, `ease.rs`, `scroll.rs`, `theme.rs`, `tooltip.rs`, `toast.rs` |
 | `input/` | `navigation.rs` (focus, keys, gamepad), `hit.rs` (shapes and picking), `image_map.rs`, `drag.rs` |
 | `frame/` | The picture: `target.rs`, `viewport.rs`, `post.rs`, `effects.rs`, `screen_transition.rs`, `scenery.rs`, `stage.rs` |
 | `request.rs` | What a screen asks the manager to do once `update` returns |
@@ -2636,4 +2701,5 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/image_map.rs` | Hotspots found by id and by point, overlapping hotspots, hotspots disabled by the game state, what a hotspot carries, the default style |
 | `tests/drag.rs` | Items and targets under a point, a held item following the pointer, drops on a target, on nothing and on one that refuses, cancelling, validity rules reading the item and the game, replacing the item list |
 | `tests/choices.rs` | An option's picture filling its button or becoming its icon, a game's own choice style kept underneath, both pictures of every option loaded, and a preview fitted inside its panel |
+| `tests/theme.rs` | A theme painting a screen without moving it, an empty theme changing nothing, every panel of the playing screen, what a themed button keeps, a screen overriding the theme afterwards, and the panic when a theme comes second |
 | `tests/nvl.rs` | Where a page sits (centred, limited, letterboxed by its margin), the padding its text loses, and where the last page starts once the lines no longer fit |

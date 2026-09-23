@@ -13,6 +13,7 @@ use crate::ui::TextStyle;
 use crate::ui::button::ButtonStyle;
 use crate::ui::fonts::FontRole;
 use crate::ui::shape::PanelStyle;
+use crate::ui::theme::Theme;
 
 pub const KEYBINDS_OVERLAY: &str = "keybinds";
 
@@ -561,4 +562,18 @@ pub fn default_prompts(
     }
 
     prompts
+}
+
+impl KeybindsConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.title_text = theme.text(&theme.title, self.title_text);
+        self.section_text = theme.text(&theme.section, self.section_text);
+        self.key_text = theme.text(&theme.label, self.key_text);
+        self.action_text = theme.text(&theme.label, self.action_text);
+        self.header_text = theme.text(&theme.label, self.header_text);
+        self.back_button = theme.buttons(&theme.button, self.back_button);
+        self.panel = theme.surface(&theme.panel, self.panel);
+        self.backdrop = theme.dim(self.backdrop);
+        self
+    }
 }

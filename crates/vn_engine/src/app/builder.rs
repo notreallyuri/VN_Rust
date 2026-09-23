@@ -33,6 +33,7 @@ use crate::screens::settings::SettingsConfig;
 use crate::screens::start::StartScreenConfig;
 use crate::screens::text_input::TextInputConfig;
 use crate::ui::fonts::{FontRole, FontVariant};
+use crate::ui::theme::Theme;
 use crate::ui::toast::ToastConfig;
 use crate::ui::tooltip::TooltipConfig;
 
@@ -58,6 +59,7 @@ pub struct VnApp {
     pub(super) start: StartScreenConfig,
     pub(super) menu: MainMenuConfig,
     pub(super) playing: PlayingConfig,
+    pub(super) styled: bool,
     pub(super) overrides: HashMap<ScreenState, ScreenBuilder>,
     pub(super) overlays: HashMap<String, OverlayBuilder>,
     pub(super) state: GameState,
@@ -120,6 +122,7 @@ impl VnApp {
             start: StartScreenConfig::default(),
             menu: MainMenuConfig::default(),
             playing: PlayingConfig::default(),
+            styled: false,
             overrides: HashMap::new(),
             overlays: HashMap::new(),
             state: GameState::default(),
@@ -253,21 +256,25 @@ impl VnApp {
     }
 
     pub fn text_input(mut self, config: impl FnOnce(TextInputConfig) -> TextInputConfig) -> Self {
+        self.styled = true;
         self.text_input = config(self.text_input);
         self
     }
 
     pub fn pause_menu(mut self, config: impl FnOnce(PauseMenuConfig) -> PauseMenuConfig) -> Self {
+        self.styled = true;
         self.pause_menu = config(self.pause_menu);
         self
     }
 
     pub fn confirm_dialog(mut self, config: impl FnOnce(ConfirmConfig) -> ConfirmConfig) -> Self {
+        self.styled = true;
         self.confirm_dialog = config(self.confirm_dialog);
         self
     }
 
     pub fn settings(mut self, config: impl FnOnce(SettingsConfig) -> SettingsConfig) -> Self {
+        self.styled = true;
         self.settings = config(self.settings);
         self
     }
@@ -283,6 +290,7 @@ impl VnApp {
     }
 
     pub fn toast(mut self, config: impl FnOnce(ToastConfig) -> ToastConfig) -> Self {
+        self.styled = true;
         self.toast = config(self.toast);
         self
     }
@@ -324,16 +332,19 @@ impl VnApp {
     }
 
     pub fn keybinds(mut self, config: impl FnOnce(KeybindsConfig) -> KeybindsConfig) -> Self {
+        self.styled = true;
         self.keybinds = config(self.keybinds);
         self
     }
 
     pub fn log(mut self, config: impl FnOnce(LogConfig) -> LogConfig) -> Self {
+        self.styled = true;
         self.log = config(self.log);
         self
     }
 
     pub fn tooltips(mut self, config: impl FnOnce(TooltipConfig) -> TooltipConfig) -> Self {
+        self.styled = true;
         self.tooltips = config(self.tooltips);
         self
     }
@@ -365,6 +376,7 @@ impl VnApp {
     }
 
     pub fn save_menu(mut self, config: impl FnOnce(SaveMenuConfig) -> SaveMenuConfig) -> Self {
+        self.styled = true;
         self.save_menu = config(self.save_menu);
         self
     }
@@ -458,16 +470,19 @@ impl VnApp {
         mut self,
         config: impl FnOnce(StartScreenConfig) -> StartScreenConfig,
     ) -> Self {
+        self.styled = true;
         self.start = config(self.start);
         self
     }
 
     pub fn main_menu(mut self, config: impl FnOnce(MainMenuConfig) -> MainMenuConfig) -> Self {
+        self.styled = true;
         self.menu = config(self.menu);
         self
     }
 
     pub fn playing(mut self, config: impl FnOnce(PlayingConfig) -> PlayingConfig) -> Self {
+        self.styled = true;
         self.playing = config(self.playing);
         self
     }
@@ -505,6 +520,33 @@ impl VnApp {
         T: Clone + serde::Serialize + serde::de::DeserializeOwned + 'static,
     {
         self.persistent.insert(initial);
+        self
+    }
+
+    pub fn with(self, setup: impl FnOnce(Self) -> Self) -> Self {
+        setup(self)
+    }
+
+    pub fn theme(mut self, theme: impl FnOnce(Theme) -> Theme) -> Self {
+        assert!(
+            !self.styled,
+            "`theme` is what the default screens start from, so it comes before them; \
+             move it above the first screen this game configures"
+        );
+
+        let theme = theme(Theme::default());
+        self.start = std::mem::take(&mut self.start).themed(&theme);
+        self.menu = std::mem::take(&mut self.menu).themed(&theme);
+        self.playing = std::mem::take(&mut self.playing).themed(&theme);
+        self.pause_menu = std::mem::take(&mut self.pause_menu).themed(&theme);
+        self.confirm_dialog = std::mem::take(&mut self.confirm_dialog).themed(&theme);
+        self.save_menu = std::mem::take(&mut self.save_menu).themed(&theme);
+        self.settings = std::mem::take(&mut self.settings).themed(&theme);
+        self.text_input = std::mem::take(&mut self.text_input).themed(&theme);
+        self.keybinds = std::mem::take(&mut self.keybinds).themed(&theme);
+        self.log = std::mem::take(&mut self.log).themed(&theme);
+        self.tooltips = std::mem::take(&mut self.tooltips).themed(&theme);
+        self.toast = std::mem::take(&mut self.toast).themed(&theme);
         self
     }
 

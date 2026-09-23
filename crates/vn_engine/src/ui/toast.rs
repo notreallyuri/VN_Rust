@@ -4,6 +4,7 @@ use crate::ui;
 use crate::ui::TextStyle;
 use crate::ui::fonts::{FontRole, Fonts};
 use crate::ui::shape::PanelStyle;
+use crate::ui::theme::Theme;
 
 #[derive(Clone, Debug)]
 pub struct ToastConfig {
@@ -103,5 +104,13 @@ impl Toast {
             Vector2::new(panel.x + 14.0, panel.y + 8.0),
             style,
         );
+    }
+}
+
+impl ToastConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.text = theme.text(&theme.label, self.text);
+        self.panel = theme.surface(&theme.plate, self.panel);
+        self
     }
 }

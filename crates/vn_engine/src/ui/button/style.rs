@@ -316,6 +316,19 @@ impl ButtonStyle {
         look
     }
 
+    pub fn themed(&self, role: &ButtonStyle) -> ButtonStyle {
+        ButtonStyle {
+            width: self.width,
+            height: self.height,
+            padding: self.padding,
+            align: self.align,
+            overflow: self.overflow,
+            icon: self.icon.clone(),
+            cursor: self.cursor,
+            ..role.clone()
+        }
+    }
+
     pub fn image_paths(&self) -> Vec<&str> {
         let looks = [&self.hovered, &self.pressed, &self.focused, &self.disabled];
         self.image

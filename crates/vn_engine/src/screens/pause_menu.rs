@@ -15,6 +15,7 @@ use crate::ui::button::ButtonStyle;
 use crate::ui::fonts::FontRole;
 use crate::ui::layout::Layout;
 use crate::ui::shape::PanelStyle;
+use crate::ui::theme::Theme;
 
 pub const PAUSE_OVERLAY: &str = "pause";
 pub const SAVE_OVERLAY: &str = "save";
@@ -266,5 +267,15 @@ impl Overlay for PauseMenu {
         );
 
         crate::screens::main_menu::draw_items(d, ctx, &config.items, buttons, &self.focus);
+    }
+}
+
+impl PauseMenuConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.title_text = theme.text(&theme.title, self.title_text);
+        self.button = theme.buttons(&theme.button, self.button);
+        self.panel = theme.surface(&theme.panel, self.panel);
+        self.backdrop = theme.dim(self.backdrop);
+        self
     }
 }

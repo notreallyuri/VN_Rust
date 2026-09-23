@@ -9,6 +9,7 @@ use crate::ui;
 use crate::ui::button::Border;
 use crate::ui::fonts::FontRole;
 use crate::ui::shape::PanelStyle;
+use crate::ui::theme::Theme;
 use crate::ui::{Background, TextStyle};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -295,5 +296,17 @@ impl Screen for TextInputScreen {
             Vector2::new(screen.x / 2.0, field.y + field.height + 30.0),
             &hint_style,
         );
+    }
+}
+
+impl TextInputConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.prompt_text = theme.text(&theme.title, self.prompt_text);
+        self.input_text = theme.text(&theme.body, self.input_text);
+        self.hint_text = theme.text(&theme.label, self.hint_text);
+        self.input_box = theme.surface(&theme.inset, self.input_box);
+        self.panel = self.panel.map(|panel| theme.surface(&theme.panel, panel));
+        self.background = theme.behind(self.background);
+        self
     }
 }

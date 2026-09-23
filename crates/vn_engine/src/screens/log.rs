@@ -16,6 +16,7 @@ use crate::ui::scroll::{Scroll, ScrollStyle};
 use crate::ui::shape::PanelStyle;
 use crate::ui::styled;
 use crate::ui::styled::{StyledLine, StyledText};
+use crate::ui::theme::Theme;
 
 pub const LOG_OVERLAY: &str = "log";
 
@@ -381,5 +382,18 @@ impl Overlay for LogOverlay {
         ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, 0))
             .draw(d, ctx, config.back_rect(screen));
+    }
+}
+
+impl LogConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.title_text = theme.text(&theme.title, self.title_text);
+        self.line_text = theme.text(&theme.body, self.line_text);
+        self.narration_text = theme.text(&theme.body, self.narration_text);
+        self.choice_text = theme.text(&theme.label, self.choice_text);
+        self.back_button = theme.buttons(&theme.button, self.back_button);
+        self.panel = theme.surface(&theme.panel, self.panel);
+        self.backdrop = theme.dim(self.backdrop);
+        self
     }
 }

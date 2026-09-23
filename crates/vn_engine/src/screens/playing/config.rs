@@ -15,6 +15,7 @@ use crate::ui::fonts::FontRole;
 use crate::ui::layout::{Anchor, Layout};
 use crate::ui::shape::PanelStyle;
 use crate::ui::styled::StyledText;
+use crate::ui::theme::Theme;
 use crate::ui::{Background, TextStyle};
 
 #[derive(Clone, Debug)]
@@ -490,4 +491,23 @@ fn inset(screen: Vector2, margin: f32) -> Rectangle {
         (screen.x - margin * 2.0).max(0.0),
         (screen.y - margin * 2.0).max(0.0),
     )
+}
+
+impl PlayingConfig {
+    pub fn themed(mut self, theme: &Theme) -> Self {
+        self.dialogue_text = theme.text(&theme.body, self.dialogue_text);
+        self.indicator_text = theme.text(&theme.section, self.indicator_text);
+        self.end_title_text = theme.text(&theme.title, self.end_title_text);
+        self.end_hint_text = theme.text(&theme.label, self.end_hint_text);
+        self.choice_button = theme.buttons(&theme.button, self.choice_button);
+        self.hud_button = theme.buttons(&theme.button, self.hud_button);
+        self.dialogue_box.panel = theme.surface(&theme.panel, self.dialogue_box.panel);
+        self.choice_preview.panel = theme.surface(&theme.panel, self.choice_preview.panel);
+        self.nvl.panel = theme.surface(&theme.panel, self.nvl.panel);
+        self.indicator = theme.surface(&theme.plate, self.indicator);
+        if let Some(plate) = self.dialogue_box.name_plate.as_mut() {
+            plate.panel = theme.surface(&theme.plate, plate.panel);
+        }
+        self
+    }
 }
