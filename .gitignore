@@ -5,3 +5,5 @@
 /examples/*/saves/
 
 __pycache__/
+# JavaScript dependencies, e.g. the docs site under docs/.
+node_modules/
