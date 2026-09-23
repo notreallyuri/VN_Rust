@@ -8,6 +8,7 @@ members = [
     "crates/vn_cli",
     "crates/vn_live2d",
     "examples/god_is_watching",
+    "examples/example_vn",
 ]
 
 [workspace.package]

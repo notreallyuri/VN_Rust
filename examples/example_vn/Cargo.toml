@@ -1,0 +1,17 @@
+[package]
+name = "example_vn"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[features]
+default = []
+live2d = ["dep:vn_live2d", "vn_live2d/engine"]
+
+[dependencies]
+vn_engine.workspace = true
+serde.workspace = true
+vn_live2d = { path = "../../crates/vn_live2d", optional = true }
+
+[build-dependencies]
+vn_build.workspace = true

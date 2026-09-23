@@ -1,0 +1,40 @@
+{
+  "format_version": 1,
+  "game": "Example VN",
+  "story_dir": "story",
+  "variables": {
+    "player_name": {
+      "ty": "String",
+      "default": {
+        "String": "Aoi"
+      }
+    }
+  },
+  "characters": {
+    "kaede": {
+      "name": "Kaede",
+      "images": [
+        "annoyed",
+        "cheerful",
+        "neutral"
+      ]
+    },
+    "me": {
+      "name": "",
+      "images": []
+    },
+    "unknown_1": {
+      "name": "???",
+      "images": []
+    }
+  },
+  "commands": {
+    "remember_name": {
+      "required": [
+        "Word"
+      ],
+      "optional": [],
+      "rest": null
+    }
+  }
+}
