@@ -664,6 +664,8 @@ A script is invalid if:
 
 - The command does not exist
 - Argument count or types do not match
+- An argument is outside the set of words the command takes (a command may declare that
+  one of its arguments is one of a fixed list, e.g. `report`, `silence` or `keeper`)
 - Arguments reference unknown identifiers
 
 ### 9.3 Example

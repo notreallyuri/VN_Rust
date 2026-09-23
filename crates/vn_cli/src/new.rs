@@ -279,7 +279,8 @@ use vn_engine::raylib::prelude::Color;
 
 const ASSETS_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 
-fn give_item(ctx: &mut GameContext, (item,): (String,)) -> Option<ScreenState> {
+#[command]
+fn give_item(ctx: &mut GameContext, item: String) -> Option<ScreenState> {
     ctx.notify(format!("You got: {}", item.replace('_', " ")));
     None
 }
@@ -296,7 +297,7 @@ fn main() -> ExitCode {
         )
         .variable("player_name", VariableDef::string("Player"))
         .variable("curious", VariableDef::bool(false))
-        .command("give_item", give_item);
+        .command(give_item);
 
     match app.run() {
         Ok(()) => ExitCode::SUCCESS,

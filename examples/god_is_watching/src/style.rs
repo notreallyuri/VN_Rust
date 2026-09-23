@@ -2,6 +2,7 @@ use vn_engine::frame::scenery::{Scenery, Weather};
 use vn_engine::prelude::*;
 use vn_engine::raylib::prelude::Color;
 use vn_engine::ui::prelude::*;
+use vn_engine::ui::theme::Theme;
 
 pub const INK: Color = Color::new(12, 10, 8, 255);
 pub const PANEL: Color = Color::new(20, 16, 12, 240);
@@ -22,6 +23,21 @@ pub const CUT: f32 = 8.0;
 
 pub const TITLE_BACKGROUND: &str = "backgrounds/title.png";
 pub const ARCHIVE_BACKGROUND: &str = "backgrounds/archive_office.png";
+
+pub fn theme(theme: Theme) -> Theme {
+    theme
+        .panel(frame)
+        .inset(inset)
+        .plate(plate)
+        .backdrop(BACKDROP)
+        .button(button)
+        .danger(danger_button)
+        .title(FontRole::Title, PARCHMENT)
+        .section(FontRole::Menu, BRASS)
+        .body(FontRole::Dialogue, TEXT)
+        .label(FontRole::Menu, MUTED)
+        .background(background(TITLE_BACKGROUND))
+}
 
 pub fn background(path: &str) -> Background {
     Background::Image(path.to_string())

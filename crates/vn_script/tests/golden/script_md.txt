@@ -372,7 +372,7 @@ scene start:  (line 1)
 > Choice { options: ["Be kind"#0, "Say nothing"#1] }
 > End
 
-======== SCRIPT.md:671  9.3 Example
+======== SCRIPT.md:673  9.3 Example
 scene example:
   call give_item stick 1
   call unlock_route good
@@ -386,7 +386,7 @@ scene example:  (line 1)
 > Call { command: "unlock_route", args: ["good"] }
 > End
 
-======== SCRIPT.md:684  10.1 Commit
+======== SCRIPT.md:686  10.1 Commit
 scene example:
   commit
 -------- instructions
@@ -397,7 +397,7 @@ scene example:  (line 1)
 > Commit
 > End
 
-======== SCRIPT.md:693  10.2 Final choices
+======== SCRIPT.md:695  10.2 Final choices
 scene example:
   choice final:
     "Keep the letter":
@@ -420,7 +420,7 @@ scene example:  (line 1)
 > Say { speaker: None, text: "..." }
 > End
 
-======== SCRIPT.md:712  10.3 Rules
+======== SCRIPT.md:714  10.3 Rules
 scene example:
   choice:
     "Spare him":

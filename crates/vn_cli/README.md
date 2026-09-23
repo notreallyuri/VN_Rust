@@ -7,7 +7,8 @@ The `vn` command-line tool for working with `.story` files.
 ### `vn check <path> [--schema <schema.json>] [--lang <code>]`
 
 Checks stories without running the game: syntax, and, with a schema, the registries
-(variables, characters, images, command arguments) and the entry scene. Prints every
+(variables, characters, images, command arguments — including the fixed set of words an
+argument may take) and the entry scene. Prints every
 diagnostic as `file:line: error: ...`, then a summary, and exits with a failure code if
 there are errors (usable in CI and editor "run on save" setups).
 

@@ -50,6 +50,17 @@ impl Project {
                 ..CommandSig::default()
             },
         );
+        schema.commands.insert(
+            "close_case".into(),
+            CommandSig {
+                required: vec![ParamKind::Choice(vec![
+                    "report".into(),
+                    "silence".into(),
+                    "keeper".into(),
+                ])],
+                ..CommandSig::default()
+            },
+        );
         let mut file = SchemaFile::new("Test", "story", schema);
         file.entry_scene = Some("start".into());
         file.write(root.join("schema.json")).unwrap();
@@ -296,7 +307,10 @@ fn completion_knows_the_registries_and_the_scenes() {
         ["met", "route", "trust"]
     );
     assert_eq!(client.completion_labels(&start, 8, 15), ["bad", "good"]);
-    assert_eq!(client.completion_labels(&start, 9, 7), ["give_item"]);
+    assert_eq!(
+        client.completion_labels(&start, 9, 7),
+        ["close_case", "give_item"]
+    );
 
     let first = client.completion_labels(&start, 1, 2);
     assert!(first.contains(&"jump".to_string()) && first.contains(&"mary".to_string()));
@@ -327,6 +341,28 @@ fn completion_knows_what_a_choice_option_takes() {
     );
     assert_eq!(client.completion_labels(&start, 5, 17), ["door"]);
     assert_eq!(client.completion_labels(&start, 6, 19), ["hall_view"]);
+    assert!(client.stop());
+}
+
+#[test]
+fn completion_offers_the_words_a_command_takes() {
+    let project = Project::new();
+    let text = "scene start:\n  call close_case \n  call give_item \n";
+    let start = project.story("01.story", text);
+
+    let mut client = Client::start();
+    client.open(&start, text);
+    client.diagnostics(1);
+
+    assert_eq!(
+        client.completion_labels(&start, 1, 18),
+        ["keeper", "report", "silence"],
+        "an enum argument offers its words"
+    );
+    assert!(
+        client.completion_labels(&start, 2, 17).is_empty(),
+        "a plain word has nothing to offer"
+    );
     assert!(client.stop());
 }
 

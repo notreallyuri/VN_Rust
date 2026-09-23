@@ -3,7 +3,7 @@ use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
 use vn_engine::ui::button::ButtonStyle;
 
-use crate::evidence::{Evidence, describe};
+use crate::evidence::Evidence;
 use crate::style;
 
 const ROW_HEIGHT: f32 = 78.0;
@@ -109,7 +109,7 @@ impl Screen for EvidenceScreen {
             let row = Rectangle::new(left, y, LIST_WIDTH, ROW_HEIGHT - 10.0);
             self.row.draw(d, row);
 
-            let (name, detail) = describe(item);
+            let (name, detail) = item.describe();
             ui::draw_text(
                 d,
                 fonts,

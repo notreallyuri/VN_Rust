@@ -194,14 +194,28 @@
     },
     "close_case": {
       "required": [
-        "Word"
+        {
+          "Choice": [
+            "report",
+            "silence",
+            "keeper"
+          ]
+        }
       ],
       "optional": [],
       "rest": null
     },
     "give_item": {
       "required": [
-        "Word"
+        {
+          "Choice": [
+            "box_14",
+            "field_report",
+            "verlaine_letter",
+            "notebook_copy",
+            "wooden_horse"
+          ]
+        }
       ],
       "optional": [
         "UInt"
@@ -210,7 +224,13 @@
     },
     "note": {
       "required": [
-        "Word"
+        {
+          "Choice": [
+            "debt_paid",
+            "folio_41",
+            "hot_water"
+          ]
+        }
       ],
       "optional": [],
       "rest": null
@@ -222,14 +242,25 @@
     },
     "search": {
       "required": [
-        "Word"
+        {
+          "Choice": [
+            "study"
+          ]
+        }
       ],
       "optional": [],
       "rest": null
     },
     "unlock": {
       "required": [
-        "Word"
+        {
+          "Choice": [
+            "thorough_reader",
+            "ending_report",
+            "ending_silence",
+            "ending_keeper"
+          ]
+        }
       ],
       "optional": [],
       "rest": null

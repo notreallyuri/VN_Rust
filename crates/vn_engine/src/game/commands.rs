@@ -8,14 +8,17 @@ use crate::screen::ScreenState;
 type Handler = Box<dyn Fn(&mut GameContext, &[String]) -> Option<ScreenState>>;
 
 pub trait FromArg: Sized {
-    const KIND: ParamKind;
+    fn kind() -> ParamKind;
     fn from_arg(arg: &str) -> Option<Self>;
 }
 
 macro_rules! from_arg {
     ($kind:ident: $($ty:ty),*) => {$(
         impl FromArg for $ty {
-            const KIND: ParamKind = ParamKind::$kind;
+            fn kind() -> ParamKind {
+                ParamKind::$kind
+            }
+
             fn from_arg(arg: &str) -> Option<Self> {
                 arg.parse().ok()
             }
@@ -30,36 +33,50 @@ from_arg!(Bool: bool);
 from_arg!(Word: String);
 
 pub trait Arg: Sized {
-    const KIND: ParamKind;
     const OPTIONAL: bool;
+    fn kind() -> ParamKind;
     fn parse(arg: Option<&str>) -> Result<Self, String>;
 }
 
 macro_rules! arg {
     ($($ty:ty),*) => {$(
         impl Arg for $ty {
-            const KIND: ParamKind = <$ty as FromArg>::KIND;
             const OPTIONAL: bool = false;
+
+            fn kind() -> ParamKind {
+                <$ty as FromArg>::kind()
+            }
+
             fn parse(arg: Option<&str>) -> Result<Self, String> {
                 let arg = arg.ok_or_else(|| "missing argument".to_string())?;
                 <$ty>::from_arg(arg)
-                    .ok_or_else(|| format!("`{}` is not {}", arg, <$ty as FromArg>::KIND))
+                    .ok_or_else(|| format!("`{}` is not {}", arg, <$ty as FromArg>::kind()))
             }
         }
 
-        impl Arg for Option<$ty> {
-            const KIND: ParamKind = <$ty as FromArg>::KIND;
-            const OPTIONAL: bool = true;
-            fn parse(arg: Option<&str>) -> Result<Self, String> {
-                arg.map(|arg| <$ty as Arg>::parse(Some(arg))).transpose()
-            }
-        }
     )*};
 }
 
 arg!(
     i8, i16, i32, i64, u8, u16, u32, u64, usize, f32, f64, bool, String
 );
+
+impl<T: FromArg> Arg for Option<T> {
+    const OPTIONAL: bool = true;
+
+    fn kind() -> ParamKind {
+        T::kind()
+    }
+
+    fn parse(arg: Option<&str>) -> Result<Self, String> {
+        match arg {
+            Some(arg) => T::from_arg(arg)
+                .map(Some)
+                .ok_or_else(|| format!("`{}` is not {}", arg, T::kind())),
+            None => Ok(None),
+        }
+    }
+}
 
 pub trait FromArgs: Sized {
     fn signature() -> CommandSig;
@@ -106,7 +123,7 @@ macro_rules! from_args_tuple {
         impl<$($name: Arg),+> FromArgs for ($($name,)+) {
             fn signature() -> CommandSig {
                 let mut sig = CommandSig::default();
-                $(push_param(&mut sig, $name::KIND, $name::OPTIONAL);)+
+                $(push_param(&mut sig, $name::kind(), $name::OPTIONAL);)+
                 sig
             }
 
@@ -123,6 +140,13 @@ from_args_tuple!(A, B);
 from_args_tuple!(A, B, C);
 from_args_tuple!(A, B, C, D);
 from_args_tuple!(A, B, C, D, E);
+
+pub trait Command: 'static {
+    type Args: FromArgs + 'static;
+    const NAME: &'static str;
+
+    fn run(context: &mut GameContext, arguments: Self::Args) -> Option<ScreenState>;
+}
 
 #[derive(Default)]
 pub struct Commands {

@@ -3,8 +3,7 @@ use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
 
 use crate::desk::Desk;
-use crate::evidence::describe;
-use crate::journal::{Journal, note_text};
+use crate::journal::Journal;
 use crate::style;
 
 const PANEL_WIDTH: f32 = 640.0;
@@ -70,13 +69,13 @@ impl Overlay for CaseFileOverlay {
             ("The administrator's trust", variable(ctx, "trust")),
             ("The House's suspicion", variable(ctx, "suspicion")),
         ];
-        let notes: Vec<&str> = journal.notes().map(note_text).collect();
+        let notes: Vec<&str> = journal.notes().map(|note| note.text()).collect();
         let decisions: Vec<&str> = journal.recent_decisions(4).collect();
         let report: Vec<&str> = ctx
             .state
             .get::<Desk>()
             .in_report()
-            .map(|item| describe(item).0)
+            .map(|item| item.describe().0)
             .collect();
 
         let height = 120.0

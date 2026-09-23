@@ -81,6 +81,7 @@ It may only:
 |---|---|
 | [`crates/vn_script`](crates/vn_script/README.md) | Story DSL: lexer, parser, compiler and VM. No rendering dependencies |
 | [`crates/vn_engine`](crates/vn_engine/README.md) | raylib-based engine: `VnApp` builder, configurable default screens, UI helpers, resources, fonts. Re-exports `raylib` and `vn_script` |
+| [`crates/vn_macros`](crates/vn_macros/README.md) | `#[command]`, the attribute that turns a Rust function into a story command. Re-exported by `vn_engine`, never depended on directly |
 | [`crates/vn_build`](crates/vn_build/README.md) | Build-script helper (no dependencies) that embeds a game's assets in release builds |
 | [`crates/vn_live2d`](crates/vn_live2d/README.md) | Experimental optional Cubism Native adapter and standalone viewer; not yet integrated into story rendering |
 | [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn new <dir>`, `vn check <path>`, `vn dump <file.story | dir>`, `vn lsp`) |

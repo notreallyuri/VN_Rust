@@ -1,55 +1,75 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
+use vn_engine::prelude::*;
 
-pub const SHELF: &str = "shelf";
-pub const REPORT: &str = "report";
-pub const BOX: &str = "box";
+use crate::evidence::EvidenceItem;
+
+#[derive(StoryWord, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Room {
+    Study,
+}
+
+#[derive(StoryWord, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Tray {
+    Shelf,
+    Report,
+    Box,
+}
+
+impl Tray {
+    pub fn name(self) -> &'static str {
+        match self {
+            Tray::Shelf => "On the desk",
+            Tray::Report => "Report 222",
+            Tray::Box => "Back in Box 14",
+        }
+    }
+}
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Desk {
-    room: String,
+    room: Option<Room>,
     examined: BTreeSet<String>,
-    filed: BTreeMap<String, String>,
+    filed: BTreeMap<EvidenceItem, Tray>,
 }
 
 impl Desk {
-    pub fn search(&mut self, room: &str) {
-        self.room = room.to_string();
+    pub fn search(&mut self, room: Room) {
+        self.room = Some(room);
     }
 
-    pub fn room(&self) -> &str {
-        &self.room
+    pub fn room(&self) -> Option<Room> {
+        self.room
     }
 
     pub fn examine(&mut self, spot: &str) -> bool {
-        self.examined.insert(format!("{}:{}", self.room, spot))
+        self.examined.insert(self.spot(spot))
     }
 
     pub fn examined(&self, spot: &str) -> bool {
-        self.examined.contains(&format!("{}:{}", self.room, spot))
+        self.examined.contains(&self.spot(spot))
     }
 
-    pub fn file(&mut self, item: &str, tray: &str) {
-        self.filed.insert(item.to_string(), tray.to_string());
+    fn spot(&self, spot: &str) -> String {
+        match self.room {
+            Some(room) => format!("{}:{}", room, spot),
+            None => spot.to_string(),
+        }
     }
 
-    pub fn tray(&self, item: &str) -> &str {
-        self.filed.get(item).map(String::as_str).unwrap_or(SHELF)
+    pub fn file(&mut self, item: EvidenceItem, tray: Tray) {
+        self.filed.insert(item, tray);
     }
 
-    pub fn in_report(&self) -> impl Iterator<Item = &str> {
+    pub fn tray(&self, item: EvidenceItem) -> Tray {
+        self.filed.get(&item).copied().unwrap_or(Tray::Shelf)
+    }
+
+    pub fn in_report(&self) -> impl Iterator<Item = EvidenceItem> {
         self.filed
             .iter()
-            .filter(|(_, tray)| tray.as_str() == REPORT)
-            .map(|(item, _)| item.as_str())
-    }
-}
-
-pub fn tray_name(tray: &str) -> &'static str {
-    match tray {
-        REPORT => "Report 222",
-        BOX => "Back in Box 14",
-        _ => "On the desk",
+            .filter(|(_, tray)| **tray == Tray::Report)
+            .map(|(item, _)| *item)
     }
 }

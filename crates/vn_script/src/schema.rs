@@ -110,13 +110,14 @@ pub struct CharacterDef {
     pub images: Vec<String>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ParamKind {
     Int,
     UInt,
     Float,
     Bool,
     Word,
+    Choice(Vec<String>),
 }
 
 impl fmt::Display for ParamKind {
@@ -127,19 +128,28 @@ impl fmt::Display for ParamKind {
             ParamKind::Float => "a number",
             ParamKind::Bool => "true or false",
             ParamKind::Word => "a word",
+            ParamKind::Choice(members) => return write!(f, "one of {}", members.join(", ")),
         };
         write!(f, "{}", name)
     }
 }
 
 impl ParamKind {
-    pub fn accepts(self, arg: &str) -> bool {
+    pub fn members(&self) -> &[String] {
+        match self {
+            ParamKind::Choice(members) => members,
+            _ => &[],
+        }
+    }
+
+    pub fn accepts(&self, arg: &str) -> bool {
         match self {
             ParamKind::Int => arg.parse::<i64>().is_ok(),
             ParamKind::UInt => arg.parse::<u64>().is_ok(),
             ParamKind::Float => arg.parse::<f64>().is_ok(),
             ParamKind::Bool => matches!(arg, "true" | "false"),
             ParamKind::Word => !arg.is_empty(),
+            ParamKind::Choice(members) => members.iter().any(|member| member == arg),
         }
     }
 }
@@ -155,9 +165,9 @@ pub struct CommandSig {
 impl CommandSig {
     pub fn usage(&self, name: &str) -> String {
         let mut parts = vec![format!("call {}", name)];
-        parts.extend(self.required.iter().map(|k| format!("<{}>", short(*k))));
-        parts.extend(self.optional.iter().map(|k| format!("[{}]", short(*k))));
-        if let Some(rest) = self.rest {
+        parts.extend(self.required.iter().map(|k| format!("<{}>", short(k))));
+        parts.extend(self.optional.iter().map(|k| format!("[{}]", short(k))));
+        if let Some(rest) = &self.rest {
             parts.push(format!("[{}...]", short(rest)));
         }
         parts.join(" ")
@@ -180,17 +190,17 @@ impl CommandSig {
             .required
             .iter()
             .chain(&self.optional)
-            .copied()
-            .chain(std::iter::repeat_n(self.rest, args.len()).flatten());
+            .chain(std::iter::repeat_n(self.rest.as_ref(), args.len()).flatten());
 
         for (i, (arg, kind)) in args.iter().zip(kinds).enumerate() {
             if !kind.accepts(arg) {
                 return Err(format!(
-                    "`call {}` argument {} should be {}, got `{}`",
+                    "`call {}` argument {} should be {}, got `{}`{}",
                     name,
                     i + 1,
                     kind,
-                    arg
+                    arg,
+                    did_you_mean(arg, kind.members().iter().map(String::as_str))
                 ));
             }
         }
@@ -199,13 +209,14 @@ impl CommandSig {
     }
 }
 
-fn short(kind: ParamKind) -> &'static str {
+fn short(kind: &ParamKind) -> String {
     match kind {
-        ParamKind::Int => "int",
-        ParamKind::UInt => "uint",
-        ParamKind::Float => "number",
-        ParamKind::Bool => "bool",
-        ParamKind::Word => "word",
+        ParamKind::Int => "int".to_string(),
+        ParamKind::UInt => "uint".to_string(),
+        ParamKind::Float => "number".to_string(),
+        ParamKind::Bool => "bool".to_string(),
+        ParamKind::Word => "word".to_string(),
+        ParamKind::Choice(members) => members.join("|"),
     }
 }
 

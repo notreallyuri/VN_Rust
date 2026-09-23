@@ -97,7 +97,7 @@ doesn't hide where a name came from.
 | `state(value)` | | Register game state (see [Game state](#game-state)) |
 | `theme(\|t\| ...)` | | The look every default screen starts from (see [Theme](#theme)); comes before the screens it styles |
 | `with(setup)` | | Hands the builder to a function and takes it back, for splitting a long chain into `fn setup(app: VnApp) -> VnApp` pieces |
-| `command(name, handler)` | | Handle `call <name> ...` from stories (see [Commands](#commands)) |
+| `command(handler)`, `command_as(name, handler)` | | Handle `call <name> ...` from stories: a handler marked `#[command]` brings its own name, `command_as` names a closure (see [Commands](#commands)) |
 | `variable(name, VariableDef)` | | Register a story variable (see [Registries and validation](#registries-and-validation)) |
 | `character(id, Character)` | | Register a character |
 | `entry_scene(id)` | first scene of the first file | Scene the story starts from |
@@ -598,7 +598,7 @@ VnApp::new("My Game")
 ```
 
 ```rust
-.command("flashback", |ctx, ()| {
+.command_as("flashback", |ctx, ()| {
     ctx.shader("grain", true);
     ctx.shader_amount("grain", 0.25);
     Ok(Action::None)
@@ -643,7 +643,7 @@ VnApp::new("My Game").screen_effects(ScreenEffectsConfig {
 Commands can use them too, through the context:
 
 ```rust
-.command("slam", |ctx, ()| { ctx.shake(0.4); Ok(Action::None) })
+.command_as("slam", |ctx, ()| { ctx.shake(0.4); Ok(Action::None) })
 ```
 
 Effects stop on a screen change and on a hot reload, so a shake can't outlive the scene
@@ -1663,7 +1663,7 @@ can't leave a menu without one. From a story, register a command that maps names
 kinds (a `Custom` name is a `&'static str`, so match rather than build it):
 
 ```rust
-.command("cursor", |ctx, (name,): (String,)| {
+.command_as("cursor", |ctx, (name,): (String,)| {
     ctx.override_cursor(match name.as_str() {
         "hidden" => Some(CursorKind::Hidden),
         "examine" => Some(CursorKind::Custom("examine")),
@@ -1864,9 +1864,10 @@ usually) needs `persistent: &Persistent::in_memory()`.
 
 ## Commands
 
-`call <name> <args...>` in a story runs the handler registered under that name. The
-handler's second parameter declares the arguments as a tuple; they're parsed and checked
-for you:
+`call <name> <args...>` in a story runs the handler registered under that name.
+`#[command]` marks the handler: its parameters after the context are the story's
+arguments, parsed and checked for you, and the function's own name is the name the story
+calls it by.
 
 ```story
 call give_item verlaine_letter
@@ -1874,17 +1875,31 @@ call give_item candle 3
 ```
 
 ```rust
-fn give_item(ctx: &mut GameContext, (item, count): (String, Option<u32>)) -> Option<ScreenState> {
+#[command]
+fn give_item(ctx: &mut GameContext, item: String, count: Option<u32>) -> Option<ScreenState> {
     ctx.state.get_mut::<Inventory>().add(&item, count.unwrap_or(1));
     None
 }
 
-VnApp::new("My Novel").command("give_item", give_item)
+VnApp::new("My Novel").command(give_item)
+```
+
+`#[command]` (re-exported from [`vn_macros`](../vn_macros/README.md), and in the prelude)
+turns the function into the marker the builder takes, so nothing repeats the name and a
+typo is a compile error rather than an unknown command at startup. `#[command("note")]`
+registers a different name than the function's own, and `name::call(ctx, ...)` runs the
+handler straight from Rust.
+
+`command_as(name, handler)` is the way in for a closure or a name computed at runtime:
+
+```rust
+VnApp::new("My Novel").command_as("slam", |ctx, ()| { ctx.shake(0.4); None })
 ```
 
 | Rust type | Accepts |
 | --- | --- |
 | `String` | any word |
+| A `#[derive(StoryWord)]` enum | one of its words, checked by `vn check` |
 | `i8`…`i64` | an integer |
 | `u8`…`u64`, `usize` | a non-negative integer |
 | `f32`, `f64` | a number |
@@ -1893,12 +1908,47 @@ VnApp::new("My Novel").command("give_item", give_item)
 | `()` | no arguments |
 | `Vec<String>` | any number of words (unchecked) |
 
-Tuples take up to 5 arguments; required ones must come before `Option`s (checked when
-the command is registered). The signature is part of the schema, so every `call` in the
+A command takes up to 5 arguments; required ones must come before `Option`s (checked when
+the command is registered). A handler written by hand for `command_as` takes them as one
+tuple parameter (`(item, count): (String, Option<u32>)`) — that is what `#[command]`
+writes for you. The signature is part of the schema, so every `call` in the
 story is checked at startup (argument count and kinds), and again when it runs.
 
 Returning `Some(state)` switches screens (e.g. to a text input); the story resumes from
 the next instruction when the playing screen is entered again.
+
+### Words the story may write
+
+An argument drawn from a fixed set — an item, an ending, a room — is an enum, and
+`#[derive(StoryWord)]` (also re-exported from [`vn_macros`](../vn_macros/README.md)) makes
+it a type the engine can parse:
+
+```rust
+#[derive(StoryWord, Clone, Copy, PartialEq, Eq)]
+enum Ending { Report, Silence, Keeper }
+
+#[command]
+fn close_case(ctx: &mut GameContext, ending: Ending) -> Option<ScreenState> {
+    ctx.persistent.get_mut::<CaseLedger>().close(ending);
+    None
+}
+```
+
+The variant names become the words (`EndingKeeper` → `ending_keeper`, `Folio41` →
+`folio_41`; `#[word("...")]` names the odd one out), and the set travels into the
+signature as `ParamKind::Choice`. Because signatures are exported to `schema.json`,
+**`vn check` catches a word that is not in the set before the game runs**, the way it
+already catches an unknown scene or image:
+
+```
+02_notebook.story:80: error: `call note` argument 1 should be one of debt_paid, folio_41,
+hot_water, got `folio41`; did you mean 'folio_41'?
+```
+
+The LSP offers the same words while typing a `call` line. The derive also writes
+`as_str`, `from_word`, `ALL`, `Display`, and serde impls that read and write the word
+itself — so the story, the save file and `vn check` all speak the same string, and a save
+holding a word the game no longer has says so instead of loading a wrong value.
 
 ## Hooks
 
@@ -1919,7 +1969,7 @@ VnApp::new("My Novel")
 | Hook | Runs |
 | --- | --- |
 | `on_scene_enter(\|ctx, scene\| ...)` | When the story enters a scene: at the start (New Game), on every `jump` (including one to the same scene), and when a load or hot reload restarts an edited scene. Not when a save or rollback puts the story back in the middle of a scene |
-| `on_choice(\|ctx, index, text\| ...)` | Right after the player picks an option, before the option's lines run. `text` is the option as shown (interpolated) |
+| `on_choice(\|ctx, index, text\| ...)` | Right after the player picks an option, before the option's lines run. `text` is the option as shown (interpolated), and `index` is its place in the story's `choice:` block, so an option hidden by a `when` does not shift the ones after it |
 
 Hooks are registered in order and all run; like commands, returning `Some(state)` switches
 screens (the first one returned wins), and the story continues when the playing screen
@@ -1970,7 +2020,7 @@ VnApp::new("My Novel")
     .variable("player_name", VariableDef::string("Reader"))
     .character("mary", Character::new("Mary").color(Color::GOLD).images(["neutral", "happy"]))
     .character("player", Character::new("{player_name}").color(Color::SKYBLUE))
-    .command("give_item", give_item)
+    .command(give_item)
 ```
 
 - **Variables** start at their default on New Game (no more "unset" values), and
@@ -2381,7 +2431,7 @@ Register a command using the existing story command system:
 ```rust
 use vn_engine::video::VideoRequest;
 
-let app = app.command("video", |ctx, (file,): (String,)| {
+let app = app.command_as("video", |ctx, (file,): (String,)| {
     ctx.play_video(VideoRequest::new(format!("videos/{file}")))
 });
 ```

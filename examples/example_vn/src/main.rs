@@ -12,7 +12,8 @@ fn person(name: &str, color: (u8, u8, u8)) -> Character {
     Character::new(name).color(Color::new(color.0, color.1, color.2, 255))
 }
 
-fn remember_name(ctx: &mut GameContext, (variable,): (String,)) -> Option<ScreenState> {
+#[command]
+fn remember_name(ctx: &mut GameContext, variable: String) -> Option<ScreenState> {
     ctx.ask_text(
         TextRequest::new(variable, "What is your name?")
             .initial("Aoi")
@@ -48,7 +49,7 @@ fn main() -> ExitCode {
             person("Kaede", (225, 165, 180)).images(APPEARANCES),
         )
         .variable("player_name", VariableDef::string("Aoi"))
-        .command("remember_name", remember_name);
+        .command(remember_name);
 
     match kaede_model(app).run() {
         Ok(()) => ExitCode::SUCCESS,

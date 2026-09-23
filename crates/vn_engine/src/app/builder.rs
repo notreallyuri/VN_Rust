@@ -15,7 +15,7 @@ use crate::frame::effects::ScreenEffectsConfig;
 use crate::frame::screen_transition::ScreenTransitionConfig;
 use crate::game::audio::AudioConfig;
 use crate::game::characters::{Character, Characters};
-use crate::game::commands::{Commands, FromArgs};
+use crate::game::commands::{Command, Commands, FromArgs};
 use crate::game::hooks::Hooks;
 use crate::game::language::Language;
 use crate::input::navigation::NavigationConfig;
@@ -550,7 +550,14 @@ impl VnApp {
         self
     }
 
-    pub fn command<A: FromArgs + 'static>(
+    pub fn command<C: Command>(mut self, command: C) -> Self {
+        let _ = command;
+        self.commands
+            .insert(C::NAME, |context, arguments| C::run(context, arguments));
+        self
+    }
+
+    pub fn command_as<A: FromArgs + 'static>(
         mut self,
         name: impl Into<String>,
         handler: impl Fn(&mut GameContext, A) -> Option<ScreenState> + 'static,

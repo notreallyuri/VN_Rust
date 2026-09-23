@@ -1,27 +1,86 @@
 use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
+use vn_engine::prelude::*;
+
+#[derive(StoryWord, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Ending {
+    Report,
+    Silence,
+    Keeper,
+}
+
+impl Ending {
+    pub fn name(self) -> &'static str {
+        match self {
+            Ending::Report => "The report",
+            Ending::Silence => "The silence",
+            Ending::Keeper => "The keeper",
+        }
+    }
+}
+
+#[derive(StoryWord, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Note {
+    DebtPaid,
+    #[word("folio_41")]
+    Folio41,
+    HotWater,
+}
+
+impl Note {
+    pub fn text(self) -> &'static str {
+        match self {
+            Note::DebtPaid => {
+                "A Von Lucis debt was marked paid three days after the Verlaine letter."
+            }
+            Note::Folio41 => {
+                "The torn page described folio 41 of a register, folded into the boy's cloths."
+            }
+            Note::HotWater => "\"Your hot water, miss.\" Sister Clara is Adelaide Roque.",
+        }
+    }
+}
+
+#[derive(StoryWord, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Achievement {
+    ThoroughReader,
+    EndingReport,
+    EndingSilence,
+    EndingKeeper,
+}
+
+impl Achievement {
+    pub fn name(self) -> &'static str {
+        match self {
+            Achievement::ThoroughReader => {
+                "Thorough reader: opened the letter and read the torn page"
+            }
+            Achievement::EndingReport => "Ending: the report",
+            Achievement::EndingSilence => "Ending: the silence",
+            Achievement::EndingKeeper => "Ending: the keeper",
+        }
+    }
+}
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Journal {
-    notes: Vec<String>,
+    notes: Vec<Note>,
     decisions: Vec<String>,
 }
 
-pub const ENDINGS: [&str; 3] = ["report", "silence", "keeper"];
-
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CaseLedger {
-    endings: BTreeSet<String>,
+    endings: BTreeSet<Ending>,
 }
 
 impl CaseLedger {
-    pub fn close(&mut self, ending: &str) {
-        self.endings.insert(ending.to_string());
+    pub fn close(&mut self, ending: Ending) {
+        self.endings.insert(ending);
     }
 
-    pub fn has(&self, ending: &str) -> bool {
-        self.endings.contains(ending)
+    pub fn has(&self, ending: Ending) -> bool {
+        self.endings.contains(&ending)
     }
 
     pub fn closed(&self) -> usize {
@@ -31,25 +90,25 @@ impl CaseLedger {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Achievements {
-    unlocked: BTreeSet<String>,
+    unlocked: BTreeSet<Achievement>,
 }
 
 impl Achievements {
-    pub fn unlock(&mut self, key: &str) -> bool {
-        self.unlocked.insert(key.to_string())
+    pub fn unlock(&mut self, key: Achievement) -> bool {
+        self.unlocked.insert(key)
     }
 
-    pub fn unlocked(&self) -> impl Iterator<Item = &str> {
-        self.unlocked.iter().map(String::as_str)
+    pub fn unlocked(&self) -> impl Iterator<Item = Achievement> {
+        self.unlocked.iter().copied()
     }
 }
 
 impl Journal {
-    pub fn note(&mut self, key: &str) -> bool {
-        if self.notes.iter().any(|note| note == key) {
+    pub fn note(&mut self, key: Note) -> bool {
+        if self.notes.contains(&key) {
             return false;
         }
-        self.notes.push(key.to_string());
+        self.notes.push(key);
         true
     }
 
@@ -57,43 +116,13 @@ impl Journal {
         self.decisions.push(text.to_string());
     }
 
-    pub fn notes(&self) -> impl Iterator<Item = &str> {
-        self.notes.iter().map(String::as_str)
+    pub fn notes(&self) -> impl Iterator<Item = Note> {
+        self.notes.iter().copied()
     }
 
     pub fn recent_decisions(&self, count: usize) -> impl Iterator<Item = &str> {
         let skip = self.decisions.len().saturating_sub(count);
         self.decisions.iter().skip(skip).map(String::as_str)
-    }
-}
-
-pub fn note_text(key: &str) -> &'static str {
-    match key {
-        "debt_paid" => "A Von Lucis debt was marked paid three days after the Verlaine letter.",
-        "folio_41" => {
-            "The torn page described folio 41 of a register, folded into the boy's cloths."
-        }
-        "hot_water" => "\"Your hot water, miss.\" Sister Clara is Adelaide Roque.",
-        _ => "An unreadable note.",
-    }
-}
-
-pub fn ending_name(key: &str) -> &'static str {
-    match key {
-        "report" => "The report",
-        "silence" => "The silence",
-        "keeper" => "The keeper",
-        _ => "An unknown ending",
-    }
-}
-
-pub fn achievement_name(key: &str) -> &'static str {
-    match key {
-        "thorough_reader" => "Thorough reader: opened the letter and read the torn page",
-        "ending_report" => "Ending: the report",
-        "ending_silence" => "Ending: the silence",
-        "ending_keeper" => "Ending: the keeper",
-        _ => "Unknown achievement",
     }
 }
 

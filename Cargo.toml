@@ -4,6 +4,7 @@ resolver = "2"
 members = [
     "crates/vn_script",
     "crates/vn_engine",
+    "crates/vn_macros",
     "crates/vn_build",
     "crates/vn_cli",
     "crates/vn_live2d",
@@ -18,6 +19,7 @@ edition = "2024"
 [workspace.dependencies]
 vn_script = { path = "crates/vn_script" }
 vn_engine = { path = "crates/vn_engine" }
+vn_macros = { path = "crates/vn_macros" }
 vn_build = { path = "crates/vn_build" }
 raylib = "5.5.1"
 serde = { version = "1.0.228", features = ["derive"] }

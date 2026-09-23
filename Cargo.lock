@@ -149,6 +149,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "example_vn"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "vn_build",
+ "vn_engine",
+ "vn_live2d",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -729,6 +739,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "vn_macros",
  "vn_script",
 ]
 
@@ -739,6 +750,15 @@ dependencies = [
  "serde",
  "serde_json",
  "vn_engine",
+]
+
+[[package]]
+name = "vn_macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

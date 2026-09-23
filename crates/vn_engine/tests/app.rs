@@ -44,7 +44,7 @@ impl Project {
             .character("mary", Character::new("Mary").images(["neutral"]))
             .variable("affection", VariableDef::int(0))
             .variable("player_name", VariableDef::string("Reader"))
-            .command("give_item", give_item)
+            .command(give_item)
     }
 }
 
@@ -54,7 +54,12 @@ impl Drop for Project {
     }
 }
 
-fn give_item(_: &mut GameContext, _: (String, Option<u32>)) -> Option<ScreenState> {
+#[vn_engine::command]
+fn give_item(
+    _context: &mut GameContext,
+    _item: String,
+    _count: Option<u32>,
+) -> Option<ScreenState> {
     None
 }
 

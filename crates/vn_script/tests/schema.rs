@@ -394,3 +394,52 @@ fn prepare_applies_the_schema_and_the_entry_scene() {
     assert_eq!(vm.prepare(schema(), Some("b")).len(), 1);
     assert_eq!(vm.entry_scene(), Some("b"));
 }
+
+#[test]
+fn a_command_can_take_one_of_a_fixed_set_of_words() {
+    let members = || vec!["report".to_string(), "silence".to_string()];
+    let sig = CommandSig {
+        required: vec![ParamKind::Choice(members())],
+        ..CommandSig::default()
+    };
+
+    assert!(sig.check("close_case", &["silence".into()]).is_ok());
+    let wrong = sig.check("close_case", &["Silence".into()]).unwrap_err();
+    assert!(
+        wrong.contains("should be one of report, silence"),
+        "the list is in the message: {}",
+        wrong
+    );
+    assert_eq!(
+        sig.usage("close_case"),
+        "call close_case <report|silence>",
+        "and in the usage line"
+    );
+}
+
+#[test]
+fn a_story_calling_a_command_with_an_unknown_word_is_an_error() {
+    let mut schema = Schema::default();
+    schema.commands.insert(
+        "close_case".into(),
+        CommandSig {
+            required: vec![ParamKind::Choice(vec![
+                "report".into(),
+                "silence".into(),
+                "keeper".into(),
+            ])],
+            ..CommandSig::default()
+        },
+    );
+
+    let program = vn_script::compile_source("scene start:\n  call close_case keper\n");
+    let found: Vec<String> = schema
+        .validate(&program)
+        .into_iter()
+        .filter(|d| d.severity == Severity::Error)
+        .map(|d| d.message)
+        .collect();
+
+    assert_eq!(found.len(), 1, "{:?}", found);
+    assert!(found[0].contains("did you mean 'keeper'?"), "{}", found[0]);
+}

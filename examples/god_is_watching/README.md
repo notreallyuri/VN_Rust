@@ -63,8 +63,10 @@ Where each feature is used, so the example can be read as a reference.
 | Feature | Where |
 | --- | --- |
 | Registries | `src/cast.rs`: 13 characters with colors and image lists, 10 variables (int, bool, enum, string) |
+| Builder, split up | `main.rs` is 31 lines: a `theme` and five `with(...)` steps. `src/setup/` holds them — `window.rs` (window, assets, cursor, fonts, audio, languages), `registries.rs` (state, commands, hooks, rollback), `menus.rs`, `playing.rs` and `screens.rs` |
 | Validation, `vn check`, schema export | The story is checked at startup; `assets/schema.json` is refreshed in debug builds for `vn check` |
-| Commands with typed arguments | `give_item`, `ask_name`, `note`, `unlock`, `search` and `assemble` in `src/main.rs` |
+| Commands with typed arguments | `give_item`, `ask_name`, `note`, `unlock`, `search` and `assemble` in `src/commands.rs`, each marked `#[command]` |
+| Content as words the story may write | `EvidenceItem`, `Note`, `Achievement`, `Ending`, `Room` and `Tray` are `#[derive(StoryWord)]` enums that own their own text, so `call note folio41` is an error from `vn check` rather than "An unreadable note." at runtime, and the save files hold the same words |
 | Game state by type | `Evidence` (`src/evidence.rs`), `Journal` (`src/journal.rs`) and `Desk` (`src/desk.rs`: what has been examined, and what goes in the report), saved with the game |
 | Gallery and music room | `GALLERY` in the main menu (`src/screens/gallery.rs`, with its table in `src/gallery.rs`): People, Places and Music tabs, "3 of 8 found" per tab, locked entries as "???", and tracks that play when clicked. The engine records what the story shows (`char:mary/tired`, `bg:archive_office`, `music:archive`); "The desk, examined" is unlocked by hand with `ctx.mark_seen` when that hotspot is examined in the study, and is drawn as a crop of the study art. Tabs, titles, crops and the locked look are all the game's, not the engine's |
 | Persistent storage | Two types in `src/journal.rs`, registered with `.persistent(...)`, shared by every save slot, kept through New Game and loading, and written to `persistent.json` beside the saves. `Achievements` are the rewards `unlock` announces. `CaseLedger` records every ending reached (`call close_case report` in `05_report.story`) and is read three ways: `call remember_cases` copies it into the story variable `cases_closed`, so the Registrar notices a returning player in the prologue; Credits lists every ending found across playthroughs, unfound ones as "???"; and the main menu's Credits stays disabled, with a tooltip, until the first ending (`enabled_if` on `GameView::persistent`) |
@@ -99,7 +101,10 @@ Where each feature is used, so the example can be read as a reference.
 
 The UI takes its materials from the art: candlelit ink browns, brass, parchment, and
 oxblood kept for the few actions that can't be undone. `src/style.rs` is the whole
-system, and `main.rs` and the custom screens only use it:
+system: `style::theme` hands the palette to the engine once (see
+[Theme](../../crates/vn_engine/README.md#theme)), so the default screens are already
+dressed and `src/setup/` only says what each screen does differently. The custom screens
+use the same helpers directly:
 
 | Piece | Look | Used for |
 | --- | --- | --- |

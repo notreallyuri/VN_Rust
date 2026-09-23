@@ -4,13 +4,13 @@ use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
 use vn_engine::ui::button::ButtonStyle;
 
-use crate::desk::Desk;
+use crate::desk::{Desk, Room};
 use crate::style;
 
 const CAPTION_HEIGHT: f32 = 118.0;
 
 pub struct SearchScreen {
-    rooms: Vec<(&'static str, ImageMap)>,
+    rooms: Vec<(Room, ImageMap)>,
     caption: Option<&'static str>,
     title: TextStyle,
     body: TextStyle,
@@ -21,7 +21,7 @@ pub struct SearchScreen {
 impl SearchScreen {
     pub fn new() -> Self {
         Self {
-            rooms: vec![("study", study())],
+            rooms: vec![(Room::Study, study())],
             caption: None,
             title: style::section(17.0),
             body: style::body(21.0),
@@ -30,8 +30,9 @@ impl SearchScreen {
         }
     }
 
-    fn room(&self, name: &str) -> Option<usize> {
-        self.rooms.iter().position(|(id, _)| *id == name)
+    fn room(&self, room: Option<Room>) -> Option<usize> {
+        let room = room?;
+        self.rooms.iter().position(|(id, _)| *id == room)
     }
 
     fn caption_rect(&self, screen: Vector2) -> Rectangle {
@@ -57,18 +58,18 @@ impl Screen for SearchScreen {
     fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
         let screen = ui::screen_size(ctx.rl);
         let area = Rectangle::new(0.0, 0.0, screen.x, screen.y);
-        let room = ctx.state.get::<Desk>().room().to_string();
-        let Some(index) = self.room(&room) else {
-            eprintln!("⚠️ No room to search called '{}'", room);
+        let room = ctx.state.get::<Desk>().room();
+        let Some(index) = self.room(room) else {
+            eprintln!("⚠️ No room to search: {:?}", room);
             return Some(ScreenState::Playing);
         };
 
         if let Some(picked) = self.rooms[index].1.update(&mut ctx, area) {
-            self.caption = Some(spot_text(&room, &picked.id));
+            self.caption = room.map(|room| spot_text(room, &picked.id));
             if ctx.state.get_mut::<Desk>().examine(&picked.id) {
                 ctx.play_sound("page_turn");
             }
-            if room == "study" && picked.id == "desk" {
+            if room == Some(Room::Study) && picked.id == "desk" {
                 ctx.mark_seen(crate::gallery::STUDY_DESK);
             }
             return picked.screen;
@@ -197,29 +198,29 @@ fn study() -> ImageMap {
         )
 }
 
-fn spot_text(room: &str, spot: &str) -> &'static str {
+fn spot_text(room: Room, spot: &str) -> &'static str {
     match (room, spot) {
-        ("study", "desk") => {
+        (Room::Study, "desk") => {
             "The blotter kept the ghost of a signature and three words pressed backwards into it: \
              Von Lucis. Three days."
         }
-        ("study", "lamp") => {
+        (Room::Study, "lamp") => {
             "The lamp was found lit, in a house nobody had entered for a week. \
              The oil was full."
         }
-        ("study", "window") => {
+        (Room::Study, "window") => {
             "Mary wrote that she looked at the windows first. \
              \"Outside it is not night. Outside it is not anything.\""
         }
-        ("study", "chair") => {
+        (Room::Study, "chair") => {
             "The chair faces the door, not the fire. He sat in it waiting for somebody \
              who did not use doors."
         }
-        ("study", "portrait") => {
+        (Room::Study, "portrait") => {
             "Sofia Von Lucis, 1889, and a second frame the House catalogued as empty. \
              It is not empty. It is a photograph of the same room."
         }
-        ("study", "fireplace") => {
+        (Room::Study, "fireplace") => {
             "Ash to the grate's lip, and one corner of pale paper that did not burn. \
              It still smells of perfume."
         }

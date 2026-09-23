@@ -4,8 +4,8 @@ use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
 use vn_engine::ui::button::ButtonStyle;
 
-use crate::desk::{self, BOX, Desk, REPORT};
-use crate::evidence::{Evidence, describe};
+use crate::desk::{Desk, Tray};
+use crate::evidence::{Evidence, EvidenceItem};
 use crate::style;
 
 const CARD: (f32, f32) = (0.15, 0.30);
@@ -67,13 +67,13 @@ impl ReportDesk {
             .map(|(item, _)| {
                 let tray = desk.tray(item);
                 let column = match tray {
-                    REPORT => 1,
-                    BOX => 2,
-                    _ => 0,
+                    Tray::Shelf => 0,
+                    Tray::Report => 1,
+                    Tray::Box => 2,
                 };
                 let index = counts[column];
                 counts[column] += 1;
-                Draggable::new(item, card_shape(tray, index)).label(describe(item).1)
+                Draggable::new(item.as_str(), card_shape(tray, index)).label(item.describe().1)
             })
             .collect()
     }
@@ -92,13 +92,13 @@ impl Screen for ReportDesk {
         if let Some(drop) = self.board.update(&mut ctx, self.board_rect(screen)) {
             match (drop.accepted, drop.target_id.as_deref()) {
                 (true, Some(tray)) => {
-                    let tray = tray.to_string();
-                    ctx.state.get_mut::<Desk>().file(&drop.item_id, &tray);
-                    ctx.notify(format!(
-                        "{}: {}",
-                        desk::tray_name(&tray),
-                        describe(&drop.item_id).0
-                    ));
+                    if let (Some(tray), Some(item)) = (
+                        Tray::from_word(tray),
+                        EvidenceItem::from_word(&drop.item_id),
+                    ) {
+                        ctx.state.get_mut::<Desk>().file(item, tray);
+                        ctx.notify(format!("{}: {}", tray.name(), item.describe().0));
+                    }
                 }
                 (false, Some(_)) => ctx.notify_error("Box fourteen is the box. It stays."),
                 _ => {}
@@ -150,7 +150,8 @@ impl Screen for ReportDesk {
 
         for (index, target) in self.board.targets.iter().enumerate() {
             let bounds = target.shape.bounds(area);
-            let name = desk::tray_name(&self.board.targets[index].id);
+            let name =
+                Tray::from_word(&self.board.targets[index].id).map_or("On the desk", Tray::name);
             ui::draw_text_centered(
                 d,
                 fonts,
@@ -163,7 +164,7 @@ impl Screen for ReportDesk {
         for (index, item) in self.board.items.iter().enumerate() {
             let rect = self.board.item_rect(index, area);
             self.card.draw(d, rect);
-            let name = describe(&item.id).0;
+            let name = EvidenceItem::from_word(&item.id).map_or("", |item| item.describe().0);
             let text = ui::fit_text(fonts, &self.card_text, name, rect.width - 16.0);
             ui::draw_text_centered(
                 d,
@@ -197,21 +198,21 @@ fn board() -> DragBoard {
                 .sounds("page_turn", "book_close", "page_turn")
         })
         .target(
-            DropTarget::new(REPORT, Shape::rect(0.04, 0.52, 0.44, 0.44))
+            DropTarget::new(Tray::Report.as_str(), Shape::rect(0.04, 0.52, 0.44, 0.44))
                 .label("Everything here is read by the House")
-                .accepts(|item, _| item != "box_14"),
+                .accepts(|item, _| item != EvidenceItem::Box14.as_str()),
         )
         .target(
-            DropTarget::new(BOX, Shape::rect(0.52, 0.52, 0.44, 0.44))
+            DropTarget::new(Tray::Box.as_str(), Shape::rect(0.52, 0.52, 0.44, 0.44))
                 .label("Back on the shelf, uncatalogued"),
         )
 }
 
-fn card_shape(tray: &str, index: usize) -> Shape {
+fn card_shape(tray: Tray, index: usize) -> Shape {
     let index = index as f32;
     match tray {
-        REPORT => Shape::rect(0.06 + index * 0.105, 0.62, TRAY_CARD.0, TRAY_CARD.1),
-        BOX => Shape::rect(0.54 + index * 0.105, 0.62, TRAY_CARD.0, TRAY_CARD.1),
-        _ => Shape::rect(0.03 + index * 0.165, 0.04, CARD.0, CARD.1),
+        Tray::Report => Shape::rect(0.06 + index * 0.105, 0.62, TRAY_CARD.0, TRAY_CARD.1),
+        Tray::Box => Shape::rect(0.54 + index * 0.105, 0.62, TRAY_CARD.0, TRAY_CARD.1),
+        Tray::Shelf => Shape::rect(0.03 + index * 0.165, 0.04, CARD.0, CARD.1),
     }
 }

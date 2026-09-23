@@ -101,6 +101,24 @@ impl Context<'_> {
         }
     }
 
+    fn command_words(&self, command: &str, at: usize) -> Vec<Item> {
+        let Some(sig) = self.schema.and_then(|schema| schema.commands.get(command)) else {
+            return Vec::new();
+        };
+        let kind = sig
+            .required
+            .iter()
+            .chain(&sig.optional)
+            .nth(at)
+            .or(sig.rest.as_ref());
+
+        match kind {
+            Some(vn_script::ParamKind::Choice(members)) => items(members.clone(), ItemKind::Value),
+            Some(vn_script::ParamKind::Bool) => items(["true", "false"], ItemKind::Value),
+            _ => Vec::new(),
+        }
+    }
+
     fn commands(&self) -> Vec<Item> {
         let Some(schema) = self.schema else {
             return Vec::new();
@@ -202,6 +220,7 @@ pub fn complete(prefix: &str, ctx: &Context) -> Vec<Item> {
         ["add"] => ctx.variables(Some(|ty| *ty == VarType::Int)),
         ["add", _] => items(["+=", "-="], ItemKind::Operator),
         ["call"] => ctx.commands(),
+        ["call", command, args @ ..] => ctx.command_words(command, args.len()),
         ["choice"] => items(["final:"], ItemKind::Keyword),
         ["scene", _] => items(["nvl:", "adv:"], ItemKind::Keyword),
         ["if", ..] => {

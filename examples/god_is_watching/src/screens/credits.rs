@@ -3,7 +3,7 @@ use vn_engine::raylib::prelude::*;
 use vn_engine::ui;
 use vn_engine::ui::button::ButtonStyle;
 
-use crate::journal::{Achievements, CaseLedger, ENDINGS, achievement_name, ending_name};
+use crate::journal::{Achievements, CaseLedger, Ending};
 use crate::style;
 
 const LINES: [&str; 5] = [
@@ -86,25 +86,33 @@ impl Screen for CreditsScreen {
             y += 36.0;
         }
 
-        let this_time = ctx.story.variable("ending").map(ToString::to_string);
+        let this_time = ctx
+            .story
+            .variable("ending")
+            .map(ToString::to_string)
+            .and_then(|word| Ending::from_word(&word));
         let ledger = ctx.persistent.get::<CaseLedger>();
         y += 30.0;
         if ledger.closed() > 0 {
             ui::draw_text_centered(
                 d,
                 fonts,
-                &format!("ENDINGS FOUND: {} OF {}", ledger.closed(), ENDINGS.len()),
+                &format!(
+                    "ENDINGS FOUND: {} OF {}",
+                    ledger.closed(),
+                    Ending::ALL.len()
+                ),
                 Vector2::new(screen.x / 2.0, y),
                 &self.section,
             );
             y += 32.0;
-            let endings: Vec<String> = ENDINGS
+            let endings: Vec<String> = Ending::ALL
                 .iter()
                 .map(|&ending| match ledger.has(ending) {
-                    true if this_time.as_deref() == Some(ending) => {
-                        format!("{} (this time)", ending_name(ending))
+                    true if this_time == Some(ending) => {
+                        format!("{} (this time)", ending.name())
                     }
-                    true => ending_name(ending).to_string(),
+                    true => ending.name().to_string(),
                     false => "???".to_string(),
                 })
                 .collect();
@@ -122,7 +130,7 @@ impl Screen for CreditsScreen {
             .persistent
             .get::<Achievements>()
             .unlocked()
-            .map(achievement_name)
+            .map(|achievement| achievement.name())
             .collect();
         if !achievements.is_empty() {
             ui::draw_text_centered(

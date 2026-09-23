@@ -13,6 +13,7 @@ video-ffmpeg = ["dep:ffmpeg-next", "dep:tempfile"]
 
 [dependencies]
 vn_script.workspace = true
+vn_macros.workspace = true
 raylib.workspace = true
 serde.workspace = true
 serde_json.workspace = true
