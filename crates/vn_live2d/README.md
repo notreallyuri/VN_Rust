@@ -4,9 +4,9 @@ Experimental first milestone for Live2D Cubism integration: a native adapter, a
 raylib viewer, and the engine seam it registers through. A character is backed by a
 model with `VnApp::character_visual`, its appearances join the schema so `show mary
 happy` validates, `New Game` and hot reload drop the models, and loading a save or
-rolling back restarts the ones still on screen. The C++ bridge now compiles and
-renders against the proprietary Core, though the story-facing path has still only
-been exercised through the viewer. Every failure falls back to the PNG character art.
+rolling back restarts the ones still on screen. The C++ bridge compiles and renders
+against the proprietary Core, and a scene has now been played through the story path
+with two models on screen at once. Every failure falls back to the PNG character art.
 
 The dependency runs one way: `vn_live2d` uses `vn_engine`, never the reverse. The
 seam lives behind `vn_engine`'s `character-visuals` feature, which is off by
@@ -29,6 +29,30 @@ Cubism's motion blending, expressions, and physics to Rust.
   renders Haru, Mao, Hiyori and Natori fully textured, with clipping masks, on Mesa
   26.2 / AMD, OpenGL 4.6 core. No GL errors, and the host's red and green markers
   still bracket the model, so the state save/restore holds.
+- **The story path itself has now been run behind Core**, by `examples/story.rs`: a
+  scene that shows a model, changes its appearance, brings a second character up beside
+  it, pushes parameters, saves, loads, and removes one again — in auto mode, so it plays
+  itself. What it settled, all on the same Mesa 26.2 / AMD machine:
+  - Two models draw at once, each running its own motion, and a third is loaded and
+    dropped as the first character changes appearance. No leak of GL state between them
+    and no fallback.
+  - `ctx.visual_parameter` reaches a live model over a running motion, every frame:
+    the probe holds Hiyori's eyes shut and drives her mouth from an `on_frame` hook,
+    and `None` hands both back to the motion on the next frame. The bridge applies
+    stored overrides after the motion and expression update and before physics and
+    pose, which is what makes that work.
+  - Loading a save restarts the models on screen: they keep drawing, with the
+    appearance's motion started again, and neither the moc nor the textures are
+    reloaded. An earlier version of the probe looped the load and did it four times
+    over, which the models survived.
+  - Failure behind Core behaves as designed: `--break` truncates kaede's `.moc3`, Core
+    rejects it (`Failed to CubismMoc::Create()`), and the engine prints one line and
+    draws her PNG while the other character's model keeps running.
+  - Toggling fullscreen mid-scene resized the window from 1280×720 to 1920×1080 with
+    both models still correct, so a resize with live models is no longer unverified.
+  - A 64-byte corruption in the middle of a `.moc3` loaded without complaint. The
+    Framework's consistency check is enabled (`LoadModel(..., true)`), but it validates
+    structure, not content, so it is not an integrity check for untrusted files.
 - Three faults only a real run could show, all fixed here: `SetIsPremultipliedAlpha`
   does not exist in 5-r.5 (the setter is an `IsPremultipliedAlpha` overload); the
   shader loader signature takes `csmSizeInt*`, not `int*`; and the Framework asks for
@@ -46,12 +70,10 @@ Cubism's motion blending, expressions, and physics to Rust.
 - The SDK-independent GPU test passes with a real OpenGL 3.3 core context under
   Xvfb: drawing through VBOs, restoring host GL state (including on exceptions),
   and recreating the compatibility resources.
-- **Still unverified:** motions, expressions and physics in motion (only the first
-  frames have been watched), resize, failed loads, repeated destruction, several
-  models at once, post-processing, and the story-facing seam behind Core — the puppet
-  has now played a scene through it, a Cubism model has not, and neither has
-  `set_parameter` against a real model. Nothing is checked automatically: there are no
-  GPU regression tests yet.
+- **Still unverified:** expressions (no sample model here ships one), inverted masks and
+  blending modes, physics over a long run, post-processing over a model, and hot reload
+  with models on screen. Nothing is checked automatically: both probes are watched by
+  hand, and there are no GPU regression tests yet.
 
 ## SDK setup
 
@@ -79,6 +101,21 @@ export CUBISM_SDK_ROOT=/absolute/path/to/CubismSdkForNative-5-r.5
 cargo run -p vn_live2d --features native --example viewer -- \
   "$CUBISM_SDK_ROOT/Samples/Resources" Haru/Haru.model3.json
 ```
+
+The story probe plays a scene instead, through the engine seam a game uses, and needs no
+input: it turns auto mode on and plays itself.
+
+```sh
+cargo run -p vn_live2d --features engine --example story
+```
+
+It builds a temporary assets folder, symlinks a model folder into it as two characters,
+and plays a scene that shows one, changes her appearance, brings the second up beside
+her, pushes parameters from a frame hook and releases them, saves, loads, and removes
+one. It takes screenshots as it goes, into its own saves folder, and prints each step.
+Without arguments it uses `example_vn`'s Hiyori; pass a model folder to use another.
+`--break` truncates that model's `.moc3` in the copy, so Core rejects it and the run
+shows the PNG fallback beside a model that still works. `--smoke` quits at the end.
 
 The viewer draws into the engine's `RenderTarget`, then composites it with raylib.
 It draws a red square before Cubism and a green square afterward. Resize the
@@ -151,27 +188,30 @@ xvfb-run -a /tmp/vn-live2d-core-profile-test
 
 ## Next milestone
 
-1. Continue the first real run. Four models draw correctly with masks; still to check
-   are inverted masks and blending modes, expressions, motions and physics over time,
-   multiple models at once, resize, failed loads, repeated destruction, screenshots
-   and post-processing. Add model-dependent GPU regression checks, now that `VN_SHOT`
-   makes a frame comparable.
+1. Continue the first real run. Done since: motions over time, multiple models at once,
+   repeated loading and destruction, resize, failed loads and the PNG fallback,
+   screenshots, and the story path end to end (see the validation list above). Still to
+   check: inverted masks and blending modes, expressions (Hiyori ships none, so the
+   probe cannot exercise them), physics watched over a long run, post-processing over a
+   model, and hot reload with models on screen. Add model-dependent GPU regression
+   checks, now that both probes write comparable frames.
 2. ~~Prove the seam carries a second backend.~~ Done: the engine's puppet backend draws
    through the same `CharacterVisualFactory`, and the one thing it wanted that the seam
    lacked is now there — `CharacterVisual::set_parameter`, with `ctx.visual_parameter`
    and an `on_frame` hook behind it, which is the channel voice-driven lip sync needs.
    A push is remembered per character, so it follows the character into the next
-   appearance it loads. Live2D implements it against `Model::set_parameter`, but that
-   path has not been run against Core yet, and nothing here does lip sync: the engine
-   has no channel from a playing voice line to a parameter.
+   appearance it loads. Live2D implements it against `Model::set_parameter`, and that
+   path has now been run against Core. What is still missing is lip sync itself: the
+   engine has no channel from a playing voice line to a parameter, so a game has to
+   compute the value it pushes.
 3. ~~Replace the reset-everything rollback.~~ Done: `CharacterVisual::restart` returns a
    model to its appearance's preset (expression, motion, parameters) without touching
    the moc, textures or physics. Rollback and loading a save restart the models that
    stay on screen instead of dropping them; New Game and hot reload still drop
    everything, since the assets themselves may have changed. A model that fails to
    restart falls back to its PNG, like any other failure. The default implementation
-   does nothing, so a backend without transient state need not implement it. Not yet
-   run against Core.
+   does nothing, so a backend without transient state need not implement it. Run against
+   Core through a save and load; rollback by key shares the same call.
 4. Save logical appearance/parameter state and restore it on load and rollback,
    initially restarting transient idle animation and physics. Define pause, skip,
    hot reload, and custom-screen behavior before claiming story integration.
