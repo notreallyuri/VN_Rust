@@ -50,6 +50,16 @@ Cubism's motion blending, expressions, and physics to Rust.
     draws her PNG while the other character's model keeps running.
   - Toggling fullscreen mid-scene resized the window from 1280×720 to 1920×1080 with
     both models still correct, so a resize with live models is no longer unverified.
+  - Expressions work, checked with Natori, whose `.exp3.json` files are named: each
+    appearance carries its own (`Normal` and `Smile` here), the bridge applies it at
+    load beside the motion, and `restart` puts it back after a load.
+  - Rolling back with Page Up restores the appearance a line was shown with — the model
+    goes back to the earlier appearance's expression and motion — and a rollback past a
+    `remove` brings that character's model back, loading it again. No fallback, no GL
+    error. Two things to know when watching it: auto mode advances again the moment a
+    rollback lands, so the probe turns auto off at the end of the scene, and a save
+    written with `Saves::save` carries no rollback history, so loading one leaves only
+    the steps played after it.
   - A 64-byte corruption in the middle of a `.moc3` loaded without complaint. The
     Framework's consistency check is enabled (`LoadModel(..., true)`), but it validates
     structure, not content, so it is not an integrity check for untrusted files.
@@ -70,10 +80,10 @@ Cubism's motion blending, expressions, and physics to Rust.
 - The SDK-independent GPU test passes with a real OpenGL 3.3 core context under
   Xvfb: drawing through VBOs, restoring host GL state (including on exceptions),
   and recreating the compatibility resources.
-- **Still unverified:** expressions (no sample model here ships one), inverted masks and
-  blending modes, physics over a long run, post-processing over a model, and hot reload
-  with models on screen. Nothing is checked automatically: both probes are watched by
-  hand, and there are no GPU regression tests yet.
+- **Still unverified:** inverted masks and blending modes, physics over a long run,
+  post-processing over a model, and hot reload with models on screen. Nothing is checked
+  automatically: both probes are watched by hand, and there are no GPU regression tests
+  yet.
 
 ## SDK setup
 
@@ -113,7 +123,15 @@ It builds a temporary assets folder, symlinks a model folder into it as two char
 and plays a scene that shows one, changes her appearance, brings the second up beside
 her, pushes parameters from a frame hook and releases them, saves, loads, and removes
 one. It takes screenshots as it goes, into its own saves folder, and prints each step.
-Without arguments it uses `example_vn`'s Hiyori; pass a model folder to use another.
+Without arguments it uses `example_vn`'s Hiyori; pass a model folder to use another — it
+reads that model's `.model3.json` for its motion count and expression names, so a model
+with expressions gets one per appearance and a model without falls back to motions alone:
+
+```sh
+cargo run -p vn_live2d --features engine --example story -- \
+  "$CUBISM_SDK_ROOT/Samples/Resources/Natori"
+```
+
 `--break` truncates that model's `.moc3` in the copy, so Core rejects it and the run
 shows the PNG fallback beside a model that still works. `--smoke` quits at the end.
 
@@ -188,13 +206,13 @@ xvfb-run -a /tmp/vn-live2d-core-profile-test
 
 ## Next milestone
 
-1. Continue the first real run. Done since: motions over time, multiple models at once,
-   repeated loading and destruction, resize, failed loads and the PNG fallback,
-   screenshots, and the story path end to end (see the validation list above). Still to
-   check: inverted masks and blending modes, expressions (Hiyori ships none, so the
-   probe cannot exercise them), physics watched over a long run, post-processing over a
-   model, and hot reload with models on screen. Add model-dependent GPU regression
-   checks, now that both probes write comparable frames.
+1. Continue the first real run. Done since: motions over time, expressions, multiple
+   models at once, repeated loading and destruction, resize, failed loads and the PNG
+   fallback, screenshots, rollback, and the story path end to end (see the validation
+   list above). Still to
+   check: inverted masks and blending modes, physics watched over a long run,
+   post-processing over a model, and hot reload with models on screen. Add
+   model-dependent GPU regression checks, now that both probes write comparable frames.
 2. ~~Prove the seam carries a second backend.~~ Done: the engine's puppet backend draws
    through the same `CharacterVisualFactory`, and the one thing it wanted that the seam
    lacked is now there — `CharacterVisual::set_parameter`, with `ctx.visual_parameter`
