@@ -272,9 +272,11 @@ bottom to top, then the gaps.
   per-frame channel behind it, and what visuals do while a menu is up, while skipping, on
   New Game and on a hot reload is written down in the engine's README
 - [ ] **What is left**, in the order it matters
-  - [ ] A custom screen cannot show a backend-drawn character at all: `prepare` runs only
-    on the playing screen, so no instance exists for a custom screen to draw, and a PNG is
-    the only answer today. This is the largest hole in "story integration"
+  - [x] A custom screen can show one. Screens ask for the appearances they want each
+    frame (`ctx.show_visual`), the manager prepares exactly that set once per frame, and
+    a screen that asks for none leaves the instances alone — which is what freezes them
+    under a menu. The puppet probe's `portrait` command is a screen of its own drawing
+    the rig
   - [ ] No channel from a playing voice line to a parameter. The channel to push a value
     through exists, but the engine exposes no amplitude for a voice clip, so lip sync
     means the game computing it frame by frame

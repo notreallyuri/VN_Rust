@@ -11,6 +11,9 @@ pub enum Request {
     OverrideCursor(Option<CursorKind>),
     Autosave,
     Screenshot,
+    /// This screen wants a character drawn by its backend this frame.
+    #[cfg(feature = "character-visuals")]
+    Visual(crate::game::visuals::VisualKey),
 }
 
 #[derive(Debug, Default)]
@@ -48,6 +51,8 @@ impl Requests {
                 Request::Toast(toast) => resolved.toast = Some(toast),
                 Request::Autosave => resolved.autosave = true,
                 Request::Screenshot => resolved.screenshot = true,
+                #[cfg(feature = "character-visuals")]
+                Request::Visual(key) => resolved.visuals.push(key),
             }
         }
         resolved
@@ -63,4 +68,6 @@ pub struct Resolved {
     pub cursor_override: Option<Option<CursorKind>>,
     pub autosave: bool,
     pub screenshot: bool,
+    #[cfg(feature = "character-visuals")]
+    pub visuals: Vec<crate::game::visuals::VisualKey>,
 }

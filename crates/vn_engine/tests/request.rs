@@ -78,3 +78,29 @@ fn what_a_screen_asked_for_can_be_read_back_before_it_is_applied() {
         "a test can assert a screen's intent without opening a window"
     );
 }
+
+#[cfg(feature = "character-visuals")]
+#[test]
+fn a_screen_asks_for_the_characters_its_backend_should_draw() {
+    use vn_engine::game::visuals::VisualKey;
+
+    let resolved = asked([
+        Request::Visual(VisualKey::new("mary", "happy")),
+        Request::Visual(VisualKey::new("hugo", "neutral")),
+        Request::Visual(VisualKey::new("mary", "neutral")),
+    ]);
+    assert_eq!(
+        resolved.visuals,
+        [
+            VisualKey::new("mary", "happy"),
+            VisualKey::new("hugo", "neutral"),
+            VisualKey::new("mary", "neutral"),
+        ],
+        "every appearance asked for, in order: one character can be mid-change"
+    );
+
+    assert!(
+        asked([Request::Screenshot]).visuals.is_empty(),
+        "a frame nobody asked in leaves the instances alone"
+    );
+}

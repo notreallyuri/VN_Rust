@@ -278,6 +278,6 @@ xvfb-run -a /tmp/vn-live2d-core-profile-test
    idle animation, motions and physics begin again from the appearance's preset and the
    push is applied over the top. Pause, skip, hot reload and custom screens are written
    down in [the engine's README](../vn_engine/README.md#while-the-story-is-not-playing);
-   the honest answer for a custom screen is that it cannot show a backend-drawn character
-   at all, because `prepare` only runs on the playing screen. That is the next thing this
-   seam is short of, along with a channel from a playing voice line to a parameter.
+   a custom screen can show a backend-drawn character now too: screens ask for the
+   appearances they want each frame and the manager prepares that set. What this seam is
+   still short of is a channel from a playing voice line to a parameter.

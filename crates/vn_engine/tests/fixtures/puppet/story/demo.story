@@ -7,5 +7,7 @@ scene start:
   call talk
   mary "That mouth is being pushed from a frame hook, sixty times a second."
   call quiet
+  mary "A screen of the game's own can show me too, now."
+  call portrait
   show mary neutral with dissolve
   mary "Released, it falls back to the pose and the idle clock."

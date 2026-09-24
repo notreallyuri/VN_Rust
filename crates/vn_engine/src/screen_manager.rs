@@ -285,6 +285,8 @@ impl ScreenStateManager {
         }
         self.frame.autosave |= asked.autosave;
         self.frame.screenshot |= asked.screenshot;
+        #[cfg(feature = "character-visuals")]
+        self.prepare_visuals(asked.visuals, rl, thread);
         let (tooltip, toast) = (asked.tooltip, asked.toast);
 
         let clicked = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
@@ -476,6 +478,32 @@ impl ScreenStateManager {
                 visuals: self.visual_parameters(),
             },
         );
+    }
+
+    /// Load, update and release the backend-drawn characters a screen asked for this
+    /// frame, and put a PNG where a backend could not answer. A frame nobody asked in
+    /// leaves the instances alone, which is what freezes them while a menu is up.
+    #[cfg(feature = "character-visuals")]
+    fn prepare_visuals(
+        &mut self,
+        wanted: Vec<crate::game::visuals::VisualKey>,
+        rl: &mut RaylibHandle,
+        thread: &RaylibThread,
+    ) {
+        if wanted.is_empty() {
+            return;
+        }
+        let assets = self.show.resources.assets().clone();
+        let seconds = rl.get_frame_time();
+        let fallback = self
+            .show
+            .resources
+            .visuals
+            .prepare(wanted, &assets, rl, thread, seconds);
+        for key in fallback {
+            let path = crate::data::resources::character_path(&key.character, &key.appearance);
+            self.show.resources.get_or_load(&path, rl, thread);
+        }
     }
 
     fn visual_parameters(&self) -> crate::data::rollback::VisualParameters {

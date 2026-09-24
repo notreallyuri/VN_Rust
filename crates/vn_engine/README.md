@@ -2688,7 +2688,45 @@ A backend only runs while the playing screen does, which decides the rest:
 | Skipping | Every frame still updates and draws, so motions play at their own speed while the text flies past. Appearance changes still load and drop instances as they go by, which for a heavy backend is the one place skipping can cost a hitch |
 | Rolling back or loading | The instances on screen are restarted rather than reloaded, and the pushed parameters of that step are applied over the top (see [Parameters](#parameters)) |
 | New Game, or a hot reload | Every instance is dropped and loaded again, because the assets themselves may have changed |
-| A custom screen | Cannot show a character: `prepare` only runs on the playing screen, so there is no instance for `CharacterVisuals::draw` to draw. A custom screen that needs the character on it wants a PNG for now |
+| A custom screen | Can show a character of its own — it asks for the appearances it wants each frame, the same way the playing screen does (see below) |
+
+### On a screen of your own
+
+Any screen can show a backend-drawn character, not just the playing one. A screen asks in
+`update` for the appearances it wants this frame, and draws them where it likes:
+
+```rust
+impl Screen for PortraitScreen {
+    fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
+        ctx.show_visual("mary", "happy");
+        None
+    }
+
+    fn draw(&self, d: &mut RaylibDrawHandle, ctx: &DrawContext) {
+        let screen = ui::screen_size(d);
+        ctx.resources
+            .visuals
+            .draw("mary", "happy", d, screen, 0.5, Some(0.95), 1.0);
+    }
+}
+```
+
+`draw` takes the character and appearance, the layout size, `x` as a fraction of the
+width, an optional height as a fraction of the height (the natural size when `None`) and
+an opacity, and returns `false` when the backend could not answer — draw the PNG then, as
+the playing screen does.
+
+The asking is what decides which instances live. A screen that asks for any is asking for
+all of them: an instance nobody asked for this frame is released, and one asked for is
+loaded if it is not there yet and updated by a frame's worth of time. A screen that asks
+for none — every menu — leaves whatever is loaded alone, frozen where it was, which is
+why a pause does not cost a model its place. A game whose custom screen shows one
+character while the story has two on stage should ask for all three, or accept that the
+other two reload when it returns.
+
+`cargo run -p vn_engine --features character-visuals --example puppet` plays through one:
+its `portrait` command switches to a screen that draws the rig full height on its own
+background.
 
 ### Writing a backend
 

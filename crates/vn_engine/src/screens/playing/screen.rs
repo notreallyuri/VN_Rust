@@ -6,7 +6,7 @@ use vn_script::Event;
 use super::{PlayingConfig, Typewriter};
 use crate::action::Action;
 use crate::context::{DrawContext, GameContext};
-use crate::data::resources::{background_path, bust_path, character_path};
+use crate::data::resources::{background_path, bust_path};
 use crate::data::session::{LogEntry, Spoken};
 use crate::frame::stage::Stage;
 use crate::input::navigation::Focus;
@@ -328,27 +328,16 @@ impl Screen for PlayingScreen {
         ctx.run_frame_hooks(ctx.rl.get_frame_time());
 
         #[cfg(feature = "character-visuals")]
-        {
-            let assets = ctx.resources.assets().clone();
-            let fallback = ctx.resources.visuals.prepare(
-                self.stage.visual_keys(ctx.story),
-                &assets,
-                ctx.rl,
-                ctx.thread,
-                ctx.rl.get_frame_time(),
-            );
-            for key in fallback {
-                ctx.resources.get_or_load(
-                    &character_path(&key.character, &key.appearance),
-                    ctx.rl,
-                    ctx.thread,
-                );
-            }
+        for key in self.stage.visual_keys(ctx.story) {
+            ctx.show_visual(&key.character, &key.appearance);
         }
         #[cfg(not(feature = "character-visuals"))]
         for (name, image) in ctx.story.active_characters() {
-            ctx.resources
-                .get_or_load(&character_path(name, image), ctx.rl, ctx.thread);
+            ctx.resources.get_or_load(
+                &crate::data::resources::character_path(name, image),
+                ctx.rl,
+                ctx.thread,
+            );
         }
         if let Some(image) = ctx.story.background() {
             ctx.resources
