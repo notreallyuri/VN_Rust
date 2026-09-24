@@ -6,6 +6,7 @@ use raylib::prelude::*;
 use vn_script::Schema;
 
 use crate::data::assets::Assets;
+use crate::data::rollback::VisualParameters;
 
 pub trait CharacterVisual {
     fn size(&self) -> Vector2;
@@ -148,7 +149,7 @@ enum Instance {
 pub struct CharacterVisuals {
     pub registry: VisualRegistry,
     instances: RefCell<BTreeMap<VisualKey, Instance>>,
-    pushed: BTreeMap<String, BTreeMap<String, f32>>,
+    pushed: VisualParameters,
 }
 
 impl CharacterVisuals {
@@ -169,6 +170,34 @@ impl CharacterVisuals {
         }
     }
 
+    /// What the game has pushed, to go into a save or a rollback checkpoint.
+    pub fn pushed(&self) -> &VisualParameters {
+        &self.pushed
+    }
+
+    /// Put back what a save or a checkpoint recorded, over whatever is pushed now.
+    /// The instances on screen hear about every parameter either side holds, so one
+    /// that a step no longer pushes is released rather than left behind.
+    pub fn restore(&mut self, parameters: VisualParameters) {
+        let touched: BTreeSet<(String, String)> = self
+            .pushed
+            .iter()
+            .chain(parameters.iter())
+            .flat_map(|(character, values)| {
+                values.keys().map(move |id| (character.clone(), id.clone()))
+            })
+            .collect();
+        self.pushed = parameters;
+        for (character, id) in touched {
+            let value = self
+                .pushed
+                .get(&character)
+                .and_then(|values| values.get(&id))
+                .copied();
+            self.apply(&character, &id, value);
+        }
+    }
+
     pub fn set_parameter(&mut self, character: &str, id: &str, value: Option<f32>) {
         match value {
             Some(value) => {
@@ -186,6 +215,10 @@ impl CharacterVisuals {
                 }
             }
         }
+        self.apply(character, id, value);
+    }
+
+    fn apply(&mut self, character: &str, id: &str, value: Option<f32>) {
         for (key, instance) in self.instances.get_mut() {
             if key.character != character {
                 continue;
@@ -565,6 +598,67 @@ mod tests {
             trace.borrow().loaded.len(),
             2,
             "a failed instance is not retried every frame"
+        );
+    }
+
+    #[test]
+    fn a_save_puts_back_what_was_pushed_and_releases_what_was_not() {
+        let trace = Rc::new(RefCell::new(Trace::default()));
+        let mut visuals = CharacterVisuals::default();
+        let mary = VisualKey::new("mary", "neutral");
+        let hugo = VisualKey::new("hugo", "neutral");
+        visuals.prepare_with([mary.clone(), hugo.clone()], 0.02, |key| load(&trace, key));
+
+        visuals.set_parameter("mary", "mouth", Some(0.4));
+        visuals.set_parameter("mary", "blush", Some(1.0));
+        let saved = visuals.pushed().clone();
+        assert_eq!(
+            saved["mary"],
+            BTreeMap::from([("blush".to_string(), 1.0), ("mouth".to_string(), 0.4),])
+        );
+
+        visuals.set_parameter("mary", "mouth", None);
+        visuals.set_parameter("hugo", "blush", Some(0.5));
+        trace.borrow_mut().parameters.clear();
+
+        visuals.restore(saved.clone());
+        assert_eq!(
+            visuals.pushed(),
+            &saved,
+            "the step's own parameters, exactly"
+        );
+
+        let mut told = trace.borrow().parameters.clone();
+        told.sort_by(|a, b| {
+            (&a.0, &a.1, a.2.map(f32::to_bits)).cmp(&(&b.0, &b.1, b.2.map(f32::to_bits)))
+        });
+        assert_eq!(
+            told,
+            [
+                ("neutral".to_string(), "blush".to_string(), None),
+                ("neutral".to_string(), "blush".to_string(), Some(1.0)),
+                ("neutral".to_string(), "mouth".to_string(), Some(0.4)),
+            ],
+            "mary hears her two again, and hugo is released from one the step never pushed"
+        );
+    }
+
+    #[test]
+    fn restoring_nothing_releases_everything_the_game_had_pushed() {
+        let trace = Rc::new(RefCell::new(Trace::default()));
+        let mut visuals = CharacterVisuals::default();
+        visuals.prepare_with([VisualKey::new("mary", "neutral")], 0.02, |key| {
+            load(&trace, key)
+        });
+        visuals.set_parameter("mary", "mouth", Some(1.0));
+        trace.borrow_mut().parameters.clear();
+
+        visuals.restore(VisualParameters::new());
+        assert!(visuals.pushed().is_empty());
+        assert_eq!(
+            trace.borrow().parameters,
+            [("neutral".to_string(), "mouth".to_string(), None)],
+            "a step before the push releases it"
         );
     }
 

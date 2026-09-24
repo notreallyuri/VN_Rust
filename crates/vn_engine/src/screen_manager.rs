@@ -473,8 +473,16 @@ impl ScreenStateManager {
                 rollback: &self.world.rollback,
                 log: self.world.log.entries(),
                 thumbnail: self.frame.thumbnail.as_ref(),
+                visuals: self.visual_parameters(),
             },
         );
+    }
+
+    fn visual_parameters(&self) -> crate::data::rollback::VisualParameters {
+        #[cfg(feature = "character-visuals")]
+        return self.show.resources.visuals.pushed().clone();
+        #[cfg(not(feature = "character-visuals"))]
+        return Default::default();
     }
 
     pub fn screenshot_requested(&mut self) -> bool {

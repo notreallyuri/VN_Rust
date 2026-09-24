@@ -97,9 +97,9 @@ fn checkpoints_remember_the_log_length() {
     let mut rollback = Rollback::new(RollbackConfig::default());
 
     story.advance_until_blocking();
-    rollback.record_with_log(&story, &state, Some(1));
+    rollback.record_with_log(&story, &state, Some(1), Default::default());
     story.advance_until_blocking();
-    rollback.record_with_log(&story, &state, Some(2));
+    rollback.record_with_log(&story, &state, Some(2), Default::default());
     assert_eq!(rollback.log_len(), Some(2));
 
     assert!(rollback.back(&mut story, &mut state));

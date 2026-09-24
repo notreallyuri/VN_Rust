@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use vn_engine::data::rollback::{Rollback, RollbackConfig};
+use vn_engine::data::rollback::{Rollback, RollbackConfig, VisualParameters};
 use vn_engine::data::state::GameState;
 use vn_engine::script::{Event, StoryVm};
 
@@ -10,6 +10,7 @@ struct Game {
     story: StoryVm,
     state: GameState,
     rollback: Rollback,
+    pushed: VisualParameters,
 }
 
 impl Game {
@@ -20,6 +21,7 @@ impl Game {
             story: StoryVm::from_source(source),
             state,
             rollback: Rollback::new(config),
+            pushed: VisualParameters::new(),
         };
         game.next();
         game
@@ -38,7 +40,12 @@ impl Game {
                     }
                 }
                 event if event.is_blocking() => {
-                    self.rollback.record(&self.story, &self.state);
+                    self.rollback.record_with_log(
+                        &self.story,
+                        &self.state,
+                        None,
+                        self.pushed.clone(),
+                    );
                     return event;
                 }
                 _ => {}
@@ -60,6 +67,13 @@ impl Game {
 
     fn forward(&mut self) -> bool {
         self.rollback.forward(&mut self.story, &mut self.state)
+    }
+
+    fn push(&mut self, character: &str, id: &str, value: f32) {
+        self.pushed
+            .entry(character.to_string())
+            .or_default()
+            .insert(id.to_string(), value);
     }
 
     fn line(&self) -> String {
@@ -273,6 +287,7 @@ fn reload(game: &Game, source: &str, config: RollbackConfig) -> Game {
         story,
         state,
         rollback,
+        pushed: game.pushed.clone(),
     }
 }
 
@@ -341,4 +356,60 @@ fn history_can_be_left_out_of_saves() {
 
     let disabled = Game::new(LINEAR, RollbackConfig::default().enabled(false));
     assert!(disabled.rollback.history().is_empty());
+}
+
+#[test]
+fn a_step_remembers_what_the_game_pushed_onto_its_characters() {
+    let mut game = Game::new(LINEAR, RollbackConfig::default());
+    assert!(game.rollback.visuals().is_empty(), "nothing pushed yet");
+
+    game.push("mary", "blush", 1.0);
+    game.next();
+    assert_eq!(game.rollback.visuals()["mary"]["blush"], 1.0);
+
+    game.push("mary", "blush", 0.25);
+    game.next();
+    assert_eq!(game.rollback.visuals()["mary"]["blush"], 0.25);
+
+    assert!(game.back());
+    assert_eq!(
+        game.rollback.visuals()["mary"]["blush"],
+        1.0,
+        "a step back is the value that line was shown with"
+    );
+    assert!(game.back());
+    assert!(
+        game.rollback.visuals().is_empty(),
+        "and before the push there was nothing"
+    );
+
+    assert!(game.forward());
+    assert_eq!(game.rollback.visuals()["mary"]["blush"], 1.0);
+}
+
+#[test]
+fn a_line_repeated_with_a_different_push_is_its_own_step() {
+    let mut game = Game::new(LINEAR, RollbackConfig::default());
+    let steps = |game: &Game| game.rollback.steps_back();
+
+    let before = steps(&game);
+    game.rollback
+        .record_with_log(&game.story, &game.state, None, VisualParameters::new());
+    assert_eq!(
+        steps(&game),
+        before,
+        "the same line and the same push is one step"
+    );
+
+    game.push("mary", "blush", 1.0);
+    let pushed = game.pushed.clone();
+    game.rollback
+        .record_with_log(&game.story, &game.state, None, pushed);
+    assert_eq!(
+        steps(&game),
+        before + 1,
+        "the same line with a new push is a step of its own, so it can be undone"
+    );
+    assert!(game.back());
+    assert!(game.rollback.visuals().is_empty());
 }

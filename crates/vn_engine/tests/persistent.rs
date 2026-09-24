@@ -207,7 +207,8 @@ fn new_game_loading_and_rollback_leave_persistent_values_alone() {
         Box::new(|ctx| {
             ctx.story.advance();
             set_chapter(ctx, 1);
-            ctx.rollback.record_with_log(ctx.story, ctx.state, None);
+            ctx.rollback
+                .record_with_log(ctx.story, ctx.state, None, ctx.visual_parameters());
             unlock(ctx, "a");
             ctx.save("1").unwrap();
             None
@@ -225,7 +226,8 @@ fn new_game_loading_and_rollback_leave_persistent_values_alone() {
             assert_eq!(unlocked(ctx), ["a", "b"], "loading keeps persistent values");
             set_chapter(ctx, 2);
             ctx.story.advance();
-            ctx.rollback.record_with_log(ctx.story, ctx.state, None);
+            ctx.rollback
+                .record_with_log(ctx.story, ctx.state, None, ctx.visual_parameters());
             unlock(ctx, "c");
             assert!(ctx.rollback.back(ctx.story, ctx.state));
             assert_eq!(chapter(ctx), 1, "rollback restores game state");

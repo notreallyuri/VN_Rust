@@ -10,7 +10,7 @@ use super::{
     AUTO_SLOT, LoadReport, Migrations, SAVE_FORMAT_VERSION, SaveError, SaveFile, SaveMigration,
     SlotInfo, THUMBNAIL_WIDTH, apply, format_migrations, now, point,
 };
-use crate::data::rollback::Rollback;
+use crate::data::rollback::{Rollback, VisualParameters};
 use crate::data::session::LogEntry;
 use crate::data::state::GameState;
 
@@ -134,6 +134,7 @@ impl Saves {
             state: state.to_json().map_err(SaveError::State)?,
             rollback: Vec::new(),
             log: Vec::new(),
+            visuals: Default::default(),
         })
     }
 
@@ -289,6 +290,7 @@ pub(crate) struct SaveParts<'a> {
     pub rollback: &'a Rollback,
     pub log: &'a [LogEntry],
     pub thumbnail: Option<&'a Image>,
+    pub visuals: VisualParameters,
 }
 
 pub(crate) fn save_game(saves: &Saves, slot: &str, parts: SaveParts) -> Result<(), SaveError> {
@@ -298,10 +300,12 @@ pub(crate) fn save_game(saves: &Saves, slot: &str, parts: SaveParts) -> Result<(
         rollback,
         log,
         thumbnail,
+        visuals,
     } = parts;
     let mut file = saves.capture(story, state)?;
     file.rollback = rollback.history();
     file.log = log.to_vec();
+    file.visuals = visuals;
     saves.write(slot, &file)?;
     if let Err(e) = saves.write_thumbnail(slot, thumbnail) {
         eprintln!("⚠️ Thumbnail for '{}' not saved: {}", slot, e);

@@ -76,6 +76,11 @@ impl RollbackConfig {
     }
 }
 
+/// What a game has pushed onto its characters' visuals: character, parameter, value.
+/// Plain data, so a build without `character-visuals` carries it through a save
+/// untouched rather than dropping it.
+pub type VisualParameters = BTreeMap<String, BTreeMap<String, f32>>;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Checkpoint {
     pub story: StorySnapshot,
@@ -83,6 +88,8 @@ pub struct Checkpoint {
     pub barrier: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub log_len: Option<usize>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub visuals: VisualParameters,
 }
 
 #[derive(Debug, Default)]
@@ -152,7 +159,16 @@ impl Rollback {
     }
 
     pub fn record(&mut self, story: &StoryVm, state: &GameState) {
-        self.record_with_log(story, state, None);
+        self.record_with_log(story, state, None, VisualParameters::new());
+    }
+
+    /// What the game had pushed onto its visuals at the step the story is on now.
+    pub fn visuals(&self) -> &VisualParameters {
+        static NONE: std::sync::OnceLock<VisualParameters> = std::sync::OnceLock::new();
+        self.history
+            .back()
+            .map(|checkpoint| &checkpoint.visuals)
+            .unwrap_or_else(|| NONE.get_or_init(VisualParameters::new))
     }
 
     pub fn log_len(&self) -> Option<usize> {
@@ -161,7 +177,13 @@ impl Rollback {
             .and_then(|checkpoint| checkpoint.log_len)
     }
 
-    pub fn record_with_log(&mut self, story: &StoryVm, state: &GameState, log_len: Option<usize>) {
+    pub fn record_with_log(
+        &mut self,
+        story: &StoryVm,
+        state: &GameState,
+        log_len: Option<usize>,
+        visuals: VisualParameters,
+    ) {
         if !self.config.enabled {
             return;
         }
@@ -173,7 +195,7 @@ impl Rollback {
             && self
                 .history
                 .back()
-                .is_some_and(|last| last.story == snapshot)
+                .is_some_and(|last| last.story == snapshot && last.visuals == visuals)
         {
             return;
         }
@@ -197,6 +219,7 @@ impl Rollback {
             state,
             barrier,
             log_len,
+            visuals,
         });
 
         while self.history.len() > self.config.max_steps + 1 {

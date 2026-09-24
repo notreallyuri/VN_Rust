@@ -2203,6 +2203,15 @@ an edited or deleted scene, and all of it when the saved scene itself was restar
 Saves without history (older ones, or `Saves::save`) load with none. It's the largest
 part of a save file (up to `max_steps` snapshots).
 
+### Character visuals
+
+A save also carries `visuals`: what the game had pushed onto its characters with
+`ctx.visual_parameter` when it was written, and the same for every step of the rollback
+history (see [Parameters](#parameters)). It is written only when something was pushed,
+and a save from before the field existed loads with none. A build without the
+`character-visuals` feature carries it through a save untouched rather than dropping it,
+so a save moves between builds without losing anything.
+
 ### Game state
 
 Every value registered with `.state(T)` is saved under its type name (`Inventory` for
@@ -2651,10 +2660,13 @@ the instance in front of it, so it survives a change of appearance and reaches t
 one as it loads. A backend that refuses a value fails that instance into its PNG, like
 any other error.
 
-Pushes are not story state: they are not written to a save, and a rollback or a load
-clears them along with restarting the instances on screen. Push from `on_scene_enter`, or
-from a frame hook, and a loaded save brings the character back the way the scene meant
-it.
+A push is part of the story's state. Each line records what was pushed when it was shown,
+so rolling back to it puts those values back — and releases anything pushed after it —
+and a save carries them, so loading one brings the character back the way the scene had
+it. What is not restored is the transient side: a rollback or a load restarts idle
+animation, motions and physics from the appearance's own preset, then re-applies the
+push over the top. A line that is replayed with a different push counts as its own step,
+so the push can be undone on its own.
 
 For anything that changes every frame — lip sync from the voice line, a head that follows
 the pointer — push from [`on_frame`](#hooks), which runs after the story has advanced and
@@ -2665,6 +2677,18 @@ VnApp::new("My Novel").on_frame(|ctx, _seconds| {
     ctx.visual_parameter("mary", "mouth", Some(mouth_from_voice(ctx)));
 })
 ```
+
+### While the story is not playing
+
+A backend only runs while the playing screen does, which decides the rest:
+
+| When | What happens |
+| --- | --- |
+| A menu is up (pause, save, settings, log, or a custom screen) | The playing screen is not the one showing, so nothing updates and nothing draws: a model's clock, its motion and its physics stop where they were and go on from there when the player returns. Frame hooks do not run either |
+| Skipping | Every frame still updates and draws, so motions play at their own speed while the text flies past. Appearance changes still load and drop instances as they go by, which for a heavy backend is the one place skipping can cost a hitch |
+| Rolling back or loading | The instances on screen are restarted rather than reloaded, and the pushed parameters of that step are applied over the top (see [Parameters](#parameters)) |
+| New Game, or a hot reload | Every instance is dropped and loaded again, because the assets themselves may have changed |
+| A custom screen | Cannot show a character: `prepare` only runs on the playing screen, so there is no instance for `CharacterVisuals::draw` to draw. A custom screen that needs the character on it wants a PNG for now |
 
 ### Writing a backend
 

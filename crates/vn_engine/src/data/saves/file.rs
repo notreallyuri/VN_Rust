@@ -5,7 +5,7 @@ use serde_json::Value as Json;
 use vn_script::{Event, RestoreOutcome, StorySnapshot, StoryVm};
 
 use super::{LoadReport, LoadWarning, SaveError};
-use crate::data::rollback::Checkpoint;
+use crate::data::rollback::{Checkpoint, VisualParameters};
 use crate::data::session::{LogEntry, Spoken};
 use crate::data::state::GameState;
 
@@ -26,6 +26,8 @@ pub struct SaveFile {
     pub rollback: Vec<Checkpoint>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub log: Vec<LogEntry>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub visuals: VisualParameters,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]

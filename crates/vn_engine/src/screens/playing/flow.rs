@@ -84,8 +84,13 @@ impl PlayingScreen {
                     }
                     let typed = (ctx.settings.values.text_speed, ctx.rl.get_time());
                     self.show(event, Some(typed));
-                    ctx.rollback
-                        .record_with_log(ctx.story, ctx.state, Some(ctx.log.len()));
+                    let visuals = ctx.visual_parameters();
+                    ctx.rollback.record_with_log(
+                        ctx.story,
+                        ctx.state,
+                        Some(ctx.log.len()),
+                        visuals,
+                    );
                     if std::mem::take(ctx.autosave_pending) {
                         ctx.autosave();
                     }
@@ -100,8 +105,9 @@ impl PlayingScreen {
         match ctx.story.current() {
             Some(event) => {
                 self.show(event.clone(), None);
+                let visuals = ctx.visual_parameters();
                 ctx.rollback
-                    .record_with_log(ctx.story, ctx.state, Some(ctx.log.len()));
+                    .record_with_log(ctx.story, ctx.state, Some(ctx.log.len()), visuals);
                 None
             }
             None => self.advance(ctx),
@@ -135,7 +141,11 @@ impl PlayingScreen {
 
         if moved {
             #[cfg(feature = "character-visuals")]
-            ctx.resources.visuals.restart();
+            {
+                let restored = ctx.rollback.visuals().clone();
+                ctx.resources.visuals.restart();
+                ctx.resources.visuals.restore(restored);
+            }
             self.current = ctx.story.current().cloned();
             self.typewriter = None;
             self.stage.reset(ctx.story, &self.config);

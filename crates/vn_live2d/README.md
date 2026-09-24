@@ -60,6 +60,11 @@ Cubism's motion blending, expressions, and physics to Rust.
     composited frame carries them, models included, and the models themselves still draw
     correctly underneath. The screenshot that shows this is one the engine had to be
     taught to take — see below.
+  - A push survives a save. The probe now saves while it is holding the eyes shut,
+    releases them, and loads: the save file carries
+    `"visuals":{"one":{"ParamEyeLOpen":0.0,...}}`, and the frame after the load has the
+    eyes shut again with nothing pushing them. That is `character-visuals` state going
+    through the save and coming back onto a live model.
   - Motion and physics hold up over a long run. `--watch=90` left Mao animating for ten
     minutes after the scene ended, sampling a frame every ninety seconds: still moving,
     still correctly drawn, no drift into a broken pose, and not one warning in the log.
@@ -74,8 +79,9 @@ Cubism's motion blending, expressions, and physics to Rust.
     `remove` brings that character's model back, loading it again. No fallback, no GL
     error. Two things to know when watching it: auto mode advances again the moment a
     rollback lands, so the probe turns auto off at the end of the scene, and a save
-    written with `Saves::save` carries no rollback history, so loading one leaves only
-    the steps played after it.
+    written with `Saves::save` carries neither rollback history nor pushed parameters, so
+    it is `ctx.save(slot)` a game wants — loading the bare kind leaves only the steps
+    played after it.
   - A 64-byte corruption in the middle of a `.moc3` loaded without complaint. The
     Framework's consistency check is enabled (`LoadModel(..., true)`), but it validates
     structure, not content, so it is not an integrity check for untrusted files.
@@ -265,6 +271,13 @@ xvfb-run -a /tmp/vn-live2d-core-profile-test
    restart falls back to its PNG, like any other failure. The default implementation
    does nothing, so a backend without transient state need not implement it. Run against
    Core through a save and load; rollback by key shares the same call.
-4. Save logical appearance/parameter state and restore it on load and rollback,
-   initially restarting transient idle animation and physics. Define pause, skip,
-   hot reload, and custom-screen behavior before claiming story integration.
+4. ~~Save logical appearance/parameter state and restore it on load and rollback.~~
+   Done: appearance was already story state, and a pushed parameter is now recorded with
+   the line it was pushed on, so a save carries it and a rollback puts back the values
+   that line was shown with. Transient state is still restarted rather than restored —
+   idle animation, motions and physics begin again from the appearance's preset and the
+   push is applied over the top. Pause, skip, hot reload and custom screens are written
+   down in [the engine's README](../vn_engine/README.md#while-the-story-is-not-playing);
+   the honest answer for a custom screen is that it cannot show a backend-drawn character
+   at all, because `prepare` only runs on the playing screen. That is the next thing this
+   seam is short of, along with a channel from a playing voice line to a parameter.

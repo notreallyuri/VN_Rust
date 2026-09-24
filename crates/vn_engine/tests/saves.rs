@@ -87,6 +87,58 @@ fn played_game() -> (StoryVm, GameState) {
 }
 
 #[test]
+fn a_save_carries_what_the_game_pushed_onto_its_visuals() {
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let (vm, state) = played_game();
+
+    let mut file = saves.capture(&vm, &state).unwrap();
+    assert!(file.visuals.is_empty(), "a save captures none of its own");
+    file.visuals = BTreeMap::from([(
+        "mary".to_string(),
+        BTreeMap::from([("blush".to_string(), 0.75)]),
+    )]);
+    file.rollback = vec![Checkpoint {
+        story: vm.snapshot(),
+        state: state.to_json().unwrap(),
+        barrier: false,
+        log_len: None,
+        visuals: file.visuals.clone(),
+    }];
+    saves.write("1", &file).unwrap();
+
+    let read = saves.read("1").unwrap();
+    assert_eq!(read.visuals["mary"]["blush"], 0.75);
+    assert_eq!(
+        read.rollback[0].visuals, read.visuals,
+        "and every step keeps its own"
+    );
+
+    let text = fs::read_to_string(dir.0.join("saves").join("1.json"))
+        .or_else(|_| fs::read_to_string(saves.path("1").unwrap()))
+        .unwrap();
+    assert!(text.contains("\"visuals\""), "{text}");
+}
+
+#[test]
+fn a_save_written_before_visuals_existed_still_loads() {
+    let dir = TempDir::new();
+    let saves = Saves::new(&dir.0, "Test Game");
+    let (vm, state) = played_game();
+    saves.save("1", &vm, &state).unwrap();
+
+    let path = saves.path("1").unwrap();
+    let text = fs::read_to_string(&path).unwrap();
+    assert!(
+        !text.contains("visuals"),
+        "an empty map is not written at all"
+    );
+
+    let read = saves.read("1").unwrap();
+    assert!(read.visuals.is_empty());
+}
+
+#[test]
 fn round_trip() {
     let dir = TempDir::new();
     let saves = Saves::new(&dir.0, "Test Game");
@@ -579,6 +631,7 @@ fn write_old_save(dir: &TempDir) {
     let saves = Saves::new(&dir.0, "Test Game");
     let mut file = saves.capture(&vm, &state).unwrap();
     file.rollback = vec![Checkpoint {
+        visuals: Default::default(),
         story: vm.snapshot(),
         state: file.state.clone(),
         barrier: false,

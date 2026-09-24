@@ -10,12 +10,12 @@ const STORY: &str = r#"scene start:
   one "Eyes held shut and a mouth driven from a frame hook, over a running motion."
   call snapshot
   one "That frame was taken with the push still on."
+  call keep
+  one "Saved, with the push in the save."
   call release
   one "Released, the motion has them back."
   call snapshot
-  one "And that one after it."
-  call keep
-  one "Saved. Loading restarts the models on screen instead of dropping them."
+  one "And that one after it. Loading now should bring the push back with it."
   call reload
   one "Back: the same moc and textures, the appearance's preset started again."
   call snapshot
@@ -238,8 +238,8 @@ fn main() -> Result<(), vn_engine::app::AppError> {
             None
         })
         .command_as("keep", move |ctx, (): ()| {
-            match ctx.saves.save(SLOT, ctx.story, ctx.state) {
-                Ok(()) => println!("Saved"),
+            match ctx.save(SLOT) {
+                Ok(()) => println!("Saved, with whatever is pushed at this line"),
                 Err(e) => println!("Save failed: {e}"),
             }
             None
@@ -249,7 +249,10 @@ fn main() -> Result<(), vn_engine::app::AppError> {
                 return None;
             }
             match ctx.load(SLOT) {
-                Ok(_) => println!("Loaded: the models on screen were restarted"),
+                Ok(_) => {
+                    println!("Loaded: the models were restarted and the save's push put back");
+                    ctx.screenshot();
+                }
                 Err(e) => println!("Load failed: {e}"),
             }
             None

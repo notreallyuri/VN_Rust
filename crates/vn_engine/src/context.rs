@@ -71,6 +71,14 @@ impl GameContext<'_> {
         self.resources.visuals.set_parameter(character, id, value);
     }
 
+    /// Everything the game has pushed onto its visuals, for a save or a checkpoint.
+    pub fn visual_parameters(&self) -> crate::data::rollback::VisualParameters {
+        #[cfg(feature = "character-visuals")]
+        return self.resources.visuals.pushed().clone();
+        #[cfg(not(feature = "character-visuals"))]
+        return Default::default();
+    }
+
     pub fn mark_seen(&mut self, key: impl Into<String>) {
         self.persistent.mark_seen(key);
     }
@@ -165,6 +173,7 @@ impl GameContext<'_> {
     }
 
     pub fn save(&mut self, slot: &str) -> Result<(), SaveError> {
+        let visuals = self.visual_parameters();
         crate::data::saves::save_game(
             self.saves,
             slot,
@@ -174,6 +183,7 @@ impl GameContext<'_> {
                 rollback: self.rollback,
                 log: self.log.entries(),
                 thumbnail: self.thumbnail,
+                visuals,
             },
         )
     }
@@ -276,7 +286,10 @@ impl GameContext<'_> {
         let report = crate::data::saves::apply(&file, self.story, self.state)?;
         self.override_cursor(None);
         #[cfg(feature = "character-visuals")]
-        self.resources.visuals.restart();
+        {
+            self.resources.visuals.restart();
+            self.resources.visuals.restore(file.visuals.clone());
+        }
         self.log.replace(file.log.clone());
         self.modes.skip = false;
 
