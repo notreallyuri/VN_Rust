@@ -377,6 +377,9 @@ impl VnApp {
                     manager.draw(&mut d, &thread);
                 }
             }
+            if manager.screenshot_requested() {
+                manager.take_screenshot(&mut d, &thread);
+            }
         }
 
         manager.autosave();

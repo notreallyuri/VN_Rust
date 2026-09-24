@@ -50,6 +50,22 @@ Cubism's motion blending, expressions, and physics to Rust.
     draws her PNG while the other character's model keeps running.
   - Toggling fullscreen mid-scene resized the window from 1280×720 to 1920×1080 with
     both models still correct, so a resize with live models is no longer unverified.
+  - Mao draws correctly, which is the model that exercises the awkward paths: 15
+    additive drawables, 8 multiplicative and 10 inverted masks, out of 262. The glow
+    beside its hat is one of the additive parts and composites as a glow, not a box, and
+    nothing is clipped to the wrong side of a mask. `native/tools/moc_flags.c` is how
+    that model was picked; of the SDK's samples only Mao, Rice and Ren use inverted
+    masks at all, and Haru, Hiyori, Mark and Wanko exercise none of it.
+  - Shader passes run over the models: with grain and desaturation on, the whole
+    composited frame carries them, models included, and the models themselves still draw
+    correctly underneath. The screenshot that shows this is one the engine had to be
+    taught to take — see below.
+  - Motion and physics hold up over a long run. `--watch=90` left Mao animating for ten
+    minutes after the scene ended, sampling a frame every ninety seconds: still moving,
+    still correctly drawn, no drift into a broken pose, and not one warning in the log.
+  - Hot reload works with models on screen. Editing a line of the story while two models
+    were up dropped both and loaded them again, and the scene restarted, which is what
+    the engine documents for a reload.
   - Expressions work, checked with Natori, whose `.exp3.json` files are named: each
     appearance carries its own (`Normal` and `Smile` here), the bridge applies it at
     load beside the motion, and `restart` puts it back after a load.
@@ -80,10 +96,14 @@ Cubism's motion blending, expressions, and physics to Rust.
 - The SDK-independent GPU test passes with a real OpenGL 3.3 core context under
   Xvfb: drawing through VBOs, restoring host GL state (including on exceptions),
   and recreating the compatibility resources.
-- **Still unverified:** inverted masks and blending modes, physics over a long run,
-  post-processing over a model, and hot reload with models on screen. Nothing is checked
-  automatically: both probes are watched by hand, and there are no GPU regression tests
-  yet.
+- **Still unverified:** nothing from the first milestone's list is left untried, but
+  nothing on it is checked automatically either. Both probes are watched by a person, and
+  there are no GPU regression tests, so none of this would catch a regression tomorrow.
+- One engine change came out of this: `ctx.screenshot()` used to photograph the render
+  target from inside it, so a screenshot never showed a shader pass, the screen shake or
+  a flash. It now runs after the frame is composited, which is both what a player expects
+  from the S key and what made the shader-pass check above possible. Save thumbnails
+  still come from the render target.
 
 ## SDK setup
 
@@ -133,7 +153,21 @@ cargo run -p vn_live2d --features engine --example story -- \
 ```
 
 `--break` truncates that model's `.moc3` in the copy, so Core rejects it and the run
-shows the PNG fallback beside a model that still works. `--smoke` quits at the end.
+shows the PNG fallback beside a model that still works. `--post` leaves a grain and a
+desaturate pass on for the whole scene. `--watch=<seconds>` keeps screenshotting that
+often once the scene has finished, for watching motion and physics over a long run.
+`--smoke` quits at the end.
+
+A model's `.moc3` says which rendering paths it actually exercises, which is how Mao was
+picked for the blend-mode and inverted-mask check. The tool needs Core alone — no window,
+no Framework:
+
+```sh
+cc -std=c11 -O1 -I"$CUBISM_SDK_ROOT/Core/include" \
+  crates/vn_live2d/native/tools/moc_flags.c \
+  "$CUBISM_SDK_ROOT/Core/lib/linux/x86_64/libLive2DCubismCore.a" -o /tmp/moc-flags -lm
+/tmp/moc-flags "$CUBISM_SDK_ROOT"/Samples/Resources/*/*.moc3
+```
 
 The viewer draws into the engine's `RenderTarget`, then composites it with raylib.
 It draws a red square before Cubism and a green square afterward. Resize the
@@ -206,13 +240,14 @@ xvfb-run -a /tmp/vn-live2d-core-profile-test
 
 ## Next milestone
 
-1. Continue the first real run. Done since: motions over time, expressions, multiple
-   models at once, repeated loading and destruction, resize, failed loads and the PNG
-   fallback, screenshots, rollback, and the story path end to end (see the validation
-   list above). Still to
-   check: inverted masks and blending modes, physics watched over a long run,
-   post-processing over a model, and hot reload with models on screen. Add
-   model-dependent GPU regression checks, now that both probes write comparable frames.
+1. ~~Continue the first real run.~~ Done: motions and expressions, multiple models at
+   once, repeated loading and destruction, resize, failed loads and the PNG fallback,
+   screenshots, rollback, blend modes and inverted masks, shader passes over a model,
+   hot reload with models on screen, and the story path end to end (see the validation
+   list above). What is left of it is automation: every one of those was watched by a
+   person, so the next step is model-dependent GPU regression checks, now that both
+   probes write comparable frames and `moc_flags` says which model exercises which
+   path.
 2. ~~Prove the seam carries a second backend.~~ Done: the engine's puppet backend draws
    through the same `CharacterVisualFactory`, and the one thing it wanted that the seam
    lacked is now there — `CharacterVisual::set_parameter`, with `ctx.visual_parameter`

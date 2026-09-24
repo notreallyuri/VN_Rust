@@ -19,6 +19,10 @@ const STORY: &str = r#"scene start:
   call reload
   one "Back: the same moc and textures, the appearance's preset started again."
   call snapshot
+  call post
+  one "A shader pass is running over the finished frame, models included."
+  call snapshot
+  call plain
   remove two with dissolve
   one "One model left."
   show one neutral with dissolve
@@ -39,12 +43,15 @@ fn main() -> Result<(), vn_engine::app::AppError> {
     use vn_live2d::{Appearance, Live2dCharacter};
 
     const SLOT: &str = "probe";
-    const MOUTH: &str = "ParamMouthOpenY";
-    const EYES: [&str; 2] = ["ParamEyeLOpen", "ParamEyeROpen"];
 
     let args: Vec<String> = std::env::args().skip(1).collect();
     let smoke = args.iter().any(|arg| arg == "--smoke");
     let broken = args.iter().any(|arg| arg == "--break");
+    let post = args.iter().any(|arg| arg == "--post");
+    let watch = args
+        .iter()
+        .find_map(|arg| arg.strip_prefix("--watch="))
+        .and_then(|seconds| seconds.parse::<f32>().ok());
     let model_dir = args
         .iter()
         .find(|arg| !arg.starts_with("--"))
@@ -76,6 +83,37 @@ fn main() -> Result<(), vn_engine::app::AppError> {
                 .collect()
         })
         .unwrap_or_default();
+    let parameters: Vec<String> = references["DisplayInfo"]
+        .as_str()
+        .and_then(|file| fs::read(model_dir.join(file)).ok())
+        .and_then(|bytes| {
+            vn_engine::serde_json::from_slice::<vn_engine::serde_json::Value>(&bytes).ok()
+        })
+        .and_then(|info| {
+            info["Parameters"].as_array().map(|list| {
+                list.iter()
+                    .filter_map(|item| item["Id"].as_str().map(str::to_string))
+                    .collect()
+            })
+        })
+        .unwrap_or_default();
+    let has = |id: &str| parameters.is_empty() || parameters.iter().any(|have| have == id);
+    let pushed: Vec<String> = ["ParamEyeLOpen", "ParamEyeROpen"]
+        .into_iter()
+        .chain(
+            ["ParamMouthOpenY", "ParamMouthUp", "ParamMouthOpen"]
+                .into_iter()
+                .find(|id| has(id)),
+        )
+        .filter(|id| has(id))
+        .map(str::to_string)
+        .collect();
+    let mouth = pushed
+        .iter()
+        .find(|id| id.contains("Mouth"))
+        .cloned()
+        .unwrap_or_default();
+
     let named = |wanted: &[&str], fallback: usize| {
         wanted
             .iter()
@@ -130,6 +168,7 @@ fn main() -> Result<(), vn_engine::app::AppError> {
         neutral.clone().unwrap_or_else(|| "none".into()),
         cheerful.clone().unwrap_or_else(|| "none".into()),
     );
+    println!("Parameters this model has that the probe will push: {pushed:?}");
 
     let character = |id: &str| {
         Live2dCharacter::new(format!("characters/{id}/{model}"))
@@ -143,6 +182,10 @@ fn main() -> Result<(), vn_engine::app::AppError> {
     let stop = Rc::clone(&pushing);
     let clock = Cell::new(0.0f32);
     let last = RefCell::new(String::new());
+    let released = pushed.clone();
+    let finished = Rc::new(Cell::new(false));
+    let ending = Rc::clone(&finished);
+    let watching = Cell::new(0.0f32);
 
     VnApp::new("Live2D story")
         .assets(root.clone())
@@ -150,6 +193,8 @@ fn main() -> Result<(), vn_engine::app::AppError> {
         .saves_dir(root.join("saves"))
         .initial_screen(ScreenState::Playing)
         .audio(|audio| audio.enabled(false))
+        .shader("grain", vn_engine::frame::post::GRAIN)
+        .shader("desaturate", vn_engine::frame::post::DESATURATE)
         .character("one", Character::new("Model one"))
         .character("two", Character::new("Model two"))
         .character_visual("one", character("one"))
@@ -165,15 +210,31 @@ fn main() -> Result<(), vn_engine::app::AppError> {
         })
         .command_as("release", move |ctx, (): ()| {
             stop.set(false);
-            for id in EYES {
+            for id in &released {
                 ctx.visual_parameter("one", id, None);
             }
-            ctx.visual_parameter("one", MOUTH, None);
             println!("Released them");
             None
         })
         .command_as("snapshot", |ctx, (): ()| {
             ctx.screenshot();
+            None
+        })
+        .command_as("post", |ctx, (): ()| {
+            ctx.shader("grain", true);
+            ctx.shader_amount("grain", 0.6);
+            ctx.shader("desaturate", true);
+            ctx.shader_amount("desaturate", 0.8);
+            println!("Shader passes on: grain and desaturate");
+            None
+        })
+        .command_as("plain", move |ctx, (): ()| {
+            if post {
+                return None;
+            }
+            ctx.shader("grain", false);
+            ctx.shader("desaturate", false);
+            println!("Shader passes off");
             None
         })
         .command_as("keep", move |ctx, (): ()| {
@@ -194,6 +255,7 @@ fn main() -> Result<(), vn_engine::app::AppError> {
             None
         })
         .command_as("finish", move |ctx, (): ()| {
+            ending.set(true);
             ctx.modes.auto = false;
             println!(
                 "The scene finished, auto mode off; Page Up rolls back {} steps",
@@ -216,15 +278,27 @@ fn main() -> Result<(), vn_engine::app::AppError> {
                 *last.borrow_mut() = step;
             }
 
+            if let Some(every) = watch
+                && finished.get()
+            {
+                let elapsed = watching.get() + seconds;
+                watching.set(elapsed);
+                if elapsed >= every {
+                    watching.set(0.0);
+                    println!("Watching: another {every} seconds of motion and physics");
+                    ctx.screenshot();
+                }
+            }
+
             if !pushing.get() {
                 return;
             }
             clock.set(clock.get() + seconds);
             let open = ((clock.get() * 9.0).sin() + 1.0) / 2.0;
-            for id in EYES {
-                ctx.visual_parameter("one", id, Some(0.0));
+            for id in &pushed {
+                let value = if *id == mouth { open } else { 0.0 };
+                ctx.visual_parameter("one", id, Some(value));
             }
-            ctx.visual_parameter("one", MOUTH, Some(open));
         })
         .run()
 }

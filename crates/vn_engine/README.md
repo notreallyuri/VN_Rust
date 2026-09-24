@@ -1422,7 +1422,7 @@ Ren'Py's defaults, on the playing screen:
 | A | Toggle auto mode |
 | L, gamepad Y | Open the [log](#log) |
 | F1 | The [controls overlay](#controls-overlay) (on every screen) |
-| S | Screenshot, saved as `screenshots/screenshot-<time>.png` in the saves directory |
+| S | Screenshot of the finished frame — [shader passes](#shader-passes), screen shake and flash included — saved as `screenshots/screenshot-<time>.png` in the saves directory. Save thumbnails are taken earlier, from the render target, so they are the picture without those |
 | F | Toggle fullscreen |
 | Esc, right click, gamepad Start | Pause menu |
 | F5 / F9 | Quick save / quick load |

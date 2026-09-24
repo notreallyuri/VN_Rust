@@ -396,9 +396,6 @@ impl ScreenStateManager {
         self.screens
             .current
             .draw(d, &self.draw_context(self.screens.overlays.is_empty()));
-        if std::mem::take(&mut self.frame.screenshot) {
-            self.take_screenshot(d, thread);
-        }
         if std::mem::take(&mut self.frame.autosave) {
             self.frame.thumbnail_at = None;
             self.capture_thumbnail(d, thread);
@@ -480,7 +477,11 @@ impl ScreenStateManager {
         );
     }
 
-    fn take_screenshot(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
+    pub fn screenshot_requested(&mut self) -> bool {
+        std::mem::take(&mut self.frame.screenshot)
+    }
+
+    pub fn take_screenshot(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
         flush_batch();
         let image = d.load_image_from_screen(thread);
         let dir = self.world.saves.dir().join("screenshots");
