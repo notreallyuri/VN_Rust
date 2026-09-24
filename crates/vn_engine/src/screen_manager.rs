@@ -480,9 +480,6 @@ impl ScreenStateManager {
         );
     }
 
-    /// Load, update and release the backend-drawn characters a screen asked for this
-    /// frame, and put a PNG where a backend could not answer. A frame nobody asked in
-    /// leaves the instances alone, which is what freezes them while a menu is up.
     #[cfg(feature = "character-visuals")]
     fn prepare_visuals(
         &mut self,

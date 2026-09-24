@@ -76,9 +76,6 @@ impl RollbackConfig {
     }
 }
 
-/// What a game has pushed onto its characters' visuals: character, parameter, value.
-/// Plain data, so a build without `character-visuals` carries it through a save
-/// untouched rather than dropping it.
 pub type VisualParameters = BTreeMap<String, BTreeMap<String, f32>>;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -162,7 +159,6 @@ impl Rollback {
         self.record_with_log(story, state, None, VisualParameters::new());
     }
 
-    /// What the game had pushed onto its visuals at the step the story is on now.
     pub fn visuals(&self) -> &VisualParameters {
         static NONE: std::sync::OnceLock<VisualParameters> = std::sync::OnceLock::new();
         self.history

@@ -71,9 +71,6 @@ impl GameContext<'_> {
         self.resources.visuals.set_parameter(character, id, value);
     }
 
-    /// Ask for a character to be drawn by its backend this frame. A screen that asks
-    /// for any is asking for all of them: instances it leaves out are released. A screen
-    /// that asks for none leaves whatever is loaded alone, frozen where it was.
     #[cfg(feature = "character-visuals")]
     pub fn show_visual(&mut self, character: &str, appearance: &str) {
         self.requests
@@ -82,7 +79,6 @@ impl GameContext<'_> {
             )));
     }
 
-    /// Everything the game has pushed onto its visuals, for a save or a checkpoint.
     pub fn visual_parameters(&self) -> crate::data::rollback::VisualParameters {
         #[cfg(feature = "character-visuals")]
         return self.resources.visuals.pushed().clone();
@@ -280,6 +276,10 @@ impl GameContext<'_> {
                 .mark_seen(crate::data::session::music_key(track));
         }
         self.audio.play_music(track);
+    }
+
+    pub fn voice_level(&self) -> f32 {
+        self.audio.voice_level()
     }
 
     pub fn music(&self) -> Option<&str> {

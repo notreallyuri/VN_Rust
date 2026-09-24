@@ -7,6 +7,9 @@ scene start:
   call talk
   mary "That mouth is being pushed from a frame hook, sixty times a second."
   call quiet
+  call lipsync
+  voice line
+  mary "And this one follows the voice line the engine is playing."
   mary "A screen of the game's own can show me too, now."
   call portrait
   show mary neutral with dissolve

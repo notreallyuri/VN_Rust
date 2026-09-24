@@ -11,7 +11,6 @@ pub enum Request {
     OverrideCursor(Option<CursorKind>),
     Autosave,
     Screenshot,
-    /// This screen wants a character drawn by its backend this frame.
     #[cfg(feature = "character-visuals")]
     Visual(crate::game::visuals::VisualKey),
 }

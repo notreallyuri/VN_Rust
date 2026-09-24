@@ -36,6 +36,8 @@ fn main() -> Result<(), vn_engine::app::AppError> {
         );
 
     let shot = Cell::new(std::env::var_os("VN_SHOT").is_none());
+    let syncing = Rc::new(Cell::new(false));
+    let lips = Rc::clone(&syncing);
     let talking = Rc::new(Cell::new(false));
     let start = Rc::clone(&talking);
     let stop = Rc::clone(&talking);
@@ -49,7 +51,7 @@ fn main() -> Result<(), vn_engine::app::AppError> {
         .schema_file(None)
         .saves_dir(std::env::temp_dir().join(format!("vn-puppet-example-{}", std::process::id())))
         .initial_screen(ScreenState::Playing)
-        .audio(|audio| audio.enabled(false))
+        .audio(|audio| audio.enabled(true))
         .screen(ScreenState::Custom("portrait".into()), || PortraitScreen {
             frames: 0,
         })
@@ -67,6 +69,11 @@ fn main() -> Result<(), vn_engine::app::AppError> {
             println!("Pushing mary's mouth from the frame hook");
             None
         })
+        .command_as("lipsync", move |_, (): ()| {
+            lips.set(true);
+            println!("The mouth is following the voice line now");
+            None
+        })
         .command_as("quiet", move |ctx, (): ()| {
             stop.set(false);
             ctx.visual_parameter("mary", "mouth", None);
@@ -74,6 +81,15 @@ fn main() -> Result<(), vn_engine::app::AppError> {
             None
         })
         .on_frame(move |ctx, seconds| {
+            if syncing.get() {
+                let level = ctx.voice_level();
+                ctx.visual_parameter("mary", "mouth", Some(level));
+                if level > 0.0 {
+                    print!("\rvoice {level:.2} ");
+                    use std::io::Write;
+                    let _ = std::io::stdout().flush();
+                }
+            }
             if !talking.get() {
                 return;
             }
@@ -88,8 +104,6 @@ fn main() -> Result<(), vn_engine::app::AppError> {
         .run()
 }
 
-/// A screen of the engine's own, showing a character its backend draws: it asks for the
-/// appearance each frame the way the playing screen does, then draws it where it likes.
 #[cfg(feature = "character-visuals")]
 struct PortraitScreen {
     frames: u32,

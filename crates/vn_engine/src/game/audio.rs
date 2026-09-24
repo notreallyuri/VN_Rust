@@ -40,6 +40,48 @@ fn load_sound(device: &'static RaylibAudio, assets: &Assets, path: &str) -> Opti
         .ok()
 }
 
+const ENVELOPE_PER_SECOND: usize = 100;
+
+fn load_voice(
+    device: &'static RaylibAudio,
+    assets: &Assets,
+    path: &str,
+) -> Option<(Sound<'static>, Vec<f32>)> {
+    let bytes = assets
+        .read(path)
+        .map_err(|e| eprintln!("⚠️ Could not load {}: {}", assets.describe(path), e))
+        .ok()?;
+    let mut wave = device
+        .new_wave_from_memory(&extension_of(path), &bytes)
+        .map_err(|e| eprintln!("⚠️ Could not load {}: {}", assets.describe(path), e))
+        .ok()?;
+    let sound = device
+        .new_sound_from_wave(&wave)
+        .map_err(|e| eprintln!("⚠️ Could not load {}: {}", assets.describe(path), e))
+        .ok()?;
+    let rate = wave.sample_rate().max(1) as usize;
+    wave.format(rate as i32, 32, 1);
+    Some((sound, envelope(wave.load_samples().as_ref(), rate)))
+}
+
+fn envelope(samples: &[f32], rate: usize) -> Vec<f32> {
+    let per_bucket = (rate / ENVELOPE_PER_SECOND).max(1);
+    let mut levels: Vec<f32> = samples
+        .chunks(per_bucket)
+        .map(|bucket| {
+            let sum: f32 = bucket.iter().map(|sample| sample * sample).sum();
+            (sum / bucket.len() as f32).sqrt()
+        })
+        .collect();
+    let loudest = levels.iter().copied().fold(0.0f32, f32::max);
+    if loudest > 0.0 {
+        for level in &mut levels {
+            *level = (*level / loudest).clamp(0.0, 1.0);
+        }
+    }
+    levels
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct AudioConfig {
     pub enabled: bool,
@@ -122,6 +164,8 @@ pub struct Audio {
     wanted: Option<String>,
     sounds: HashMap<String, Option<Sound<'static>>>,
     voice: Option<(String, Sound<'static>)>,
+    voice_envelope: Vec<f32>,
+    voice_started: Option<std::time::Instant>,
     music_volume: f32,
     sound_volume: f32,
     voice_volume: f32,
@@ -138,6 +182,8 @@ impl Audio {
             wanted: None,
             sounds: HashMap::new(),
             voice: None,
+            voice_envelope: Vec::new(),
+            voice_started: None,
             music_volume: 1.0,
             sound_volume: 1.0,
             voice_volume: 1.0,
@@ -202,10 +248,12 @@ impl Audio {
             );
             return;
         };
-        if let Some(sound) = load_sound(device, &self.assets, &path) {
+        if let Some((sound, envelope)) = load_voice(device, &self.assets, &path) {
             sound.set_volume(self.voice_volume);
             sound.play();
             self.voice = Some((id.to_string(), sound));
+            self.voice_envelope = envelope;
+            self.voice_started = Some(std::time::Instant::now());
         }
     }
 
@@ -213,6 +261,19 @@ impl Audio {
         if let Some((_, voice)) = self.voice.take() {
             voice.stop();
         }
+        self.voice_envelope = Vec::new();
+        self.voice_started = None;
+    }
+
+    pub fn voice_level(&self) -> f32 {
+        if !self.voice_playing() {
+            return 0.0;
+        }
+        let (Some(started), false) = (self.voice_started, self.voice_envelope.is_empty()) else {
+            return 0.0;
+        };
+        let bucket = (started.elapsed().as_secs_f32() * ENVELOPE_PER_SECOND as f32) as usize;
+        self.voice_envelope.get(bucket).copied().unwrap_or(0.0)
     }
 
     pub fn voice_playing(&self) -> bool {
@@ -327,5 +388,71 @@ impl Audio {
             }
             !done
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tone(seconds: f32, rate: usize, level: impl Fn(f32) -> f32) -> Vec<f32> {
+        (0..(seconds * rate as f32) as usize)
+            .map(|i| {
+                let t = i as f32 / rate as f32;
+                (t * 220.0 * std::f32::consts::TAU).sin() * level(t)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn an_envelope_is_one_level_every_ten_milliseconds() {
+        let rate = 22_050;
+        let levels = envelope(&tone(1.0, rate, |_| 0.5), rate);
+        assert!(
+            levels.len().abs_diff(ENVELOPE_PER_SECOND) <= 1,
+            "a second of sound is a hundred levels, give or take the last part-bucket: {}",
+            levels.len()
+        );
+        assert!(
+            levels.iter().all(|level| (level - 1.0).abs() < 0.1),
+            "an even tone stays near its own loudest, give or take how a bucket falls \
+             across the wave: {levels:?}"
+        );
+    }
+
+    #[test]
+    fn it_follows_the_shape_of_the_sound_and_not_its_volume() {
+        let rate = 22_050;
+        let shape = |t: f32| if (0.2..0.4).contains(&t) { 1.0 } else { 0.0 };
+        let loud = envelope(&tone(1.0, rate, shape), rate);
+        let quiet = envelope(&tone(1.0, rate, |t| shape(t) * 0.05), rate);
+
+        assert!(loud[30] > 0.9 && quiet[30] > 0.9, "the syllable is open");
+        assert!(
+            loud[5] < 0.05 && quiet[5] < 0.05,
+            "the silence before it is shut"
+        );
+        assert!(
+            loud.iter().zip(&quiet).all(|(a, b)| (a - b).abs() < 0.02),
+            "a quiet recording opens the mouth as wide as a loud one"
+        );
+    }
+
+    #[test]
+    fn silence_and_scraps_do_not_panic() {
+        assert!(envelope(&[], 22_050).is_empty());
+        assert_eq!(envelope(&[0.0; 64], 22_050), [0.0]);
+        assert_eq!(
+            envelope(&[0.5; 4], 0).len(),
+            4,
+            "a rate of zero falls back to a level per sample rather than dividing by it"
+        );
+    }
+
+    #[test]
+    fn a_silent_game_has_no_voice_to_follow() {
+        let audio = Audio::silent();
+        assert_eq!(audio.voice_level(), 0.0);
+        assert!(!audio.voice_playing());
     }
 }

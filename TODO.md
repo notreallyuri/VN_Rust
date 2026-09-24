@@ -277,14 +277,17 @@ bottom to top, then the gaps.
     a screen that asks for none leaves the instances alone — which is what freezes them
     under a menu. The puppet probe's `portrait` command is a screen of its own drawing
     the rig
-  - [ ] No channel from a playing voice line to a parameter. The channel to push a value
-    through exists, but the engine exposes no amplitude for a voice clip, so lip sync
-    means the game computing it frame by frame
-  - [ ] Nothing is checked automatically. Both probes (`vn_engine --example puppet`,
-    `vn_live2d --example story`) are watched by a person, so none of the verification
-    above would catch a regression tomorrow. Model-dependent GPU regression checks are
-    the next step, now that both probes write comparable frames and
-    `crates/vn_live2d/native/tools/moc_flags.c` says which model exercises which path
+  - [x] Lip sync from the voice line. `ctx.voice_level()` is the clip's own loudness this
+    instant, from an envelope taken at load (10 ms buckets, normalised to the clip's
+    loudest moment, so a quiet recording opens the mouth as wide as a loud one), and
+    pushing it at a mouth parameter from `on_frame` is the whole of it
+  - [x] Frames are checked against references. `vn_engine`'s `tests/gpu.rs` holds every
+    parameter still, draws the rig and compares against committed pictures; llvmpipe under
+    Xvfb and an AMD card produce the same frame pixel for pixel, so it runs without a GPU.
+    `vn_live2d`'s `tests/gpu.rs` does the same for a model against a baseline it writes on
+    first run under `target/`, since the sample models cannot be redistributed
+  - [ ] Both probes are still watched by a person for anything the two reference frames do
+    not cover: motions over time, physics, masks, a scene's worth of loading and dropping
   - [ ] A parameter the model does not have fails that instance into its PNG for the rest
     of the scene — a harsh price for a typo in a game's code. Decide whether
     `set_parameter` should report once and carry on instead

@@ -170,14 +170,10 @@ impl CharacterVisuals {
         }
     }
 
-    /// What the game has pushed, to go into a save or a rollback checkpoint.
     pub fn pushed(&self) -> &VisualParameters {
         &self.pushed
     }
 
-    /// Put back what a save or a checkpoint recorded, over whatever is pushed now.
-    /// The instances on screen hear about every parameter either side holds, so one
-    /// that a step no longer pushes is released rather than left behind.
     pub fn restore(&mut self, parameters: VisualParameters) {
         let touched: BTreeSet<(String, String)> = self
             .pushed

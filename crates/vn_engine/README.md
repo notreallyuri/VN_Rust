@@ -2412,6 +2412,10 @@ From code, `ctx.play_sound(id)` plays a sound (from a command, say) and `ctx.mus
 track playing. `Audio` holds the device, streams and cached sounds; the audio device is
 opened once and kept for the whole program.
 
+`ctx.voice_level()` reads the playing voice line's own loudness, 0 to 1, from an envelope
+taken when the clip is loaded (one reading every 10 ms, normalised to the clip's loudest
+moment). It is what [lip sync](#parameters) is driven from, and 0 when nothing is playing.
+
 ## Video playback
 
 Video dependencies are optional. Enable `video` for the Rust AV1/Vorbis backend
@@ -2668,15 +2672,22 @@ animation, motions and physics from the appearance's own preset, then re-applies
 push over the top. A line that is replayed with a different push counts as its own step,
 so the push can be undone on its own.
 
-For anything that changes every frame — lip sync from the voice line, a head that follows
-the pointer — push from [`on_frame`](#hooks), which runs after the story has advanced and
-before the characters are updated and drawn:
+For anything that changes every frame — lip sync, a head that follows the pointer — push
+from [`on_frame`](#hooks), which runs after the story has advanced and before the
+characters are updated and drawn. `ctx.voice_level()` is the voice line's own loudness
+this instant, 0 to 1, so lip sync is one line:
 
 ```rust
 VnApp::new("My Novel").on_frame(|ctx, _seconds| {
-    ctx.visual_parameter("mary", "mouth", Some(mouth_from_voice(ctx)));
+    ctx.visual_parameter("mary", "mouth", Some(ctx.voice_level()));
 })
 ```
+
+The level comes from an envelope taken when the clip is loaded: one root-mean-square
+reading every 10 ms, normalised so the clip's own loudest moment is 1. A quiet recording
+therefore opens the mouth as wide as a loud one, and the setting for voice volume does not
+change it. It is 0 whenever no voice is playing, so a character whose line has no clip
+simply keeps their mouth shut.
 
 ### While the story is not playing
 
@@ -2975,6 +2986,21 @@ cargo test -p vn_engine --features character-visuals
 cargo clippy -p vn_engine --features character-visuals --all-targets -- -D warnings
 cargo clippy -p vn_engine --features video-ffmpeg --example video -- -D warnings
 ```
+
+`tests/gpu.rs` compares what a backend actually draws against reference pictures in
+`tests/fixtures/puppet/reference/`. It needs a window, so it is `#[ignore]`d, and a
+virtual display is enough — the same frame comes out of llvmpipe and of an AMD card,
+pixel for pixel:
+
+```sh
+xvfb-run -a cargo test -p vn_engine --features character-visuals --test gpu -- --ignored
+```
+
+Every parameter is held at a value for the shot, so the frame is a function of the rig and
+its pictures alone. A run that differs by more than 0.02% of the frame fails and writes
+what it drew to the temporary directory, to be looked at beside the reference; a change
+that is meant is blessed with `VN_BLESS=1`, which rewrites the references instead of
+comparing. For scale, moving one bound parameter by 0.2 moves 0.17% of the frame.
 
 | File | Covers |
 | --- | --- |
