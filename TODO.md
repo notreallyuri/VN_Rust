@@ -218,15 +218,6 @@ else draws through, so it is cheaper now; the rest is additive.
 - [x] Sharper edges: `VnApp::render_scale` supersamples the frame (the render target is not multisampled, so window MSAA would not help), and corner segments scale with corner size and render scale; `post::FXAA` is the cheap alternative
 - [x] Cursor states wherever they mean something — `Text` over the text field, `Hand` over anything clickable including image-map hotspots and save slots, `Grab`/`Grabbing` for drag boards, sliders and scroll thumbs, `NotAllowed` over disabled items, empty load slots and refusing drop targets — merged by priority, falling back through the pictures a game supplies, with a hotspot per picture. Without pictures they drive the system's own shapes. Games choose their own per element (`ButtonStyle::cursor`, `Hotspot::cursor`, `CursorKind::Custom`), per frame (`ctx.cursor`) or regardless (`ctx.override_cursor`, owned by the screen that set it)
 - [x] A custom mouse cursor (`VnApp::cursor`, `CursorStyle`: hotspot, size, an optional hand over anything clickable, hidden while a gamepad is in use) and prompts that name the right control: `Navigation` now tracks the last `InputDevice`, and `ctx.prompt("{advance} to go on")` fills tokens from the same config the controls overlay reads, after translation so the token can move
-- [ ] Animated character puppets (Live2D and friends). Cubism integration started 2026-09-20; see `crates/vn_live2d/README.md`
-  - **Current milestone:** optional `vn_live2d` crate with asset preflight, a C ABI bridge to the official Framework 5-r.5, Rust model lifetime/control APIs, and a standalone raylib viewer. SDK-independent tests and the OpenGL buffer/state-restoration test pass. The complete bridge still needs compiling and testing with the proprietary Core; story integration is not done
-  - **Selected route:** reuse the official C++ Framework through the bridge, rather than implement its motion/physics systems in Rust. Prove rendering first, then introduce the engine interface, appearance mapping, and save/rollback semantics. The older estimates and alternatives below are exploratory notes, not the implementation schedule
-  - **The seam, first and separately (~1 day).** Characters are drawn in one place, `sprite()` in `stage.rs`: a texture looked up by `character_path(id, image)` and drawn with `draw_texture_pro`. Positions, transitions and alpha all pass through it, so a trait that draws itself into a rect at an alpha is all it takes. Every backend below needs this, and the layered rig is enough to prove it
-  - **Rendering is not a problem.** raylib-rs exposes `rlBegin`/`rlVertex2f`/`rlTexCoord2f`/`rlSetTexture` for arbitrary textured triangles, `rlSetBlendFactors` and `BeginBlendMode` for multiply and add parts, and `LoadShaderFromMemory` for mask shaders (checked by compiling against them). A puppet renderer stays inside raylib: no second GL context, no `glow`, no context sharing. Clipping masks are practical now that frames go through a render target
-  - **Layered sprite rig, in-house (~1 week): the one to build.** Parts as separate images with a pivot, parameters driving rotation, scale and offset, a small curve evaluator; `draw_texture_pro` already takes rotation and an origin, so there is no new drawing code. Breathing, blinking, mouth flap, head tilt and sway is most of the life a VN needs, with no licence and no FFI
-  - **Cubism (3-6 weeks), as a separate optional crate, never a `vn_engine` dependency.** `live2d-cubism-core-sys` (v0.1.0, April 2026, SDK Native v5, MIT binding only) gives the Core: set parameters, read back vertices, UVs, indices, opacity, blend mode, masks and draw order. Rendering that is the easy half; the hard half is the C++ Cubism Framework nobody has ported, i.e. `motion3.json` playback with curve blending, `physics3.json` pendulums, expressions and lip sync. Needs Live2D's proprietary Core downloaded per game: free to develop with; a Cubism SDK Release (Publication) License is required only for businesses with annual gross revenue of 10M JPY or more, so a hobby release owes nothing. The sample models (Haru, Hiyori, Mao, Mark, Natori, Ren, Rice, Wanko) are separate: Free Material License, no redistribution, so they are for development only and `vn_live2d` refuses them in release builds. `live2d-parser` reads model files in pure Rust if we only need to inspect them
-  - **`inox2d` (2-3 weeks)**: Inochi2D in Rust, BSD-2, free tooling in Inochi Creator, no proprietary blob, but its README calls it a prototype, mesh groups and animations are missing, and we would write the rlgl renderer anyway. `cubism-rs` is stale and there is no `live2d-rs`
-  - **Prerequisite for all of them**: art authored in parts (eyes, mouth, hair, body as layers). The example's art is flat PNGs, so it would have to be re-exported; Live2D additionally means an artist in the Cubism Editor
 - [x] Optional native video cutscenes, before M9 Extras: `video` selects rav1d + Matroska demuxing + Vorbis; `video-ffmpeg` selects FFmpeg, including when both features are enabled. Neither is enabled by default
   - [x] Shared `ctx.play_video(VideoRequest)` API and `ScreenState::Video`, launched through a registered command; blocking playback with skip, pause, overlay suspension, aspect-preserving letterboxing and return to the story. Voice stops, music is muted while continuing underneath, movie audio uses sound volume, and starting a cutscene marks a rollback barrier. No mid-movie position in saves; autosave is suppressed during playback, and hot reload cancels the movie
   - [x] Worker-thread decoding, bounded frame/audio queues, timestamped RGBA uploads, streamed stereo audio with a callback-driven sample clock, silent playback, EOF draining, cancellation and error notifications. Folder and embedded assets work; FFmpeg stages embedded media in a temporary file. Colour conversion is on the CPU for this first pass
@@ -235,6 +226,77 @@ else draws through, so it is cheaper now; the rest is additive.
   - [x] End-to-end playback on Linux (Ryzen 5 5600X, release, SIMD): 60 s 1080p30 AV1/Vorbis at 1.1 and 28 Mbit/s, on all cores and pinned to two. The queue never ran dry; CPU averaged 31–34% of one core at 1.1 Mbit/s and ~90% at 28 Mbit/s; peak RSS ~250 MiB against ~100 MiB for a tiny clip; texture upload averaged 0.6 ms on the main thread. The audio clock stood still in 18% of ticks and jumped up to 37 ms, dropping up to 100 of 1800 frames; interpolating it between callbacks brought that to 0–2
   - [ ] Release validation on Windows/macOS and genuinely low-end hardware (two pinned desktop cores is not an old laptop); real footage instead of generated clips, and shipped size. The earlier conversation's synthetic decoder-only 66/250/341 fps figures are not end-to-end acceptance results. FFmpeg currently requires externally supplied matching development/runtime libraries; automated trimmed LGPL builds and distribution remain separate work
   - [ ] Later extensions: GPU conversion after profiling, looping menu/background video, seeking and browser playback. Keep M9 Extras focused on its existing persistence/seen-record primitives
+
+#### Animated character puppets (Live2D and friends)
+
+Started 2026-09-20. The seam, both backends and their state exist; what is left is listed
+at the end. The APIs are documented in
+[`crates/vn_engine`](crates/vn_engine/README.md#character-visuals) for the seam and the
+puppet, and [`crates/vn_live2d`](crates/vn_live2d/README.md) for Cubism. Four layers,
+bottom to top, then the gaps.
+
+- [x] **The seam** (`vn_engine`, behind the off-by-default `character-visuals` feature).
+  `CharacterVisualFactory` is what a game registers with `VnApp::character_visual`: it
+  names its appearances, validates its assets without a window, and loads one instance.
+  `CharacterVisual` is that instance: natural size, update, draw into a rect at an alpha,
+  restart, set_parameter. A backend's appearances join the schema, so `show mary happy`
+  validates against a rig exactly as against a folder of PNGs, and `vn check` names a
+  missing part before a window opens. One instance per character *and* appearance, kept
+  while it fades out and dropped when it leaves. Nothing about a backend is load-bearing:
+  any failure prints one line and falls back to `characters/<id>/<appearance>.png`,
+  without retrying every frame
+- [x] **The puppet backend** (`vn_engine`'s own `game::puppet`, no SDK and no FFI). A
+  character cut into flat parts, each placed by a pivot in the rig's own coordinate space
+  and moved by parameters through rotation, offset, scale or opacity. An appearance is a
+  pose: parts swapped for another picture, parts hidden, parameters held. Breathing, sway
+  and blink come from the instance's clock, so there is no simulation state and a restart
+  is the clock going back to zero. It is also what proved the seam was an abstraction
+  rather than one backend's shape: taking it cost the trait one method, `set_parameter`,
+  and changed nothing else
+- [x] **The Cubism backend** (`vn_live2d`, optional, and never a `vn_engine` dependency —
+  the dependency runs one way). Asset preflight that resolves a `.model3.json` through
+  `Assets` and checks it before any native call, a C ABI bridge to the official Framework
+  5-r.5 and the proprietary Core, model lifetime and control APIs, a renderer hosted
+  inside raylib that restores every GL state it touches, and a refusal to load Live2D's
+  sample models in a release build. Verified against Core in a played scene on
+  2026-09-24: two models at once, motions and expressions, appearance changes, resize,
+  rollback, hot reload, blend modes and inverted masks, shader passes over a model, ten
+  minutes of continuous physics, and a rejected `.moc3` falling back to its PNG beside a
+  model that kept working
+- [x] **State.** Appearance was always story state; a pushed parameter now is too. It is
+  recorded with the line it was pushed on, so rolling back puts back the values that line
+  was shown with — releasing whatever was pushed after it — and a save carries them onto
+  a live model when it is loaded. Transient state is restarted rather than restored: idle
+  animation, motions and physics begin again from the appearance's preset, with the push
+  applied over the top. `ctx.visual_parameter` pushes and releases one, `on_frame` is the
+  per-frame channel behind it, and what visuals do while a menu is up, while skipping, on
+  New Game and on a hot reload is written down in the engine's README
+- [ ] **What is left**, in the order it matters
+  - [ ] A custom screen cannot show a backend-drawn character at all: `prepare` runs only
+    on the playing screen, so no instance exists for a custom screen to draw, and a PNG is
+    the only answer today. This is the largest hole in "story integration"
+  - [ ] No channel from a playing voice line to a parameter. The channel to push a value
+    through exists, but the engine exposes no amplitude for a voice clip, so lip sync
+    means the game computing it frame by frame
+  - [ ] Nothing is checked automatically. Both probes (`vn_engine --example puppet`,
+    `vn_live2d --example story`) are watched by a person, so none of the verification
+    above would catch a regression tomorrow. Model-dependent GPU regression checks are
+    the next step, now that both probes write comparable frames and
+    `crates/vn_live2d/native/tools/moc_flags.c` says which model exercises which path
+  - [ ] A parameter the model does not have fails that instance into its PNG for the rest
+    of the scene — a harsh price for a typo in a game's code. Decide whether
+    `set_parameter` should report once and carry on instead
+  - [ ] Platform: Linux x86_64, OpenGL 3.3 and Cubism SDK 5-r.5 only. Other platforms and
+    SDK releases are deliberately refused until someone validates them
+  - [ ] Art has to be authored in parts for either backend. The example's art is flat
+    PNGs and would have to be re-exported; Cubism additionally means an artist in the
+    Cubism Editor
+
+Routes not taken, for the record: porting the Framework's motion blending, expressions and
+physics to Rust, which is the reason the bridge exists at all; `inox2d`, whose licence and
+free tooling are attractive but whose README calls it a prototype, and which would still
+need an rlgl renderer written; and `cubism-rs`, which is stale. `live2d-parser` reads model
+files in pure Rust if we ever need only to inspect them.
 
 ### Interaction
 
