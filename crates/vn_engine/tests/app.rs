@@ -308,10 +308,12 @@ fn hooks_are_registered() {
         .app()
         .on_scene_enter(|_, _| None)
         .on_scene_enter(|_, scene| (scene == "credits").then_some(ScreenState::MainMenu))
-        .on_choice(|_, _, _| None);
+        .on_choice(|_, _, _| None)
+        .on_frame(|_, _| {});
 
     assert_eq!(app.hooks().scene_enter_count(), 2);
     assert_eq!(app.hooks().choice_count(), 1);
+    assert_eq!(app.hooks().frame_count(), 1);
 }
 
 #[test]

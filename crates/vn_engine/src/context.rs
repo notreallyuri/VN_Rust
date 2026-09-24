@@ -66,6 +66,11 @@ impl GameContext<'_> {
         Some(ScreenState::Video)
     }
 
+    #[cfg(feature = "character-visuals")]
+    pub fn visual_parameter(&mut self, character: &str, id: &str, value: Option<f32>) {
+        self.resources.visuals.set_parameter(character, id, value);
+    }
+
     pub fn mark_seen(&mut self, key: impl Into<String>) {
         self.persistent.mark_seen(key);
     }
@@ -299,6 +304,11 @@ impl GameContext<'_> {
     pub fn run_scene_hooks(&mut self, scene: &str) -> Option<ScreenState> {
         let hooks = Rc::clone(&self.hooks);
         hooks.scene_entered(self, scene)
+    }
+
+    pub fn run_frame_hooks(&mut self, seconds: f32) {
+        let hooks = Rc::clone(&self.hooks);
+        hooks.frame_passed(self, seconds);
     }
 
     pub fn run_choice_hooks(&mut self, index: usize, text: &str) -> Option<ScreenState> {

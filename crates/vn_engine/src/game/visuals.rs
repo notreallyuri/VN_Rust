@@ -13,6 +13,9 @@ pub trait CharacterVisual {
     fn restart(&mut self) -> Result<(), String> {
         Ok(())
     }
+    fn set_parameter(&mut self, _id: &str, _value: Option<f32>) -> Result<(), String> {
+        Ok(())
+    }
     fn draw(&mut self, draw: &mut RaylibDrawHandle, frame: VisualFrame) -> Result<(), String>;
 }
 
@@ -145,17 +148,50 @@ enum Instance {
 pub struct CharacterVisuals {
     pub registry: VisualRegistry,
     instances: RefCell<BTreeMap<VisualKey, Instance>>,
+    pushed: BTreeMap<String, BTreeMap<String, f32>>,
 }
 
 impl CharacterVisuals {
     pub fn reset(&mut self) {
         self.instances.get_mut().clear();
+        self.pushed.clear();
     }
 
     pub fn restart(&mut self) {
+        self.pushed.clear();
         for (key, instance) in self.instances.get_mut() {
             if let Instance::Ready(visual) = instance
                 && let Err(error) = visual.restart()
+            {
+                report(key, &error);
+                *instance = Instance::Failed;
+            }
+        }
+    }
+
+    pub fn set_parameter(&mut self, character: &str, id: &str, value: Option<f32>) {
+        match value {
+            Some(value) => {
+                self.pushed
+                    .entry(character.to_string())
+                    .or_default()
+                    .insert(id.to_string(), value);
+            }
+            None => {
+                if let Some(parameters) = self.pushed.get_mut(character) {
+                    parameters.remove(id);
+                    if parameters.is_empty() {
+                        self.pushed.remove(character);
+                    }
+                }
+            }
+        }
+        for (key, instance) in self.instances.get_mut() {
+            if key.character != character {
+                continue;
+            }
+            if let Instance::Ready(visual) = instance
+                && let Err(error) = visual.set_parameter(id, value)
             {
                 report(key, &error);
                 *instance = Instance::Failed;
@@ -187,6 +223,7 @@ impl CharacterVisuals {
         mut load: impl FnMut(&VisualKey) -> Option<Result<Box<dyn CharacterVisual>, String>>,
     ) -> Vec<VisualKey> {
         let wanted: BTreeSet<_> = keys.into_iter().collect();
+        let pushed = &self.pushed;
         let instances = self.instances.get_mut();
         instances.retain(|key, _| wanted.contains(key));
         let mut fallback = Vec::new();
@@ -201,14 +238,22 @@ impl CharacterVisuals {
                     fallback.push(key);
                     continue;
                 };
-                let result = result.and_then(|visual| {
-                    let size = visual.size();
-                    if size.x.is_finite() && size.y.is_finite() && size.x > 0.0 && size.y > 0.0 {
+                let result = result
+                    .and_then(|visual| {
+                        let size = visual.size();
+                        if size.x.is_finite() && size.y.is_finite() && size.x > 0.0 && size.y > 0.0
+                        {
+                            Ok(visual)
+                        } else {
+                            Err("backend returned invalid natural dimensions".into())
+                        }
+                    })
+                    .and_then(|mut visual| {
+                        for (id, value) in pushed.get(&key.character).into_iter().flatten() {
+                            visual.set_parameter(id, Some(*value))?;
+                        }
                         Ok(visual)
-                    } else {
-                        Err("backend returned invalid natural dimensions".into())
-                    }
-                });
+                    });
                 instances.insert(
                     key.clone(),
                     match result {
@@ -287,6 +332,7 @@ mod tests {
         updated: Vec<(String, f32)>,
         restarted: Vec<String>,
         dropped: Vec<String>,
+        parameters: Vec<(String, String, Option<f32>)>,
     }
 
     struct Mock {
@@ -323,6 +369,16 @@ mod tests {
             } else {
                 Ok(())
             }
+        }
+        fn set_parameter(&mut self, id: &str, value: Option<f32>) -> Result<(), String> {
+            self.trace
+                .borrow_mut()
+                .parameters
+                .push((self.name.clone(), id.to_string(), value));
+            if id == "unknown" {
+                return Err("no such parameter".into());
+            }
+            Ok(())
         }
         fn draw(&mut self, _: &mut RaylibDrawHandle, _: VisualFrame) -> Result<(), String> {
             Ok(())
@@ -422,7 +478,10 @@ mod tests {
         assert_eq!(sorted(&trace.borrow().loaded), ["happy", "restart_error"]);
 
         visuals.restart();
-        assert_eq!(sorted(&trace.borrow().restarted), ["happy", "restart_error"]);
+        assert_eq!(
+            sorted(&trace.borrow().restarted),
+            ["happy", "restart_error"]
+        );
         assert_eq!(
             trace.borrow().dropped,
             ["restart_error"],
@@ -432,6 +491,81 @@ mod tests {
         let fallback = visuals.prepare_with(keys, 0.02, |key| load(&trace, key));
         assert_eq!(sorted(&trace.borrow().loaded), ["happy", "restart_error"]);
         assert_eq!(fallback, [VisualKey::new("hugo", "restart_error")]);
+    }
+
+    #[test]
+    fn a_pushed_parameter_reaches_every_appearance_the_character_loads() {
+        let trace = Rc::new(RefCell::new(Trace::default()));
+        let mut visuals = CharacterVisuals::default();
+        let neutral = VisualKey::new("mary", "neutral");
+        let happy = VisualKey::new("mary", "happy");
+        let hugo = VisualKey::new("hugo", "neutral");
+        let keys = [neutral.clone(), hugo.clone()];
+        visuals.prepare_with(keys.clone(), 0.02, |key| load(&trace, key));
+
+        visuals.set_parameter("mary", "mouth", Some(0.4));
+        assert_eq!(
+            trace.borrow().parameters,
+            [("neutral".to_string(), "mouth".to_string(), Some(0.4))],
+            "only the character addressed hears it"
+        );
+
+        visuals.prepare_with([happy.clone(), hugo.clone()], 0.02, |key| load(&trace, key));
+        assert_eq!(
+            trace.borrow().parameters[1],
+            ("happy".to_string(), "mouth".to_string(), Some(0.4)),
+            "a new appearance is caught up as it loads"
+        );
+
+        visuals.set_parameter("mary", "mouth", None);
+        visuals.prepare_with([neutral.clone(), hugo.clone()], 0.02, |key| {
+            load(&trace, key)
+        });
+        assert_eq!(
+            trace.borrow().parameters[3..],
+            [],
+            "releasing it stops it reaching the next appearance"
+        );
+
+        visuals.set_parameter("mary", "mouth", Some(1.0));
+        visuals.restart();
+        visuals.prepare_with([happy, hugo], 0.02, |key| load(&trace, key));
+        assert!(
+            !trace
+                .borrow()
+                .parameters
+                .iter()
+                .any(|(name, _, value)| name == "happy" && *value == Some(1.0)),
+            "a rollback forgets what the game pushed"
+        );
+    }
+
+    #[test]
+    fn a_parameter_the_backend_refuses_falls_back_to_the_png() {
+        let trace = Rc::new(RefCell::new(Trace::default()));
+        let mut visuals = CharacterVisuals::default();
+        let neutral = VisualKey::new("mary", "neutral");
+        let happy = VisualKey::new("mary", "happy");
+        visuals.prepare_with([neutral.clone()], 0.02, |key| load(&trace, key));
+
+        visuals.set_parameter("mary", "unknown", Some(1.0));
+        let mut fallback = visuals.prepare_with([neutral.clone(), happy.clone()], 0.02, |key| {
+            load(&trace, key)
+        });
+        fallback.sort();
+        assert_eq!(
+            fallback,
+            [happy.clone(), neutral.clone()],
+            "the instance that refused it fails, and so does the one that loads holding it"
+        );
+
+        let again = visuals.prepare_with([neutral, happy], 0.02, |key| load(&trace, key));
+        assert_eq!(again.len(), 2);
+        assert_eq!(
+            trace.borrow().loaded.len(),
+            2,
+            "a failed instance is not retried every frame"
+        );
     }
 
     #[test]

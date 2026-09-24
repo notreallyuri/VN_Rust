@@ -76,6 +76,12 @@ impl CharacterVisual for Live2dVisual {
         apply(&mut self.model, &self.preset)
     }
 
+    fn set_parameter(&mut self, id: &str, value: Option<f32>) -> Result<(), String> {
+        self.model
+            .set_parameter(id, value)
+            .map_err(|e| e.to_string())
+    }
+
     fn draw(&mut self, draw: &mut RaylibDrawHandle, frame: VisualFrame) -> Result<(), String> {
         let rect = frame.rect;
         let layout = frame.layout_size;

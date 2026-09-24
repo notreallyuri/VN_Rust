@@ -45,10 +45,10 @@ fn main() -> Result<(), vn_engine::app::AppError> {
         .saves_dir(std::env::temp_dir().join(format!("vn-video-example-{}", std::process::id())))
         .initial_screen(ScreenState::Playing)
         .audio(|audio| audio.enabled(!silent))
-        .command("cutscene", move |ctx, (): ()| {
+        .command_as("cutscene", move |ctx, (): ()| {
             ctx.play_video(VideoRequest::new(&clip).volume(if smoke { 0.0 } else { 1.0 }))
         })
-        .command("finished", move |_, (): ()| {
+        .command_as("finished", move |_, (): ()| {
             println!("Video screen returned to the story");
             smoke.then_some(ScreenState::Quit)
         });

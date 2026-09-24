@@ -582,6 +582,11 @@ impl VnApp {
         self
     }
 
+    pub fn on_frame(mut self, hook: impl Fn(&mut GameContext, f32) + 'static) -> Self {
+        self.hooks.on_frame(hook);
+        self
+    }
+
     pub fn hooks(&self) -> &Hooks {
         &self.hooks
     }

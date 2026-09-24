@@ -10,7 +10,9 @@ been exercised through the viewer. Every failure falls back to the PNG character
 
 The dependency runs one way: `vn_live2d` uses `vn_engine`, never the reverse. The
 seam lives behind `vn_engine`'s `character-visuals` feature, which is off by
-default, and this crate's `engine` feature turns it on.
+default, and this crate's `engine` feature turns it on. That seam now carries a second
+backend, the engine's own [puppet](../vn_engine/README.md#character-visuals) — flat parts
+moved by parameters, no SDK — which is what settled its shape.
 
 The asset loader works without the Cubism SDK. The `native` feature enables a C ABI
 bridge to the official C++ Framework and proprietary Core. This avoids porting
@@ -21,7 +23,8 @@ Cubism's motion blending, expressions, and physics to Rust.
 - Workspace tests and SDK-independent asset tests pass.
 - The engine seam compiles, lints and tests with `--features character-visuals`;
   that is not part of a default workspace build, so check it explicitly:
-  `cargo test -p vn_engine --features character-visuals --lib`.
+  `cargo test -p vn_engine --features character-visuals`, which now includes
+  `tests/visuals.rs` over the seam's startup path.
 - The bridge compiles against Cubism SDK for Native 5-r.5 (Core 6.0.1) and the viewer
   renders Haru, Mao, Hiyori and Natori fully textured, with clipping masks, on Mesa
   26.2 / AMD, OpenGL 4.6 core. No GL errors, and the host's red and green markers
@@ -35,13 +38,20 @@ Cubism's motion blending, expressions, and physics to Rust.
 - The embedded shaders are ported from GLSL 1.20 to 3.30 core as they are copied.
   Mesa accepts the originals in a core context, but they are not legal there, and a
   stricter driver would leave the host's shader bound and draw a black silhouette.
+- The seam carries a second backend: `vn_engine`'s puppet. Its probe was watched through
+  a whole scene on Mesa 26.2 / AMD — five parts in order, an appearance swapping one of
+  them, a parameter pushed from a frame hook and released — with no fallback to the PNGs.
+  `CharacterVisual` needed one addition to take it, `set_parameter`, and no change to the
+  rest, so the abstraction is no longer a hypothesis about a single backend.
 - The SDK-independent GPU test passes with a real OpenGL 3.3 core context under
   Xvfb: drawing through VBOs, restoring host GL state (including on exceptions),
   and recreating the compatibility resources.
 - **Still unverified:** motions, expressions and physics in motion (only the first
   frames have been watched), resize, failed loads, repeated destruction, several
-  models at once, post-processing, and the story-facing seam with a real game.
-  Nothing is checked automatically: there are no GPU regression tests yet.
+  models at once, post-processing, and the story-facing seam behind Core — the puppet
+  has now played a scene through it, a Cubism model has not, and neither has
+  `set_parameter` against a real model. Nothing is checked automatically: there are no
+  GPU regression tests yet.
 
 ## SDK setup
 
@@ -146,10 +156,14 @@ xvfb-run -a /tmp/vn-live2d-core-profile-test
    multiple models at once, resize, failed loads, repeated destruction, screenshots
    and post-processing. Add model-dependent GPU regression checks, now that `VN_SHOT`
    makes a frame comparable.
-2. Prove the seam carries a second backend. It has only ever had this one behind
-   it, so `CharacterVisual` is still a hypothesis about the abstraction. It also
-   has no channel for per-frame parameters, which is what voice-driven lip sync
-   would need.
+2. ~~Prove the seam carries a second backend.~~ Done: the engine's puppet backend draws
+   through the same `CharacterVisualFactory`, and the one thing it wanted that the seam
+   lacked is now there — `CharacterVisual::set_parameter`, with `ctx.visual_parameter`
+   and an `on_frame` hook behind it, which is the channel voice-driven lip sync needs.
+   A push is remembered per character, so it follows the character into the next
+   appearance it loads. Live2D implements it against `Model::set_parameter`, but that
+   path has not been run against Core yet, and nothing here does lip sync: the engine
+   has no channel from a playing voice line to a parameter.
 3. ~~Replace the reset-everything rollback.~~ Done: `CharacterVisual::restart` returns a
    model to its appearance's preset (expression, motion, parameters) without touching
    the moc, textures or physics. Rollback and loading a save restart the models that

@@ -20,6 +20,8 @@ pub mod prelude {
     pub use crate::context::{DrawContext, GameContext, GameView};
     pub use crate::game::characters::Character;
     pub use crate::game::commands::Command;
+    #[cfg(feature = "character-visuals")]
+    pub use crate::game::puppet::{Idle, Motion, Part, Pose, Puppet};
     pub use crate::overlay::{Overlay, OverlayAction, OverlayRequest};
     pub use crate::request::{Request, Requests, Resolved};
     pub use crate::screen::{Screen, ScreenState};

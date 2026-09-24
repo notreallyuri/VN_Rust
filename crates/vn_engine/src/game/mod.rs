@@ -4,6 +4,8 @@ pub mod commands;
 pub mod hooks;
 pub mod hot_reload;
 pub mod language;
+#[cfg(feature = "character-visuals")]
+pub mod puppet;
 pub mod script_errors;
 #[cfg(feature = "character-visuals")]
 pub mod visuals;

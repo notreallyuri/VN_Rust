@@ -325,6 +325,7 @@ impl Screen for PlayingScreen {
         if next.is_some() {
             return next;
         }
+        ctx.run_frame_hooks(ctx.rl.get_frame_time());
 
         #[cfg(feature = "character-visuals")]
         {

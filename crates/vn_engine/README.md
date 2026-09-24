@@ -44,7 +44,7 @@ The engine's items live in six module groups, and nothing is re-exported at the 
 |---|---|
 | `data` | `assets`, `resources`, `rollback`, `saves`, `session`, `settings`, `state` |
 | `frame` | `effects`, `post`, `scenery`, `screen_transition`, `stage`, `target`, `viewport` |
-| `game` | `audio`, `characters`, `commands`, `hooks`, `hot_reload`, `language`, `script_errors` |
+| `game` | `audio`, `characters`, `commands`, `hooks`, `hot_reload`, `language`, `script_errors`, and `puppet` and `visuals` with `character-visuals` on |
 | `input` | `drag`, `hit`, `image_map`, `navigation` |
 | `ui` | `button`, `ease`, `fonts`, `labels`, `layout`, `scroll`, `shape`, `styled`, `toast`, `tooltip` |
 | `screens` | the built-in screens and their configs |
@@ -62,7 +62,9 @@ use vn_engine::ui::prelude::*;
 `AppError`, `Character`, `DrawContext`, `FontRole`, `GameContext`, `GameView`, `Overlay`,
 `OverlayAction`, `OverlayRequest`, `PanelStyle`, `Screen`, `ScreenState`, `TextStyle`,
 `Value`, `VariableDef` and `VnApp`. It stays small on purpose, so a glob import of it
-doesn't hide where a name came from.
+doesn't hide where a name came from. With `character-visuals` on it also carries the
+puppet rig — `Idle`, `Motion`, `Part`, `Pose` and `Puppet` (see
+[Character visuals](#character-visuals)).
 
 ## VnApp
 
@@ -1970,6 +1972,7 @@ VnApp::new("My Novel")
 | --- | --- |
 | `on_scene_enter(\|ctx, scene\| ...)` | When the story enters a scene: at the start (New Game), on every `jump` (including one to the same scene), and when a load or hot reload restarts an edited scene. Not when a save or rollback puts the story back in the middle of a scene |
 | `on_choice(\|ctx, index, text\| ...)` | Right after the player picks an option, before the option's lines run. `text` is the option as shown (interpolated), and `index` is its place in the story's `choice:` block, so an option hidden by a `when` does not shift the ones after it |
+| `on_frame(\|ctx, seconds\| ...)` | Every frame the playing screen updates, after the story has advanced and before the characters are updated and drawn. `seconds` is the frame time. It returns nothing: a hook that runs sixty times a second is a place to push a value, not to change screens. It does not run on a frame that leaves the playing screen, nor while another screen (a menu, a custom screen) is up |
 
 Hooks are registered in order and all run; like commands, returning `Some(state)` switches
 screens (the first one returned wins), and the story continues when the playing screen
@@ -2507,6 +2510,183 @@ The example also accepts `--embedded`, `--silent` and `--smoke` (muted audio and
 exit after returning to the story). The fixtures are generated test patterns and
 a sine wave, with generation instructions beside them.
 
+## Character visuals
+
+A character is a folder of PNGs by default: `show mary happy` draws
+`characters/mary/happy.png`. Behind the `character-visuals` feature — off by default —
+the same character can be drawn by a backend instead: something that holds state, moves
+between frames, and answers to the appearance names the story already uses.
+
+```toml
+vn_engine = { version = "0.1", features = ["character-visuals"] }
+```
+
+A backend is registered for one character, beside its `Character`:
+
+```rust
+VnApp::new("My Novel")
+    .character("mary", Character::new("Mary").images(["neutral", "happy"]))
+    .character_visual("mary", rig)
+```
+
+The backend's appearances join the schema, so `show mary happy` validates against the rig
+exactly as it validates against a folder, and `vn check` reports a missing part or a
+misspelt appearance before the game opens a window. Startup also refuses a backend
+registered for a character nobody declared, and appearance names that are not story
+identifiers; then it runs the backend's own `validate`.
+
+Nothing about a backend is load-bearing. Whatever goes wrong — a missing file, a refused
+parameter, a backend that draws nothing but an error — the engine prints one line, drops
+that instance and draws `characters/<id>/<appearance>.png` in its place, without retrying
+every frame. A game that ships both keeps working on a machine where the fancy path
+fails.
+
+An instance exists per character *and* appearance, and lives as long as that appearance
+is on screen (including while it fades out). Changing appearance loads a second instance
+rather than reconfiguring the first. `New Game` and hot reload drop every instance, since
+the assets themselves may have changed; a rollback or a load instead `restart`s the
+instances that stay on screen, which returns a rig to the appearance's own pose without
+reloading its textures.
+
+Two backends exist: the puppet below, built in, and Live2D Cubism in
+[`vn_live2d`](../vn_live2d/README.md).
+
+### Puppets
+
+A puppet is a character cut into parts — body, head, eyes, mouth — drawn in order, each
+placed in the rig's own coordinate space and free to move with a parameter. It needs no
+SDK and no tooling beyond the PNGs.
+
+```rust
+use vn_engine::game::puppet::{BLINK, BREATH, SWAY};
+use vn_engine::prelude::*;
+
+let rig = Puppet::new(600.0, 900.0)
+    .folder("mary")
+    .part(Part::new("body").at(300.0, 900.0).pivot(0.5, 1.0))
+    .part(
+        Part::new("head")
+            .at(300.0, 380.0)
+            .pivot(0.5, 1.0)
+            .bind(SWAY, Motion::rotate(6.0))
+            .bind(BREATH, Motion::offset(0.0, -4.0)),
+    )
+    .part(Part::new("eyes").at(300.0, 300.0).bind(BLINK, Motion::scale(1.0, 0.1)))
+    .part(Part::new("mouth").at(300.0, 340.0).bind("mouth", Motion::scale(1.0, 2.0)))
+    .appearance("neutral", Pose::new())
+    .appearance("happy", Pose::new().swap("mouth", "mouth_smile").parameter(SWAY, 0.5));
+```
+
+`Puppet::new(width, height)` is the rig's own space: every `at` is a point in it, and the
+whole rig is scaled to the playing screen's `character_height` and placed by the `at` the
+story gives, exactly as a PNG of the same proportions would be — so the numbers stay the
+ones the artist worked in. `folder("mary")` looks
+each part up at `characters/mary/<image>.png`; without it, `<image>.png` from the assets
+root.
+
+| `Part` builder | Meaning |
+| --- | --- |
+| `Part::new(name)` | A part, drawn over the ones before it. The name is also its image unless `image` says otherwise |
+| `image(file)` | The PNG to draw, without folder or extension |
+| `at(x, y)` | Where the part's pivot sits, in rig coordinates |
+| `pivot(x, y)` | The point of the image that lands on `at` and that it rotates and scales around, as a fraction of the image (`0.5, 0.5` is the middle, the default; `0.5, 1.0` its bottom edge) |
+| `bind(parameter, motion)` | Move the part with a parameter. A part may bind several, and they compose |
+
+| `Motion` | At value `v` |
+| --- | --- |
+| `Motion::rotate(degrees)` | Turns the part `degrees * v` around its pivot |
+| `Motion::offset(x, y)` | Moves it by `(x, y) * v`, in rig coordinates |
+| `Motion::scale(x, y)` | Stretches it towards `(x, y)`: unchanged at 0, fully at 1 |
+| `Motion::opacity(a)` | Fades it towards `a`, over whatever opacity the scene's transition gives it |
+
+An appearance is a `Pose`: which parts are swapped for another picture, which are hidden,
+and which parameters it holds still.
+
+| `Pose` builder | Meaning |
+| --- | --- |
+| `swap(part, image)` | Draw this part from another PNG — a smiling mouth, closed eyes |
+| `hide(part)` | Leave the part out; it is not even loaded |
+| `parameter(id, value)` | Hold a parameter at a value for as long as this appearance is shown |
+
+Three parameters come from the clock unless something holds them: `BREATH` (0 to 1 and
+back), `SWAY` (-1 to 1) and `BLINK` (0 most of the time, a spike when the eyes close).
+`Idle` sets their timing, in seconds:
+
+```rust
+Puppet::new(600.0, 900.0).idle(|i| Idle { breath: 3.0, sway: 7.0, ..i })
+```
+
+The default is a four-second breath, a nine-second sway, and a blink every five seconds
+lasting 0.12. A period of zero stops that movement. Idle movement is a function of the
+instance's clock alone, like [weather](#weather): there is no simulation to step, and a
+`restart` puts the clock back to zero.
+
+A puppet draws flat textures, in order, with no mesh, no deformation and no masks. It is
+the cheap end of the range: enough for a character that breathes, blinks, sways and
+changes mouth, and not what to reach for when a head should turn.
+
+The probe plays a short scene with a five-part rig, in auto mode, so it needs no input:
+
+```sh
+cargo run -p vn_engine --features character-visuals --example puppet
+```
+
+It swaps an appearance's mouth, then pushes that mouth from a frame hook and releases it
+again. With `VN_SHOT` set it writes one frame of the talking line into its saves
+directory, which is how the geometry here was checked.
+
+### Parameters
+
+A parameter is a named number a backend reads — a puppet's `bind`s, a Live2D model's
+`ParamMouthOpenY`. The game pushes one at any time:
+
+```rust
+ctx.visual_parameter("mary", "mouth", Some(0.8));
+ctx.visual_parameter("mary", "mouth", None);
+```
+
+`Some(value)` overrides whatever the appearance's pose or the idle clock would give;
+`None` releases it back to them. A push is remembered for the character rather than for
+the instance in front of it, so it survives a change of appearance and reaches the next
+one as it loads. A backend that refuses a value fails that instance into its PNG, like
+any other error.
+
+Pushes are not story state: they are not written to a save, and a rollback or a load
+clears them along with restarting the instances on screen. Push from `on_scene_enter`, or
+from a frame hook, and a loaded save brings the character back the way the scene meant
+it.
+
+For anything that changes every frame — lip sync from the voice line, a head that follows
+the pointer — push from [`on_frame`](#hooks), which runs after the story has advanced and
+before the characters are updated and drawn:
+
+```rust
+VnApp::new("My Novel").on_frame(|ctx, _seconds| {
+    ctx.visual_parameter("mary", "mouth", Some(mouth_from_voice(ctx)));
+})
+```
+
+### Writing a backend
+
+A backend is two traits. `CharacterVisualFactory` is what the game registers: it names
+its appearances, checks its assets, and loads one instance. `CharacterVisual` is the
+instance.
+
+| Method | Does |
+| --- | --- |
+| `appearances()` | The names the story may `show`. They join the character's images in the schema |
+| `validate(assets)` | Checked at startup and by `vn check`, with no window and no GPU |
+| `load(appearance, assets, rl, thread)` | One instance. Read files through `Assets`, so folder and embedded builds both work |
+| `size()` | The instance's natural size, which places it exactly as a PNG of that size would be placed |
+| `update(seconds)` | One frame, capped at 100 ms after a stall |
+| `set_parameter(id, value)` | Push or release a parameter. The default does nothing, for a backend with none |
+| `restart()` | Return to the appearance's own state, for rollback and load. The default does nothing, for a backend with no transient state |
+| `draw(draw, frame)` | Draw into `frame.rect`. `frame` also carries the layout size, the render target's pixel size, and the opacity the scene transition asks for |
+
+Errors are `String`s: they are printed with the character and appearance, and cost that
+instance its place. `vn_live2d` is the worked example of a backend that owns GPU state;
+it drives raylib's batch flush and restores every GL setting it touches.
+
 ## Lower level: ScreenStateManager
 
 `VnApp` is built on `ScreenStateManager`, which a game can drive itself for a custom loop:
@@ -2693,7 +2873,7 @@ contexts a screen is handed — and the rest is grouped by what it does:
 | `frame/` | The picture: `target.rs`, `viewport.rs`, `post.rs`, `effects.rs`, `screen_transition.rs`, `scenery.rs`, `stage.rs` |
 | `request.rs` | What a screen asks the manager to do once `update` returns |
 | `data/` | What persists: `saves/`, `session.rs`, `rollback.rs`, `state.rs`, `settings.rs`, `assets.rs`, `resources.rs` |
-| `game/` | What a game registers, and the story's side effects: `characters.rs`, `commands.rs`, `hooks.rs`, `audio.rs`, `hot_reload.rs`, `script_errors.rs` |
+| `game/` | What a game registers, and the story's side effects: `characters.rs`, `commands.rs`, `hooks.rs`, `audio.rs`, `hot_reload.rs`, `script_errors.rs`, and behind `character-visuals` `visuals.rs` (the seam) and `puppet.rs` (the built-in rig) |
 | `screens/` | One module per default screen |
 
 A group's `mod.rs` only declares its modules; `lib.rs` re-exports both the modules and
@@ -2725,6 +2905,15 @@ cargo test -p vn_engine
 The tests run without a window; drawing and input are checked by playing the example.
 A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_engine -- --ignored`.
 
+An off-by-default feature takes its targets out of the default build, examples included,
+so each one is worth checking on its own before a commit:
+
+```sh
+cargo test -p vn_engine --features character-visuals
+cargo clippy -p vn_engine --features character-visuals --all-targets -- -D warnings
+cargo clippy -p vn_engine --features video-ffmpeg --example video -- -D warnings
+```
+
 | File | Covers |
 | --- | --- |
 | `tests/app.rs` | `VnApp::check` (validation, missing art, story directories, errors with their file), entry scene, typed command arguments, schema export, hook registration |
@@ -2753,3 +2942,4 @@ A few checks that need a GPU are `#[ignore]`d and run with `cargo test -p vn_eng
 | `tests/choices.rs` | An option's picture filling its button or becoming its icon, a game's own choice style kept underneath, both pictures of every option loaded, and a preview fitted inside its panel |
 | `tests/theme.rs` | A theme painting a screen without moving it, an empty theme changing nothing, every panel of the playing screen, what a themed button keeps, a screen overriding the theme afterwards, and the panic when a theme comes second |
 | `tests/nvl.rs` | Where a page sits (centred, limited, letterboxed by its margin), the padding its text loses, and where the last page starts once the lines no longer fit |
+| `tests/visuals.rs` | With `character-visuals`: a backend's appearances joining the character's images so the story may `show` them, art warnings skipping what a backend draws and still naming missing PNGs, a missing part and a backend for an undeclared character refused at startup, appearance names that are not identifiers, and a rig checking the same against a folder and an embedded build |
