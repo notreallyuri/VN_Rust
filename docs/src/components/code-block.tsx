@@ -1,5 +1,7 @@
 import { Frame } from "@/components/frame";
-import { highlightStory, type Token } from "@/highlight/story";
+import { highlight, type Token } from "@/highlight";
+
+const SHELLS = new Set(["sh", "bash", "shell", "console"]);
 
 export function CodeBlock({
   code,
@@ -13,10 +15,9 @@ export function CodeBlock({
   numbered?: boolean;
 }) {
   const body = code.replace(/\n$/, "");
-  const lines: Token[][] =
-    language === "story"
-      ? highlightStory(body)
-      : body.split("\n").map((line) => [{ text: line, kind: null }]);
+  const lines: Token[][] = highlight(body, language);
+  const shell = language ? SHELLS.has(language) : false;
+  const gutter = numbered || shell;
 
   return (
     <Frame name={name}>
@@ -26,11 +27,18 @@ export function CodeBlock({
             <span
               // biome-ignore lint/suspicious/noArrayIndexKey: a fixed listing
               key={index}
-              className={numbered ? "grid grid-cols-[2ch_1fr] gap-4" : "block"}
+              className={gutter ? "grid grid-cols-[2ch_1fr] gap-3" : "block"}
             >
-              {numbered ? (
-                <span className="select-none text-right text-muted/50">
-                  {index + 1}
+              {gutter ? (
+                <span
+                  aria-hidden={shell}
+                  className={
+                    shell
+                      ? "select-none text-accent/70"
+                      : "select-none text-right text-muted/50"
+                  }
+                >
+                  {shell ? (tokens.length > 0 ? "$" : "") : index + 1}
                 </span>
               ) : null}
               <span className="whitespace-pre">

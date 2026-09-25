@@ -26,9 +26,13 @@ CSS. Write those through the components or relative, and the prefix takes care o
 
 `public/.nojekyll` is what stops Pages hiding the `_next` directory.
 
-`.story` code blocks are highlighted by the same tree-sitter grammar nvim and the LSP
-use, parsed at build time so no highlighter ships to the browser.
-`src/highlight/tree-sitter-story.wasm` and `highlights.scm` are copies of what lives in
+Code blocks are highlighted by tree-sitter at build time, so no highlighter ships to the
+browser. `.story` uses the same grammar nvim and the LSP use; Rust and shell use the
+grammars from `tree-sitter-rust` and `tree-sitter-bash`, whose wasm and queries are copied
+into `src/highlight/` from `node_modules`. A shell block is drawn with a prompt in the
+gutter, and that prompt is not selectable, so copying gives the commands alone.
+
+`src/highlight/tree-sitter-story.wasm` and `story.scm` are copies of what lives in
 `editors/tree-sitter-story`; CI diffs the queries so they cannot drift, and the wasm is
 rebuilt with:
 
