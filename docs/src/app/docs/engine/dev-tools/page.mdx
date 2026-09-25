@@ -21,6 +21,7 @@ a release build, for a tester's copy.
 | F2 | The story error panel, when a hot reload failed. See [hot reload](/docs/engine/story#hot-reload) |
 | F3 | The inspector: what is drawn where, the focus order, and frame timing |
 | F4 | Jump to a scene |
+| F6 | The position picker, while playing |
 | F12 | A screenshot, from any screen |
 | Shift+F12 | Start or stop a GIF recording |
 
@@ -42,6 +43,11 @@ gives its rect in the game's own coordinates and the style it was drawn with.
 | --- | --- |
 | Button | Its label and rect, the size its style asked for, font role, size and colour, fill, padding, alignment and overflow, border, and whether it has an image, icon or transform |
 | Panel | Its rect, fill, gradient, border, inner border and shadow |
+| Character | Its id and image, where it stands as a fraction of the width, and its texture's size against the scale it is drawn at |
+
+That last line is worth a glance now and then: a 1024 by 1536 portrait drawn at 0.38x is
+art about two and a half times bigger than it is ever shown, and it costs memory at that
+size the whole time it is loaded.
 
 The rect and the configured size side by side is the useful part: a button whose rect is
 narrower than its style is being squeezed by a layout, and that is the usual answer to text
@@ -93,6 +99,32 @@ happened, so there is nothing to roll back to.
 
 It opens on the scene being played, so pressing Enter straight away restarts the current
 scene with the current values, which is a quick way to see a scene again after editing it.
+
+## The position picker
+
+F6 while playing, then drag a character across the stage. The sprite follows the pointer,
+the five `at` slots are drawn as guides, and the one you are nearest lights up.
+
+Letting go copies the line for your story, and prints it to the console:
+
+```story
+show registrar neutral at far_left
+```
+
+The language places characters at five named slots rather than at coordinates, which keeps
+a story readable and lets the game move all of them at once. So the picker gives you the
+nearest slot for the story, and the exact spot in Rust for the other case, where the slot
+itself is in the wrong place. Enter copies that:
+
+```rust
+VnApp::new("My Novel")
+    .playing(|p| p.position(Position::FarLeft, 0.208))
+```
+
+Nothing you drag changes the story. The character is only drawn somewhere else while the
+picker is open, and Esc, F6 again, or anything that leaves the screen puts them back where
+the story has them. A character drawn by a [visual backend](/docs/engine/visuals) rather
+than an image can't be picked up yet.
 
 ## Screenshots and recordings
 

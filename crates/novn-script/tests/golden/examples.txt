@@ -268,6 +268,17 @@ scene example:  (line 1)
 > Say { speaker: Some("player"), text: "Nice to meet you." }
 > End
 
+======== docs/engine/dev-tools:110  The position picker
+scene example:
+  show registrar neutral at far_left
+-------- instructions
+scene example:  (line 1)
+000: SHOW registrar neutral AT far_left
+001: END
+-------- events
+> Show { character: "registrar", image: "neutral", position: Some(FarLeft), transition: None }
+> End
+
 ======== docs/engine/story:12  Commands
 scene example:
   call give_item verlaine_letter

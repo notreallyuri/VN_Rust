@@ -366,7 +366,22 @@ builds), F1 (controls) and F2 (script errors).
   other corner when the pointer comes near; and the dialogue box, being a panel rather than a
   button, was not inspectable until panels were recorded too
 - [ ] Live style tweaking: hot-reload the style values a game defines (the example keeps them in `src/style.rs`), or edit them in an overlay with sliders and colour pickers that writes the tweaked values back out as Rust to paste. This is the part of a UI editor people actually want
-- [ ] Position picker: drag a sprite in the running game and get the `at` position, or exact coordinates, to paste into the `.story` line. Ren'Py's image location picker
+- [x] Position picker on F6: drag a character and the sprite follows, the five slots drawn as
+  guides with the nearest lit. Letting go copies `show registrar neutral at far_left`; Enter
+  copies `.position(Position::FarLeft, 0.208)`. "Exact coordinates" in the `.story` line is
+  not something the language has, since it places characters at five named slots, so the
+  exact spot goes to the one place it can be used: the slot itself, in Rust. The drag is a
+  render-only override read in `sprite()`, never story state, and the overlay's `Drop` clears
+  it, because a screen change drops overlays without closing them; a test holds that. Played
+  in the example: the Registrar followed the pointer, the lines came out right to the pixel,
+  and Esc put him back where the story has him. Characters drawn by a visual backend cannot be
+  picked up yet, since that path draws without reporting a rect.
+  The same `sprite()` hook puts characters in the F3 inspector, whose card shows a texture's
+  size against the scale it is drawn at: the example's 1024 x 1536 portraits are drawn at 0.38x.
+  Playing it also showed Escape closed neither dev overlay: `nav.back` comes only from a
+  gamepad here, and every engine overlay reads Escape itself. The earlier check that Esc closed
+  the scene jump had measured the brightness of a strip that is dark either way; it was
+  redone by comparing screenshots and looking at them
 - [ ] Director: while playing, pick `show`, `background`, `music`, `sound` or `voice` from a menu, see it applied live, and write the line into the `.story` file at the current point. `.story` is line-oriented and `novn fmt` normalizes whatever a tool writes, so generated lines can't drift from hand-written style
 - [x] Scene jump on F4: every scene with the file and line it starts on, beside every
   registered variable and its current value. Change the values a scene depends on and jump.

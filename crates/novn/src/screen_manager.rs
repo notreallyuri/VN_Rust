@@ -14,8 +14,9 @@ use crate::data::saves::{Saves, THUMBNAIL_WIDTH};
 use crate::data::session::{PlayModes, SeenLines, SessionLog};
 use crate::data::settings::SettingsStore;
 use crate::data::state::GameState;
+use crate::dev::picker::POSITION_PICKER_OVERLAY;
 use crate::dev::scene_jump::SCENE_JUMP_OVERLAY;
-use crate::dev::{CAPTURE_KEY, INSPECTOR_KEY, SCENE_JUMP_KEY};
+use crate::dev::{CAPTURE_KEY, INSPECTOR_KEY, PICKER_KEY, SCENE_JUMP_KEY};
 use crate::game::audio::Audio;
 use crate::game::characters::Characters;
 use crate::game::commands::Commands;
@@ -219,6 +220,7 @@ impl ScreenStateManager {
 
     pub fn update(&mut self, rl: &mut RaylibHandle, thread: &RaylibThread) {
         crate::dev::inspector::begin_frame();
+        crate::dev::picker::begin_frame();
         if self.dev_tools {
             if rl.is_key_pressed(INSPECTOR_KEY) {
                 crate::dev::inspector::set_active(!crate::dev::inspector::active());
@@ -343,6 +345,19 @@ impl ScreenStateManager {
 
         if let Some(state) = next_state {
             self.transition_to(state);
+        }
+
+        let wants_picker = self.dev_tools
+            && self.screens.showing == ScreenState::Playing
+            && rl.is_key_pressed(PICKER_KEY);
+        if wants_picker {
+            if self.overlay_name() == Some(POSITION_PICKER_OVERLAY) {
+                self.close_overlay();
+            } else {
+                self.world.modes.skip = false;
+                crate::dev::picker::listen(true);
+                self.open_overlay(POSITION_PICKER_OVERLAY);
+            }
         }
 
         let wants_scene_jump = self.dev_tools

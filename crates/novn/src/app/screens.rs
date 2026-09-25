@@ -76,6 +76,9 @@ impl ScreenFactory for DefaultScreens {
 
         match name {
             PAUSE_OVERLAY => Some(Box::new(PauseMenu::new(self.pause_menu.clone()))),
+            crate::dev::picker::POSITION_PICKER_OVERLAY => {
+                Some(Box::new(crate::dev::picker::PositionPickerOverlay::new()))
+            }
             crate::dev::scene_jump::SCENE_JUMP_OVERLAY => {
                 Some(Box::new(crate::dev::scene_jump::SceneJumpOverlay::new()))
             }

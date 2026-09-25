@@ -324,7 +324,9 @@ impl Overlay for SceneJumpOverlay {
         let clicked = ctx
             .rl
             .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
-        let mut step = jump.step(&ctx.nav);
+        let mut nav = ctx.nav;
+        nav.back |= ctx.rl.is_key_pressed(KeyboardKey::KEY_ESCAPE);
+        let mut step = jump.step(&nav);
 
         if clicked {
             if let Some(at) = row_at(layout.scenes, mouse, jump.scene_top, jump.scenes.len()) {

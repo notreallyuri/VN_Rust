@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use novn_script::{Event, StoryVm, Transition, TransitionKind};
+use novn_script::{Event, Position, StoryVm, Transition, TransitionKind};
 use raylib::prelude::*;
 
 use crate::data::resources::{ResourceManager, background_path, character_path};
@@ -263,6 +263,7 @@ impl Stage {
     ) {
         let screen = ui::screen_size(d);
         let fade = self.draw_background(d, resources, story, config.background.as_ref(), now);
+        crate::dev::picker::record_slots(Position::ALL.map(|position| config.position_x(position)));
 
         let current = stage_layout(story, config);
         let mut ids: Vec<&String> = current.keys().collect();
@@ -444,6 +445,7 @@ fn sprite(
     if alpha <= 0.0 {
         return;
     }
+    let x = crate::dev::picker::dragged_x(character).unwrap_or(x);
     #[cfg(feature = "character-visuals")]
     if resources.visuals.draw(
         character,
@@ -479,6 +481,19 @@ fn sprite(
         0.0,
         tint(alpha),
     );
+    crate::dev::picker::record(character, image, dest);
+    if crate::dev::inspector::active() {
+        crate::dev::inspector::widget(crate::dev::inspector::Widget {
+            kind: "character",
+            rect: dest,
+            label: format!("{character} {image}"),
+            details: vec![
+                ("x", format!("{x:.3} of the width")),
+                ("texture", format!("{w:.0} x {h:.0}, drawn at {scale:.2}x")),
+            ],
+            ..Default::default()
+        });
+    }
 }
 
 pub fn effect_of(event: &Event) -> Option<(TransitionKind, f32)> {
