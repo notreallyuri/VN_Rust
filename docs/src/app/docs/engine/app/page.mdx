@@ -1,0 +1,122 @@
+# Building an app
+
+A game is a `VnApp` built from defaults, with only the parts it wants changed.
+
+```rust
+use novn::prelude::*;
+use novn::raylib::prelude::*;
+use novn::screens::main_menu::MenuItem;
+
+fn main() -> std::io::Result<()> {
+    VnApp::new("My Novel")
+        .size(1280, 720)
+        .assets(concat!(env!("CARGO_MANIFEST_DIR"), "/assets"))
+        .font(FontRole::Dialogue, "NotoSerif-Regular.ttf")
+        .main_menu(|m| {
+            m.button_style(|b| b.size(260.0, 52.0).roundness(0.3))
+                .button("New Game", Action::NewGame)
+                .button("Continue", Action::Continue)
+                .item(MenuItem::new("Quit", Action::Quit).style(|b| b.color(Color::MAROON)))
+        })
+        .playing(|p| p.dialogue_box(|b| b.height(180.0).color(Color::new(10, 10, 20, 220))))
+        .run()
+}
+```
+
+`run()` loads and validates the story, opens the window, loads the fonts and the settings,
+and runs the loop until the player closes the window or a screen returns
+`ScreenState::Quit`. If the story cannot be read or has errors it returns an `AppError`
+without opening a window at all.
+
+Every configure closure receives the current config and returns the changed one, so calls
+chain and whatever you leave alone keeps its default.
+
+## Registering what the story may name
+
+Variables and characters are registered on the app. Together with the command signatures
+they form the schema the story is checked against before the window opens.
+
+```rust
+VnApp::new("My Novel")
+    .variable("affection", VariableDef::int(0))
+    .variable("route", VariableDef::enumeration(["good", "bad", "neutral"], "neutral"))
+    .variable("player_name", VariableDef::string("Reader"))
+    .character("mary", Character::new("Mary").color(Color::GOLD).images(["neutral", "happy"]))
+    .character("player", Character::new("{player_name}").color(Color::SKYBLUE))
+    .command(give_item)
+```
+
+Variables start at their default on New Game, so there is no such thing as an unset value,
+and setting one from Rust is type checked. A character's `name` is what the dialogue box
+shows, and it may itself contain a `{variable}`, which is how `player "Hi."` shows the
+name the player chose. `color` tints that name, and `images` lists the expressions
+`show <id> <image>` may use.
+
+An empty registry turns its own checks off, so a prototype can skip them.
+
+## What happens when it does not line up
+
+`run()` returns `AppError::Script` before opening the window, and its `Display` lists
+every error with its file and line. Syntax errors sit beside registry errors, and nothing
+in a script can make the game panic at startup.
+
+```text
+❌ .../assets/story has 2 errors:
+  .../story/04_santa_ilde.story:12: error: unknown variable 'trsut'
+  .../story/01_box_14.story:40: error: speaker: unknown character 'marry'
+```
+
+| `AppError` | When |
+| --- | --- |
+| `Story { path, source }` | The story directory or a file in it cannot be read, or there are no `.story` files |
+| `Script { path, errors }` | Parsing or validation found errors, or the entry scene does not exist |
+| `Schema { path, source }` | `--export-schema` could not write the schema file |
+| `Screen(io::Error)` | No screen is registered for the initial `ScreenState` |
+
+Warnings do not stop the game. A `show` or `background` whose file is missing draws a
+placeholder and prints a warning. `VnApp::check()` runs the same checks without a window
+and hands back the story and the warnings, which is what tests use.
+
+## The schema file
+
+The registries only exist in Rust, so tools that never run the game read them from
+`<assets>/schema.json`: the title, the story directory, the entry scene, the variables,
+the characters and the command signatures.
+
+Debug builds refresh it on every `run()`, before validating, and say `Updated <path>` when
+it changed. An unchanged schema is not rewritten, so it only appears in a diff when a
+registry actually changed. Commit it.
+
+```sh
+cargo run -- --export-schema
+```
+
+That writes it and exits without opening a window or validating, which works even while
+the story is broken, and works in release builds too.
+
+## Where things live
+
+The engine's items sit in six module groups, and nothing is re-exported at the crate root.
+
+| Module | Holds |
+| --- | --- |
+| `data` | `assets`, `resources`, `rollback`, `saves`, `session`, `settings`, `state` |
+| `frame` | `effects`, `post`, `scenery`, `screen_transition`, `stage`, `target`, `viewport` |
+| `game` | `audio`, `characters`, `commands`, `hooks`, `hot_reload`, `language`, `script_errors`, plus `puppet` and `visuals` with `character-visuals` on |
+| `input` | `drag`, `hit`, `image_map`, `navigation` |
+| `ui` | `button`, `ease`, `fonts`, `labels`, `layout`, `scroll`, `shape`, `styled`, `toast`, `tooltip` |
+| `screens` | the built-in screens and their configs |
+
+Everything can be reached at its own path, and each group has a `prelude` with the
+everyday names of that subsystem, for files that work inside one of them.
+
+```rust
+use novn::input::prelude::*;
+use novn::ui::prelude::*;
+```
+
+`novn::prelude` is the short list nearly every game file needs: `Action`, `AppError`,
+`Character`, `DrawContext`, `FontRole`, `GameContext`, `GameView`, `Overlay`,
+`OverlayAction`, `OverlayRequest`, `PanelStyle`, `Screen`, `ScreenState`, `TextStyle`,
+`Value`, `VariableDef` and `VnApp`. It stays small on purpose, so a glob import of it does
+not hide where a name came from.

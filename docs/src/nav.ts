@@ -58,4 +58,19 @@ export const nav: NavSection[] = [
       },
     ],
   },
+  {
+    title: "The engine",
+    items: [
+      {
+        title: "Building an app",
+        href: "/docs/engine/app",
+        summary: "VnApp, the registries, the schema, where things live.",
+      },
+      {
+        title: "Story integration",
+        href: "/docs/engine/story",
+        summary: "Commands, story words, hooks, game state, hot reload.",
+      },
+    ],
+  },
 ];
