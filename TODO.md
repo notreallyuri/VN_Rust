@@ -432,15 +432,16 @@ solved by the same work rather than twice.
   runtime from the headings `rehype-slug` gives ids to. MDX through `@next/mdx`, with
   `remark-gfm` for the tables the READMEs are full of — plugins named as strings, since
   Turbopack cannot take a JavaScript function through its Rust side
-- [ ] The page tree above, as `page.mdx` under `src/app/docs/`. SCRIPT.md has moved in
-  full: scenes and characters, dialogue and narration, choices and jumps, variables and
-  conditions, engine commands, rollback, identifiers and layout, with its complete example
-  on the getting-started page. `README.md` became the landing page and "what novn is".
-  The engine guide is being moved as thirteen pages grouped by what a reader wants:
-  building an app, the screens you get, story integration and saving are in; menus,
-  screens of your own, look and feel, the picture, input, languages, audio and video,
-  character visuals and assets are not. Then `novn-script` for contributors, the CLI reference, and short pages
-  for build, macros and live2d
+- [x] The page tree, as `page.mdx` under `src/app/docs/`. SCRIPT.md moved in full, as
+  seven pages plus its complete example on the getting-started page, and `README.md`
+  became the landing page and "what novn is". The engine guide moved as thirteen pages,
+  grouped by what a reader is after rather than by the order its 47 sections happened to
+  sit in: building an app, the screens you get, menus and settings, story integration,
+  look and feel, the picture, input, audio and video, languages, screens of your own,
+  character visuals, saving and rollback, assets and fonts
+- [ ] Still to move: `novn-script`'s README for contributors, the CLI reference, and short
+  pages for build, macros and live2d. Then the crate READMEs shrink to front doors, which
+  is the point of the whole move and has not happened yet
 - [ ] Every crate README shrinks to a front door of about 150 lines: what it is, a quick
   start, the module map, and a link to its guide. A README that is the first thing a
   reader meets on the repository page should not be the last word on `ButtonStyle`
