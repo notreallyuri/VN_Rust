@@ -1,0 +1,44 @@
+# Your first novel
+
+`novn new` writes a small working game: a `main.rs` that registers a character, a variable
+and a command, and a two-scene story to go with it.
+
+```sh
+cargo install novn-cli
+novn new my-novel
+cd my-novel
+cargo run
+```
+
+What you get is a project that already compiles and plays, so the first thing you do is
+change a line of the story rather than assemble a skeleton.
+
+## What is in the project
+
+| Path | What it holds |
+| --- | --- |
+| `src/main.rs` | The `VnApp` builder: the characters, variables and commands the story is allowed to name |
+| `assets/story/` | The `.story` files |
+| `assets/schema.json` | The registries, rewritten by debug builds, so `novn check` can read them without building |
+| `assets/characters/`, `assets/backgrounds/` | The art, looked up by the names the story uses |
+| `build.rs` | Embeds `assets/` into release builds through `novn-build` |
+
+## Checking it
+
+```sh
+novn check assets
+```
+
+The checker reads every `.story` file against `schema.json` and reports what does not
+line up: a character that was never registered, an image that character does not have, a
+variable a condition reads that nothing defines, a jump to a scene that is not there. It
+suggests the nearest name it knows, so a typo usually answers itself.
+
+Run it in CI and a broken story stops being something a player discovers.
+
+## Editing while it runs
+
+Debug builds watch the story directory. Save a `.story` file and the running game reloads
+it: the new story is validated exactly as at startup, and the player's position moves into
+it the way loading a save does. A story that fails to compile leaves the running one alone
+and shows the errors instead.

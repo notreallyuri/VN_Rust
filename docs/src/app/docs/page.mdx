@@ -1,0 +1,39 @@
+# What novn is
+
+A visual novel engine in Rust, and a small language to write the story in. The story is
+compiled, not interpreted at runtime: every character, image, variable and jump in it is
+checked against the game's own registries before anything runs.
+
+It is built in three layers, and the line between them is the point of the whole design.
+
+## The story layer
+
+The `.story` files. They describe narrative flow and nothing else: dialogue, choices,
+conditions over variables the engine defined, and requests for engine actions. A story
+cannot own logic or systems. It may describe flow, read engine state, and ask for
+something to happen.
+
+## The core layer
+
+Scene execution, rendering orchestration, resources, game state and systems, save and
+load, story validation. This layer owns all the authoritative state, and it is where a
+game's own Rust code plugs in: commands the story can call, hooks, screens, and the
+registries that say which characters and variables exist.
+
+## The runtime layer
+
+Windowing, input, the frame loop, and the backends underneath: graphics, audio, the
+operating system. Deliberately thin, and mostly delegating to the core.
+
+## Which crate is which
+
+| Crate | What it is |
+| --- | --- |
+| `novn` | The engine: the app builder, default screens, UI, resources. Re-exports `raylib` and the story compiler. This is the one a game depends on |
+| `novn-script` | The language: lexer, parser, compiler and VM. No rendering dependencies at all |
+| `novn-cli` | The `novn` binary: `new`, `check`, `fmt`, `dump`, `translate`, `lsp` |
+| `novn-macros` | The `#[command]` and `#[derive(StoryWord)]` attributes. Re-exported by `novn`, never depended on directly |
+| `novn-build` | A build-script helper that embeds a game's assets into release binaries |
+| `novn-live2d` | Optional, experimental: a Cubism Native adapter behind the engine's character-visuals seam |
+
+A game depends on `novn` alone.

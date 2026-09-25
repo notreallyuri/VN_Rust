@@ -2424,7 +2424,7 @@ is no automatic fallback after a decoding error. With neither enabled, the engin
 has no video decoder dependency.
 
 ```toml
-novn = { path = "../VN_Rust/crates/novn", features = ["video"] }
+novn = { path = "../novn/crates/novn", features = ["video"] }
 ```
 
 The Rust backend decodes in software on every platform, including macOS, with

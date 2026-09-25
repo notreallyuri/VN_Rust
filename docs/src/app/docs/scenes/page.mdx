@@ -1,0 +1,67 @@
+# Writing a scene
+
+A script is made of scenes, and each scene is a linear sequence of instructions. Scene
+names are jump targets, they have to be unique, and execution starts at whichever scene
+the game names as its entry.
+
+```story
+scene archive_start:
+  background archive_office with fade
+  show registrar neutral at right with dissolve
+  registrar "You're the new one. Sit."
+  "The lamps are never put out down here."
+```
+
+A line with a speaker in front of it is that character talking. A line on its own is
+narration.
+
+## Showing and hiding characters
+
+```story
+show registrar neutral at right with dissolve
+show registrar stern
+remove registrar with dissolve
+```
+
+`show` takes the character, the image, optionally a position (`far_left`, `left`,
+`center`, `right`, `far_right`) and optionally a transition. Showing a character who is
+already on stage swaps the image and keeps the position, so the second line above only
+changes the face.
+
+## Text mode
+
+A scene is `adv` by default: one line at a time in the dialogue box. `nvl` reads it as
+full-screen pages instead, each line printed below the last.
+
+```story
+scene ruins nvl:
+  "The corridor narrows."
+  mary "I have been here before."
+  "Her voice does not echo."
+```
+
+The mode belongs to the scene, so a jump changes it, and a save or a rollback restores it
+without storing anything of its own. The page is built from the lines the player has read,
+which is why it survives a load and steps back with rollback.
+
+## Choices
+
+```story
+choice:
+  "Open the box":
+    "The lid gives more easily than it should."
+    jump box_open
+  "Leave it":
+    jump corridor
+```
+
+Options can be gated by a condition, with or without a reason. Without a reason the option
+is not offered at all; with one it is drawn disabled and the reason becomes its tooltip.
+
+```story
+choice:
+  "Unlock it" when has_key:
+    jump vault
+  "Force it" unless tired "Not with these hands.":
+    jump vault
+```

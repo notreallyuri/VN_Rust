@@ -414,7 +414,7 @@ to stand on.
   --frozen-lockfile`, Biome, and the static export, which typechecks on the way through.
   The scaffold's demo page and Vercel artwork are gone; the rest is Next 16, React 19,
   Tailwind 4, Biome and pnpm as it came
-- [x] `basePath` is `/VN_Rust` in the build, where Pages serves a project site, and empty
+- [x] `basePath` is `/novn` in the build, where Pages serves a project site, and empty
   in development, where the root is what anyone types. `next/link` and `next/image` add
   the prefix themselves; CI greps for the hand-written paths that would skip it. Also
   `output: "export"`, `trailingSlash: true`, unoptimized images (the default loader needs
@@ -427,10 +427,14 @@ to stand on.
 **Phase 1 — the pages.** The site is useful at the end of this, and the README problem is
 solved by the same work rather than twice.
 
-- [ ] The shell: sidebar, content, on-this-page, and the type scale. Near-monochrome, one
-  accent, generous whitespace — the restraint is the design
-- [ ] `docs/content/**.mdx` with the page tree above; the engine guide's 47 sections
-  become about twelve pages, with its tables kept as tables
+- [x] The shell: a sticky header shared with the landing page, a sidebar from a nav
+  manifest that marks where you are, the content column, and an on-this-page built at
+  runtime from the headings `rehype-slug` gives ids to. MDX through `@next/mdx`, with
+  `remark-gfm` for the tables the READMEs are full of — plugins named as strings, since
+  Turbopack cannot take a JavaScript function through its Rust side
+- [ ] The page tree above, as `page.mdx` under `src/app/docs/`. Three pages exist so far
+  (what novn is, your first novel, writing a scene), all of them content lifted from the
+  READMEs rather than written fresh; the engine guide's 47 sections are still to come
 - [ ] Every crate README shrinks to a front door of about 150 lines: what it is, a quick
   start, the module map, and a link to its guide. A README that is the first thing a
   reader meets on the repository page should not be the last word on `ButtonStyle`

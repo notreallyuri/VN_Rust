@@ -12,7 +12,7 @@ Filetype detection, tree-sitter highlighting and folding, auto-indent and the `n
 With lazy.nvim:
 
 ```lua
-{ dir = "~/projects/VN_Rust/editors/nvim", name = "vn-story", lazy = false }
+{ dir = "~/projects/novn/editors/nvim", name = "vn-story", lazy = false }
 ```
 
 Then enable the language server and install the parser once:

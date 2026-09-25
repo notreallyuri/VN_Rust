@@ -16,7 +16,7 @@
     "license": "MIT",
     "description": "Story scripts for the novn visual novel engine",
     "links": {
-      "repository": "https://github.com/notreallyuri/VN_Rust"
+      "repository": "https://github.com/notreallyuri/novn"
     }
   },
   "bindings": {

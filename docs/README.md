@@ -17,8 +17,8 @@ pnpm format   # biome, writing
 ```
 
 The build is a static export (`output: "export"`) served from GitHub Pages at
-`https://notreallyuri.github.io/VN_Rust`, so the deployed site lives under a `basePath` of
-`/VN_Rust`. Development runs at the root instead, because typing the prefix a hundred
+`https://notreallyuri.github.io/novn`, so the deployed site lives under a `basePath` of
+`/novn`. Development runs at the root instead, because typing the prefix a hundred
 times a day to catch a mistake made once is the wrong trade. What catches it instead:
 `next/link` and `next/image` add the prefix themselves, and CI greps for the paths that
 would skip it — a hand-written `<a href="/engine">`, an `<img src="/…">`, a `url(/…)` in

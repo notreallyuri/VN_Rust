@@ -1,5 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 import { CodeBlock } from "@/components/code-block";
+import { SiteHeader } from "@/components/site-header";
 import playing from "@/screens/playing.webp";
 
 const story = [
@@ -51,19 +53,8 @@ export default function Home() {
   return (
     <div className="relative">
       <div className="-z-10 pointer-events-none absolute inset-x-0 top-0 h-[32rem] bg-glow" />
+      <SiteHeader />
       <div className="mx-auto w-full max-w-5xl px-6">
-        <header className="flex items-center justify-between py-6">
-          <span className="font-mono text-sm tracking-tight">novn</span>
-          <nav className="flex items-center gap-6 text-muted text-sm">
-            <a
-              className="transition-colors hover:text-foreground"
-              href="https://github.com/notreallyuri/VN_Rust"
-            >
-              GitHub
-            </a>
-          </nav>
-        </header>
-
         <main>
           <section className="py-16 sm:py-20">
             <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">
@@ -83,12 +74,12 @@ export default function Home() {
               </p>
             </div>
             <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4">
-              <a
+              <Link
                 className="rounded-md bg-foreground px-5 py-2.5 font-medium text-background text-sm transition-opacity hover:opacity-85"
-                href="https://github.com/notreallyuri/VN_Rust#readme"
+                href="/docs"
               >
                 Read the guide
-              </a>
+              </Link>
               <code className="font-mono text-muted text-sm">
                 cargo install novn-cli && novn new my-novel
               </code>
@@ -166,7 +157,8 @@ export default function Home() {
 
         <footer className="flex flex-wrap items-center justify-between gap-4 border-line border-t py-10 text-muted text-sm">
           <span>
-            The guide still lives in the repository while I build this site.
+            Still early: the guide covers a few pages so far, and grows from the
+            READMEs.
           </span>
           <span className="font-mono text-xs">v0.1.0</span>
         </footer>

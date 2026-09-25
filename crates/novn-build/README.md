@@ -13,7 +13,7 @@ instead, so a release build is a single file you can hand to someone.
 
 ```toml
 [build-dependencies]
-novn-build = { path = "../VN_Rust/crates/novn-build" }
+novn-build = { path = "../novn/crates/novn-build" }
 ```
 
 `build.rs`:

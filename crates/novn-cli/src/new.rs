@@ -7,7 +7,7 @@ use novn_script::{
     CharacterDef, CommandSig, ParamKind, SCHEMA_FILE_NAME, Schema, SchemaFile, VariableDef,
 };
 
-pub const ENGINE_GIT: &str = "https://github.com/notreallyuri/VN_Rust";
+pub const ENGINE_GIT: &str = "https://github.com/notreallyuri/novn";
 
 pub enum Engine {
     Path(PathBuf),
