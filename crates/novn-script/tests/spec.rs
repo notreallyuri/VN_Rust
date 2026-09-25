@@ -1,51 +1,110 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use novn_script::{Event, StoryVm, compile_source};
 
-const SCRIPT_MD: &str = include_str!("../../../SCRIPT.md");
-const GOLDEN: &str = "tests/golden/script_md.txt";
+const GOLDEN: &str = "tests/golden/examples.txt";
 const MAX_EVENTS: usize = 100;
+const MIN_EXAMPLES: usize = 15;
+
+struct Source {
+    label: String,
+    text: String,
+}
 
 struct Block {
+    source: String,
     line: usize,
     heading: String,
     text: String,
 }
 
-fn blocks() -> Vec<Block> {
-    let mut blocks = Vec::new();
-    let mut heading = String::new();
-    let mut current: Option<Block> = None;
+fn repo() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
 
-    for (index, line) in SCRIPT_MD.lines().enumerate() {
-        match &mut current {
-            Some(block) if line.trim_start().starts_with("```") => {
-                blocks.push(std::mem::replace(block, placeholder()));
-                current = None;
-            }
-            Some(block) => {
-                block.text.push_str(line);
-                block.text.push('\n');
-            }
-            None if line.trim_start() == "```story" => {
-                current = Some(Block {
-                    line: index + 1,
-                    heading: heading.clone(),
-                    text: String::new(),
-                });
-            }
-            None if line.starts_with('#') => {
-                heading = line.trim_start_matches('#').trim().to_string();
-            }
-            None => {}
+fn pages(dir: &Path, route: &str, out: &mut Vec<Source>) {
+    let mut entries: Vec<_> = fs::read_dir(dir)
+        .unwrap_or_else(|e| panic!("{} cannot be read: {e}", dir.display()))
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    entries.sort();
+
+    for path in entries {
+        if path.is_dir() {
+            let name = path.file_name().unwrap().to_string_lossy().to_string();
+            pages(&path, &format!("{route}/{name}"), out);
+        } else if path.file_name().is_some_and(|n| n == "page.mdx") {
+            out.push(Source {
+                label: format!("docs{route}"),
+                text: fs::read_to_string(&path).unwrap(),
+            });
         }
     }
-    blocks
+}
+
+fn sources() -> Option<Vec<Source>> {
+    let root = repo();
+    let script = root.join("SCRIPT.md");
+    if !script.is_file() {
+        return None;
+    }
+
+    let mut out = vec![Source {
+        label: "SCRIPT.md".to_string(),
+        text: fs::read_to_string(&script).unwrap(),
+    }];
+
+    let docs = root.join("docs/src/app/docs");
+    assert!(
+        docs.is_dir(),
+        "{} is missing. The story examples live in the documentation pages, and this \
+         test compiles them; if the pages moved, point it at where they went rather \
+         than leaving them unchecked.",
+        docs.display()
+    );
+    pages(&docs, "", &mut out);
+    Some(out)
+}
+
+fn blocks() -> Option<Vec<Block>> {
+    let mut blocks = Vec::new();
+
+    for source in sources()? {
+        let mut heading = String::new();
+        let mut current: Option<Block> = None;
+
+        for (index, line) in source.text.lines().enumerate() {
+            match &mut current {
+                Some(block) if line.trim_start().starts_with("```") => {
+                    blocks.push(std::mem::replace(block, placeholder()));
+                    current = None;
+                }
+                Some(block) => {
+                    block.text.push_str(line);
+                    block.text.push('\n');
+                }
+                None if line.trim_start() == "```story" => {
+                    current = Some(Block {
+                        source: source.label.clone(),
+                        line: index + 1,
+                        heading: heading.clone(),
+                        text: String::new(),
+                    });
+                }
+                None if line.starts_with('#') => {
+                    heading = line.trim_start_matches('#').trim().to_string();
+                }
+                None => {}
+            }
+        }
+    }
+    Some(blocks)
 }
 
 fn placeholder() -> Block {
     Block {
+        source: String::new(),
         line: 0,
         heading: String::new(),
         text: String::new(),
@@ -125,27 +184,30 @@ fn trace(source: &str) -> String {
     out
 }
 
-fn render() -> (String, Vec<String>) {
+fn render() -> Option<(String, Vec<String>, usize)> {
     let mut out = String::from(
-        "# Every example in SCRIPT.md: the story as compiled, its instructions and the\n\
-         # events the VM produces (taking the first option of every choice).\n\
+        "# Every story example in SCRIPT.md and the documentation pages: the story as\n\
+         # compiled, its instructions and the events the VM produces (taking the first\n\
+         # option of every choice).\n\
          # Regenerate with: UPDATE_GOLDEN=1 cargo test -p novn-script --test spec\n",
     );
     let mut failures = Vec::new();
+    let mut examples = 0;
 
-    for block in blocks().iter().filter(|block| !is_template(&block.text)) {
+    for block in blocks()?.iter().filter(|block| !is_template(&block.text)) {
+        examples += 1;
         let source = as_story(&block.text);
         let program = compile_source(&source);
         for diagnostic in &program.diagnostics {
             failures.push(format!(
-                "SCRIPT.md:{} ({}): {}",
-                block.line, block.heading, diagnostic
+                "{}:{} ({}): {}",
+                block.source, block.line, block.heading, diagnostic
             ));
         }
 
         out.push_str(&format!(
-            "\n======== SCRIPT.md:{}  {}\n",
-            block.line, block.heading
+            "\n======== {}:{}  {}\n",
+            block.source, block.line, block.heading
         ));
         out.push_str(&source);
         out.push_str("-------- instructions");
@@ -153,18 +215,29 @@ fn render() -> (String, Vec<String>) {
         out.push_str("-------- events\n");
         out.push_str(&trace(&source));
     }
-    (out, failures)
+    Some((out, failures, examples))
+}
+
+fn outside_the_repository() -> bool {
+    eprintln!("skipped: SCRIPT.md is not beside the crate, so this is not the repository");
+    true
 }
 
 #[test]
 fn every_example_compiles_without_diagnostics() {
-    let (_, failures) = render();
+    let Some((_, failures, _)) = render() else {
+        assert!(outside_the_repository());
+        return;
+    };
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
 #[test]
 fn examples_match_the_golden_file() {
-    let (actual, _) = render();
+    let Some((actual, _, _)) = render() else {
+        assert!(outside_the_repository());
+        return;
+    };
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(GOLDEN);
 
     if std::env::var_os("UPDATE_GOLDEN").is_some() {
@@ -199,11 +272,37 @@ fn templates_are_told_apart_from_examples() {
     assert!(!is_template("if affection < 3 && trust > 1:\n"));
     assert!(!is_template("show mary tired at left\n"));
 
-    let examples = blocks()
-        .iter()
-        .filter(|block| !is_template(&block.text))
-        .count();
-    assert!(examples >= 15, "only {} examples found", examples);
+    let Some((_, _, examples)) = render() else {
+        assert!(outside_the_repository());
+        return;
+    };
+    assert!(
+        examples >= MIN_EXAMPLES,
+        "only {examples} examples found, expected at least {MIN_EXAMPLES}. The story \
+         examples are the documentation's test suite; if they thinned out this much, \
+         something moved without this test following it."
+    );
+}
+
+#[test]
+fn every_page_with_story_blocks_is_reached() {
+    let Some(blocks) = blocks() else {
+        assert!(outside_the_repository());
+        return;
+    };
+    let mut labels: Vec<&str> = blocks.iter().map(|block| block.source.as_str()).collect();
+    labels.sort_unstable();
+    labels.dedup();
+
+    assert!(
+        labels.contains(&"SCRIPT.md"),
+        "SCRIPT.md contributed no examples"
+    );
+    let pages = labels.iter().filter(|l| l.starts_with("docs/")).count();
+    assert!(
+        pages >= 8,
+        "only {pages} documentation pages contributed examples: {labels:?}"
+    );
 }
 
 #[test]

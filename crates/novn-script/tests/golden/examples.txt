@@ -1,0 +1,590 @@
+# Every story example in SCRIPT.md and the documentation pages: the story as
+# compiled, its instructions and the events the VM produces (taking the first
+# option of every choice).
+# Regenerate with: UPDATE_GOLDEN=1 cargo test -p novn-script --test spec
+
+======== SCRIPT.md:12  A complete story
+scene start:
+  show gabriel serious
+
+  gabriel "This is a really interesting format."
+
+  show mary serious
+  mary "Is the parser working?"
+
+  choice:
+    "Yes":
+      "The room goes silent."
+      jump second_scene
+
+    "No":
+      clear
+
+
+scene second_scene:
+  show gabriel worried
+  "Things just got darker."
+-------- instructions
+scene start:  (line 1)
+000: SHOW gabriel serious
+001: SAY [gabriel]: "This is a really interesting format."
+002: SHOW mary serious
+003: SAY [mary]: "Is the parser working?"
+004: CHOICE ['Yes'->5, 'No'->8]
+005: SAY [NARRATOR]: "The room goes silent."
+006: JUMP_SCENE 'second_scene'
+007: GOTO 10
+008: CLEAR
+009: GOTO 10
+010: END
+
+scene second_scene:  (line 18)
+011: SHOW gabriel worried
+012: SAY [NARRATOR]: "Things just got darker."
+013: END
+-------- events
+> Show { character: "gabriel", image: "serious", position: None, transition: None }
+> Say { speaker: Some("gabriel"), text: "This is a really interesting format." }
+> Show { character: "mary", image: "serious", position: None, transition: None }
+> Say { speaker: Some("mary"), text: "Is the parser working?" }
+> Choice { options: ["Yes"#0, "No"#1] }
+> Say { speaker: None, text: "The room goes silent." }
+> Show { character: "gabriel", image: "worried", position: None, transition: None }
+> Say { speaker: None, text: "Things just got darker." }
+> End
+
+======== docs/choices:3  Choices and jumps
+scene example:
+  choice:
+    "Agree":
+      "You nod silently."
+      jump next_scene
+
+    "Disagree":
+      "You shake your head."
+      jump argument_scene
+-------- instructions
+scene example:  (line 1)
+000: CHOICE ['Agree'->1, 'Disagree'->4]
+001: SAY [NARRATOR]: "You nod silently."
+002: JUMP_SCENE 'next_scene'
+003: GOTO 7
+004: SAY [NARRATOR]: "You shake your head."
+005: JUMP_SCENE 'argument_scene'
+006: GOTO 7
+007: END
+-------- events
+> Choice { options: ["Agree"#0, "Disagree"#1] }
+> Say { speaker: None, text: "You nod silently." }
+> End
+
+======== docs/choices:21  Gating an option
+scene example:
+  set has_key = true
+  choice:
+    "Open the door" when has_key == true "The door is locked":
+      "The lock gives."
+    "Look through the window" unless curtains == true:
+      "You see a table, and nothing else."
+    "Turn back":
+      "You leave the way you came."
+-------- instructions
+scene example:  (line 1)
+000: SET has_key = true
+001: CHOICE ['Open the door'->2 when has_key == true "The door is locked", 'Look through the window'->4 unless curtains == true, 'Turn back'->6]
+002: SAY [NARRATOR]: "The lock gives."
+003: GOTO 8
+004: SAY [NARRATOR]: "You see a table, and nothing else."
+005: GOTO 8
+006: SAY [NARRATOR]: "You leave the way you came."
+007: GOTO 8
+008: END
+-------- events
+> Choice { options: ["Open the door"#0, "Look through the window"#1, "Turn back"#2] }
+> Say { speaker: None, text: "The lock gives." }
+> End
+
+======== docs/choices:44  Pictures on an option
+scene example:
+  choice:
+    "The north road" image north preview north_view:
+      "Stones, and then trees."
+    "The river path" image river:
+      "Water, loud enough to hide a voice."
+-------- instructions
+scene example:  (line 1)
+000: CHOICE ['The north road'->1 image north preview north_view, 'The river path'->3 image river]
+001: SAY [NARRATOR]: "Stones, and then trees."
+002: GOTO 5
+003: SAY [NARRATOR]: "Water, loud enough to hide a voice."
+004: GOTO 5
+005: END
+-------- events
+> Choice { options: ["The north road"#0 image: north preview: north_view, "The river path"#1 image: river] }
+> Say { speaker: None, text: "Stones, and then trees." }
+> End
+
+======== docs/choices:63  Jumping
+scene example:
+  jump vault
+-------- instructions
+scene example:  (line 1)
+000: JUMP_SCENE 'vault'
+001: END
+-------- events
+> End
+
+======== docs/commands:5  Engine commands
+scene example:
+  call give_item stick 1
+  call unlock_route good
+-------- instructions
+scene example:  (line 1)
+000: CALL give_item stick 1
+001: CALL unlock_route good
+002: END
+-------- events
+> Call { command: "give_item", args: ["stick", "1"] }
+> Call { command: "unlock_route", args: ["good"] }
+> End
+
+======== docs/commands:27  Asking the player for something
+scene example:
+  call ask_name player_name
+  mary "Nice to meet you, {player_name}."
+-------- instructions
+scene example:  (line 1)
+000: CALL ask_name player_name
+001: SAY [mary]: "Nice to meet you, {player_name}."
+002: END
+-------- events
+> Call { command: "ask_name", args: ["player_name"] }
+> Say { speaker: Some("mary"), text: "Nice to meet you, {player_name}." }
+> End
+
+======== docs/crates/macros:24  [command]
+scene example:
+  call give_item verlaine_letter
+  call give_item candle 3
+-------- instructions
+scene example:  (line 1)
+000: CALL give_item verlaine_letter
+001: CALL give_item candle 3
+002: END
+-------- events
+> Call { command: "give_item", args: ["verlaine_letter"] }
+> Call { command: "give_item", args: ["candle", "3"] }
+> End
+
+======== docs/dialogue:3  Dialogue and narration
+scene example:
+  mary "Nice to meet you."
+  "The lamps are never put out down here."
+-------- instructions
+scene example:  (line 1)
+000: SAY [mary]: "Nice to meet you."
+001: SAY [NARRATOR]: "The lamps are never put out down here."
+002: END
+-------- events
+> Say { speaker: Some("mary"), text: "Nice to meet you." }
+> Say { speaker: None, text: "The lamps are never put out down here." }
+> End
+
+======== docs/dialogue:17  Showing a variable
+scene example:
+  mary "Nice to meet you, {player_name}."
+  {player_name} "Nice to meet you, Mary."
+  "You have {coins} coins."
+-------- instructions
+scene example:  (line 1)
+000: SAY [mary]: "Nice to meet you, {player_name}."
+001: SAY [{player_name}]: "Nice to meet you, Mary."
+002: SAY [NARRATOR]: "You have {coins} coins."
+003: END
+-------- events
+> Say { speaker: Some("mary"), text: "Nice to meet you, {player_name}." }
+> Say { speaker: Some("{player_name}"), text: "Nice to meet you, Mary." }
+> Say { speaker: None, text: "You have {coins} coins." }
+> End
+
+======== docs/dialogue:38  Strings
+scene example:
+  mary "The sign says \"Closed\"."
+-------- instructions
+scene example:  (line 1)
+000: SAY [mary]: "The sign says "Closed"."
+001: END
+-------- events
+> Say { speaker: Some("mary"), text: "The sign says \"Closed\"." }
+> End
+
+======== docs/dialogue:58  Text tags
+scene example:
+  registrar "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street."
+-------- instructions
+scene example:  (line 1)
+000: SAY [registrar]: "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street."
+001: END
+-------- events
+> Say { speaker: Some("registrar"), text: "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street." }
+> End
+
+======== docs/engine/custom-screens:66  Text input
+scene example:
+  call ask_name player_name
+  player "Nice to meet you."
+-------- instructions
+scene example:  (line 1)
+000: CALL ask_name player_name
+001: SAY [player]: "Nice to meet you."
+002: END
+-------- events
+> Call { command: "ask_name", args: ["player_name"] }
+> Say { speaker: Some("player"), text: "Nice to meet you." }
+> End
+
+======== docs/engine/story:12  Commands
+scene example:
+  call give_item verlaine_letter
+  call give_item candle 3
+-------- instructions
+scene example:  (line 1)
+000: CALL give_item verlaine_letter
+001: CALL give_item candle 3
+002: END
+-------- events
+> Call { command: "give_item", args: ["verlaine_letter"] }
+> Call { command: "give_item", args: ["candle", "3"] }
+> End
+
+======== docs/first-novel:30  A whole script
+scene start:
+  show gabriel serious
+
+  gabriel "This is a really interesting format."
+
+  show mary serious
+  mary "Is the parser working?"
+
+  choice:
+    "Yes":
+      "The room goes silent."
+      jump second_scene
+
+    "No":
+      clear
+
+scene second_scene:
+  show gabriel worried
+  "Things just got darker."
+-------- instructions
+scene start:  (line 1)
+000: SHOW gabriel serious
+001: SAY [gabriel]: "This is a really interesting format."
+002: SHOW mary serious
+003: SAY [mary]: "Is the parser working?"
+004: CHOICE ['Yes'->5, 'No'->8]
+005: SAY [NARRATOR]: "The room goes silent."
+006: JUMP_SCENE 'second_scene'
+007: GOTO 10
+008: CLEAR
+009: GOTO 10
+010: END
+
+scene second_scene:  (line 17)
+011: SHOW gabriel worried
+012: SAY [NARRATOR]: "Things just got darker."
+013: END
+-------- events
+> Show { character: "gabriel", image: "serious", position: None, transition: None }
+> Say { speaker: Some("gabriel"), text: "This is a really interesting format." }
+> Show { character: "mary", image: "serious", position: None, transition: None }
+> Say { speaker: Some("mary"), text: "Is the parser working?" }
+> Choice { options: ["Yes"#0, "No"#1] }
+> Say { speaker: None, text: "The room goes silent." }
+> Show { character: "gabriel", image: "worried", position: None, transition: None }
+> Say { speaker: None, text: "Things just got darker." }
+> End
+
+======== docs/rollback:9  commit
+scene example:
+  commit
+-------- instructions
+scene example:  (line 1)
+000: COMMIT
+001: END
+-------- events
+> Commit
+> End
+
+======== docs/rollback:18  Final choices
+scene example:
+  choice final:
+    "Keep the letter":
+      "..."
+    "Burn the letter":
+      "..."
+-------- instructions
+scene example:  (line 1)
+000: CHOICE ['Keep the letter'->1, 'Burn the letter'->4]
+001: COMMIT
+002: SAY [NARRATOR]: "..."
+003: GOTO 7
+004: COMMIT
+005: SAY [NARRATOR]: "..."
+006: GOTO 7
+007: END
+-------- events
+> Choice { options: ["Keep the letter"#0, "Burn the letter"#1] }
+> Commit
+> Say { speaker: None, text: "..." }
+> End
+
+======== docs/rollback:36  One option only
+scene example:
+  choice:
+    "Spare him":
+      "He runs into the night."
+    "Pull the trigger":
+      commit
+      "It is done."
+-------- instructions
+scene example:  (line 1)
+000: CHOICE ['Spare him'->1, 'Pull the trigger'->3]
+001: SAY [NARRATOR]: "He runs into the night."
+002: GOTO 6
+003: COMMIT
+004: SAY [NARRATOR]: "It is done."
+005: GOTO 6
+006: END
+-------- events
+> Choice { options: ["Spare him"#0, "Pull the trigger"#1] }
+> Say { speaker: None, text: "He runs into the night." }
+> End
+
+======== docs/scenes:7  Scenes and characters
+scene archive_start:
+  background archive_office with fade
+  music archive
+  show registrar neutral at right with dissolve
+  registrar "You're the new one. Sit."
+  "The lamps are never put out down here."
+-------- instructions
+scene archive_start:  (line 1)
+000: WITH fade
+001: BACKGROUND archive_office
+002: MUSIC archive
+003: WITH dissolve
+004: SHOW registrar neutral AT right
+005: SAY [registrar]: "You're the new one. Sit."
+006: SAY [NARRATOR]: "The lamps are never put out down here."
+007: END
+-------- events
+> Background { image: Some("archive_office"), transition: Some(Transition { kind: Fade, millis: None }) }
+> Music { track: Some("archive") }
+> Show { character: "registrar", image: "neutral", position: Some(Right), transition: Some(Transition { kind: Dissolve, millis: None }) }
+> Say { speaker: Some("registrar"), text: "You're the new one. Sit." }
+> Say { speaker: None, text: "The lamps are never put out down here." }
+> End
+
+======== docs/scenes:21  Text mode
+scene ruins nvl:
+  "The corridor narrows."
+  mary "I have been here before."
+  "Her voice does not echo."
+-------- instructions
+scene ruins nvl:  (line 1)
+000: SAY [NARRATOR]: "The corridor narrows."
+001: SAY [mary]: "I have been here before."
+002: SAY [NARRATOR]: "Her voice does not echo."
+003: END
+-------- events
+> Say { speaker: None, text: "The corridor narrows." }
+> Say { speaker: Some("mary"), text: "I have been here before." }
+> Say { speaker: None, text: "Her voice does not echo." }
+> End
+
+======== docs/scenes:35  Showing a character
+scene example:
+  show mary tired at left
+  show hugo neutral at right
+  mary "Father."
+  show mary angry
+-------- instructions
+scene example:  (line 1)
+000: SHOW mary tired AT left
+001: SHOW hugo neutral AT right
+002: SAY [mary]: "Father."
+003: SHOW mary angry
+004: END
+-------- events
+> Show { character: "mary", image: "tired", position: Some(Left), transition: None }
+> Show { character: "hugo", image: "neutral", position: Some(Right), transition: None }
+> Say { speaker: Some("mary"), text: "Father." }
+> Show { character: "mary", image: "angry", position: None, transition: None }
+> End
+
+======== docs/scenes:49  Showing a character
+scene example:
+  remove hugo
+  clear
+-------- instructions
+scene example:  (line 1)
+000: HIDE hugo
+001: CLEAR
+002: END
+-------- events
+> Hide { character: "hugo", transition: None }
+> Clear { transition: None }
+> End
+
+======== docs/scenes:59  Backgrounds
+scene example:
+  background study_night
+  background none
+-------- instructions
+scene example:  (line 1)
+000: BACKGROUND study_night
+001: BACKGROUND none
+002: END
+-------- events
+> Background { image: Some("study_night"), transition: None }
+> Background { image: None, transition: None }
+> End
+
+======== docs/scenes:70  Transitions
+scene example:
+  show moriarty older at right with dissolve
+  show moriarty wary at left with dissolve 0.8
+  remove moriarty with slide_left
+  background santa_ilde_courtyard with fade
+  clear with shake
+-------- instructions
+scene example:  (line 1)
+000: WITH dissolve
+001: SHOW moriarty older AT right
+002: WITH dissolve 0.8
+003: SHOW moriarty wary AT left
+004: WITH slide_left
+005: HIDE moriarty
+006: WITH fade
+007: BACKGROUND santa_ilde_courtyard
+008: WITH shake
+009: CLEAR
+010: END
+-------- events
+> Show { character: "moriarty", image: "older", position: Some(Right), transition: Some(Transition { kind: Dissolve, millis: None }) }
+> Show { character: "moriarty", image: "wary", position: Some(Left), transition: Some(Transition { kind: Dissolve, millis: Some(800) }) }
+> Hide { character: "moriarty", transition: Some(Transition { kind: SlideLeft, millis: None }) }
+> Background { image: Some("santa_ilde_courtyard"), transition: Some(Transition { kind: Fade, millis: None }) }
+> Clear { transition: Some(Transition { kind: Shake, millis: None }) }
+> End
+
+======== docs/scenes:100  Music and sound
+scene example:
+  music santa_ilde
+  music none
+  sound door_open
+  voice registrar_01
+-------- instructions
+scene example:  (line 1)
+000: MUSIC santa_ilde
+001: MUSIC none
+002: SOUND door_open
+003: VOICE registrar_01
+004: END
+-------- events
+> Music { track: Some("santa_ilde") }
+> Music { track: None }
+> Sound { id: "door_open" }
+> Voice { id: "registrar_01" }
+> End
+
+======== docs/variables:12  Setting one
+scene example:
+  set met_mary = true
+  set route = good
+  set player_name = "Yuri"
+-------- instructions
+scene example:  (line 1)
+000: SET met_mary = true
+001: SET route = good
+002: SET player_name = "Yuri"
+003: END
+-------- events
+> End
+
+======== docs/variables:31  Setting one
+scene example:
+  call ask_name player_name
+  mary "Nice to meet you, {player_name}."
+-------- instructions
+scene example:  (line 1)
+000: CALL ask_name player_name
+001: SAY [mary]: "Nice to meet you, {player_name}."
+002: END
+-------- events
+> Call { command: "ask_name", args: ["player_name"] }
+> Say { speaker: Some("mary"), text: "Nice to meet you, {player_name}." }
+> End
+
+======== docs/variables:38  Counting with one
+scene example:
+  add affection += 1
+  add affection -= 2
+-------- instructions
+scene example:  (line 1)
+000: ADD affection +1
+001: ADD affection -2
+002: END
+-------- events
+> End
+
+======== docs/variables:48  Branching on one
+scene example:
+  if affection >= 3 && met_mary == true:
+    mary "You remembered."
+  else:
+    mary "You forgot."
+-------- instructions
+scene example:  (line 1)
+000: JUMP_IF_FALSE affection >= 3 && met_mary == true (goto 3)
+001: SAY [mary]: "You remembered."
+002: GOTO 4
+003: SAY [mary]: "You forgot."
+004: END
+-------- events
+> Say { speaker: Some("mary"), text: "You forgot." }
+> End
+
+======== docs/variables:80  Why it stops there
+scene start:
+  if met_mary == true:
+    mary "Nice to see you again."
+  else:
+    mary "Hello."
+
+  choice:
+    "Be kind":
+      add affection += 1
+      jump next_scene
+
+    "Say nothing":
+      jump next_scene
+-------- instructions
+scene start:  (line 1)
+000: JUMP_IF_FALSE met_mary == true (goto 3)
+001: SAY [mary]: "Nice to see you again."
+002: GOTO 4
+003: SAY [mary]: "Hello."
+004: CHOICE ['Be kind'->5, 'Say nothing'->8]
+005: ADD affection +1
+006: JUMP_SCENE 'next_scene'
+007: GOTO 10
+008: JUMP_SCENE 'next_scene'
+009: GOTO 10
+010: END
+-------- events
+> Say { speaker: Some("mary"), text: "Hello." }
+> Choice { options: ["Be kind"#0, "Say nothing"#1] }
+> End
