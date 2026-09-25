@@ -40,7 +40,7 @@ show mary angry
 ```
 
 Both the character and the image have to exist in the engine's registry. Re-showing a
-character updates the image, and re-showing without `at` keeps the spot — so changing an
+character updates the image, and re-showing without `at` keeps the spot, so changing an
 expression never moves anyone. Characters shown without a position are spread evenly.
 
 Positions are `far_left`, `left`, `center`, `right` and `far_right`. A character stands
@@ -61,7 +61,7 @@ background study_night
 background none
 ```
 
-The backdrop is replaced whole, and stays until the next `background` — across jumps and
+The backdrop is replaced whole, and stays until the next `background`, across jumps and
 across scenes. Characters on screen are not affected. Where the image lives is the
 engine's business: for the default engine, `assets/backgrounds/<image_id>.png`.
 
@@ -91,7 +91,7 @@ new `at` as well and they move there too. Without `with`, the change is instant.
 Transitions do not pause the story: the next line starts while they play, and a click
 finishes them. Rollback and loading a save show the end result at once.
 
-`shake` and `flash` are effects rather than motions — whatever the line changes happens at
+`shake` and `flash` are effects rather than motions: whatever the line changes happens at
 once, and the whole screen shakes or flashes for that long. `clear with shake` and
 `background storm with flash` are the usual ways to punctuate a moment.
 
@@ -106,7 +106,7 @@ voice registrar_01
 
 `music` starts a looping track and replaces whatever was playing; the default engine
 crossfades, and `music none` fades out. Like the background, music carries across jumps
-and scenes, is saved, and rolls back with the story — and naming the track that is already
+and scenes, is saved, and rolls back with the story. Naming the track that is already
 playing does nothing.
 
 `sound` is a one-shot effect: not saved, not replayed on rollback or load. `voice` plays a

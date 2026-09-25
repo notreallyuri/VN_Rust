@@ -13,7 +13,7 @@ choice:
 
 A choice opens a block and needs at least one option. Each option is a non-empty quoted
 string, ends with a colon, and contains at least one instruction. Nothing falls through to
-the next option and nothing is implied — a quoted line ending in a colon outside a
+the next option and nothing is implied. A quoted line ending in a colon outside a
 `choice:` block is an error rather than narration.
 
 ## Gating an option

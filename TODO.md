@@ -432,11 +432,12 @@ solved by the same work rather than twice.
   runtime from the headings `rehype-slug` gives ids to. MDX through `@next/mdx`, with
   `remark-gfm` for the tables the READMEs are full of — plugins named as strings, since
   Turbopack cannot take a JavaScript function through its Rust side
-- [ ] The page tree above, as `page.mdx` under `src/app/docs/`. Six pages so far: what
-  novn is, your first novel, and the story language as scenes and characters, dialogue and
-  narration, choices and jumps. All of it lifted from SCRIPT.md and the READMEs rather
-  than written fresh. Still to move: variables, commands, rollback, identifiers (the rest
-  of SCRIPT.md), and the engine guide's 47 sections
+- [ ] The page tree above, as `page.mdx` under `src/app/docs/`. SCRIPT.md has moved in
+  full: scenes and characters, dialogue and narration, choices and jumps, variables and
+  conditions, engine commands, rollback, identifiers and layout, with its complete example
+  on the getting-started page. `README.md` became the landing page and "what novn is".
+  Still to move: the engine guide's 47 sections, `novn-script` for contributors, the CLI
+  reference, and short pages for build, macros and live2d
 - [ ] Every crate README shrinks to a front door of about 150 lines: what it is, a quick
   start, the module map, and a link to its guide. A README that is the first thing a
   reader meets on the repository page should not be the last word on `ButtonStyle`

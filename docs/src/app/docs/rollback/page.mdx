@@ -1,0 +1,46 @@
+# Rollback and points of no return
+
+Players can roll back to earlier lines and forward again, with the mouse wheel or Page Up. The
+engine decides the defaults; the language is where a story marks the moments that must not
+be undone.
+
+## commit
+
+```story
+commit
+```
+
+A point of no return. Rolling back stops at the first line after it, so nothing before it
+can be reached again. It takes no arguments.
+
+## Final choices
+
+```story
+choice final:
+  "Keep the letter":
+    ...
+  "Burn the letter":
+    ...
+```
+
+Whatever the player picks, the choice cannot be undone. It is the same as starting every
+option's body with `commit`, written once.
+
+`final` is the only modifier a choice block takes. A plain `choice:` follows the engine's
+default, which allows rolling back through it unless the game turns that off.
+
+## One option only
+
+Put `commit` inside a single option to make just that one permanent:
+
+```story
+choice:
+  "Spare him":
+    "He runs into the night."
+  "Pull the trigger":
+    commit
+    "It is done."
+```
+
+Engine commands can be barriers too, declared on the Rust side. The usual example is one
+that unlocks an achievement, which cannot be taken back once it has happened.

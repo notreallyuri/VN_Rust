@@ -1,0 +1,45 @@
+# Identifiers and layout
+
+## Identifiers
+
+Lowercase only, matching `[a-z_][a-z0-9_]*`. That covers scenes, characters, images for
+characters and backgrounds, tracks and sounds, variables and their enum members, and
+commands.
+
+A character cannot be named after a keyword, because the first word of a line decides what
+that line is: `show "Hi"` is a broken `show`, not dialogue. The keywords are:
+
+```
+scene show background music sound voice remove clear
+choice commit jump if else call set add
+```
+
+The rule buys no ambiguity, tooling that does not care about case, and validation that is
+straightforward to write.
+
+## Layout
+
+Indentation defines scope. Spaces only, two by convention; tabs are invalid. Blank lines
+are fine, and comments start with `#` on a line of their own.
+
+`scene` lines are never indented, and everything else belongs to a scene. Every `if`,
+`else:` and choice option needs an indented block under it. A scene with no lines at all is
+allowed, with a warning.
+
+## Errors
+
+Every mistake is reported with its line number, and the game does not start until they are
+fixed. One broken line does not hide the errors after it.
+
+A name close to one the engine knows gets a suggestion: a misspelled keyword
+(`remoe hugo` → did you mean `remove`?), and unknown scenes, characters, images, variables
+and commands (`marry` → did you mean `mary`?).
+
+## What the language leaves out
+
+Deliberately absent: variable declarations, functions, loops, inline expressions, and
+assets defined by the script. All of that belongs in Rust.
+
+What is left parses from an indent and a first token, reads like prose, and can be checked
+completely before anything runs. That is the whole trade: a story says what happens, and
+the engine owns how.

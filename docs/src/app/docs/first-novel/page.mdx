@@ -23,6 +23,32 @@ change a line of the story rather than assemble a skeleton.
 | `assets/characters/`, `assets/backgrounds/` | The art, looked up by the names the story uses |
 | `build.rs` | Embeds `assets/` into release builds through `novn-build` |
 
+## A whole script
+
+Everything the language needs, in one piece:
+
+```story
+scene start:
+  show gabriel serious
+
+  gabriel "This is a really interesting format."
+
+  show mary serious
+  mary "Is the parser working?"
+
+  choice:
+    "Yes":
+      "The room goes silent."
+      jump second_scene
+
+    "No":
+      clear
+
+scene second_scene:
+  show gabriel worried
+  "Things just got darker."
+```
+
 ## Checking it
 
 ```sh

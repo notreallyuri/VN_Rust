@@ -1,0 +1,34 @@
+# Engine commands
+
+A script can ask the engine to do something the language itself has no words for.
+
+```story
+call give_item stick 1
+call unlock_route good
+```
+
+Commands are registered on the Rust side; a script cannot define one. They may change
+engine state and set off effects (inventory, flags, a sound, a screen), but they return
+no value and they do not alter control flow. The story keeps going on the next line.
+
+## What is checked before the game runs
+
+- The command exists
+- The number of arguments and their types match what it declared
+- An argument that has to be one of a fixed set of words is one of them (a command can
+  declare, for instance, that its argument is `report`, `silence` or `keeper`)
+- Arguments that name something, a character or an image, name something that exists
+
+## Asking the player for something
+
+A command is also how the engine gets a value back into a variable, since the script
+cannot produce one:
+
+```story
+call ask_name player_name
+mary "Nice to meet you, {player_name}."
+```
+
+The command takes the variable to fill, opens whatever screen it needs, and writes the
+result. To the story it is one line, and afterwards the variable can be read like any
+other.

@@ -1,0 +1,94 @@
+# Variables and conditions
+
+The language cannot declare a variable. Every one of them is declared, typed and owned by
+the Rust side, and the script may only read and modify what already exists: an integer, a
+boolean, an enum with named members, a string.
+
+That is what buys deterministic execution, validation before the game runs, save and load
+that cannot drift, and editor tooling that catches a mistake while you type.
+
+## Setting one
+
+```story
+set met_mary = true
+set route = good
+set player_name = "Yuri"
+```
+
+| Literal | Type |
+| --- | --- |
+| `true`, `false` | boolean |
+| `3`, `-2` | integer |
+| `good` (a bare identifier) | enum member |
+| `"Yuri"` (double quoted) | string |
+
+The variable has to exist, the value has to match its type, and an enum value has to be
+one of its members.
+
+Values the player provides, a name they type for instance, are set by the engine, usually in
+response to a [command](/docs/commands):
+
+```story
+call ask_name player_name
+mary "Nice to meet you, {player_name}."
+```
+
+## Counting with one
+
+```story
+add affection += 1
+add affection -= 2
+```
+
+Integers only, and the delta has to be a constant. There is no arithmetic: `add` moves a
+counter, it does not compute.
+
+## Branching on one
+
+```story
+if affection >= 3 && met_mary == true:
+  mary "You remembered."
+else:
+  mary "You forgot."
+```
+
+`else:` is optional and stands alone on its line. There is no `else if`: put an `if`
+inside the `else:` instead.
+
+A condition may hold variable references, literals, the comparisons `==` `!=` `<` `>`
+`<=` `>=` for integers and `==` `!=` for booleans, enums and strings, and the operators
+`&&` and `||`. It may not hold function calls, assignments, arithmetic or nested
+expressions.
+
+## What makes a script invalid
+
+- A variable that does not exist
+- A value of the wrong type
+- `add` on something that is not numeric
+- A condition using an operator or an expression the language does not have
+
+All of it is a compile error rather than something the player discovers. Conditions are
+evaluated against the engine's current state, and the engine applies and validates every
+change.
+
+## Why it stops there
+
+Variables are gates, not a calculator. Scripts describe story flow; Rust owns logic and
+state. Keeping the line there is what makes this simple to read, safe to run, predictable
+in a save file, and easy to write tools for.
+
+```story
+scene start:
+  if met_mary == true:
+    mary "Nice to see you again."
+  else:
+    mary "Hello."
+
+  choice:
+    "Be kind":
+      add affection += 1
+      jump next_scene
+
+    "Say nothing":
+      jump next_scene
+```

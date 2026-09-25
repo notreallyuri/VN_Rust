@@ -35,6 +35,27 @@ export const nav: NavSection[] = [
         href: "/docs/choices",
         summary: "Branching, gated options, pictures, jump.",
       },
+      {
+        title: "Variables and conditions",
+        href: "/docs/variables",
+        summary: "set, add, if and else, and what a condition may hold.",
+      },
+      {
+        title: "Engine commands",
+        href: "/docs/commands",
+        summary: "call, what is checked, and asking the player for a value.",
+      },
+      {
+        title: "Rollback",
+        href: "/docs/rollback",
+        summary: "commit, final choices, points of no return.",
+      },
+      {
+        title: "Identifiers and layout",
+        href: "/docs/syntax",
+        summary:
+          "Names, indentation, errors, and what the language leaves out.",
+      },
     ],
   },
 ];
