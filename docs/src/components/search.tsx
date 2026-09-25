@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { type Hit, parts, ready, type Section, search } from "@/search";
 
 function useShortcut(open: () => void) {
@@ -85,89 +86,94 @@ export function Search() {
         </kbd>
       </button>
 
-      {open ? (
-        // biome-ignore lint/a11y/noStaticElementInteractions: the backdrop dismisses
-        // biome-ignore lint/a11y/useKeyWithClickEvents: Escape is handled on the field
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-background/70 px-4 pt-[12vh] backdrop-blur-sm"
-          onClick={(event) =>
-            event.target === event.currentTarget && setOpen(false)
-          }
-        >
-          <div className="w-full max-w-xl overflow-hidden rounded-xl border border-line bg-background shadow-2xl">
-            <input
-              aria-label="Search"
-              className="w-full border-line border-b bg-transparent px-4 py-3 text-base outline-none placeholder:text-muted/60"
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setAt(0);
-              }}
-              onKeyDown={onKey}
-              placeholder="Search the documentation…"
-              ref={field}
-              value={query}
-            />
+      {open
+        ? createPortal(
+            // biome-ignore lint/a11y/noStaticElementInteractions: the backdrop dismisses
+            // biome-ignore lint/a11y/useKeyWithClickEvents: Escape is handled on the field
+            <div
+              className="fixed inset-0 z-50 flex items-start justify-center bg-background/70 px-4 pt-[12vh] backdrop-blur-sm"
+              onClick={(event) =>
+                event.target === event.currentTarget && setOpen(false)
+              }
+            >
+              <div className="w-full max-w-xl overflow-hidden rounded-xl border border-line bg-background shadow-2xl">
+                <input
+                  aria-label="Search"
+                  className="w-full border-line border-b bg-transparent px-4 py-3 text-base outline-none placeholder:text-muted/60"
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setAt(0);
+                  }}
+                  onKeyDown={onKey}
+                  placeholder="Search the documentation…"
+                  ref={field}
+                  value={query}
+                />
 
-            <div className="max-h-[55vh] overflow-y-auto">
-              {broken ? (
-                <p className="px-4 py-6 text-muted text-sm">
-                  the search index did not load
-                </p>
-              ) : !sections ? (
-                <p className="px-4 py-6 text-muted text-sm">loading…</p>
-              ) : query.trim() === "" ? (
-                <p className="px-4 py-6 text-muted text-sm">
-                  Type to search {new Set(sections.map((s) => s.r)).size} pages.
-                  Arrows to move, Enter to open, Escape to close.
-                </p>
-              ) : hits.length === 0 ? (
-                <p className="px-4 py-6 text-muted text-sm">
-                  nothing matches “{query}”
-                </p>
-              ) : (
-                <ul>
-                  {hits.map((hit, index) => (
-                    <li key={`${hit.r}#${hit.a}`}>
-                      <button
-                        className={`block w-full px-4 py-3 text-left transition-colors ${
-                          index === at ? "bg-faint" : "hover:bg-faint/60"
-                        }`}
-                        onClick={() => go(hit)}
-                        onMouseEnter={() => setAt(index)}
-                        type="button"
-                      >
-                        <span className="flex items-baseline gap-2">
-                          <span className="font-medium text-sm">
-                            {hit.h || hit.p}
-                          </span>
-                          {hit.h ? (
-                            <span className="text-muted text-xs">{hit.p}</span>
-                          ) : null}
-                        </span>
-                        <span className="mt-1 block text-muted text-xs leading-5">
-                          {parts(hit.excerpt, query).map((piece, part) =>
-                            part % 2 === 1 ? (
-                              <mark
-                                className="bg-transparent text-foreground"
-                                // biome-ignore lint/suspicious/noArrayIndexKey: a fixed split
-                                key={part}
-                              >
-                                {piece}
-                              </mark>
-                            ) : (
-                              piece
-                            ),
-                          )}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
+                <div className="max-h-[55vh] overflow-y-auto">
+                  {broken ? (
+                    <p className="px-4 py-6 text-muted text-sm">
+                      the search index did not load
+                    </p>
+                  ) : !sections ? (
+                    <p className="px-4 py-6 text-muted text-sm">loading…</p>
+                  ) : query.trim() === "" ? (
+                    <p className="px-4 py-6 text-muted text-sm">
+                      Type to search {new Set(sections.map((s) => s.r)).size}{" "}
+                      pages. Arrows to move, Enter to open, Escape to close.
+                    </p>
+                  ) : hits.length === 0 ? (
+                    <p className="px-4 py-6 text-muted text-sm">
+                      nothing matches “{query}”
+                    </p>
+                  ) : (
+                    <ul>
+                      {hits.map((hit, index) => (
+                        <li key={`${hit.r}#${hit.a}`}>
+                          <button
+                            className={`block w-full px-4 py-3 text-left transition-colors ${
+                              index === at ? "bg-faint" : "hover:bg-faint/60"
+                            }`}
+                            onClick={() => go(hit)}
+                            onMouseEnter={() => setAt(index)}
+                            type="button"
+                          >
+                            <span className="flex items-baseline gap-2">
+                              <span className="font-medium text-sm">
+                                {hit.h || hit.p}
+                              </span>
+                              {hit.h ? (
+                                <span className="text-muted text-xs">
+                                  {hit.p}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="mt-1 block text-muted text-xs leading-5">
+                              {parts(hit.excerpt, query).map((piece, part) =>
+                                part % 2 === 1 ? (
+                                  <mark
+                                    className="bg-transparent text-foreground"
+                                    // biome-ignore lint/suspicious/noArrayIndexKey: a fixed split
+                                    key={part}
+                                  >
+                                    {piece}
+                                  </mark>
+                                ) : (
+                                  piece
+                                ),
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
