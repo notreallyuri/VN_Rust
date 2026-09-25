@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   images: { unoptimized: true },
   pageExtensions: ["ts", "tsx", "mdx"],
+  serverExternalPackages: ["web-tree-sitter"],
 };
 
 export default createMDX({

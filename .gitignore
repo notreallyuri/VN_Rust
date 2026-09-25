@@ -7,3 +7,6 @@
 __pycache__/
 # JavaScript dependencies, e.g. the docs site under docs/.
 node_modules/
+
+# Built from the grammar by `tree-sitter build --wasm`; the docs carry the copy that ships.
+/editors/tree-sitter-story/tree-sitter-story.wasm

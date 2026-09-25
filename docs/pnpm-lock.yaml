@@ -35,6 +35,9 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
+      web-tree-sitter:
+        specifier: ^0.27.0
+        version: 0.27.0
     devDependencies:
       '@biomejs/biome':
         specifier: 2.4.2
@@ -1108,6 +1111,9 @@ packages:
 
   vfile@6.0.3:
     resolution: {integrity: sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==}
+
+  web-tree-sitter@0.27.0:
+    resolution: {integrity: sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -2406,5 +2412,7 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
+
+  web-tree-sitter@0.27.0: {}
 
   zwitch@2.0.4: {}

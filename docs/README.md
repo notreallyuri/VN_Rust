@@ -26,5 +26,16 @@ CSS. Write those through the components or relative, and the prefix takes care o
 
 `public/.nojekyll` is what stops Pages hiding the `_next` directory.
 
+`.story` code blocks are highlighted by the same tree-sitter grammar nvim and the LSP
+use, parsed at build time so no highlighter ships to the browser.
+`src/highlight/tree-sitter-story.wasm` and `highlights.scm` are copies of what lives in
+`editors/tree-sitter-story`; CI diffs the queries so they cannot drift, and the wasm is
+rebuilt with:
+
+```sh
+cd editors/tree-sitter-story && tree-sitter build --wasm
+cp tree-sitter-story.wasm ../../docs/src/highlight/
+```
+
 Content will live in `src/content` as MDX, one page per subsystem, and the crate READMEs
 will shrink to front doors that link into it. Until that move happens, edit the READMEs.

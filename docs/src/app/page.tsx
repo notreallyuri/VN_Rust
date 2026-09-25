@@ -115,7 +115,12 @@ export default function Home() {
               expected instead.
             </p>
             <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
-              <CodeBlock name="story/01.story" code={story} numbered />
+              <CodeBlock
+                name="story/01.story"
+                code={story}
+                language="story"
+                numbered
+              />
               <Frame name="novn check assets">
                 <div className="space-y-3 px-4 py-4 font-mono text-[0.78rem] leading-6">
                   {diagnostics.map((line) => (

@@ -1,7 +1,7 @@
 import type { MDXComponents } from "mdx/types";
 import Link from "next/link";
 import type { ComponentPropsWithoutRef } from "react";
-import { CodeBlock, codeFromPre } from "@/components/code-block";
+import { CodeBlock, fenceFrom } from "@/components/code-block";
 
 function Anchor({ href = "", ...rest }: ComponentPropsWithoutRef<"a">) {
   const external = href.startsWith("http");
@@ -58,7 +58,7 @@ const components: MDXComponents = {
       {...props}
     />
   ),
-  pre: ({ children }) => <CodeBlock code={codeFromPre(children)} />,
+  pre: ({ children }) => <CodeBlock {...fenceFrom(children)} />,
   table: (props) => (
     <div className="my-6 overflow-x-auto rounded-lg border border-line">
       <table className="w-full border-collapse text-left text-sm" {...props} />

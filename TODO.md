@@ -443,9 +443,13 @@ solved by the same work rather than twice.
 
 **Phase 2 — the code block.** One component, built knowing what is coming next.
 
-- [ ] `.story` highlighting from `editors/tree-sitter-story`, compiled to WASM and run
-  through `web-tree-sitter`, so the site shows exactly what nvim and the LSP show. The
-  risk to check early: building the grammar to WASM needs emscripten or docker in CI
+- [x] `.story` highlighting from `editors/tree-sitter-story`, built to WASM with
+  `tree-sitter build --wasm` and run through `web-tree-sitter` — in Node, during
+  `next build`, so the spans are in the exported HTML and no highlighter reaches the
+  browser. The grammar's own `highlights.scm` maps to the token palette, and CI diffs the
+  copy against the source so they cannot drift. `web-tree-sitter` has to be in
+  `serverExternalPackages`: bundled, Turbopack rewrites its runtime wasm to a URL that
+  does not exist on disk at build time
 - [ ] Rust snippets highlighted by the same component, and a Preview/Code tab where a
   snippet has something to show
 

@@ -82,6 +82,10 @@ jobs:
             exit 1
           fi
 
+      - name: The highlighting queries match the grammar they came from
+        working-directory: .
+        run: diff editors/tree-sitter-story/queries/highlights.scm docs/src/highlight/highlights.scm
+
       - name: Build the static export, which typechecks it too
         run: pnpm build
 

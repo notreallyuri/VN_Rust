@@ -7,6 +7,12 @@
   --faint: #ededea;
   --line: #e2e2dd;
   --accent: #9a6b18;
+  --tok-keyword: #9a6b18;
+  --tok-character: #9d5d62;
+  --tok-string: #4f7a63;
+  --tok-constant: #4f6d8f;
+  --tok-comment: #9a9a93;
+  --tok-punctuation: #8a8a84;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,6 +23,12 @@
     --faint: #141417;
     --line: #23232a;
     --accent: #d9a441;
+    --tok-keyword: #d9a441;
+    --tok-character: #d8919a;
+    --tok-string: #8fbfa3;
+    --tok-constant: #9ab6d9;
+    --tok-comment: #6f6f78;
+    --tok-punctuation: #787882;
   }
 }
 
@@ -48,4 +60,45 @@ body {
 
 ::selection {
   background: color-mix(in oklab, var(--accent) 28%, transparent);
+}
+
+.tok-keyword {
+  color: var(--tok-keyword);
+}
+
+.tok-operator {
+  color: var(--tok-keyword);
+  opacity: 0.75;
+}
+
+.tok-character {
+  color: var(--tok-character);
+}
+
+.tok-label {
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.tok-string,
+.tok-escape {
+  color: var(--tok-string);
+}
+
+.tok-constant,
+.tok-number {
+  color: var(--tok-constant);
+}
+
+.tok-variable {
+  color: var(--foreground);
+}
+
+.tok-comment {
+  color: var(--tok-comment);
+  font-style: italic;
+}
+
+.tok-punctuation {
+  color: var(--tok-punctuation);
 }
