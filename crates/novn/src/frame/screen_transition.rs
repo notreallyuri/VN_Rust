@@ -53,7 +53,14 @@ impl ScreenTransition {
     }
 
     pub fn kind(&self) -> ScreenTransitionKind {
-        self.kind
+        match self.kind {
+            ScreenTransitionKind::SlideLeft | ScreenTransitionKind::SlideRight
+                if crate::ui::motion::reduced() =>
+            {
+                ScreenTransitionKind::Crossfade
+            }
+            kind => kind,
+        }
     }
 
     pub fn finished(&self, now: f64) -> bool {
@@ -61,7 +68,7 @@ impl ScreenTransition {
     }
 
     pub fn previous_alpha(&self, now: f64) -> f32 {
-        match self.kind {
+        match self.kind() {
             ScreenTransitionKind::Crossfade => 1.0 - self.tween.progress(now),
             ScreenTransitionKind::Fade => {
                 if self.tween.elapsed(now) < 0.5 {
@@ -76,7 +83,7 @@ impl ScreenTransition {
     }
 
     pub fn cover_alpha(&self, now: f64) -> f32 {
-        match self.kind {
+        match self.kind() {
             ScreenTransitionKind::Fade => {
                 let t = self.tween.progress(now);
                 1.0 - (2.0 * t - 1.0).abs()
@@ -87,7 +94,7 @@ impl ScreenTransition {
 
     pub fn previous_offset(&self, now: f64, width: f32) -> f32 {
         let travelled = self.tween.progress(now) * width;
-        match self.kind {
+        match self.kind() {
             ScreenTransitionKind::SlideLeft => -travelled,
             ScreenTransitionKind::SlideRight => travelled,
             _ => 0.0,

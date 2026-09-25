@@ -82,6 +82,7 @@ settings do not break old files.
 | Auto-forward | 1500 ms, adjustable from 0.5 to 5 seconds |
 | Skip unseen | off: skipping stops at a line the player has not read |
 | Language | none, meaning the story as written |
+| Reduce motion | off |
 
 The default screen shows one row per setting. `audio_rows(false)` hides the volumes,
 `voice_row(false)` just the voice one, `play_rows(false)` auto-forward and skip, and the
@@ -92,6 +93,37 @@ is hovered. Under the rows a sample line types out at the chosen speed.
 It exists both as a screen, reached from the main menu, and as an overlay, reached from the
 pause menu. From code, `ctx.settings.values` reads and `ctx.settings.update(|s| ...)`
 changes and saves.
+
+## Accessibility
+
+The last row of the settings screen opens a page of its own, since the options there are
+the ones a player may need before they can comfortably use the rest. Esc or Back returns to
+the settings rather than out of them. `accessibility_rows(false)` hides it, though a game
+should have a reason to.
+
+### Reduce motion
+
+Takes the movement out of the game and keeps the fades, which is the line accessibility
+guidance draws: motion is what triggers vestibular problems, and a dissolve is not motion.
+
+| What moves | With reduce motion |
+| --- | --- |
+| A character sliding in or out | Fades in or out where they stand |
+| A character moving between slots | Crossfades from one spot to the other |
+| A background sliding in | Dissolves |
+| A slide between screens | Crossfades |
+| Screen shake | Does not happen |
+| A flash | Does not happen at all |
+| A background's slow pan and zoom | Holds still in the middle of its range |
+| Weather | Holds still as a scatter, so the mood stays |
+| A button that scales or turns on hover | Stays as its style draws it at rest |
+
+The flash is the one that matters most. A bright full-screen flash is a photosensitivity
+risk, not just a comfort question, so it goes entirely rather than getting softer.
+
+Nothing in the story changes: a `with slide_left` still reads as written and still plays as
+a slide for everyone else. The setting decides how it is drawn, every frame, so switching it
+mid-scene takes effect at once.
 
 ## Notifications
 

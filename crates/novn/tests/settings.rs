@@ -183,7 +183,8 @@ fn rows_and_old_settings_files() {
             SoundVolume,
             VoiceVolume,
             AutoDelay,
-            SkipUnseen
+            SkipUnseen,
+            Accessibility
         ]
     );
     assert_eq!(
@@ -191,15 +192,17 @@ fn rows_and_old_settings_files() {
             .voice_row(false)
             .play_rows(false)
             .rows(),
-        [Display, TextSpeed, MusicVolume, SoundVolume]
+        [Display, TextSpeed, MusicVolume, SoundVolume, Accessibility]
     );
     assert_eq!(
         SettingsConfig::default()
             .audio_rows(false)
             .play_rows(false)
+            .accessibility_rows(false)
             .rows(),
         [Display, TextSpeed]
     );
+    assert!(!Accessibility.is_slider() && !ReduceMotion.is_slider());
     assert!(!SkipUnseen.is_slider() && AutoDelay.is_slider());
     assert!(TextSpeed.is_slider() && !Display.is_slider());
 
@@ -211,6 +214,10 @@ fn rows_and_old_settings_files() {
     assert_eq!(old.voice_volume, 100);
     assert_eq!(old.auto_delay, 1500);
     assert!(!old.skip_unseen);
+    assert!(
+        !old.reduce_motion,
+        "a settings file from before it existed reads it as off"
+    );
     let loud = Settings {
         music_volume: 250,
         ..Settings::default()
@@ -294,4 +301,32 @@ fn auto_delay_and_skip_rows() {
     config.set_fraction(VoiceVolume, &mut settings, 0.33);
     assert_eq!(settings.voice_volume, 35);
     assert_eq!(settings.voice_gain(), 0.35);
+}
+
+#[test]
+fn the_accessibility_page_has_its_own_rows_and_title() {
+    use novn::screens::settings::{SettingsPage, SettingsRow};
+    let config = SettingsConfig::default();
+    assert_eq!(
+        config.page_rows(SettingsPage::Accessibility),
+        [SettingsRow::ReduceMotion]
+    );
+    assert_eq!(config.page_rows(SettingsPage::Main), config.rows());
+    assert_eq!(
+        config.title_of(SettingsPage::Accessibility),
+        "Accessibility"
+    );
+
+    let mut settings = Settings::default();
+    config.step(SettingsRow::ReduceMotion, &mut settings, 1);
+    assert!(settings.reduce_motion);
+    assert_eq!(
+        config.value_name(SettingsRow::ReduceMotion, &settings),
+        "On"
+    );
+    config.step(SettingsRow::Accessibility, &mut settings, 1);
+    assert!(
+        settings.reduce_motion,
+        "opening the page changes no setting"
+    );
 }

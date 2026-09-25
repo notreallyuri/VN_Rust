@@ -27,6 +27,15 @@ pub struct SettingsConfig {
     pub audio_rows: bool,
     pub voice_row: bool,
     pub play_rows: bool,
+    pub accessibility_rows: bool,
+    pub accessibility_label: String,
+    pub accessibility_title: String,
+    pub accessibility_tooltip: Option<String>,
+    pub open_label: String,
+    pub on_label: String,
+    pub off_label: String,
+    pub reduce_motion_label: String,
+    pub reduce_motion_tooltip: Option<String>,
     pub voice_volume_label: String,
     pub auto_delay_label: String,
     pub skip_label: String,
@@ -83,6 +92,17 @@ impl Default for SettingsConfig {
             audio_rows: true,
             voice_row: true,
             play_rows: true,
+            accessibility_rows: true,
+            accessibility_label: "Accessibility".to_string(),
+            accessibility_title: "Accessibility".to_string(),
+            accessibility_tooltip: Some("Motion, text size and reading aids".to_string()),
+            open_label: "Open".to_string(),
+            on_label: "On".to_string(),
+            off_label: "Off".to_string(),
+            reduce_motion_label: "Reduce motion".to_string(),
+            reduce_motion_tooltip: Some(
+                "No slides, shaking, flashes or drifting scenery. Fades stay".to_string(),
+            ),
             voice_volume_label: "Voice volume".to_string(),
             auto_delay_label: "Auto-forward".to_string(),
             skip_label: "Skip".to_string(),
@@ -217,6 +237,11 @@ impl SettingsConfig {
         self
     }
 
+    pub fn accessibility_rows(mut self, show: bool) -> Self {
+        self.accessibility_rows = show;
+        self
+    }
+
     pub fn auto_delay_name(millis: u32) -> String {
         format!("{:.1} s", millis as f32 / 1000.0)
     }
@@ -242,6 +267,8 @@ impl SettingsConfig {
             SettingsRow::AutoDelay => self.auto_delay_tooltip = text,
             SettingsRow::SkipUnseen => self.skip_tooltip = text,
             SettingsRow::Language => self.language_tooltip = text,
+            SettingsRow::Accessibility => self.accessibility_tooltip = text,
+            SettingsRow::ReduceMotion => self.reduce_motion_tooltip = text,
         }
         self
     }

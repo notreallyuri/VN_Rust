@@ -341,7 +341,18 @@ player has seen.
 ### Accessibility
 
 - [ ] A UI scale and text size setting, applied through the style system
-- [ ] A reduce-motion setting: skip transitions, hold scenery still, no shake
+- [x] A reduce-motion setting, on an Accessibility page of its own reached from the last row
+  of Settings, since the settings screen was already full and does not scroll. The line drawn
+  is the guidance's: remove movement, keep fades. Slides become dissolves or fades in place, a
+  move between slots crossfades, shake stops, a background's pan and zoom holds in the middle,
+  weather freezes as a scatter, hover transforms rest, and flashes go entirely, because a
+  flash is a photosensitivity risk rather than a comfort question. Decided per frame from the
+  setting, so switching mid-scene takes effect at once and the story is untouched.
+  Played in the example: with it on, the main menu changed 0 pixels in a second against about
+  7,450 with it off, and the third shadow in `reports_the_shadows` faded in at `right` where
+  he otherwise slides in from the edge. The example's real settings file was backed up and
+  restored byte for byte, and test runs now use their own data folder, after these runs had
+  already overwritten the example's autosave
 - [ ] Readability options: text outline or a dimmed backdrop behind dialogue over bright backgrounds
 - [ ] A self-voicing hook (the engine hands the current line to a game-provided reader)
 

@@ -268,6 +268,12 @@ impl VnApp {
             &settings.skip_seen_label,
             &settings.skip_all_label,
             &settings.language_label,
+            &settings.accessibility_label,
+            &settings.accessibility_title,
+            &settings.open_label,
+            &settings.on_label,
+            &settings.off_label,
+            &settings.reduce_motion_label,
             &settings.sample_text,
             &settings.back_label,
         ] {

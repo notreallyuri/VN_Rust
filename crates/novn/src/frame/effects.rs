@@ -61,7 +61,7 @@ impl ScreenEffects {
     }
 
     pub fn offset(&self, now: f64) -> Vector2 {
-        let Some(shake) = self.shake else {
+        let Some(shake) = self.shake.filter(|_| !crate::ui::motion::reduced()) else {
             return Vector2::zero();
         };
         let t = shake.tween.elapsed(now);
@@ -78,7 +78,7 @@ impl ScreenEffects {
     }
 
     pub fn flash_alpha(&self, now: f64) -> f32 {
-        let Some(flash) = self.flash else {
+        let Some(flash) = self.flash.filter(|_| !crate::ui::motion::reduced()) else {
             return 0.0;
         };
         let left = 1.0 - flash.tween.elapsed(now);

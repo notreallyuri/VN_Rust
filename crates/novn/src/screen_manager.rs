@@ -228,6 +228,7 @@ impl ScreenStateManager {
         if self.dev_tools && rl.is_key_pressed(INSPECTOR_KEY) {
             self.show_inspector = !self.show_inspector;
         }
+        crate::ui::motion::set_reduced(self.world.settings.values.reduce_motion);
         let styling = self
             .overlay_names()
             .any(|name| name == STYLE_EDITOR_OVERLAY);

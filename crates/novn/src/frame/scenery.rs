@@ -9,6 +9,7 @@ use crate::ui::button::Border;
 use crate::ui::shape;
 use crate::ui::shape::{Corners, Gradient, GradientDirection};
 
+const STILL_WEATHER: f64 = 30.0;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Motion {
     pub zoom: f32,
@@ -31,6 +32,9 @@ impl Motion {
     }
 
     pub fn at(&self, time: f64) -> (f32, Vector2) {
+        if crate::ui::motion::reduced() {
+            return (1.0 + (self.zoom - 1.0) / 2.0, Vector2::zero());
+        }
         let phase = ((1.0 - (TAU * time / self.period).cos()) / 2.0) as f32;
         let zoom = 1.0 + (self.zoom - 1.0) * phase;
         let drift = phase * 2.0 - 1.0;
@@ -337,7 +341,12 @@ impl Scenery {
     pub fn draw_frame(&self, d: &mut RaylibDrawHandle, since_open: f64) {
         let screen = ui::screen_size(d);
         if let Some(weather) = self.weather {
-            weather.draw(d, since_open, screen);
+            let time = if crate::ui::motion::reduced() {
+                STILL_WEATHER
+            } else {
+                since_open
+            };
+            weather.draw(d, time, screen);
         }
         if let Some(vignette) = self.vignette {
             let clear = Color::new(vignette.color.r, vignette.color.g, vignette.color.b, 0);

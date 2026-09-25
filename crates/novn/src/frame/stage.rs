@@ -288,6 +288,30 @@ impl Stage {
             match (current.get(id), self.characters.get(id)) {
                 (Some(placed), Some(anim)) if anim.leaving.is_none() => {
                     let t = progress(anim.start, &anim.transition, now);
+                    if crate::ui::motion::reduced() {
+                        let image = placed.image.as_str();
+                        match (&anim.from_image, anim.from_x) {
+                            (Some(old), _) => {
+                                sprite(
+                                    d,
+                                    resources,
+                                    config,
+                                    screen,
+                                    id,
+                                    old,
+                                    placed.x,
+                                    1.0 - t.powi(3),
+                                );
+                                sprite(d, resources, config, screen, id, image, placed.x, t);
+                            }
+                            (None, Some(from)) if (0.0..=1.0).contains(&from) => {
+                                sprite(d, resources, config, screen, id, image, from, 1.0 - t);
+                                sprite(d, resources, config, screen, id, image, placed.x, t);
+                            }
+                            _ => sprite(d, resources, config, screen, id, image, placed.x, t),
+                        }
+                        continue;
+                    }
                     let x = anim.from_x.map_or(placed.x, |from| {
                         lerp(from, placed.x, Easing::Smooth.apply(t))
                     });
@@ -319,7 +343,7 @@ impl Stage {
                         continue;
                     };
                     let t = progress(anim.start, &anim.transition, now);
-                    let (x, alpha) = match anim.transition.kind {
+                    let (x, alpha) = match crate::ui::motion::calm(anim.transition.kind) {
                         TransitionKind::SlideLeft => {
                             (lerp(placed.x, OFFSCREEN_LEFT, Easing::Smooth.apply(t)), 1.0)
                         }
@@ -368,7 +392,7 @@ impl Stage {
 
         let t = progress(anim.start, &anim.transition, now);
         let from = anim.from.as_deref();
-        match anim.transition.kind {
+        match crate::ui::motion::calm(anim.transition.kind) {
             TransitionKind::Dissolve => {
                 if current.is_some() {
                     backdrop(d, resources, from, 1.0, 0.0, screen);

@@ -6,9 +6,13 @@ const ROWS_TOP: f32 = 110.0;
 
 impl SettingsConfig {
     pub fn control_rects(&self, screen: Vector2) -> Vec<Rectangle> {
+        self.control_rects_for(self.rows().len(), screen)
+    }
+
+    pub fn control_rects_for(&self, count: usize, screen: Vector2) -> Vec<Rectangle> {
         let button = &self.value_button;
         let right = (screen.x + self.row_width) / 2.0;
-        (0..self.rows().len())
+        (0..count)
             .map(|i| {
                 Rectangle::new(
                     right - button.width,
@@ -40,8 +44,8 @@ impl SettingsConfig {
         )
     }
 
-    pub(crate) fn sample_rect(&self, screen: Vector2) -> Rectangle {
-        let rows = self.control_rects(screen);
+    pub(crate) fn sample_rect(&self, count: usize, screen: Vector2) -> Rectangle {
+        let rows = self.control_rects_for(count, screen);
         let top = rows.last().map_or(ROWS_TOP, |r| r.y + r.height) + 24.0;
         Rectangle::new(
             (screen.x - self.row_width) / 2.0,

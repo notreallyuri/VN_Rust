@@ -4,6 +4,7 @@ pub mod ease;
 pub mod fonts;
 pub mod labels;
 pub mod layout;
+pub mod motion;
 pub mod scroll;
 pub mod shape;
 pub mod styled;

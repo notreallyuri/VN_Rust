@@ -1,4 +1,6 @@
-use super::{AUTO_DELAY_MAX, AUTO_DELAY_MIN, AUTO_DELAY_STEP, SettingsConfig, SettingsRow};
+use super::{
+    AUTO_DELAY_MAX, AUTO_DELAY_MIN, AUTO_DELAY_STEP, SettingsConfig, SettingsPage, SettingsRow,
+};
 use crate::data::settings::Settings;
 use crate::ui;
 
@@ -62,7 +64,24 @@ impl SettingsConfig {
         if self.languages.len() > 1 {
             rows.push(SettingsRow::Language);
         }
+        if self.accessibility_rows {
+            rows.push(SettingsRow::Accessibility);
+        }
         rows
+    }
+
+    pub fn page_rows(&self, page: SettingsPage) -> Vec<SettingsRow> {
+        match page {
+            SettingsPage::Main => self.rows(),
+            SettingsPage::Accessibility => vec![SettingsRow::ReduceMotion],
+        }
+    }
+
+    pub fn title_of(&self, page: SettingsPage) -> &str {
+        match page {
+            SettingsPage::Main => &self.title,
+            SettingsPage::Accessibility => &self.accessibility_title,
+        }
     }
 
     pub fn fraction(&self, row: SettingsRow, settings: &Settings) -> f32 {
@@ -90,6 +109,8 @@ impl SettingsConfig {
                     / span
             }
             SettingsRow::SkipUnseen => f32::from(u8::from(settings.skip_unseen)),
+            SettingsRow::Accessibility => 0.0,
+            SettingsRow::ReduceMotion => f32::from(u8::from(settings.reduce_motion)),
         }
     }
 
@@ -110,6 +131,8 @@ impl SettingsConfig {
                 settings.auto_delay = AUTO_DELAY_MIN + step * AUTO_DELAY_STEP;
             }
             SettingsRow::SkipUnseen => settings.skip_unseen = fraction >= 0.5,
+            SettingsRow::Accessibility => {}
+            SettingsRow::ReduceMotion => settings.reduce_motion = fraction >= 0.5,
             SettingsRow::Language => {
                 let index = ui::slider_step(fraction, self.languages.len());
                 if let Some(language) = self.languages.get(index) {
@@ -123,6 +146,8 @@ impl SettingsConfig {
         match row {
             SettingsRow::Display => settings.fullscreen = !settings.fullscreen,
             SettingsRow::SkipUnseen => settings.skip_unseen = !settings.skip_unseen,
+            SettingsRow::Accessibility => {}
+            SettingsRow::ReduceMotion => settings.reduce_motion = !settings.reduce_motion,
             SettingsRow::Language => {
                 let count = self.languages.len();
                 if count == 0 {
@@ -179,6 +204,9 @@ impl SettingsConfig {
             SettingsRow::AutoDelay => Self::auto_delay_name(settings.auto_delay),
             SettingsRow::SkipUnseen if settings.skip_unseen => self.skip_all_label.clone(),
             SettingsRow::SkipUnseen => self.skip_seen_label.clone(),
+            SettingsRow::Accessibility => self.open_label.clone(),
+            SettingsRow::ReduceMotion if settings.reduce_motion => self.on_label.clone(),
+            SettingsRow::ReduceMotion => self.off_label.clone(),
             SettingsRow::Language => self
                 .language_of(settings.language.as_deref())
                 .map(|language| language.label.clone())
@@ -196,6 +224,8 @@ impl SettingsConfig {
             SettingsRow::AutoDelay => &self.auto_delay_label,
             SettingsRow::SkipUnseen => &self.skip_label,
             SettingsRow::Language => &self.language_label,
+            SettingsRow::Accessibility => &self.accessibility_label,
+            SettingsRow::ReduceMotion => &self.reduce_motion_label,
         }
     }
 
@@ -209,6 +239,8 @@ impl SettingsConfig {
             SettingsRow::AutoDelay => self.auto_delay_tooltip.as_deref(),
             SettingsRow::SkipUnseen => self.skip_tooltip.as_deref(),
             SettingsRow::Language => self.language_tooltip.as_deref(),
+            SettingsRow::Accessibility => self.accessibility_tooltip.as_deref(),
+            SettingsRow::ReduceMotion => self.reduce_motion_tooltip.as_deref(),
         }
     }
 

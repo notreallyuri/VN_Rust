@@ -121,7 +121,12 @@ impl<'a> Button<'a> {
         if crate::dev::inspector::active() {
             button.inspect(rect, original);
         }
-        with_transform(rect, &look.transform, || {
+        let transform = if crate::ui::motion::reduced() {
+            button.style.transform
+        } else {
+            look.transform
+        };
+        with_transform(rect, &transform, || {
             draw_body(d, ctx, rect, button.style, &look);
             draw_content(d, ctx, rect, button.label, button.style, &look);
         });

@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use raylib::prelude::*;
 
-use super::{SettingsConfig, SettingsRow};
+use super::{SettingsConfig, SettingsPage, SettingsRow};
 use crate::context::{DrawContext, GameContext};
 use crate::input::navigation::{Focus, NavInput};
 use crate::screens::playing::Typewriter;
@@ -21,6 +21,7 @@ pub(crate) struct SettingsMenu {
     visible: usize,
     dragging: Option<SettingsRow>,
     focus: Focus,
+    page: SettingsPage,
 }
 
 impl SettingsMenu {
@@ -31,6 +32,7 @@ impl SettingsMenu {
             visible: 0,
             dragging: None,
             focus: Focus::default(),
+            page: SettingsPage::Main,
         }
     }
 
@@ -50,11 +52,11 @@ impl SettingsMenu {
         let back_key = config.back_keys.iter().any(|&k| ctx.rl.is_key_pressed(k));
         let back = config.back_rect(screen);
         if ui::button::button_clicked(ctx, back, &config.back_button) || back_key || ctx.nav.back {
-            return Outcome::Back;
+            return self.back();
         }
 
-        let rows = config.rows();
-        let controls = config.control_rects(screen);
+        let rows = config.page_rows(self.page);
+        let controls = config.control_rects_for(rows.len(), screen);
 
         let mut targets: Vec<Rectangle> = controls
             .iter()
@@ -71,10 +73,12 @@ impl SettingsMenu {
             ..ctx.nav
         };
         match self.focus.update(&vertical_only, &targets, &[], pointed) {
-            Some(index) if index == rows.len() => return Outcome::Back,
+            Some(index) if index == rows.len() => return self.back(),
             Some(index) if index < rows.len() && !rows[index].is_slider() => {
                 let row = rows[index];
-                ctx.settings.update(|s| config.step(row, s, 1));
+                if self.activate(row, ctx, &config) {
+                    return Outcome::Stay;
+                }
             }
             _ => {}
         }
@@ -100,8 +104,10 @@ impl SettingsMenu {
             }
 
             if !row.is_slider() {
-                if ui::button::button_clicked(ctx, control, &config.value_button) {
-                    ctx.settings.update(|s| config.step(row, s, 1));
+                if ui::button::button_clicked(ctx, control, &config.value_button)
+                    && self.activate(row, ctx, &config)
+                {
+                    return Outcome::Stay;
                 }
                 continue;
             }
@@ -146,6 +152,39 @@ impl SettingsMenu {
         Outcome::Stay
     }
 
+    fn back(&mut self) -> Outcome {
+        match self.page {
+            SettingsPage::Main => Outcome::Back,
+            SettingsPage::Accessibility => {
+                self.page = SettingsPage::Main;
+                let at = self
+                    .config
+                    .rows()
+                    .iter()
+                    .position(|&row| row == SettingsRow::Accessibility);
+                self.focus.set(at);
+                self.dragging = None;
+                Outcome::Stay
+            }
+        }
+    }
+
+    fn activate(
+        &mut self,
+        row: SettingsRow,
+        ctx: &mut GameContext,
+        config: &SettingsConfig,
+    ) -> bool {
+        if row == SettingsRow::Accessibility {
+            self.page = SettingsPage::Accessibility;
+            self.focus = Focus::default();
+            self.dragging = None;
+            return true;
+        }
+        ctx.settings.update(|s| config.step(row, s, 1));
+        false
+    }
+
     fn animate_preview(&mut self, now: f64, speed: u32) {
         let text = &self.config.sample_text;
         let restart = match &self.preview {
@@ -175,16 +214,17 @@ impl SettingsMenu {
         ui::draw_text_centered(
             d,
             fonts,
-            ctx.label(&config.title),
+            ctx.label(config.title_of(self.page)),
             Vector2::new(screen.x / 2.0, 70.0),
             &config.title_text,
         );
 
         let left = (screen.x - config.row_width) / 2.0;
-        for (index, (row, control)) in config
-            .rows()
+        let rows = config.page_rows(self.page);
+        let count = rows.len();
+        for (index, (row, control)) in rows
             .into_iter()
-            .zip(config.control_rects(screen))
+            .zip(config.control_rects_for(count, screen))
             .enumerate()
         {
             let focused = ctx.shows_focus(&self.focus, index);
@@ -233,7 +273,7 @@ impl SettingsMenu {
             ui::draw_text(d, fonts, &value, Vector2::new(value_x, value_y), style);
         }
 
-        let sample = config.sample_rect(screen);
+        let sample = config.sample_rect(count, screen);
         config.sample_box.draw(d, sample);
         ui::draw_text_wrapped_visible(
             d,
@@ -245,7 +285,7 @@ impl SettingsMenu {
             self.visible,
         );
 
-        let back_index = config.rows().len();
+        let back_index = count;
         ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, back_index))
             .draw(d, ctx, config.back_rect(screen));

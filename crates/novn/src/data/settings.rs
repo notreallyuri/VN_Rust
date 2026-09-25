@@ -18,6 +18,7 @@ pub struct Settings {
     pub skip_unseen: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    pub reduce_motion: bool,
 }
 
 impl Default for Settings {
@@ -31,6 +32,7 @@ impl Default for Settings {
             auto_delay: 1500,
             skip_unseen: false,
             language: None,
+            reduce_motion: false,
         }
     }
 }
