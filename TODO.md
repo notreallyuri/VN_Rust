@@ -414,11 +414,12 @@ to stand on.
   --frozen-lockfile`, Biome, and the static export, which typechecks on the way through.
   The scaffold's demo page and Vercel artwork are gone; the rest is Next 16, React 19,
   Tailwind 4, Biome and pnpm as it came
-- [x] `basePath` is `/VN_Rust`, set unconditionally so a hand-written link that forgets it
-  breaks in development rather than only once deployed. `output: "export"`,
-  `trailingSlash: true`, unoptimized images (the default loader needs a server), and
-  `public/.nojekyll`, without which Pages hides `_next`. A domain would be one line here
-  and one in the deploy
+- [x] `basePath` is `/VN_Rust` in the build, where Pages serves a project site, and empty
+  in development, where the root is what anyone types. `next/link` and `next/image` add
+  the prefix themselves; CI greps for the hand-written paths that would skip it. Also
+  `output: "export"`, `trailingSlash: true`, unoptimized images (the default loader needs
+  a server), and `public/.nojekyll`, without which Pages hides `_next`. A domain would
+  delete the prefix and the grep together
 - [ ] Deploying to Pages, once there are pages worth deploying. It needs the repository's
   Pages source set to GitHub Actions, and a workflow that uploads `docs/out`. Deliberately
   not done while the site is one placeholder page

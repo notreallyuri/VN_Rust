@@ -1,16 +1,8 @@
 import type { NextConfig } from "next";
 
-const basePath = "/VN_Rust";
-
-if (process.env.NODE_ENV === "development") {
-  console.log(
-    `- Docs:          http://localhost:${process.env.PORT ?? 3000}${basePath}`,
-  );
-}
-
 const nextConfig: NextConfig = {
   output: "export",
-  basePath,
+  basePath: process.env.NODE_ENV === "production" ? "/VN_Rust" : "",
   trailingSlash: true,
   images: { unoptimized: true },
 };

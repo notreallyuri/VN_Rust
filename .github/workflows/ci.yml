@@ -72,6 +72,15 @@ jobs:
 
       - run: pnpm lint
 
+      - name: No hand-written absolute URLs, which skip the deployed basePath
+        run: |
+          if grep -rnE '(<a[^>]+href|<(img|video|source|link)[^>]+(src|href)|url\()="?/[^/]' src; then
+            echo
+            echo "A path written by hand does not get the /VN_Rust prefix the deployed"
+            echo "site is served under. Use next/link, next/image, or a relative path."
+            exit 1
+          fi
+
       - name: Build the static export, which typechecks it too
         run: pnpm build
 

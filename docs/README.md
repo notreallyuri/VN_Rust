@@ -10,21 +10,21 @@ is the scaffold and the pipeline that will carry it.
 
 ```sh
 pnpm install
-pnpm dev      # http://localhost:3000/VN_Rust — the prefix is not optional
+pnpm dev      # http://localhost:3000
 pnpm build    # a static export in out/
-pnpm lint     # biome
+pnpm lint     # biome, and the absolute-path guard CI runs
 pnpm format   # biome, writing
 ```
 
-`pnpm dev` prints that URL after Next's own banner, because Next's banner says
-`http://localhost:3000` and `/` is not a route here: the site lives under its `basePath`
-in development exactly as it does once deployed.
+The build is a static export (`output: "export"`) served from GitHub Pages at
+`https://notreallyuri.github.io/VN_Rust`, so the deployed site lives under a `basePath` of
+`/VN_Rust`. Development runs at the root instead, because typing the prefix a hundred
+times a day to catch a mistake made once is the wrong trade. What catches it instead:
+`next/link` and `next/image` add the prefix themselves, and CI greps for the paths that
+would skip it — a hand-written `<a href="/engine">`, an `<img src="/…">`, a `url(/…)` in
+CSS. Write those through the components or relative, and the prefix takes care of itself.
 
-`basePath` is `/VN_Rust` in development as well as in the build, so a hand-written link
-that forgets it breaks here rather than only once deployed. The build is a static export
-(`output: "export"`), served from GitHub Pages at
-`https://notreallyuri.github.io/VN_Rust`; `public/.nojekyll` is what stops Pages hiding
-the `_next` directory.
+`public/.nojekyll` is what stops Pages hiding the `_next` directory.
 
 Content will live in `src/content` as MDX, one page per subsystem, and the crate READMEs
 will shrink to front doors that link into it. Until that move happens, edit the READMEs.
