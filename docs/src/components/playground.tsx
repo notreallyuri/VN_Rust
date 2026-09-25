@@ -37,7 +37,7 @@ function Gutter({ notes, lines }: { notes: Answer["notes"]; lines: number }) {
   );
 }
 
-function Notes({ notes }: { notes: Answer["notes"] }) {
+export function Notes({ notes }: { notes: Answer["notes"] }) {
   if (notes.length === 0) return null;
   return (
     <ul className="space-y-1.5 border-line border-t px-4 py-3 font-mono text-[0.75rem] leading-5">
@@ -60,7 +60,7 @@ function Notes({ notes }: { notes: Answer["notes"] }) {
   );
 }
 
-function Played({
+export function Played({
   answer,
   onPick,
 }: {
@@ -169,7 +169,7 @@ export function Playground({ code, name }: { code: string; name?: string }) {
   }
 
   return (
-    <figure className="my-6 overflow-hidden rounded-lg border border-line bg-faint lg:-mr-10 xl:-mr-16">
+    <figure className="my-6 overflow-hidden rounded-lg border border-line bg-faint">
       <figcaption className="flex items-center justify-between border-line border-b px-4 py-2 font-mono text-[0.7rem] text-muted uppercase tracking-widest">
         <span>{name ?? "playground"}</span>
         <span className="flex items-center gap-1">

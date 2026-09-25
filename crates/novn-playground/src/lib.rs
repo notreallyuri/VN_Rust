@@ -5,6 +5,8 @@ use novn_script::{Event, Severity, StoryVm, compile_source};
 use serde::{Deserialize, Serialize};
 
 const MAX_STEPS: usize = 2000;
+const INDENT: &str = "  ";
+const WRAPPER: &str = "example";
 
 #[derive(Deserialize)]
 pub struct Request {
@@ -18,6 +20,49 @@ pub struct Note {
     pub severity: &'static str,
     pub line: usize,
     pub message: String,
+}
+
+fn elide(source: &str) -> String {
+    source
+        .lines()
+        .map(|line| {
+            if line.trim() == "..." {
+                let indent = line.len() - line.trim_start().len();
+                format!("{}\"...\"", " ".repeat(indent))
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn wrap_fragment(raw: &str) -> (String, bool) {
+    let source = &elide(raw);
+    if source.trim().is_empty()
+        || source
+            .lines()
+            .any(|line| line.trim_start().starts_with("scene "))
+    {
+        return (source.to_string(), false);
+    }
+    let indent = source
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| line.len() - line.trim_start().len())
+        .min()
+        .unwrap_or(0);
+    let body: Vec<String> = source
+        .lines()
+        .map(|line| {
+            if line.trim().is_empty() {
+                String::new()
+            } else {
+                format!("{INDENT}{}", &line[indent..])
+            }
+        })
+        .collect();
+    (format!("scene {WRAPPER}:\n{}\n", body.join("\n")), true)
 }
 
 #[derive(Serialize, Debug)]
@@ -51,6 +96,7 @@ pub struct Option_ {
 #[derive(Serialize, Debug)]
 pub struct Response {
     pub ok: bool,
+    pub wrapped: bool,
     pub notes: Vec<Note>,
     pub listing: String,
     pub counts: Counts,
@@ -128,7 +174,8 @@ fn options(event: &Event) -> Vec<Option_> {
 }
 
 pub fn run(request: Request) -> Response {
-    let program = compile_source(&request.source);
+    let (source, wrapped) = wrap_fragment(&request.source);
+    let program = compile_source(&source);
 
     let mut notes: Vec<Note> = program
         .diagnostics
@@ -145,9 +192,11 @@ pub fn run(request: Request) -> Response {
 
     for scene in program.unknown_jump_targets() {
         notes.push(Note {
-            severity: "error",
+            severity: "warning",
             line: 0,
-            message: format!("jump to unknown scene '{scene}'"),
+            message: format!(
+                "jump to '{scene}', which this snippet does not define; the story ends there"
+            ),
         });
     }
 
@@ -161,6 +210,7 @@ pub fn run(request: Request) -> Response {
     if !ok || counts.instructions == 0 {
         return Response {
             ok,
+            wrapped,
             notes,
             listing,
             counts,
@@ -221,6 +271,7 @@ pub fn run(request: Request) -> Response {
 
     Response {
         ok,
+        wrapped,
         notes,
         listing,
         counts,
@@ -236,6 +287,7 @@ pub fn run_json(request: &str) -> String {
         Ok(request) => run(request),
         Err(error) => Response {
             ok: false,
+            wrapped: false,
             notes: vec![Note {
                 severity: "error",
                 line: 0,

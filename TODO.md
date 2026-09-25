@@ -506,9 +506,13 @@ solved by the same work rather than twice.
   stays on `Copy` if the write is refused rather than claiming a copy that did not happen.
   Verified over CDP against the real hydrated page: 50 blocks across eight pages, every
   label flipping and no prompt reaching the clipboard
-- [ ] A Preview/Code tab where a snippet has something to show. This is the half of the
-  code block that is still missing, and it is the one that wants the playground underneath
-  it, so it may be cheaper after phase 3 than before
+- [x] A Code/Run/Listing tab strip on every `.story` block, which is what "preview" turned
+  out to mean here. The honest preview for this site is not a picture of a rendered screen,
+  which would need the engine in a browser and would drift from it the moment it did not;
+  it is what the snippet *compiles to* and what it *does*, which the playground's wasm
+  already answers. It was indeed cheaper after phase 3: the tab strip is a thin client
+  wrapper around the server-rendered block, and the wasm is fetched on the first click
+  rather than on page load, so a reader who never opens a tab pays nothing
 
 **Phase 3 — the playground.** The thing that makes the site worth looking at.
 
@@ -527,11 +531,14 @@ solved by the same work rather than twice.
   example is playable in place. Driven in a real browser over CDP rather than trusted from the
   markup: replay, the gate, the listing tab, and typing `remoe` producing the engine's own
   diagnostic at the right line
-- [ ] Every `.story` sample in the site becomes runnable in place. Two blocked on content
-  rather than plumbing: most samples are deliberate fragments that `jump` to scenes which do
-  not exist, and the playground reports unknown jump targets, which `spec.rs` does not. Either
-  they grow the scenes they jump to, or the playground learns to treat a fragment's dangling
-  jump as a note rather than an error
+- [x] Every `.story` sample in the site is runnable in place, 21 across the five language
+  pages with not one compile error between them. Three accommodations made it true, all of
+  them the playground admitting it is looking at a documentation snippet rather than a
+  project: a fragment with no `scene` is wrapped in one and says so; a `jump` to a scene the
+  snippet does not define is a warning rather than an error, which is also what the VM itself
+  does at runtime; and a lone `...` becomes a narration line, exactly as `spec.rs` has always
+  done. The first two are only defensible because the playground has no schema and never
+  claimed to be `novn check`
 - [ ] The editor is a `textarea`, so the story it holds is not highlighted while the block
   beside it is. Worth an overlay of the highlighted spans behind a transparent textarea, which
   is the usual trick, but it wants the highlighter in the browser and that is currently

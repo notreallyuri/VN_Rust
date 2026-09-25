@@ -1,10 +1,12 @@
 import { CopyButton } from "@/components/copy-button";
 import { Frame } from "@/components/frame";
 import { Playground } from "@/components/playground";
+import { Runnable } from "@/components/runnable";
 import { highlight, type Token } from "@/highlight";
 
 const SHELLS = new Set(["sh", "bash", "shell", "console"]);
 const PLAYABLE = "story-play";
+const STORY = "story";
 
 export function CodeBlock({
   code,
@@ -24,7 +26,7 @@ export function CodeBlock({
   const shell = language ? SHELLS.has(language) : false;
   const gutter = numbered || shell;
 
-  return (
+  const block = (
     <Frame action={<CopyButton text={body} />} name={name}>
       <pre className="overflow-x-auto px-4 py-4 font-mono text-[0.82rem] leading-6">
         <code>
@@ -65,6 +67,11 @@ export function CodeBlock({
       </pre>
     </Frame>
   );
+
+  if (language === STORY && body.trim()) {
+    return <Runnable code={body}>{block}</Runnable>;
+  }
+  return block;
 }
 
 export function fenceFrom(children: unknown): {

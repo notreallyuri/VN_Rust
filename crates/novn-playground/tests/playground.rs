@@ -82,19 +82,87 @@ fn errors_carry_their_line_and_suggestion() {
 }
 
 #[test]
-fn an_unknown_jump_is_reported_before_anything_runs() {
-    let response = ask("scene start:\n  jump nowhere\n", &[]);
-    assert!(!response.ok);
+fn a_jump_out_of_the_snippet_is_a_warning_not_an_error() {
+    let response = ask("scene start:\n  \"one line\"\n  jump nowhere\n", &[]);
+    assert!(
+        response.ok,
+        "a snippet that jumps somewhere it does not define is still worth running"
+    );
+    let note = response
+        .notes
+        .iter()
+        .find(|note| note.message.contains("'nowhere'"))
+        .expect("the jump is reported");
+    assert_eq!(note.severity, "warning");
+    assert!(note.message.contains("does not define"), "{note:?}");
     assert!(
         response
-            .notes
+            .steps
             .iter()
-            .any(|note| note.message.contains("unknown scene 'nowhere'"))
+            .any(|step| step.text.as_deref() == Some("one line")),
+        "the lines before the jump still play"
+    );
+}
+
+#[test]
+fn a_fragment_is_wrapped_in_a_scene_so_it_can_run() {
+    let response = ask("mary \"Hello.\"\n\"She waits.\"\n", &[]);
+    assert!(response.ok, "{:?}", response.notes);
+    assert!(response.wrapped);
+    assert_eq!(
+        response
+            .steps
+            .iter()
+            .filter_map(|s| s.text.as_deref())
+            .collect::<Vec<_>>(),
+        ["Hello.", "She waits."]
+    );
+}
+
+#[test]
+fn a_story_that_declares_its_own_scene_is_not_wrapped() {
+    let response = ask("scene start:\n  \"x\"\n", &[]);
+    assert!(!response.wrapped);
+    assert!(response.listing.contains("scene start:"));
+}
+
+#[test]
+fn an_elision_becomes_narration_rather_than_an_error() {
+    let response = ask(
+        "choice final:\n  \"Keep the letter\":\n    ...\n  \"Burn the letter\":\n    ...\n",
+        &[],
+    );
+    assert!(response.ok, "{:?}", response.notes);
+    assert_eq!(response.choices.len(), 2);
+    let after = ask(
+        "choice final:\n  \"Keep the letter\":\n    ...\n  \"Burn the letter\":\n    ...\n",
+        &[0],
     );
     assert!(
-        response.steps.is_empty(),
-        "a story with errors is not played"
+        after
+            .steps
+            .iter()
+            .any(|step| step.text.as_deref() == Some("...")),
+        "the elision plays as a narration line"
     );
+}
+
+#[test]
+fn an_elision_inside_a_string_is_left_alone() {
+    let response = ask("mary \"Well...\"\n", &[]);
+    assert!(response.ok, "{:?}", response.notes);
+    assert_eq!(response.steps[0].text.as_deref(), Some("Well..."));
+}
+
+#[test]
+fn an_indented_fragment_keeps_its_own_nesting() {
+    let response = ask(
+        "choice:\n  \"Yes\":\n    \"You agree.\"\n  \"No\":\n    \"You refuse.\"\n",
+        &[],
+    );
+    assert!(response.ok, "{:?}", response.notes);
+    assert!(response.wrapped);
+    assert_eq!(response.choices.len(), 2);
 }
 
 #[test]

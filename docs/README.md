@@ -79,7 +79,9 @@ recording. `pnpm build` and `pnpm dev` compile it first, through `scripts/build_
 so working on the site needs a Rust toolchain with `wasm32-unknown-unknown`. The `.wasm` lands
 in `public/` and is gitignored, since it is a build product.
 
-A fenced block becomes one by asking for `story-play` instead of `story`. That marker has to
+Every `story` block also carries a Code/Run/Listing tab strip, a thin client wrapper around
+the server-rendered block that fetches the wasm on the first click rather than on page load.
+A block becomes a full editor by asking for `story-play` instead of `story`. That marker has to
 live in the language tag rather than the fence's meta, because remark drops the meta before it
 reaches a component and Turbopack cannot take a rehype plugin as a function to put it back.
 `crates/novn-script/tests/spec.rs` reads both spellings, so a playable example is still

@@ -21,6 +21,7 @@ export type Choice = {
 
 export type Answer = {
   ok: boolean;
+  wrapped: boolean;
   notes: Note[];
   listing: string;
   counts: { scenes: number; instructions: number };
