@@ -176,6 +176,31 @@ scene example:  (line 1)
 > Call { command: "give_item", args: ["candle", "3"] }
 > End
 
+======== docs/crates/script:164  Interpolation
+scene example:
+  mary "Nice to meet you, {player_name}."
+  {player_name} "Nice to meet you, Mary."
+-------- instructions
+scene example:  (line 1)
+000: SAY [mary]: "Nice to meet you, {player_name}."
+001: SAY [{player_name}]: "Nice to meet you, Mary."
+002: END
+-------- events
+> Say { speaker: Some("mary"), text: "Nice to meet you, {player_name}." }
+> Say { speaker: Some("{player_name}"), text: "Nice to meet you, Mary." }
+> End
+
+======== docs/crates/script/vm:108  Values from the player
+scene example:
+  call ask_name player_name
+-------- instructions
+scene example:  (line 1)
+000: CALL ask_name player_name
+001: END
+-------- events
+> Call { command: "ask_name", args: ["player_name"] }
+> End
+
 ======== docs/dialogue:3  Dialogue and narration
 scene example:
   mary "Nice to meet you."

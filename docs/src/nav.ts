@@ -131,8 +131,38 @@ export const nav: NavSection[] = [
     ],
   },
   {
+    title: "The tools",
+    items: [
+      {
+        title: "The command line",
+        href: "/docs/cli",
+        summary: "check, dump, fmt and new.",
+      },
+      {
+        title: "Translating a game",
+        href: "/docs/cli/translate",
+        summary: "Catalogues, Poedit and friends, fuzzy and stale.",
+      },
+      {
+        title: "Editors and the LSP",
+        href: "/docs/cli/editors",
+        summary: "novn lsp, and what it knows about your project.",
+      },
+    ],
+  },
+  {
     title: "The other crates",
     items: [
+      {
+        title: "Inside the compiler",
+        href: "/docs/crates/script",
+        summary: "novn-script: the pipeline, the Program, the schema.",
+      },
+      {
+        title: "Driving the VM",
+        href: "/docs/crates/script/vm",
+        summary: "Events, the API, snapshots, a frontend of your own.",
+      },
       {
         title: "Embedding assets",
         href: "/docs/crates/build",

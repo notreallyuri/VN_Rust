@@ -420,9 +420,13 @@ to stand on.
   `output: "export"`, `trailingSlash: true`, unoptimized images (the default loader needs
   a server), and `public/.nojekyll`, without which Pages hides `_next`. A domain would
   delete the prefix and the grep together
-- [ ] Deploying to Pages, once there are pages worth deploying. It needs the repository's
-  Pages source set to GitHub Actions, and a workflow that uploads `docs/out`. Deliberately
-  not done while the site is one placeholder page
+- [x] Deploying to Pages. The `docs` job uploads `docs/out` on a push to main and a
+  `deploy` job publishes it, in its own concurrency group without cancel-in-progress,
+  since a half-finished deployment is worse than a queued one. **The repository's Pages
+  source has to be set to GitHub Actions by hand, in Settings, or the deploy job fails
+  with nowhere to put the artifact.** The `docs` job itself was broken from the start:
+  `pnpm/action-setup` is a `uses:` step, so `defaults.run.working-directory` never reached
+  it and it looked for a package.json at the repository root
 
 **Phase 1 — the pages.** The site is useful at the end of this, and the README problem is
 solved by the same work rather than twice.
@@ -441,20 +445,31 @@ solved by the same work rather than twice.
   character visuals, saving and rollback, assets and fonts
 - [x] A fourth section, the other crates: embedding assets (`novn-build`), the command
   macros (`novn-macros`), and Live2D Cubism (`novn-live2d`)
-- [ ] Still to move: `novn-script`'s README for contributors, and the CLI reference
-- [x] The crate READMEs shrink to front doors: what the crate is, a quick start, the
-  features, how to work on it, and a link to its guide. `novn` went from 3,035 lines to
-  154 and SCRIPT.md from 746 to a cheat sheet; live2d kept its licensing in full, since
-  that has to travel inside the `.crate` rather than live on a website, and sent its
-  validation log here instead. `novn-script` and `novn-cli` are still to do, and wait on
-  their pages
+- [x] A fifth section, the tools: the command line (`check`, `dump`, `fmt`, `new`),
+  translating a game, and editors and the language server. Three pages rather than one,
+  because writing a story, handing strings to a translator and setting up an editor are
+  three different sittings. The editor snippets said `vn` where the binary has been `novn`
+  since the rename, so anyone who copied them got a language server that never started
+- [x] `novn-script` moved as two pages: inside the compiler (the pipeline, the `Program`,
+  values and conditions, error recovery, the schema) and driving the VM (events, the API,
+  snapshots, translation at runtime). Split by whether you are changing the compiler or
+  writing a frontend on top of it
+- [x] Every crate README is a front door now: what the crate is, a quick start, the
+  features, how to work on it, and a link to its guide. 5,776 lines of markdown became
+  803. `novn` went from 3,035 to 154, `novn-script` from 540 to 93, `novn-cli` from 287
+  to 49, and SCRIPT.md from 746 to a cheat sheet. Live2D kept its licensing in full,
+  since that has to travel inside the `.crate` rather than live on a website, and sent
+  its validation log here instead
 - [x] The rename reached the docs. Every `crates/vn_*` path and `vn_engine`-era crate name
   in README.md and TODO.md was stale from the move to `novn`, so every link in the
   workspace table was broken; four anchors into sections that no longer exist now point at
   the guide
-- [ ] A link checker in CI: relative links and anchors across the repository's markdown,
-  and the `/docs/...` links inside MDX against the routes the export actually produces.
-  Both pass today, by a script run by hand, which is the wrong place for it
+- [x] A link checker in CI, `scripts/check_links.py`, run by the `docs` job after the
+  export exists. Three checks: relative links and anchors across the repository's
+  markdown, the `/docs/...` links inside MDX against the routes the export actually
+  produces, and braces in MDX prose that would be read as JSX. All three earned their
+  place this session: the shrink turned up four anchors into sections that no longer
+  existed, and a bare `{slot}` in a page failed a build
 
 **Phase 2 — the code block.** One component, built knowing what is coming next.
 
@@ -465,8 +480,18 @@ solved by the same work rather than twice.
   copy against the source so they cannot drift. `web-tree-sitter` has to be in
   `serverExternalPackages`: bundled, Turbopack rewrites its runtime wasm to a URL that
   does not exist on disk at build time
-- [ ] Rust snippets highlighted by the same component, and a Preview/Code tab where a
-  snippet has something to show
+- [x] Rust and shell through the same component and the same token palette, from
+  `tree-sitter-rust` and `tree-sitter-bash` on npm rather than a vendored grammar. One
+  capture-to-kind map covers all three, so a colour is decided once. `sh`, `bash`, `shell`,
+  `console`, `rs` and `rust` are aliases onto the two. A shell block gets a prompt gutter
+  that is `select-none` and `aria-hidden`, so copying a command does not take a `$` with it.
+  Rust is the most common fence on the site now, 44 blocks to `.story`'s 29
+- [ ] `toml` is the one fence still drawn flat, in three pages, all of them a
+  `[build-dependencies]` stanza. A fourth grammar for six lines of TOML is a bad trade;
+  either the snippets become `text`, or the manifest lines move into prose
+- [ ] A Preview/Code tab where a snippet has something to show. This is the half of the
+  code block that is still missing, and it is the one that wants the playground underneath
+  it, so it may be cheaper after phase 3 than before
 
 **Phase 3 — the playground.** The thing that makes the site worth looking at.
 
@@ -480,8 +505,13 @@ solved by the same work rather than twice.
 
 **Phase 4 — keeping it honest.**
 
-- [ ] The `spec.rs` extractor follows the content into MDX, so fenced `.story` blocks stay
-  compiled and golden-tested
+- [x] The `spec.rs` extractor follows the content into MDX, so fenced `.story` blocks stay
+  compiled and golden-tested. Brought forward out of this phase by force: shrinking
+  SCRIPT.md pulled the content out from under it and the suite went red, finding one
+  example where it wanted fifteen. It now reads SCRIPT.md and every `page.mdx`, checks 32
+  examples across 13 sources, and names the page, the line and the heading on a failure. A
+  companion test asserts the pages are still being reached, so it cannot quietly stop
+  finding them the way it just did
 - [ ] The same for Rust snippets, which nothing checks today: an extractor that generates
   a compile-only crate from the site's fenced `rust` blocks. An engine whose character is
   catching mistakes before they run should not ship examples that do not compile

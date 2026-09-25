@@ -1,0 +1,270 @@
+# Inside the compiler
+
+`novn-script` is the story language: lexer, parser, compiler and VM. It has no rendering
+dependencies at all, which is why the engine, the `novn` CLI, the language server and the
+formatter can all share one implementation and cannot disagree about what a story means.
+
+This page is for working on it, or for building something else on top of it. If you are writing
+a game, [the story language](/docs/scenes) is the page you want instead.
+
+## The pipeline
+
+```text
+source ──tokenize──▶ Vec<Token> ──parse_program──▶ Vec<Node::Scene> ──Compiler::compile──▶ Program ──▶ StoryVm
+```
+
+`compile_source(&str) -> Program` runs the whole of that on one source and collects every
+stage's diagnostics into `Program::diagnostics`, sorted by line. `compile_sources([(name,
+source), ...])` does the same for several files compiled into **one** program, in the order
+given, and each diagnostic carries its file name.
+
+| Stage | Entry point | File |
+| --- | --- | --- |
+| Lexer | `tokenize(&str) -> (Vec<Token>, Vec<Diagnostic>)` | `lexer.rs` |
+| Parser | `parse_program(&[Token]) -> (Vec<Stmt>, Vec<Diagnostic>)` | `parser/` |
+| Conditions | `parse_condition(&str, line) -> Result<Condition, Diagnostic>` | `condition.rs` |
+| Compiler | `Compiler::new().compile(scenes) -> Program` | `compiler.rs` |
+| Files | `story_files(dir)`, `read_sources(&paths)` | `files.rs` |
+| VM | `StoryVm::from_dir` / `from_file` / `from_source` / `from_program` | `vm/` |
+| Interpolation | `interpolate(&str, &variables) -> String` | `template.rs` |
+
+## Source layout
+
+| Path | Holds |
+| --- | --- |
+| `lexer.rs` | Tokens, indentation, string scanning |
+| `parser/` | `blocks.rs` builds scenes from the indented token stream, `statement.rs` turns one line into a `Node`, `parts.rs` parses the pieces a line is made of |
+| `condition.rs` | `if` conditions, shared by the parser and the schema |
+| `compiler.rs` | `Node`s to a flat `Program` with jump targets |
+| `vm/` | `mod.rs` is `StoryVm`, `build.rs` loads and validates, `step.rs` is the interpreter, `state.rs` the variables and scene accessors, `snapshot.rs` save and restore, `event.rs` and `error.rs` the types they trade in |
+| `types/` | `Instruction`, `Node`, `Token`, `Value` and friends |
+| `schema.rs` | The registry a game exports for `novn check` and the LSP |
+| `translate.rs` | Extracting translatable strings, and the catalogue the VM reads them back from |
+| `markup.rs`, `template.rs`, `format.rs`, `suggest.rs`, `files.rs`, `diagnostics.rs` | Text tags, `{variable}` interpolation, `novn fmt`, "did you mean", story file discovery, diagnostics |
+
+## Multi-file stories
+
+A story is usually a directory of `.story` files, one per chapter or point of view.
+
+- `story_files(dir)` lists every `*.story` file under `dir`, recursively, sorted by path.
+  Everything else is ignored, so name files to sort in reading order: `00_archive.story`,
+  `01_box_14.story`.
+- `read_sources(&paths)` reads them into `(path, source)` pairs for `compile_sources`.
+- `StoryVm::from_dir(dir)` does both, and `StoryVm::from_file(path)` is the one-file case.
+
+Scene ids are global, so `jump` works across files and the default entry scene is the first
+scene of the first file. A scene id defined twice is an error on the second, naming where the
+first is: `scene 'a' is already defined at a.story:1`.
+
+**How a story is split into files does not reach saves.** A snapshot stores a scene id, an
+offset inside it, and that scene's fingerprint, so chapters can be reorganised without
+invalidating anyone's save.
+
+## The Program
+
+Everything compiles into one flat `Program`.
+
+| Field | Holds |
+| --- | --- |
+| `instructions` | One flat list, for every scene in every file |
+| `locations` | The `Location { file, line }` of each instruction, for diagnostics. `program.line(i)` and `program.file(i)` read it |
+| `files` | Source file names in compile order, empty for `compile_source` |
+| `scene_locations` | Where each scene is defined |
+| `scene_modes` | The scenes written `scene <id> nvl:`. `scene_mode(id)` answers `Adv` for anything not in it, so a program from before modes existed reads the same |
+| `scenes` | Scene id to the index of its first instruction |
+| `scene_order` | Scene ids in file order. The first is the default entry scene |
+| `diagnostics` | Everything found while lexing, parsing and compiling |
+
+`Compiler::start_file(name)`, then `compile_scenes(scenes)` repeatedly, then `finish()` is the
+multi-file form of `Compiler::new().compile(scenes)`.
+
+### Compilation rules
+
+- Every jump target, in `Goto`, in a `Choice` option and in `JumpIfFalse`, is an **absolute**
+  index into `instructions`.
+- Every scene ends with `End`. A scene with no `jump` ends the story rather than running into
+  the next scene in the file.
+- `jump <scene>` stays a named `Jump`, resolved at runtime through `scenes`, which is what keeps
+  the current scene known to the VM for hooks and saves.
+- A duplicate scene id is an error, and the first definition is kept.
+- `Program::unknown_jump_targets()` lists jumps to scenes that do not exist.
+- A choice block compiles to `Choice { options, after }`, then each option's body followed by a
+  `Goto` to the end of the block. `after` is that end, where the VM goes when every option is
+  gated away.
+- `if` compiles to `JumpIfFalse { condition, else_start }`, the then-branch, and a `Goto` over
+  the else-branch. The VM evaluates the whole condition.
+- `commit` compiles to `Commit`, and `choice final:` compiles like `choice:` with a `Commit` at
+  the start of every option's body.
+- `with <transition> [seconds]` becomes a `With(Transition { kind, millis })` instruction just
+  before the one it applies to. `millis` is `None` for the default length, and
+  `Transition::seconds()` resolves it.
+
+### Staying compatible with old saves
+
+A running theme in the rules above: **anything added since the format was first written is
+skipped when absent, so fingerprints do not move.**
+
+A `show` without `at` leaves `position` as `None` and does not serialise it. A choice arm's
+`gate`, `image` and `preview` are all skipped when serialising. A scene with no `with` compiles
+exactly as it did before transitions existed. That is deliberate: a scene fingerprint is what
+decides whether a save resumes exactly or restarts the scene, so a language addition that
+changed every fingerprint would invalidate every save in the wild.
+
+`Instruction` implements `Display` (`SHOW mary tired AT left`, `JUMP_IF_FALSE trust >= 3 (goto
+12)`), and `Program::listing()` prints the whole program with an absolute index per instruction
+and a header per scene. That listing is what [`novn dump`](/docs/cli) prints, and what the
+golden test stores.
+
+## Values and conditions
+
+| Literal | `Value` |
+| --- | --- |
+| `true`, `false` | `Bool` |
+| An `i32`, such as `3` or `-2` | `Int` |
+| A bare identifier, such as `good` | `Enum("good")` |
+| Double-quoted text, such as `"Yuri"` | `String("Yuri")` |
+
+`Enum` is a closed set the game defines. `String` is free text only known at runtime, like a
+name the player types, and uses the same escapes as dialogue.
+
+`Value` implements `Display` as player-facing text, which interpolation uses, and
+`Value::literal()` gives the DSL form, which `novn dump` uses.
+
+Conditions are comparisons joined by `&&` and `||`, with `&&` binding tighter, and no
+parentheses. The condition is tokenised first, so an operator inside a string literal is just
+text, and spaces between tokens are optional.
+
+```text
+a == 1 || b == 2 && c == true
+  ⇒ Any([Test(a == 1), All([Test(b == 2), Test(c == true)])])
+```
+
+A single comparison is a bare `Test`. `All` and `Any` only appear with two or more parts.
+
+### Comparison in the VM
+
+| Variable | Literal | Result |
+| --- | --- | --- |
+| `Int` | `Int` | All six operators |
+| `Bool` | `Bool` | `==` and `!=` |
+| `Enum` | `Enum` | `==` and `!=`, by member name |
+| `String` | `String` | `==` and `!=`, exact and case-sensitive |
+| Different types | | `false`, for every operator |
+| Unset | `Bool`, `Int`, `String` | Compared as `false`, `0`, `""` |
+| Unset | `Enum` | Matches no member, so `==` is false and `!=` is true |
+
+With an empty variable registry any name is accepted and types are not checked, which is handy
+for prototyping. Once variables are registered, every use is checked.
+
+## Interpolation
+
+`{variable}` in dialogue, narration, a choice option or a speaker is replaced with the
+variable's value.
+
+```story
+mary "Nice to meet you, {player_name}."
+{player_name} "Nice to meet you, Mary."
+```
+
+The VM interpolates when it emits `Say` and `Choice`, using the values at that moment, so every
+frontend receives finished text. The compiled program keeps the text as written. `{{` and `}}`
+produce literal braces.
+
+An unset variable, or braces around something that is not an identifier (`{ name }`, `{Name}`),
+is left as written, **so a mistake stays visible on screen** instead of turning into an empty
+space nobody notices.
+
+## Nothing panics
+
+Every error in the lexer or parser becomes an error `Diagnostic` with its line, and parsing
+carries on, so one broken line does not hide the rest of the file.
+
+The lexer classifies each line by its first word with a trailing `:` stripped, reads quoted text
+with `scan_string`, and reports tabs in indentation while dropping that line so the lines after
+it still parse in the right block.
+
+A quoted line whose rest ends with `:` is a `ChoiceOption`, and anything else quoted is
+`Narration`, which is how narration ending in a colon stays narration.
+
+### How the parser recovers
+
+| Problem | Recovery |
+| --- | --- |
+| A broken simple statement (`show mary`, `jump`, a bad identifier or string) | The statement is dropped |
+| A line indented deeper than its block | One error, and the whole over-indented run is skipped |
+| A stray `else:`, choice option, or indented `scene` | Skipped, with everything nested under it |
+| A line outside any scene | Skipped, with everything nested under it |
+| `if` or a scene with a broken header | The body is still parsed and checked, then dropped |
+| `if`, `else:` or an option with no indented block | Error, the body is empty, and the following siblings are not swallowed |
+| `choice:` with no options, or a non-option line inside one | Error, and that line and its nested lines are skipped |
+| A scene with no lines | Warning only |
+
+A line that does not start with a keyword and is not valid dialogue gets a hint when its first
+word is close to a keyword, so `remoe hugo` ends with "did you mean `remove`?". The hint is
+appended to the usual message, so an unrelated guess still reads sensibly.
+
+## The schema
+
+A `Schema` is what the game defines in Rust, so a story can be checked before it runs.
+
+| Registry | Type | Checks |
+| --- | --- | --- |
+| `variables` | name to `VariableDef { ty, default }` | `set`, `add`, conditions and `{var}` use known variables of the right type; enum members exist; `add` only on integers |
+| `characters` | id to `CharacterDef { name, images }` | Speakers, `show` and `remove` use known ids; `show` images are in `images` when it is non-empty |
+| `commands` | name to `CommandSig { required, optional, rest }` | `call` names a known command, with the right number and kinds of arguments |
+
+**An empty registry turns its checks off.** A game can start with none and add them as the
+story grows; once a registry has one entry, every use of it is checked.
+
+`schema.validate(&program)` returns diagnostics sorted by file in compile order and then by
+line, including compile diagnostics and unknown jump targets, which are always checked.
+
+```text
+story/04_santa_ilde.story:12: error: unknown variable 'trsut'
+story/01_box_14.story:30: error: `set route`: 'great' is not one of good | bad | neutral
+story/00_archive.story:41: error: `call give_item` argument 2 should be a non-negative integer, got `many`
+```
+
+### Did you mean
+
+Unknown scenes, characters, images, variables, commands and entry scenes end with a suggestion
+when a known name is close.
+
+```text
+story/02_notebook.story:4: error: speaker: unknown character 'marry'; did you mean 'mary'?
+```
+
+The helpers are public in `suggest`: `edit_distance(a, b)`, where insertions, deletions,
+substitutions and swaps of neighbours each cost 1; `closest(word, candidates)`, the nearest
+candidate within a third of the word's length and at least 1; and `did_you_mean(word,
+candidates)`, which is the suffix or nothing.
+
+### schema.json
+
+A game writes its registries next to its assets, so tools can validate stories without running
+the game.
+
+```json
+{
+  "format_version": 1,
+  "game": "God Is Watching",
+  "story_dir": "story",
+  "entry_scene": "start",
+  "variables": { "trust": { "ty": "Int", "default": { "Int": 0 } } },
+  "characters": { "mary": { "name": "Mary", "images": ["tired"] } },
+  "commands": { "give_item": { "required": ["Word"], "optional": ["UInt"], "rest": null } }
+}
+```
+
+`story_dir` is relative to the schema file, and `entry_scene` is left out when the game uses the
+default. `to_json` writes pretty JSON with a trailing newline so the file diffs cleanly, a
+newer `format_version` than the crate knows is an error, and `write(path)` returns `false` and
+leaves the file alone when nothing changed.
+
+Every field except `format_version`, `game` and `story_dir` may be left out, as may a
+character's `images` and a command's `optional` and `rest`.
+
+## Next
+
+[Driving the VM](/docs/crates/script/vm) is the other half: the events, the API, snapshots and
+what happens at runtime.

@@ -1,0 +1,109 @@
+# Translating a game
+
+Translation is two files and one command. `novn translate` pulls every translatable string out
+of the story into a catalogue the engine reads, and can hand that catalogue to a translation
+tool and take it back again.
+
+## Extracting the strings
+
+```sh
+novn translate <lang> [path] [--export | --import <file.po>]
+```
+
+```sh
+novn translate pt-BR examples/god_is_watching/assets
+```
+
+```text
+wrote examples/god_is_watching/assets/lang/pt-BR.json
+263 strings (263 new), 0 translated, 263 missing, 0 stale
+```
+
+It writes `lang/<lang>.json` next to the game's `schema.json`, holding dialogue, narration,
+choice options, the reasons a choice option is unavailable (the text on a `when` or `unless`),
+and the characters' display names.
+
+Run it again whenever the story changes. It keeps the translations already written, adds
+entries for new strings, and marks as `stale` the ones whose source line has been edited or
+deleted. It never throws work away.
+
+`path` is the project, meaning a `schema.json` or any directory at or under it, found by the
+same search [`novn check`](/docs/cli) uses, and it defaults to the working directory. A story
+with errors is reported and nothing is extracted, so a broken edit cannot half-rewrite the
+catalogue.
+
+### The screens' own labels
+
+`Settings`, `Back`, `Saved to {slot}` and the rest belong to the engine, not to your story. The
+engine writes them to `lang/ui.json` beside `schema.json` when a game runs in a debug build,
+and `novn translate` folds them into the catalogue's `ui` section, so a translator gets one
+file rather than two. Without that file it says so and extracts the story alone.
+
+[Languages](/docs/engine/languages) is how a game then loads one and lets the player pick.
+
+## Working in a translation tool
+
+The catalogue is the runtime format: keyed by a hash, read by the engine, and unpleasant to
+type prose into. `--export` writes `lang/<lang>.po` beside it, which
+[Poedit](https://poedit.net), Weblate, Crowdin and OmegaT all open.
+
+```sh
+novn translate pt-BR examples/god_is_watching/assets --export
+```
+
+```po
+#. registrar (dialogue)
+#: 00_archive.story:10
+msgctxt "story|00_archive.story|8b225b229a290804"
+msgid "You're the new one. Sit."
+msgstr ""
+```
+
+Two things about that entry matter. The comment says who speaks the line and where it is, and
+entries come out in story order, so a translator reads the scene the way a player does instead
+of in hash order. And `msgctxt` is the catalogue key, so a line keeps its translation when the
+story is reordered or split across files.
+
+`--import` reads a `.po` back, rewrites the catalogue, and re-exports so both files stay in
+step:
+
+```sh
+novn translate pt-BR examples/god_is_watching/assets --import lang/pt-BR.po
+```
+
+```text
+read 23 translations from lang/pt-BR.po
+1 marked fuzzy: kept, but not shown until reviewed
+wrote examples/god_is_watching/assets/lang/pt-BR.json
+wrote examples/god_is_watching/assets/lang/pt-BR.po
+```
+
+## Fuzzy and stale
+
+Two flags travel with the text and they mean different things, which is worth getting straight
+before a translator asks.
+
+| | Set by | In the `.po` | Effect |
+| --- | --- | --- | --- |
+| `fuzzy` | The translator, in their tool | `#, fuzzy` | Kept in the catalogue, but the line still reads in the source language until the flag is cleared |
+| `stale` | `novn translate`, when the story moved on | `#~` obsolete | Kept so the old wording is there to work from. Never shown, never re-imported |
+
+So `fuzzy` is a translator saying "not sure yet", and `stale` is the tool saying "the English
+changed under you". Neither loses the text.
+
+## Only the catalogue is load-bearing
+
+`--import` writes the catalogue, so a translation that reached the `.po` some other way, from a
+translation memory or a machine pass, lands in the game exactly like one typed by hand.
+
+Nothing else in the pipeline knows `.po` exists. The engine only ever reads the JSON. If a
+translation tool you like can produce a `.po`, it works, and if it cannot, writing the JSON
+directly works too.
+
+## Checking the work
+
+`novn check` counts every catalogue against the story as it is now, and `--lang <code>` lists
+what is missing with file and line. That is on [the command line](/docs/cli) page.
+
+A missing translation is never fatal: the line falls back to its source text, so a
+half-translated game runs and can be played in the language it does have.

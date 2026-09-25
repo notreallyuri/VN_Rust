@@ -92,6 +92,10 @@ jobs:
       - name: Build the static export, which typechecks it too
         run: pnpm build
 
+      - name: Links, anchors, routes and MDX braces all resolve
+        working-directory: .
+        run: python3 scripts/check_links.py
+
       - name: Keep the export for the deploy job
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3

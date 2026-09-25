@@ -1,0 +1,202 @@
+# Driving the VM
+
+`StoryVm` runs a compiled program and emits one `Event` per `advance()`. What to do with an
+event is the frontend's business, which is how the same VM drives the raylib engine, the
+language server and the test suite.
+
+If you want a different frontend, this page is the whole interface.
+
+## Events
+
+| Event | Blocking | Meaning |
+| --- | --- | --- |
+| `Say { speaker, text }` | yes | A line of dialogue. `speaker: None` is narration |
+| `Choice { options }` | yes | Waits for `choose(index)`. `advance` returns the same choice until then |
+| `End` | yes | The story is over. `advance` keeps returning `End` until `reset` |
+| `Show { character, image, position, transition }` | no | Already applied to `active_characters()` |
+| `Background { image, transition }` | no | Already applied. `None` for `background none` |
+| `Music { track }` | no | Already applied. `None` for `music none` |
+| `Sound { id }` | no | A one-shot for the frontend to play. Not part of the state |
+| `Voice { id }` | no | A voice clip for the next line. Not part of the state |
+| `Hide { character, transition }` | no | Already applied |
+| `Clear { transition }` | no | Already applied |
+| `Call { command, args }` | no | For the game to handle |
+| `Commit` | no | A rollback barrier, from `commit` or the start of a `choice final:` option |
+| `SceneEnter { scene }` | no | The story entered a scene. Only with `set_scene_events(true)` |
+
+`Event::is_blocking()` tells you whether to wait for the player.
+
+The non-blocking events are **already applied to the VM's state** by the time you see them.
+`Show` is a notification that `active_characters()` changed, not a request to change it, so a
+frontend that only wants to draw the current state can ignore them entirely and read the
+accessors instead.
+
+### Choice options
+
+Each `ChoiceOption` carries its `text`, the `index` to pass to `choose`, whether it is
+`enabled`, the `reason` it is not, and its `image` and `preview`.
+
+Options hidden by a `when` or `unless` without a reason are not in the list at all, so **`index`
+is the option's place in the story, not its place in `options`**. Passing the position in the
+list is the mistake to avoid here; it works until the first gated option and then silently
+picks the wrong branch.
+
+`SceneEnter` is off by default so that simple frontends never have to know about it, and it is
+not emitted when a restore returns to the exact position it left.
+
+## The API
+
+| Method | Purpose |
+| --- | --- |
+| `from_dir(dir)`, `from_file(path)`, `from_source(src)`, `from_program(program)` | Load. The VM starts at the entry scene, ready to run |
+| `advance() -> Event` | Run to the next event |
+| `advance_until_blocking() -> Event` | Run to the next `Say`, `Choice` or `End`, applying presentation events on the way |
+| `choose(index) -> Result<(), VmError>` | Answer the pending choice |
+| `set_schema(schema)` | Use a schema. Variables start at their defaults and `set_variable` is type-checked. Resets the story |
+| `validate()` | The schema's diagnostics for this program, plus a missing entry scene |
+| `prepare(schema, entry_scene) -> Vec<Diagnostic>` | `set_schema`, `set_entry_scene` and `validate` in one call. What the engine and `novn check` run |
+| `set_entry_scene(id)`, `entry_scene()` | Start from a scene other than the first. Resets the story |
+| `reset()` | Restart from the entry scene, variables back to their defaults, no characters |
+| `start_at(scene_id) -> Result<(), VmError>` | Restart from a given scene |
+| `current()` | The blocking event waiting for the player, if any |
+| `current_scene()` | The scene the story is in |
+| `active_characters()` | Character id to image id, for everyone on screen |
+| `position(character)` | The `Position` given with `at`, if any |
+| `background()`, `music()` | The current background image id and music track id |
+| `line_key()` | A stable id for the line on screen, for "read" tracking |
+| `variables()`, `variable(id)`, `variable_type(id)` | Story variables |
+| `set_variable(id, value) -> Result<(), VmError>` | Set from Rust. With registered variables, unknown names and wrong types are errors |
+| `program()` | The compiled program |
+| `set_scene_events(bool)` | Emit `Event::SceneEnter`. Off by default |
+
+`current()` is the one worth knowing about: it lets a frontend leave the story and come back,
+to a menu or a save screen, without skipping the line that was showing. It is cleared by the
+next `advance`, `choose` or `reset`.
+
+`position` is kept when a character is shown again without `at`, and forgotten by `remove` and
+`clear`. `background()` is not touched by `clear`.
+
+`VmError` is `UnknownScene(id)`, `NoChoicePending`, `ChoiceOutOfRange { index, options }`,
+`ChoiceUnavailable { index }` when the option's condition does not hold, `UnknownVariable(id)`,
+and `TypeMismatch { variable, message }`.
+
+## A frontend loop
+
+```rust
+let mut current = vm.advance_until_blocking();
+
+match current {
+    Event::Say { .. } => current = vm.advance_until_blocking(),
+    Event::Choice { .. } => {
+        vm.choose(picked)?;
+        current = vm.advance_until_blocking();
+    }
+    Event::End => {}
+    _ => {}
+}
+```
+
+That is the whole of it for a frontend that does not animate anything. Use `advance()` directly
+instead when you want to animate `Show`, `Hide` and `Clear`, or to handle `Call`: with
+`advance_until_blocking()` those events are applied to the VM's state but never returned.
+
+## Values from the player
+
+`vm.set_variable` is how anything the player types gets in, typically when the game handles a
+`call`:
+
+```story
+call ask_name player_name
+```
+
+The game shows an input screen, then sets `player_name` to a `Value::String`. The VM has no
+idea a screen was involved, which is the point of keeping the language free of I/O.
+
+## Snapshots
+
+`snapshot() -> StorySnapshot` captures the story, and it is serde-serialisable.
+
+| Field | Meaning |
+| --- | --- |
+| `scene`, `offset` | The current scene and the position inside it, not an absolute index |
+| `scene_fingerprint` | A hash of that scene's compiled instructions, with jump targets made relative to the scene |
+| `pending_choice`, `current` | Whether a choice is waiting, and the event on screen |
+| `variables`, `active_characters` | Sorted maps, so save files are stable |
+| `positions`, `background` | Both missing in older snapshots, which restore with none |
+| `music` | Left out of the JSON when there is none |
+
+`restore(&snapshot)` gives one of three outcomes:
+
+| Outcome | When | What happens |
+| --- | --- | --- |
+| `Exact` | Same scene, unchanged fingerprint | Continues exactly where it was, showing the same line or choice |
+| `SceneRestarted { scene }` | The scene exists but was edited | Starts it from the top, keeping variables and characters |
+| `Err(UnknownScene)` | The scene is gone | The VM is left untouched |
+
+`check_restore` does the same checks without changing anything, which is how a save menu can
+warn before loading.
+
+**Other scenes can change freely.** The fingerprint only covers the saved scene and offsets are
+scene-relative, so editing chapter four never disturbs a save sitting in chapter two. That is
+the property that makes it safe to ship a patch to a story people are partway through.
+
+Restoring starts from the schema's defaults and then applies the saved variables, so a variable
+registered after the save was written gets its default rather than going missing.
+
+## Translation at runtime
+
+```rust
+let mut vm = StoryVm::from_dir("assets/story")?;
+vm.set_catalog(Some(Catalog::read("assets/lang/pt-BR.json")?));
+```
+
+The VM translates **before** interpolating, so `{variable}` placeholders work inside a
+translation. `Event::Say` and `Event::Choice` then carry translated text, falling back to the
+source for anything missing or stale, so a half-finished catalogue is playable.
+
+`set_catalog` re-renders the line or choice currently being read, so switching language
+mid-scene changes what is on screen instead of waiting for the next line. `vm.language()` says
+which catalogue is loaded.
+
+Nothing else changes: ids, variables, snapshots and save data are all language-independent.
+[Translating a game](/docs/cli/translate) is the authoring side of this, and
+[Languages](/docs/engine/languages) is what the engine does with it.
+
+### The catalogue
+
+An entry's key is a hash of the file's name and the source text, so **editing a line makes a new
+entry rather than silently keeping the old translation.** The edited line comes back as missing
+and the entry it replaced stays in the file marked `stale`, with the old translation to work
+from. Nothing is ever deleted, so a rewrite that gets reverted costs no work.
+
+The file part of the key is the story file's name without its directories, because the same
+story is loaded from a folder while developing and from inside the executable in a release
+build. Two story files with the same name in different subdirectories therefore share entries
+for identical lines.
+
+| Call | Does |
+| --- | --- |
+| `translate::extract(&program)` | Every dialogue line, narration line and choice option, with its file, line, kind and speaker |
+| `translate::extract_names(&schema)` | The characters' display names |
+| `Catalog::refresh(&strings, &names)` | Adds what is new, refreshes line numbers, marks what is gone or edited as stale, and reports the counts |
+| `Catalog::refresh_ui(&strings)` | The same for a frontend's own labels, which have no file and are keyed by their English text alone |
+| `Catalog::text(file, source)`, `name(id, source)`, `ui_text(source)` | The translation, or `None` when it is missing, stale or unreviewed |
+| `Catalog::missing()`, `stale()`, `needing_review()` | For reporting, as `novn check` does |
+| `Entry::translated()`, `needs_review()` | The text to show, and whether a translation is waiting on the translator |
+
+## What the VM refuses to do
+
+A few runtime behaviours exist so that a broken story fails in a way you can see.
+
+- `advance` is a loop rather than recursion, so a long run of non-blocking instructions cannot
+  overflow the stack.
+- If one `advance` runs 100,000 instructions without producing an event, which is what
+  `scene a: jump b` and `scene b: jump a` will do, the VM logs a warning and ends the story
+  instead of hanging.
+- A `jump` to an unknown scene logs a warning and ends the story.
+- A `choice:` with no options is skipped.
+- `add` on an unset variable starts it at `Int(0)`. On a `Bool` or `Enum` it logs a warning and
+  leaves the value alone. Overflow saturates.
+
+Ending the story is a deliberate choice over panicking: a shipped game that reaches a broken
+jump returns the player to the menu rather than crashing to the desktop.

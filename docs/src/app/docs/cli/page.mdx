@@ -1,0 +1,188 @@
+# The command line
+
+`novn` is the tool for working with `.story` files without starting the game. It checks them,
+shows you what they compile to, formats them, and writes a new project.
+
+```sh
+cargo install novn-cli
+```
+
+That installs one binary, called `novn`. From inside this repository you can also run it
+without installing: `cargo run -p novn-cli -- check assets`.
+
+## `novn check`
+
+```sh
+novn check <path> [--schema <schema.json>] [--lang <code>]
+```
+
+Checks the story the way the engine does at startup: syntax, and with a schema the registries
+too, meaning variables, characters, images, command arguments and the fixed set of words an
+argument may take, plus the entry scene. Every diagnostic prints as `file:line: error: ...`,
+then a summary, and the exit code fails if there were errors, so it works in CI and in an
+editor's run-on-save.
+
+```sh
+novn check examples/god_is_watching/assets
+```
+
+```text
+examples/god_is_watching/assets/story/04_santa_ilde.story:12: error: unknown variable 'trsut'
+examples/god_is_watching/assets/story/02_notebook.story:30: error: speaker: unknown character 'francs'; did you mean 'francis'?
+6 files, 30 scenes checked against examples/god_is_watching/assets/schema.json: 2 errors, 0 warnings
+```
+
+A misspelled keyword, or a name close to a registered one, ends with a "did you mean". That is
+the whole point of registering things in Rust: a typo is an error with a suggestion, before a
+window opens, rather than a branch that quietly never runs.
+
+### What gets checked
+
+The schema is the `schema.json` a game exports in debug builds. What `path` points at decides
+the scope:
+
+| `path` | Checks |
+| --- | --- |
+| A `schema.json`, or the directory holding it | The whole story, from the schema's `story_dir` |
+| The story directory | The whole story |
+| A file or subdirectory inside the story directory | The whole story, so jumps into other files still resolve, but shows only the diagnostics for `path` |
+| A story file or directory outside it | Just that, against the schema's registries, without the entry scene |
+
+Without `--schema` it looks for `schema.json` in `path`'s directory and each of its parents.
+With no schema anywhere it checks syntax and jump targets only, and says that is what it did.
+
+### Translation counts
+
+When the project has a `lang/` directory, the check ends with a line per catalogue, counted
+against the story as it is now rather than as it was at the last `novn translate`:
+
+```text
+6 files, 30 scenes checked against examples/god_is_watching/assets/schema.json: 0 errors, 0 warnings
+pt-BR: 22/364 translated, 342 missing, 0 stale
+  run `novn check --lang pt-BR` to list them
+```
+
+`--lang <code>` lists them, sorted by file and line:
+
+```text
+00_archive.story:7: missing narration translation: "October, 1903. The Archive of the House, two floors below the street."
+00_archive.story:10: missing dialogue translation: "You're the new one. Sit."
+name registrar: missing name translation: "The Registrar"
+screens: missing ui translation: "Resume"
+```
+
+Missing and stale translations do not fail the check, because an untranslated line falls back
+to the source text and a half-translated game still runs. A catalogue that cannot be read does
+fail, as does `--lang <code>` with no `<code>.json` to check.
+
+[Translating a game](/docs/cli/translate) is the rest of that.
+
+## `novn dump`
+
+```sh
+novn dump <file.story | directory>
+```
+
+Compiles a file, or every `.story` file under a directory the way the engine loads a story, and
+prints the program: counts, the diagnostics that need no registry (syntax errors, duplicate
+scenes, jumps to unknown scenes), then every instruction with its absolute index, under scene
+headers saying where each scene is defined.
+
+```sh
+novn dump examples/god_is_watching/assets/story
+```
+
+```text
+6 files, 30 scenes, 591 instructions
+
+scene box_the_letter:  (examples/god_is_watching/assets/story/01_box_14.story:24)
+064: WITH dissolve
+065: BACKGROUND archive_office
+066: MUSIC archive
+069: CHOICE ['Break the seal'->70, 'Leave it sealed'->78]
+070: SET read_letter = true
+071: SOUND page_turn
+072: CALL give_item verlaine_letter
+077: GOTO 80
+```
+
+This is the thing to reach for when a story does something you did not expect and you want to
+know whether the compiler read it the way you wrote it. The indices are absolute across the
+whole story, which is why a `GOTO` can point into another file.
+
+## `novn fmt`
+
+```sh
+novn fmt <path> [--check]
+```
+
+Formats a file, or every `.story` file under a directory, in place. `--check` writes nothing
+and lists what would change, failing if anything would, for CI and pre-commit hooks.
+
+```sh
+novn fmt examples/god_is_watching/assets/story --check
+```
+
+```text
+6 files, 0 to reformat
+```
+
+The rules are short enough to state completely:
+
+| | |
+| --- | --- |
+| Indentation | Two spaces per level, taken from the nesting the file already has rather than from how deep each line happens to be written |
+| Spacing | One space between words. `=`, `+=`, `-=` and the comparison operators in `if`, `set` and `add` get a space on each side |
+| Comments | Kept as written, indented like the line below them |
+| Blank lines | At most one in a row, exactly one before each `scene`, none at the start or end of the file |
+| Strings | Never touched, including the spaces, `#`, `:` and `{variable}` inside them |
+
+**A file is only rewritten when it compiles and when the result compiles to the same program.**
+Formatting cannot change what a story does. A file with errors is reported and left alone,
+which also means `novn fmt` is safe to run on a whole project mid-edit.
+
+## `novn new`
+
+```sh
+novn new <directory> [--title <title>] [--engine-path <dir> | --engine-git <url>]
+```
+
+Creates a project that runs with `cargo run`.
+
+```sh
+novn new ../my-novel
+cd ../my-novel
+cargo run
+```
+
+| File | Contents |
+| --- | --- |
+| `Cargo.toml` | A package named after the directory (`my-novel` becomes `my_novel`), depending on `novn` and on `novn-build` for the build script, with an empty `[workspace]` so it builds on its own even inside another workspace |
+| `src/main.rs` | A `VnApp` with one character (`guide`), two variables, a `give_item` command, and the embedded assets |
+| `build.rs` | Embeds `assets/` in release builds, so `cargo build --release` gives an executable that runs anywhere |
+| `assets/story/start.story` | Two scenes using dialogue, a choice, `set`, `if`, `call` and `jump` |
+| `assets/schema.json` | The registries of `main.rs`, so `novn check assets` works before the first run. Debug builds rewrite it |
+| `assets/{characters,backgrounds,fonts}/` | Empty. Missing art is drawn as a placeholder |
+| `README.md`, `.gitignore` | |
+
+The window title is `--title`, or the directory name in title case. The engine dependency is
+`--engine-path`, written relative to the project when they share a parent, or `--engine-git`,
+or by default the `novn` next to the `novn-cli` that was built, falling back to the GitHub
+repository. The directory may exist, but has to be empty.
+
+[Your first novel](/docs/first-novel) walks through what it writes.
+
+## `novn lsp`
+
+A language server for `.story` files, for any editor that speaks LSP. It has its own page:
+[editors and the language server](/docs/cli/editors).
+
+## Tests
+
+```sh
+cargo test -p novn-cli
+```
+
+Each command has a file under `tests/` that runs the real binary against temporary projects:
+`check.rs`, `new.rs`, `translate.rs` and `lsp.rs`, the last of these driving the server over
+pipes the way an editor would.

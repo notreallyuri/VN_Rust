@@ -1,0 +1,81 @@
+# Editors and the language server
+
+`novn lsp` is a language server for `.story` files, speaking LSP over stdin and stdout, so any
+editor that can start a language server can use it. It is the same compiler the engine and
+`novn check` use, so the editor cannot disagree with the game.
+
+```sh
+cargo install novn-cli
+```
+
+Then point the editor at `novn lsp` for `*.story` files.
+
+## What it does
+
+| Feature | Behaviour |
+| --- | --- |
+| Diagnostics | On open, change, save and close, for every file of the project, using the text of unsaved buffers: syntax errors, registries, unknown scenes, "did you mean" hints. The same checks as `novn check` |
+| Completion | By context. Keywords and characters at the start of a line; scenes after `jump`; characters after `show` and `remove`, and their images after `show <character>`; `at` and `with`, positions and transitions; background, music, sound and voice ids read off the asset folders, and `none`; variables after `set`, `add` (integers only), `if`, `&&`, `\|\|` and inside `{` in a string; `true` and `false` or the enum's words after `set x =` and `x ==`; operators; commands after `call`, with their usage |
+| Go to definition | On a scene name, in a `jump` or anywhere else: the `scene` line, in whichever file holds it |
+| Hover | Characters (display name, images), variables (type and default), commands (usage), scenes (file and line) |
+| Document symbols | The scenes of the file, as an outline |
+
+Completion reading the asset folders is the part worth noticing. The ids it offers for
+`background`, `music`, `sound` and `voice` are the files that actually exist on disk, so a
+misremembered filename shows up while you type rather than as a placeholder card at runtime.
+
+## How it finds the project
+
+The same way `novn check` does: the nearest `schema.json` above the file, and that schema's
+`story_dir`.
+
+A file outside the story directory is checked alone against the schema's registries. A file
+with no schema above it is checked together with the other `.story` files in its folder, for
+syntax and jumps only, which is enough to be useful in a scratch directory.
+
+## Neovim
+
+Version 0.11 or newer:
+
+```lua
+vim.filetype.add({ extension = { story = "story" } })
+vim.lsp.config("novn", {
+  cmd = { "novn", "lsp" },
+  filetypes = { "story" },
+  root_markers = { "schema.json" },
+})
+vim.lsp.enable("novn")
+```
+
+## Helix
+
+In `languages.toml`:
+
+```toml
+[language-server.novn]
+command = "novn"
+args = ["lsp"]
+
+[[language]]
+name = "story"
+scope = "source.story"
+file-types = ["story"]
+roots = ["schema.json"]
+language-servers = ["novn"]
+```
+
+## VS Code and Zed
+
+Both need a small extension to start the server, which is not written yet. Until then, any
+editor with a generic LSP client can be pointed at `novn lsp` with the settings above.
+
+Syntax highlighting is a separate thing from the language server: it comes from the tree-sitter
+grammar in `editors/tree-sitter-story`, which is also what colours the `.story` blocks on this
+site.
+
+## Tests
+
+`crates/novn-cli/tests/lsp.rs` drives the server over pipes the way an editor does: diagnostics
+following unsaved edits and clearing again, a scene defined in a file that was never saved,
+completion in every context above, definition across files, hover, symbols, a file with no
+project, unknown requests, and shutdown.
