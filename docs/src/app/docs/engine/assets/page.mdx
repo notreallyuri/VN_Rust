@@ -1,0 +1,66 @@
+# Assets, textures and fonts
+
+Everything the engine loads goes through one asset layer, which reads either from a folder
+or from the executable.
+
+| Source | Reads |
+| --- | --- |
+| `Assets::Dir(path)` | Files under a folder, which is what `assets(path)` sets |
+| `Assets::Embedded(...)` | Files compiled into the executable, by relative path |
+
+`read`, `read_to_string`, `exists`, `files_under` and `describe` work the same for both, and
+textures, fonts and sounds are decoded from memory either way, so a game behaves identically
+from a folder and from its own binary.
+
+## Shipping a release build
+
+Pointing at the game's source folder only works on the machine that built it. To make a
+release build that runs anywhere, embed the folder from `build.rs` and pass the result.
+
+```rust
+// build.rs
+fn main() {
+    novn_build::embed_assets("assets");
+}
+
+// main.rs
+VnApp::new("My Game")
+    .assets(concat!(env!("CARGO_MANIFEST_DIR"), "/assets"))
+    .embedded_assets(novn::embedded_assets!())
+```
+
+`novn-build` only embeds in release builds. A debug build gets an empty list and reads the
+folder, so hot reload and editing art keep working while you develop.
+
+## Textures
+
+`get_or_load(path, rl, thread)` loads a texture once and caches it by path. A missing or
+unreadable file logs a warning and is replaced by a generated placeholder: a card labelled
+with the path, coloured from the path itself so each character and expression keeps the same
+colour between runs, or a dark background image labelled the same way. **A story can be
+played before its art exists.**
+
+`texture(path)` returns an already-loaded texture without loading anything, so it works from
+`draw`, and it remembers the paths it did not find; the manager loads those at the start of
+the next update. Button images and icons load that way.
+
+Story art lives at `characters/<id>/<image>.png` and `backgrounds/<image>.png`, relative to
+the assets.
+
+## Fonts
+
+The engine ships Noto Sans under the SIL Open Font License and compiles it into the binary
+as the default font.
+
+Each kind of text has a role: `Default`, `Title`, `Menu`, `Button`, `Dialogue`, `Speaker`,
+`Choice`, and `Custom(name)` for anything else. A game assigns files from `<assets>/fonts/`
+to roles.
+
+```rust
+VnApp::new("My Novel")
+    .font(FontRole::Dialogue, "NotoSerif-Regular.ttf")
+    .font(FontRole::Custom("journal"), "Caveat.ttf")
+```
+
+A language that needs its own typeface gets one with `language_font(code, role, file)`,
+which is used for that role only while that language is being read.

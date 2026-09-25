@@ -1,0 +1,86 @@
+# Audio and video
+
+## Audio
+
+The story chooses the music and sounds; the engine plays them. Files live in
+`<assets>/music/`, `<assets>/sounds/` and `<assets>/voice/`, as `.ogg`, `.mp3`, `.wav` or
+`.flac`, tried in that order. A missing file is a startup warning and the game stays silent
+there.
+
+Music loops, a new track crossfades with the old one, and `music none` fades out. Sounds
+play once, when the story reaches them, and are not replayed by a rollback or a load. Voice
+clips play with the next line and stop when the player moves on; auto mode waits for them.
+
+**The music follows the screen.** The start screen and main menu play the menu music, the
+playing screen and text input play the story's track, and every other screen keeps whatever
+was playing. Because the track is part of the story's state, loading a save, rolling back,
+New Game and hot reload all switch to the right music without a line of extra code.
+
+| Option | Default |
+| --- | --- |
+| `menu_music(track)` | none |
+| `fade_seconds(s)` | 1.0; 0 switches tracks at once |
+| `enabled(bool)` | `true`; `false` never opens the audio device |
+
+Volumes come from the settings. If no audio device can be opened, a warning is printed and
+the game runs silently. From code, `ctx.play_sound(id)` plays one and `ctx.music()` is the
+track playing.
+
+`ctx.voice_level()` reads the playing clip's own loudness, 0 to 1, from an envelope taken
+when the clip was loaded: one reading every 10 ms, normalised to the clip's loudest moment.
+It is what lip sync is driven from, and it is 0 when nothing is playing.
+
+## Video
+
+The decoder is optional. The `video` feature selects the Rust AV1 and Vorbis backend,
+`video-ffmpeg` selects FFmpeg, and with neither the engine has no video dependency at all.
+If both are on, FFmpeg wins, and there is no automatic fallback after a decoding error.
+
+```toml
+novn = { version = "0.1", features = ["video"] }
+```
+
+The Rust backend decodes in software everywhere, macOS included. On x86 that needs nasm at
+build time; ARM64 needs only the C compiler. `video-portable` is the same backend without
+x86 SIMD, for building where nasm is unavailable, and it decodes several times slower, so it
+is not what you ship. Decoding uses one thread fewer than the machine has cores, between two
+and four.
+
+A cutscene is an ordinary story command:
+
+```rust
+use novn::video::VideoRequest;
+
+let app = app.command_as("video", |ctx, (file,): (String,)| {
+    ctx.play_video(VideoRequest::new(format!("videos/{file}")))
+});
+```
+
+`VideoRequest` takes `.skippable(false)`, `.volume(0.5)` and `.after(state)`, and its
+default destination is the playing screen. Click, Enter, Escape or gamepad A and B skip a
+skippable movie; Space or Start pause it. Overlays pause playback, including the window-close
+confirmation, and closing the window during a movie asks the same way it does during the
+story. "Loading video…" only appears if a movie takes more than half a second to start.
+
+Starting a movie stops voice playback and marks a rollback barrier. Music continues
+underneath at zero volume and becomes audible again when the cutscene ends, and movie audio
+uses the sound volume setting. Autosave is suppressed while the video screen is up, quitting
+included, so the previous autosave is preserved; a scene that opens with a movie still
+autosaves at its first line afterwards. Movie positions are not serialised, so an earlier
+save replays the command when it reaches it again. A successful hot reload cancels the
+current movie, and a missing or unsupported file shows an error notification and returns to
+the requested screen.
+
+## What the backends accept
+
+The Rust backend takes AV1 in WebM or Matroska, with optional mono or stereo Vorbis at 8 to
+192 kHz. Video must be 8-bit SDR YUV420, 422 or 444 using BT.601 or BT.709. Opus needs the
+FFmpeg feature.
+
+```sh
+ffmpeg -i input.mov -c:v libaom-av1 -crf 30 -b:v 0 -pix_fmt yuv420p -c:a libvorbis -ac 2 opening.webm
+```
+
+FFmpeg supports whatever the linked build has, with one engine-enforced exception: **H.264
+and H.265 are rejected on desktop**, inside MP4 or Matroska alike, and renaming the file does
+not get around it. The check is on the codec, not the extension.

@@ -1,0 +1,151 @@
+# Menus, settings and overlays
+
+Everything a player reaches while the story is running: the pause menu over the game, the
+dialogs that ask before something irreversible, the settings they keep between sessions,
+and the two overlays that read back what has happened.
+
+## The pause menu
+
+Escape on the playing screen opens it as an overlay over the game.
+
+| Button | Action |
+| --- | --- |
+| Resume | Close every overlay, which Escape also does |
+| Save, Load | The slots as a panel over the game |
+| Quick Save, Quick Load | The `quick` slot |
+| Settings | The settings as a panel over the game |
+| Main Menu | Asks first: unsaved progress will be lost |
+| Quit | Asks first |
+
+Save, Load and Settings open on top of the pause menu, and their Back button, Escape or
+Backspace return to it. Loading a slot closes everything and continues from the save.
+
+| Option | Default |
+| --- | --- |
+| `title`, `title_text` | "Paused", Title font 40 px |
+| `button`, `item` | the buttons above; the first call replaces the list |
+| `button_style`, `spacing` | 260×44, 20 px text; 10 |
+| `layout` | a column; a grid widens the panel |
+| `panel_width`, `padding` | 340, 28 |
+| `panel` | dark translucent, roundness 0.04 |
+| `backdrop` | black at 150 alpha, over the game |
+| `close_keys` | Escape |
+
+To replace it wholesale, register an overlay under the same name:
+`overlay(PAUSE_OVERLAY, MyPauseMenu::new)`.
+
+## Asking first
+
+`Action::confirm(message, action)` opens a dialog over whatever is on screen and runs the
+action only if the player agrees.
+
+```rust
+.main_menu(|m| m.button("Quit", Action::confirm("Leave the game?", Action::Quit)))
+```
+
+`Confirm::new(message, action).confirm_label("Overwrite").cancel_label("Keep")` sets the
+labels for one dialog, and `ctx.confirm(confirm)` opens one from code.
+
+| When | Message | Turn off with |
+| --- | --- | --- |
+| Pause menu to the main menu | Return to the main menu? Unsaved progress will be lost. | replacing the pause menu buttons |
+| Pause menu to quit | Quit the game? Unsaved progress will be lost. | replacing the pause menu buttons |
+| The window's close button, mid-game | Quit the game? Unsaved progress will be lost. | `confirm_on_close(None)` |
+| Saving over a used slot | Overwrite Slot N? | `save_menu(\|s\| s.confirm_overwrite(false))` |
+| Loading from the in-game Load panel | Load Slot N? Unsaved progress will be lost. | `save_menu(\|s\| s.confirm_load_in_game(false))` |
+
+Loading from the main menu, and quick save and load, do not ask. The dialog is an overlay
+on top of the current stack: Cancel, Escape or N close it, and the confirm button, Enter or
+Y run the action.
+
+## Closing the window
+
+raylib reports a click on the window's close button for a single frame, and the loop hands
+that to the manager rather than stopping. On the start screen or main menu, or once the
+story has ended, the game quits. On the playing screen, in text input, or on any other
+screen once a story has started, the confirmation dialog opens with Quit behind its
+button. Clicking the close button again while that dialog is open quits anyway, so the
+window can always be closed.
+
+## Settings
+
+Player preferences, kept separately from saves in `settings.json` beside them, written as
+soon as something changes through a temporary file the way saves are. A missing or
+unreadable file gives the defaults, and a missing field takes its own default, so new
+settings do not break old files.
+
+| Setting | Default |
+| --- | --- |
+| Display | windowed; fullscreen is borderless at the monitor's resolution |
+| Text speed | 40 characters per second; `0` is instant |
+| Music, sound and voice volume | 70, 80, 100 percent |
+| Auto-forward | 1500 ms, adjustable from 0.5 to 5 seconds |
+| Skip unseen | off: skipping stops at a line the player has not read |
+| Language | none, meaning the story as written |
+
+The default screen shows one row per setting. `audio_rows(false)` hides the volumes,
+`voice_row(false)` just the voice one, `play_rows(false)` auto-forward and skip, and the
+language row only appears when the game ships more than one. Display and Skip are toggles;
+the rest are sliders you can drag, click along, or step with the arrow keys while the row
+is hovered. Under the rows a sample line types out at the chosen speed.
+
+It exists both as a screen, reached from the main menu, and as an overlay, reached from the
+pause menu. From code, `ctx.settings.values` reads and `ctx.settings.update(|s| ...)`
+changes and saves.
+
+## Notifications
+
+`ctx.notify(text)` and `ctx.notify_error(text)` put a short message at the top left, above
+every screen and overlay. Quick save and quick load use them. They carry their own text
+styles, a panel, a duration of 2.5 seconds and a margin.
+
+## Playing controls
+
+Ren'Py's defaults, on the playing screen.
+
+| Input | Action |
+| --- | --- |
+| Click, Space, Enter, gamepad A | Advance, finishing the typewriter and any transition first |
+| Mouse wheel, Page Up and Down, LB and RB | Roll back and forward |
+| H, middle click, gamepad Select | Hide the box, the choices and the HUD to look at the scene |
+| Ctrl held, right trigger held | Skip while held |
+| Tab, A | Toggle skip, toggle auto |
+| L, gamepad Y | Open the log |
+| F1 | The controls overlay, from any screen |
+| S | Screenshot of the finished frame, shader passes and screen shake included |
+| F | Toggle fullscreen |
+| Escape, right click, gamepad Start | Pause menu |
+| F5, F9 | Quick save, quick load |
+
+**Skip** advances a line every `skip_interval`, instantly, through lines already read. It
+stops at an unread line unless the setting says otherwise, at a choice, at the end, and
+when a menu opens. Which lines have been read is remembered across sessions in `seen.json`,
+keyed by the scene, speaker and text as written, so editing a line makes it unread again.
+
+**Auto** advances once the line has finished typing, its transitions are done and its
+voice clip has played, after the auto-forward delay plus a per-character amount. It stays
+on across choices, waiting for the player, until it is turned off.
+
+## The controls overlay
+
+F1 opens a two-column list of every control with its keyboard input, gamepad button and
+action, from any screen except text input.
+
+The list is generated from the game's own configuration, so rebinding a key or turning a
+feature off changes it: unbound actions disappear, and the gamepad column is empty when the
+gamepad is off. A game adds its own sections with `section(KeySection::new(title).row(...))`,
+or replaces the generated list entirely.
+
+## The log
+
+Every line the player sees and every choice they make goes into the session log, the last
+300 of them. A line is stored as the speaker's id, the story file, the line as written, and
+the values of the variables it interpolated, captured as it was read. Nothing in there is
+in a particular language, so the log re-renders when the player switches, while a line
+keeps the numbers it was read with rather than today's.
+
+The log is part of the game: rolling back rewinds it, rolling forward restores it, saves
+store it, loading brings it back, and New Game clears it.
+
+The HUD's Log button, L or gamepad Y open it: a scrollable panel, newest at the bottom,
+speaker names in their character colours, choices marked with a prefix.

@@ -1,0 +1,85 @@
+# Screens of your own
+
+Any screen can be replaced, and new ones live under `ScreenState::Custom(name)`.
+
+```rust
+VnApp::new("My Novel")
+    .main_menu(|m| m.button("Credits", Action::Goto(ScreenState::Custom("credits".into()))))
+    .screen(ScreenState::Custom("credits".into()), CreditsScreen::new)
+```
+
+`screen(state, build)` takes precedence over the default for that state, and `build` runs
+each time the screen is entered. Switching to a state with no screen logs a warning and
+stays where it is.
+
+A screen is two methods: `update(ctx) -> Option<ScreenState>` returns the next state, and
+`draw(d, &DrawContext)` paints.
+
+`GameContext` is what update gets: `rl`, `thread`, `resources`, `story`, `state`, `saves`,
+`rollback`, `settings`, and `previous`, the screen before this one. On top of those it
+carries `open_overlay`, `run_command`, `ask_text`, `save`, `load`, `tooltip`, `play_sound`
+and `view()`. The ones that ask the manager for something take effect after update returns.
+
+`DrawContext` is what draw gets: `resources`, `story`, `state`, `saves`, `characters`,
+`settings`, `fonts()` and `view()`. Its `interactive` flag is true only for the layer that
+receives input, which is the top overlay or the screen when none is open, and
+`pointer_over(d, rect)` is a hover test that is false on the other layers.
+
+## Overlays
+
+An overlay draws on top of the current screen, which keeps drawing underneath, and takes all
+input until it closes. The screen below does not update meanwhile.
+
+```rust
+VnApp::new("My Novel")
+    .playing(|p| p.hud_button("Stats", Action::overlay("stats")))
+    .overlay("stats", StatsOverlay::new)
+```
+
+```rust
+pub trait Overlay {
+    fn update(&mut self, ctx: GameContext) -> OverlayAction;
+    fn draw(&self, d: &mut RaylibDrawHandle, ctx: &DrawContext);
+}
+```
+
+Overlays form a stack: opening one while another is open puts it on top, which is how pause,
+save and confirm sit together. Only the top one updates, all of them draw from the bottom up
+so each backdrop dims the ones below, opening the overlay already on top does nothing, and
+changing screens closes them all.
+
+Registering an overlay under a built-in name replaces that one, which is how a game supplies
+its own pause menu.
+
+## Text input
+
+`ctx.ask_text(TextRequest::new(variable, prompt))` switches to the default text input screen.
+Enter stores what was typed in the named string variable and returns to the story. It is
+meant to be called from a command.
+
+```rust
+fn ask_name(ctx: &mut GameContext, (variable,): (String,)) -> Option<ScreenState> {
+    ctx.ask_text(TextRequest::new(variable, "What is your name?").max_len(20))
+}
+```
+
+```story
+call ask_name player_name
+player "Nice to meet you."
+```
+
+## What the manager holds
+
+`ScreenStateManager` owns the running game. Its fields are grouped by how long they live, so
+a screen borrows two or three of them rather than thirty.
+
+| Group | Holds | Lives |
+| --- | --- | --- |
+| `world` | story, state, saves, settings, characters, rollback, log, seen, modes | The playthrough; this is what a save is made of |
+| `show` | resources, audio, navigation, effects, weather, post, and the toast and tooltip configs | How it is presented |
+| `screens` | current, showing, previous, factory, overlays | The screen stack |
+| `frame` | The navigation snapshot, the live toast and tooltip timer, the thumbnail, and whether an autosave, screenshot or close was asked for | This frame |
+
+The manager owning the world is deliberate. The alternative, each subsystem holding its own
+shared mutable handle, trades a problem the compiler catches for one that panics at runtime,
+which is why there is almost no interior mutability in the engine.

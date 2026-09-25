@@ -1,0 +1,148 @@
+# Look and feel
+
+Every surface the engine draws is a shape with corners, every panel is a `PanelStyle`, and
+every button takes a `ButtonStyle`. A theme sets all of that once, so a palette is written
+in one place rather than in each screen's config.
+
+## The theme
+
+```rust
+VnApp::new("God Is Watching")
+    .theme(|t| {
+        t.panel(style::frame)
+            .inset(style::inset)
+            .plate(style::plate)
+            .backdrop(style::BACKDROP)
+            .button(style::button)
+            .danger(style::danger_button)
+            .title(FontRole::Title, style::PARCHMENT)
+            .section(FontRole::Menu, style::BRASS)
+            .body(FontRole::Dialogue, style::TEXT)
+            .label(FontRole::Menu, style::MUTED)
+            .background(style::background("backgrounds/title.png"))
+    })
+```
+
+| Role | Where it lands |
+| --- | --- |
+| `panel` | The framed panel of every screen that has one: the dialogue box, the NVL page, the choice preview, pause, confirm, save and load, settings, text input, keybinds, the log |
+| `inset` | Recessed areas: save slots, the settings sample box, the text input field |
+| `plate` | Small plates: the name plate, the skip and auto indicator, tooltips, toasts |
+| `backdrop` | The dimmer behind a screen that covers the game |
+| `button`, `danger` | Every default button, and the ones for irreversible actions |
+| `title`, `section`, `body`, `label` | The four text roles the screens draw with |
+| `background` | The background of screens that show one, where the game has not set another |
+
+**A theme carries look, never geometry.** A text role sets the font and the colour and
+leaves each screen's size alone, because a heading and a hint are different sizes on
+purpose. A button role sets everything about how a button is painted, so buttons match each
+other, and leaves width, height, padding, alignment, icon and cursor to the screen. A role
+a game does not set stays exactly as the engine had it.
+
+A theme is the starting point, so anything a screen's own config says afterwards wins.
+Because of that order `theme(...)` comes before the screens it styles, and calling it
+afterwards panics rather than quietly overwriting what the game just set.
+
+One consequence is worth knowing: a theme paints what a screen has when it runs. A panel a
+screen only *might* have, and a name plate the game adds itself, do not exist yet, so they
+carry their own style.
+
+```rust
+.save_menu(|s| s.panel(style::frame))
+.playing(|p| p.dialogue_box(|b| b.name_plate(|n| n.panel(style::plate))))
+```
+
+## Corners
+
+| Shape | Constructor | What it is |
+| --- | --- | --- |
+| `Square` | `Corners::square()` | A plain corner |
+| `Round` | `Corners::round(radius)` | A quarter circle bulging out |
+| `Bevel` | `Corners::bevel(size)` | A straight diagonal cut |
+| `Scoop` | `Corners::scoop(radius)` | A quarter circle cut into the corner |
+| `Notch` | `Corners::notch(size)` | A square step cut into the corner |
+
+Sizes are in pixels, capped at half the shorter side, and `Corners::roundness(0..1)` is a
+round corner relative to that side. Corners can differ from each other.
+
+```rust
+Corners::scoop(14.0).bottom(CornerShape::Square, 0.0)
+```
+
+## Panels
+
+| Builder | Meaning |
+| --- | --- |
+| `color(c)` | Fill |
+| `gradient(to, direction)` | Fade the fill vertically or horizontally |
+| `corners`, `roundness` | The shape |
+| `border(width, c)`, `no_border()` | An outline that follows the shape |
+| `inner_border(inset, width, c)` | A second outline inside the first, for a double rule |
+| `shadow(x, y, c)` | A copy of the shape, offset and drawn behind |
+
+`panel.draw(d, rect)` draws one from a custom screen or overlay. Curved and diagonal edges
+are drawn with a one-pixel feathered edge, so they stay smooth without multisampling, while
+straight edges stay sharp.
+
+## Buttons
+
+```rust
+ButtonStyle::default()
+    .size(260.0, 52.0)
+    .color(Color::new(38, 33, 42, 240))
+    .roundness(0.18)
+    .border(1.0, Color::new(110, 100, 86, 255))
+    .shadow(0.0, 3.0, Color::new(0, 0, 0, 120))
+    .icon(ButtonIcon::new("ui/icon_save.png").size(16.0))
+    .hovered(|l| l.border(1.5, PARCHMENT).transform(|t| t.offset(6.0, 0.0)))
+    .pressed(|l| l.transform(|t| t.scale(0.97)))
+    .transition(0.12)
+    .click_sound("page_turn")
+```
+
+| Builder | Default | Meaning |
+| --- | --- | --- |
+| `size(w, h)` | 240×52 | |
+| `color(c)` | dark blue | Fill, which also sets a lighter hovered fill |
+| `corners`, `roundness` | square | The shape of fill, border and shadow |
+| `text`, `font`, `font_size`, `text_color` | Button font 22 px white | The label |
+| `align` | `Center` | Inside the padding |
+| `padding(x, y)` | 12, 6 | Between the edge and the label |
+| `overflow` | `Ellipsis` | A label wider than the button: overflow, ellipsis, shrink to 8 px, or wrap |
+| `border`, `shadow`, `image`, `icon` | none | |
+| `transform`, `skew`, `rotate`, `scale` | identity | |
+
+`hovered`, `pressed`, `focused` and `disabled` are each a list of overrides on top of the
+base look, so a state changes only what it names.
+
+## Layouts
+
+Every list of buttons the engine draws is placed by a `Layout`, set through that screen's
+`layout` option. The option receives the current layout, so changing one part keeps the
+rest.
+
+```rust
+.main_menu(|m| m.layout(|l| l.rows_of([1, 2, 2, 1]).align(Align::Stretch)))
+.pause_menu(|p| p.layout(|l| l.grid(2)))
+.playing(|p| p.choice_layout(|l| l.anchor(Anchor::Left).align(Align::Start)))
+.save_menu(|s| s.slot_size(560.0, 72.0).slot_layout(|l| l.grid(2)))
+```
+
+| Builder | Meaning |
+| --- | --- |
+| `column()`, `row()`, `grid(columns)` | How items are arranged. A grid fills rows left to right, each column as wide as its widest item |
+| `rows_of([counts])` | How many items in each row. Each row is sized on its own and placed by `align`, so a single button can be centred over the rows below it |
+| `custom(\|area, sizes\| rects)` | Your own placement: the available rectangle and each item's size in, one rectangle per item out |
+| `anchor(Anchor)` | Where the block sits in the available area |
+| `align(Align)` | Where an item narrower than its column sits. `Stretch` makes items fill instead |
+| `spacing(px)`, `spacing_xy(x, y)` | Gaps, which shrink to zero before the block overflows its area |
+
+What counts as the available area depends on the screen.
+
+| Screen | Area | Default |
+| --- | --- | --- |
+| Main menu | From `buttons_y` to the bottom margin, inside the side margins | column, top, 18 |
+| Pause menu | Inside the panel, below the title; the panel widens to fit a grid | column, 10 |
+| Choices | The window inside the dialogue box's margin | column, centre, 16 |
+| HUD | The window inside `hud_margin` | row, top right, 10 |
+| Save slots | Between the title and the Back button; slots shorten to fit | column, top, 10 |

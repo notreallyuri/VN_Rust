@@ -1,0 +1,151 @@
+# Input
+
+Every default screen works without a mouse, and the prompts adapt to whatever the player
+last touched.
+
+| Input | Keyboard | Gamepad |
+| --- | --- | --- |
+| Move focus | Arrow keys with repeat, Tab and Shift+Tab | D-pad or left stick, repeating while held |
+| Activate | Enter, Space | A |
+| Back or close | Each screen's back keys, usually Escape and Backspace | B |
+| Pause | Escape | Start |
+| Delete a save | Delete | X |
+| Roll back and forward | Page Up and Down, mouse wheel | LB and RB |
+| Advance the dialogue | Space, Enter, click | A |
+
+## Focus
+
+Pressing a direction moves focus to the nearest button that way, so columns, rows and grids
+need no extra setup, and the ends wrap around. The focused button draws with its style's
+focused look.
+
+Focus only appears once a key or a gamepad button is used. Moving the mouse goes back to
+hover, and focus follows the hovered button so the keys continue from there. A screen opened
+while the player is on the keyboard focuses its first usable button immediately, which in a
+confirmation dialog is Cancel. Disabled items are skipped.
+
+HUD buttons are for the mouse; the pause menu covers the same actions for everyone else.
+Text input needs a keyboard.
+
+## Prompts that name the right control
+
+A line telling the player what to press is wrong for two thirds of them. Write the control
+as a token and the engine fills it in with whatever was used last.
+
+```rust
+.playing(|p| p.end_hint("{advance} to see the credits"))
+```
+
+| Last used | Shows |
+| --- | --- |
+| Mouse | `click to see the credits` |
+| Keyboard | `Space to see the credits` |
+| Gamepad | `A to see the credits` |
+
+The built-in tokens come from the same configuration the controls overlay reads, so
+rebinding a key changes the prompt too: `{advance}`, `{accept}`, `{pause}`, `{log}`,
+`{hide}`, `{auto}`, `{skip}`, `{back}`, `{forward}`. A game adds its own with
+`prompt("examine", Prompt::new("E", "X").mouse("right click"))`.
+
+The token is filled in after the text is translated, so a translator can move `{advance}`
+wherever that language wants it, exactly like a `{variable}` in dialogue. A token with no
+prompt behind it is left in the text rather than blanked, so a typo is visible.
+
+## Which gamepad
+
+Gamepad wording is written in Xbox terms and translated to the pad that is actually
+connected, recognised from the name it reports.
+
+| Written | PlayStation | Nintendo |
+| --- | --- | --- |
+| `A` `B` `X` `Y` | Cross, Circle, Square, Triangle | B, A, Y, X |
+| `LB` `RB` `LT` `RT` | L1, R1, L2, R2 | L, R, ZL, ZR |
+| `Start` `Select` | Options, Create | +, - |
+
+Anything else keeps the Xbox names. Only whole button words change, so `RT (hold)` becomes
+`R2 (hold)` while `D-pad, left stick` is left alone. It applies to prompts and to the
+controls overlay, including rows a game adds itself, so an existing row is right on every
+pad without being rewritten.
+
+The Nintendo column is not a mistake: buttons are matched by position, so the bottom button
+is the one that accepts.
+
+## Image maps
+
+An image map is a picture with named hotspots over it: a room to examine, a map to pick a
+destination from, a painting with three things worth clicking. Hotspots are shapes given in
+fractions of the area the map is drawn into, so one map works at any window size, any design
+size, and inside any panel.
+
+```rust
+let study = ImageMap::new()
+    .background("backgrounds/von_lucis_study.png")
+    .hotspot(
+        Hotspot::new("desk", Shape::rect(320.0, 360.0, 300.0, 180.0).in_image(1280.0, 720.0))
+            .label("The writing desk")
+            .tooltip("Papers, and a drawer that does not open")
+            .action(Action::custom(|ctx| ctx.run_command("note", &["desk".to_string()]))),
+    )
+    .hotspot(
+        Hotspot::new("portrait", Shape::circle(0.74, 0.3, 0.09))
+            .label("Sofia von Lucis, 1889")
+            .hover_look(Highlight::new().image("ui/portrait_lit.png")),
+    );
+```
+
+A screen drives it with two calls: `map.update(&mut ctx, area)` in update and
+`map.draw(d, ctx, area)` in draw. Update loads what the map needs, tracks hover, tooltips
+and focus, runs a picked hotspot's action, and hands back which one was picked. It fires on
+release like a button, and a keyboard or gamepad moves over the hotspots' bounding boxes
+and picks with Accept.
+
+## Drag and drop
+
+A drag board is the same hit testing with something held: draggable items, drop targets, and
+a rule per target for what it accepts. Inventory puzzles, sorting minigames, a board to
+arrange evidence on.
+
+```rust
+let mut board = DragBoard::new()
+    .target(DropTarget::new("ledger", Shape::rect(0.05, 0.6, 0.26, 0.34)).label("The ledger"))
+    .target(
+        DropTarget::new("fire", Shape::rect(0.69, 0.6, 0.26, 0.34))
+            .label("The fire")
+            .accepts(|item, view| item != "will" || view.state.get::<Journal>().knows_the_truth()),
+    );
+```
+
+The board does not own where things are: the items' shapes come from the game's own model,
+so what is on the board stays the game's business. It shares its hit testing with image
+maps, which is why shapes, picking the topmost, highlights and labels behave the same in
+both.
+
+## Tooltips
+
+Hovering a control for the configured delay shows a small box of text beside the pointer. It
+moves to the other side near the window's edges, wraps at a maximum width, and hides on
+click until the pointer leaves and comes back.
+
+Built in on the settings rows, the save slots' Delete button, menu items that ask for one,
+and HUD buttons. A custom screen registers one in update:
+
+```rust
+ctx.tooltip(rect, "Everything you have filed so far");
+```
+
+## Scrolling
+
+`Scroll` is the scrollable region the log uses, and any screen with more content than room.
+It keeps an offset, clamps it to the content, and draws a scrollbar.
+
+```rust
+scroll.extent(area.height, content_height);
+scroll.input(ctx.rl, area, &style);
+// draw the content shifted by scroll.offset(), inside a scissor
+scroll.draw_bar(d, area, &style);
+```
+
+`extent` takes the visible and content heights and pulls the offset back when the content
+shrinks. `input` handles the wheel, dragging the thumb and clicking the track. `by`, `page`,
+`to_start` and `to_end` move it from keys or a gamepad, and `from_end` is the distance from
+the bottom for content anchored there, which is how the log reads it.

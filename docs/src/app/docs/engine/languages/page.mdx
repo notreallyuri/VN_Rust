@@ -1,0 +1,52 @@
+# Languages
+
+A game ships its stories as written, plus a catalogue per translation in
+`assets/lang/<code>.json`, written by `novn translate`. It registers what it has.
+
+```rust
+VnApp::new("My Novel")
+    .source_language("English")
+    .language("pt-BR", "Português (BR)")
+    .language("ja", "日本語")
+```
+
+`source_language(label)` names the story as written, is always the first choice, and needs
+no file. `language(code, label)` adds one, where the code is the catalogue's file name.
+With more than one, the settings screen grows a Language row; the choice is saved and
+applied at startup, so a player who picked Portuguese gets it again next time.
+
+The catalogue is read through the asset layer, so it works from a folder while developing
+and from inside the executable in a release build. A missing or broken catalogue is a
+warning rather than a crash: the game plays in the source language, and so does any line
+the catalogue has no translation for, which makes a half-finished translation playable.
+
+From code, `ctx.set_language(Some("pt-BR"))` changes it and saves the setting, and `None`
+goes back to the source. Changing the language retranslates the line being read, so the
+switch shows at once rather than on the next click.
+
+## What is translated, and what is not
+
+Only what the story says. Ids are not: variables, save files, the session log and the
+rollback history all hold ids and source text, so a save made in one language opens in
+another. Hot reload keeps the player's language.
+
+## The screens' own labels
+
+Every string a default screen shows, "Settings", "Back", "New Game", "The End", and the
+notifications, is translated by the same catalogue, in its `ui` section.
+
+Lookup is by the **English text** rather than by a key, which means a game's own labels are
+translatable with nothing extra to declare. If you renamed Save to "File in the Archive",
+that is the string a translator sees.
+
+`ctx.label(text)` is the lookup, and `ctx.message(text, &[("slot", value)])` translates a
+template and then fills it in, so word order is the translator's to choose. `ctx.notify`
+translates what it is given, so a game's own notifications need no change.
+
+A debug build writes `lang/ui.json` beside `schema.json`: every label the game actually
+shows, read from the live configuration after your builder ran. `novn translate <lang>`
+folds that list into the catalogue, and `ui_text("Filed in the archive")` adds a string the
+game builds for itself.
+
+A language that needs its own typeface gets one with `language_font`, and text wraps by the
+rules of the script it is written in.

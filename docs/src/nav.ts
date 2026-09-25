@@ -72,14 +72,61 @@ export const nav: NavSection[] = [
         summary: "Start screen, main menu, actions, the playing screen.",
       },
       {
+        title: "Menus, settings and overlays",
+        href: "/docs/engine/menus",
+        summary: "Pause menu, dialogs, settings, notifications, controls, log.",
+      },
+      {
         title: "Story integration",
         href: "/docs/engine/story",
         summary: "Commands, story words, hooks, game state, hot reload.",
       },
       {
+        title: "Look and feel",
+        href: "/docs/engine/look",
+        summary: "Theme, corners, panels, buttons, layouts.",
+      },
+      {
+        title: "The picture",
+        href: "/docs/engine/picture",
+        summary:
+          "Render target, resolution, shaders, effects, transitions, scenery.",
+      },
+      {
+        title: "Input",
+        href: "/docs/engine/input",
+        summary:
+          "Keyboard and gamepad, prompts, image maps, dragging, tooltips.",
+      },
+      {
+        title: "Audio and video",
+        href: "/docs/engine/media",
+        summary: "Music that follows the screen, voice, cutscenes, codecs.",
+      },
+      {
+        title: "Languages",
+        href: "/docs/engine/languages",
+        summary: "Catalogues, the screens' own labels, what stays in ids.",
+      },
+      {
+        title: "Screens of your own",
+        href: "/docs/engine/custom-screens",
+        summary: "Screens, overlays, text input, what the manager holds.",
+      },
+      {
+        title: "Character visuals",
+        href: "/docs/engine/visuals",
+        summary: "The seam, puppets, parameters, lip sync, writing a backend.",
+      },
+      {
         title: "Saving and rollback",
         href: "/docs/engine/saving",
         summary: "Save files, autosave, thumbnails, rollback, migrations.",
+      },
+      {
+        title: "Assets and fonts",
+        href: "/docs/engine/assets",
+        summary: "Folders or embedded, textures, placeholders, fonts.",
       },
     ],
   },

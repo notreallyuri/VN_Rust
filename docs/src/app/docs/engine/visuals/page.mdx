@@ -1,0 +1,178 @@
+# Character visuals
+
+A character is a folder of PNGs by default: `show mary happy` draws
+`characters/mary/happy.png`. Behind the `character-visuals` feature, off by default, the
+same character can be drawn by a backend instead: something that holds state, moves between
+frames, and answers to the appearance names the story already uses.
+
+```toml
+novn = { version = "0.1", features = ["character-visuals"] }
+```
+
+A backend is registered for one character, beside its `Character`.
+
+```rust
+VnApp::new("My Novel")
+    .character("mary", Character::new("Mary").images(["neutral", "happy"]))
+    .character_visual("mary", rig)
+```
+
+The backend's appearances join the schema, so `show mary happy` validates against a rig
+exactly as it validates against a folder, and `novn check` reports a missing part or a
+misspelt appearance before the game opens a window. Startup also refuses a backend
+registered for a character nobody declared, and appearance names that are not story
+identifiers, and then runs the backend's own validation.
+
+**Nothing about a backend is load-bearing.** Whatever goes wrong, a missing file, a refused
+parameter, a backend that draws nothing but an error, the engine prints one line, drops that
+instance and draws the PNG in its place, without retrying every frame. A game that ships both
+keeps working on a machine where the fancy path fails.
+
+An instance exists per character *and* appearance, and lives as long as that appearance is on
+screen, including while it fades out. Changing appearance loads a second instance rather than
+reconfiguring the first. New Game and hot reload drop every instance, since the assets
+themselves may have changed; a rollback or a load instead restarts the instances that stay on
+screen, which returns a rig to its appearance's pose without reloading any textures.
+
+Two backends exist: the puppet below, built in, and Live2D Cubism in `novn-live2d`.
+
+## Puppets
+
+A puppet is a character cut into parts, drawn in order, each placed by a pivot in the rig's
+own coordinate space and free to move with a parameter. It needs no SDK and no tooling
+beyond the PNGs.
+
+```rust
+use novn::game::puppet::{BLINK, BREATH, SWAY};
+use novn::prelude::*;
+
+let rig = Puppet::new(600.0, 900.0)
+    .folder("mary")
+    .part(Part::new("body").at(300.0, 900.0).pivot(0.5, 1.0))
+    .part(
+        Part::new("head")
+            .at(300.0, 380.0)
+            .pivot(0.5, 1.0)
+            .bind(SWAY, Motion::rotate(6.0))
+            .bind(BREATH, Motion::offset(0.0, -4.0)),
+    )
+    .part(Part::new("eyes").at(300.0, 300.0).bind(BLINK, Motion::scale(1.0, 0.1)))
+    .appearance("neutral", Pose::new())
+    .appearance("happy", Pose::new().swap("mouth", "mouth_smile").parameter(SWAY, 0.5));
+```
+
+`Puppet::new(width, height)` is the rig's own space: every `at` is a point in it, and the
+whole rig is scaled to the playing screen's `character_height` and placed by the `at` the
+story gives, exactly as a PNG of the same proportions would be.
+
+| `Part` builder | Meaning |
+| --- | --- |
+| `Part::new(name)` | A part, drawn over the ones before it. The name is also its image unless `image` says otherwise |
+| `at(x, y)`, `pivot(x, y)` | Where the pivot sits in rig coordinates, and which point of the image lands there |
+| `bind(parameter, motion)` | Move the part with a parameter. Several compose |
+
+| `Motion` | At value `v` |
+| --- | --- |
+| `rotate(degrees)` | Turns the part by `degrees * v` around its pivot |
+| `offset(x, y)` | Moves it by `(x, y) * v` |
+| `scale(x, y)` | Stretches it towards `(x, y)`: unchanged at 0, fully at 1 |
+| `opacity(a)` | Fades it towards `a`, over whatever the scene's transition gives it |
+
+An appearance is a pose: which parts are swapped for another picture, which are hidden, and
+which parameters it holds still. Three parameters come from the clock unless something holds
+them, `BREATH`, `SWAY` and `BLINK`, and `Idle` sets their timing. Idle movement is a function
+of the instance's clock alone, so there is no simulation to step and a restart is the clock
+going back to zero.
+
+A puppet draws flat textures with no mesh, no deformation and no masks. It is the cheap end
+of the range: enough for a character who breathes, blinks, sways and changes mouth, and not
+what to reach for when a head should turn.
+
+## Parameters
+
+A parameter is a named number a backend reads: a puppet's binds, a Live2D model's
+`ParamMouthOpenY`.
+
+```rust
+ctx.visual_parameter("mary", "mouth", Some(0.8));
+ctx.visual_parameter("mary", "mouth", None);
+```
+
+`Some(value)` overrides whatever the appearance's pose or the idle clock would give, and
+`None` releases it back to them. A push is remembered for the character rather than for the
+instance in front of it, so it survives a change of appearance and reaches the next one as it
+loads. A parameter the backend does not have is the game's typo rather than a broken model:
+it is reported once for that character and ignored from then on, and the character keeps its
+backend.
+
+A push is part of the story's state. Each line records what was pushed when it was shown, so
+rolling back to it puts those values back and releases anything pushed after it, and a save
+carries them. What is not restored is the transient side: a rollback or a load restarts idle
+animation, motions and physics from the appearance's preset, then applies the push over the
+top.
+
+For anything that changes every frame, push from `on_frame`. `ctx.voice_level()` is the voice
+line's own loudness this instant, so lip sync is one line:
+
+```rust
+VnApp::new("My Novel").on_frame(|ctx, _seconds| {
+    ctx.visual_parameter("mary", "mouth", Some(ctx.voice_level()));
+})
+```
+
+## While the story is not playing
+
+A backend only runs while the playing screen does, which decides the rest.
+
+| When | What happens |
+| --- | --- |
+| A menu is up | Nothing updates and nothing draws: a model's clock, its motion and its physics stop where they were and go on from there. Frame hooks do not run either |
+| Skipping | Every frame still updates and draws, so motions play at their own speed while the text flies past |
+| Rolling back or loading | The instances on screen are restarted, and the pushed parameters of that step applied over the top |
+| New Game, or a hot reload | Every instance is dropped and loaded again |
+
+## On a screen of your own
+
+Any screen can show a backend-drawn character. It asks in `update` for the appearances it
+wants this frame, and draws them where it likes.
+
+```rust
+impl Screen for PortraitScreen {
+    fn update(&mut self, mut ctx: GameContext) -> Option<ScreenState> {
+        ctx.show_visual("mary", "happy");
+        None
+    }
+
+    fn draw(&self, d: &mut RaylibDrawHandle, ctx: &DrawContext) {
+        let screen = ui::screen_size(d);
+        ctx.resources
+            .visuals
+            .draw("mary", "happy", d, screen, 0.5, Some(0.95), 1.0);
+    }
+}
+```
+
+The asking is what decides which instances live. A screen that asks for any is asking for all
+of them: an instance nobody asked for this frame is released. A screen that asks for none,
+which is every menu, leaves whatever is loaded alone, frozen where it was, which is why a
+pause does not cost a model its place.
+
+## Writing a backend
+
+A backend is two traits. `CharacterVisualFactory` is what the game registers: it names its
+appearances, checks its assets without a window, and loads one instance. `CharacterVisual` is
+that instance.
+
+| Method | Does |
+| --- | --- |
+| `appearances()` | The names the story may show. They join the character's images in the schema |
+| `validate(assets)` | Checked at startup and by `novn check`, with no window and no GPU |
+| `load(appearance, assets, rl, thread)` | One instance. Read files through `Assets`, so folder and embedded builds both work |
+| `size()` | The natural size, which places it exactly as a PNG of that size would be placed |
+| `update(seconds)` | One frame, capped at 100 ms after a stall |
+| `set_parameter(id, value)` | Push or release a parameter. The default does nothing |
+| `restart()` | Return to the appearance's own state, for rollback and load. The default does nothing |
+| `draw(draw, frame)` | Draw into the frame's rect, at the opacity the transition asks for |
+
+Errors are strings: they are printed with the character and appearance, and cost that
+instance its place. `novn-live2d` is the worked example of a backend that owns GPU state.

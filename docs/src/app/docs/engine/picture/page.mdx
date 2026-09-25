@@ -1,0 +1,148 @@
+# The picture
+
+Every frame is drawn into a render texture and then blitted to the window, rather than
+straight to the screen. Everything on this page depends on that one decision: screen
+transitions, shader passes, screen shake and resolution independence all need to treat the
+finished frame as a texture before it reaches the screen.
+
+The target is recreated when the window changes size, and if the GPU refuses to make one,
+the engine says so once and draws to the screen as before, so nothing breaks. Screenshots
+and save thumbnails capture while the target is still bound, so they keep reading the game
+image.
+
+## Resolution independence
+
+By default the target matches the window, so a screen laid out with `ui::screen_size` fills
+it. `design_size(width, height)` fixes the target instead: screens are laid out at that
+size whatever the window does, and the frame is scaled to fit and centred, with black bars
+where the aspect ratios differ.
+
+```rust
+VnApp::new("My Game").size(1280, 720).design_size(1280, 720)
+```
+
+Mouse positions are mapped back through the same transform, so clicks, hovers and tooltips
+land where they look even when the frame is scaled or letterboxed.
+
+## Sharper edges
+
+Shapes are drawn into the render target, which is not multisampled, so the window's own
+antialiasing would not help them. Two things do.
+
+`render_scale(2.0)` draws the frame at twice the size and scales it down, which is
+supersampling: curves, thin borders and diagonal edges all soften. Layout still uses the
+design size, so nothing moves, and the cost is fill rate, four times the pixels at 2.0.
+Corner curves also take their segment count from the corner size and the render scale, so a
+bigger corner gets more segments.
+
+`post::FXAA` is the cheaper alternative when fill rate matters more than fidelity.
+
+## Shader passes
+
+A game registers fragment shaders and switches them on while it plays. They run over the
+finished frame, in the order they were registered, between the render target and the
+window.
+
+```rust
+use novn::frame::post;
+
+VnApp::new("My Game")
+    .shader("grain", post::GRAIN)
+    .shader("desaturate", post::DESATURATE)
+```
+
+```rust
+.command_as("flashback", |ctx, ()| {
+    ctx.shader("grain", true);
+    ctx.shader_amount("grain", 0.25);
+    None
+})
+```
+
+`post` ships `GRAIN`, `DESATURATE`, `BLUR` and `FXAA`. A shader is an ordinary raylib
+fragment shader: `texture0` is the frame, and the engine sets `amount`, `time` and `pixel`
+when a shader declares them. A pass with an amount of 0 is skipped, and a shader that fails
+to compile is reported once and left out rather than silently drawing a default one.
+
+## Screen effects
+
+`shake` and `flash` in a story run as screen effects: the line's change happens at once and
+the finished frame is shaken or washed with colour. Shake offsets where the render target
+lands, so nothing inside the game moves out of place, and flash is drawn over the frame
+after it is scaled.
+
+```rust
+VnApp::new("My Game").screen_effects(ScreenEffectsConfig {
+    shake_strength: 24.0,
+    shake_frequency: 11.0,
+    flash_color: Color::WHITE,
+})
+```
+
+Commands reach them through the context: `ctx.shake(0.4)`.
+
+## Transitions between screens
+
+Changing screen crossfades by default: the frame that was on screen is copied into a second
+target, the new screen is drawn, and the old frame is blended over it as it fades.
+
+| Kind | What it does |
+| --- | --- |
+| `Crossfade` | The old screen fades out over the new one. The default, at 0.2 s |
+| `Fade` | Fades through black, swapping screens at the midpoint |
+| `SlideLeft`, `SlideRight` | The old screen slides off that side |
+| `None` | Switches immediately |
+
+Overlays are not screen changes, so the pause menu, save, load and settings still appear at
+once.
+
+## Transitions inside the story
+
+The playing screen animates the `with` transitions a story writes.
+
+A background change dissolves, fades through black over the characters too, or slides; if
+either background is missing, the playing screen's own is shown. Characters fade or slide
+in and out, an expression change crossfades with the old image staying nearly opaque until
+the end so the character never looks see-through, and a new position glides there with
+easing.
+
+Transitions run alongside the story: the next line types while they play, and the click
+that finishes the typewriter finishes them too. Several transitions from the same run of
+lines play together. Rollback, loads, hot reloads and returning from another screen all show
+the final state at once.
+
+## Easing and tweens
+
+`Easing` (`Linear`, `Smooth`, `In`, `Out`) and `Tween` are shared by sprite motion,
+transitions and scenery, so timing behaves the same everywhere.
+
+```rust
+let tween = Tween::new(now, 0.4, Easing::Smooth);
+let x = tween.value(now, from, to);
+if tween.finished(now) { /* ... */ }
+```
+
+`elapsed` is the raw fraction of time, `progress` applies the easing, and a tween of zero
+seconds is finished at once.
+
+## Scenery
+
+`Scenery` frames a full-screen background like a film shot. The start screen and the main
+menu take one, and a custom screen can draw one itself.
+
+| Builder | Meaning |
+| --- | --- |
+| `motion(zoom, period)` | A slow push in and out of the image, on the app clock, so two screens with the same motion continue it across the switch |
+| `pan(x, y)` | Drift towards the image's edges while zooming |
+| `vignette(color, size)` | Darken the edges, fading in over a fraction of the window |
+| `weather(w)` | Rain, snow or dust over the shot |
+| `letterbox(\|l\| ...)` | Black bars top and bottom, with an optional rule on their inner edge and a slide-in |
+
+Weather drifts rain, snow or dust across the picture: `Weather::rain(160)`,
+`Weather::snow(120).drift(0.02)`, `Weather::dust(70)`. Menus take it through `Scenery`;
+during a scene it is engine state, set with `ctx.weather(Some(...))`.
+
+Nothing about it is stored. Each particle's position is derived from the clock and its
+index, so there is no simulation to step, nothing in a save, and nothing for rollback to
+desynchronise. The trade is that weather set mid-scene is not restored by a load, so set it
+from `on_scene_enter` and a loaded save brings it back.
