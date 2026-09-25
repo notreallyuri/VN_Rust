@@ -340,7 +340,19 @@ player has seen.
 
 ### Accessibility
 
-- [ ] A UI scale and text size setting, applied through the style system
+- [x] Text size, on the Accessibility page: 90, 100, 115, 130 and 150 percent, applied to
+  reading text through its styles: dialogue and speaker, narration, NVL, choices, the log, and
+  the settings preview so the slider shows what it does. The dialogue box grows upward with
+  it, keeping its padding and bottom edge; choices grow and are kept on screen. Played in the
+  example at 150 percent: the story's longest ADV line wraps to two rows inside the grown box,
+  the longest NVL line wraps inside its page. It found the settings preview box sized from the
+  unscaled style, which clipped a second line; it grows now.
+- [ ] UI scale, the other half of the original item, deliberately not done with text size.
+  Scaling menus and buttons collides with fixed layouts: at 125 percent the settings rows
+  would reach the Back button. The promising route is the render target: lay out at the
+  design size divided by the scale and raise the render scale by the same factor, so the
+  target keeps its pixels and everything is drawn larger and sharp. It still needs each
+  default screen checked for fit at 125 percent, and the range kept to what fits
 - [x] A reduce-motion setting, on an Accessibility page of its own reached from the last row
   of Settings, since the settings screen was already full and does not scroll. The line drawn
   is the guidance's: remove movement, keep fades. Slides become dissolves or fades in place, a

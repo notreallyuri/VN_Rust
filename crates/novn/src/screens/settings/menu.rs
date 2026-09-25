@@ -281,7 +281,7 @@ impl SettingsMenu {
             ctx.label(&config.sample_text),
             Vector2::new(sample.x + 16.0, sample.y + 16.0),
             sample.width - 32.0,
-            &config.sample_text_style,
+            &crate::ui::reading::text(&config.sample_text_style),
             self.visible,
         );
 

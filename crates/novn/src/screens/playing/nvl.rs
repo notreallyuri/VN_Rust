@@ -127,12 +127,12 @@ pub(super) fn entries(ctx: &DrawContext, config: &PlayingConfig, width: f32) -> 
             let speaker = speaker.as_ref().map(|speaker| {
                 let name = ctx.characters.display_name(speaker, ctx.story);
                 let style = match ctx.characters.color(speaker) {
-                    Some(color) => config.speaker_text.clone().color(color),
-                    None => config.speaker_text.clone(),
+                    Some(color) => crate::ui::reading::text(&config.speaker_text).color(color),
+                    None => crate::ui::reading::text(&config.speaker_text),
                 };
                 (name, style)
             });
-            let style = config.dialogue_text.clone();
+            let style = crate::ui::reading::text(&config.dialogue_text);
             let text = StyledText::parse(&said.text(ctx.story.catalog()));
             let height = speaker
                 .as_ref()

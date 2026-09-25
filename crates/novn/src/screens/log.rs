@@ -224,14 +224,14 @@ fn blocks(ctx: &DrawContext, config: &LogConfig, width: f32) -> Vec<Block> {
         .map(|entry| match entry {
             LogEntry::Line { speaker, said } => {
                 let style = match speaker {
-                    Some(_) => config.line_text.clone(),
-                    None => config.narration_text.clone(),
+                    Some(_) => crate::ui::reading::text(&config.line_text),
+                    None => crate::ui::reading::text(&config.narration_text),
                 };
                 let speaker = speaker.as_ref().map(|speaker| {
                     let name = ctx.characters.display_name(speaker, ctx.story);
                     let style = match ctx.characters.color(speaker) {
-                        Some(color) => config.speaker_text.clone().color(color),
-                        None => config.speaker_text.clone(),
+                        Some(color) => crate::ui::reading::text(&config.speaker_text).color(color),
+                        None => crate::ui::reading::text(&config.speaker_text),
                     };
                     (name, style)
                 });
@@ -244,7 +244,7 @@ fn blocks(ctx: &DrawContext, config: &LogConfig, width: f32) -> Vec<Block> {
                 }
             }
             LogEntry::Choice { said } => {
-                let style = config.choice_text.clone();
+                let style = crate::ui::reading::text(&config.choice_text);
                 let text = format!("{}{}", config.choice_prefix, said.text(ctx.story.catalog()));
                 Block {
                     speaker: None,

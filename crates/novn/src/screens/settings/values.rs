@@ -3,6 +3,7 @@ use super::{
 };
 use crate::data::settings::Settings;
 use crate::ui;
+use crate::ui::reading;
 
 impl SettingsConfig {
     pub fn text_speed_name(&self, speed: u32) -> String {
@@ -73,7 +74,7 @@ impl SettingsConfig {
     pub fn page_rows(&self, page: SettingsPage) -> Vec<SettingsRow> {
         match page {
             SettingsPage::Main => self.rows(),
-            SettingsPage::Accessibility => vec![SettingsRow::ReduceMotion],
+            SettingsPage::Accessibility => vec![SettingsRow::TextSize, SettingsRow::ReduceMotion],
         }
     }
 
@@ -111,6 +112,9 @@ impl SettingsConfig {
             SettingsRow::SkipUnseen => f32::from(u8::from(settings.skip_unseen)),
             SettingsRow::Accessibility => 0.0,
             SettingsRow::ReduceMotion => f32::from(u8::from(settings.reduce_motion)),
+            SettingsRow::TextSize => {
+                reading::nearest(settings.text_size) as f32 / (reading::SIZES.len() - 1) as f32
+            }
         }
     }
 
@@ -133,6 +137,10 @@ impl SettingsConfig {
             SettingsRow::SkipUnseen => settings.skip_unseen = fraction >= 0.5,
             SettingsRow::Accessibility => {}
             SettingsRow::ReduceMotion => settings.reduce_motion = fraction >= 0.5,
+            SettingsRow::TextSize => {
+                settings.text_size =
+                    reading::SIZES[ui::slider_step(fraction, reading::SIZES.len())];
+            }
             SettingsRow::Language => {
                 let index = ui::slider_step(fraction, self.languages.len());
                 if let Some(language) = self.languages.get(index) {
@@ -148,6 +156,11 @@ impl SettingsConfig {
             SettingsRow::SkipUnseen => settings.skip_unseen = !settings.skip_unseen,
             SettingsRow::Accessibility => {}
             SettingsRow::ReduceMotion => settings.reduce_motion = !settings.reduce_motion,
+            SettingsRow::TextSize => {
+                let last = reading::SIZES.len() as i32 - 1;
+                let at = (reading::nearest(settings.text_size) as i32 + delta).clamp(0, last);
+                settings.text_size = reading::SIZES[at as usize];
+            }
             SettingsRow::Language => {
                 let count = self.languages.len();
                 if count == 0 {
@@ -207,6 +220,7 @@ impl SettingsConfig {
             SettingsRow::Accessibility => self.open_label.clone(),
             SettingsRow::ReduceMotion if settings.reduce_motion => self.on_label.clone(),
             SettingsRow::ReduceMotion => self.off_label.clone(),
+            SettingsRow::TextSize => format!("{}%", settings.text_size),
             SettingsRow::Language => self
                 .language_of(settings.language.as_deref())
                 .map(|language| language.label.clone())
@@ -226,6 +240,7 @@ impl SettingsConfig {
             SettingsRow::Language => &self.language_label,
             SettingsRow::Accessibility => &self.accessibility_label,
             SettingsRow::ReduceMotion => &self.reduce_motion_label,
+            SettingsRow::TextSize => &self.text_size_label,
         }
     }
 
@@ -241,12 +256,14 @@ impl SettingsConfig {
             SettingsRow::Language => self.language_tooltip.as_deref(),
             SettingsRow::Accessibility => self.accessibility_tooltip.as_deref(),
             SettingsRow::ReduceMotion => self.reduce_motion_tooltip.as_deref(),
+            SettingsRow::TextSize => self.text_size_tooltip.as_deref(),
         }
     }
 
     pub(crate) fn steps(&self, row: SettingsRow) -> Option<usize> {
         match row {
             SettingsRow::TextSpeed => Some(self.text_speeds.len()),
+            SettingsRow::TextSize => Some(reading::SIZES.len()),
             SettingsRow::AutoDelay => {
                 Some(((AUTO_DELAY_MAX - AUTO_DELAY_MIN) / AUTO_DELAY_STEP) as usize + 1)
             }

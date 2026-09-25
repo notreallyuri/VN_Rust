@@ -51,7 +51,7 @@ impl SettingsConfig {
             (screen.x - self.row_width) / 2.0,
             top,
             self.row_width,
-            self.sample_text_style.size * 1.3 * 2.0 + 24.0,
+            crate::ui::reading::text(&self.sample_text_style).size * 1.3 * 2.0 + 24.0,
         )
     }
 

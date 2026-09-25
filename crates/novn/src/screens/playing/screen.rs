@@ -448,9 +448,10 @@ impl Screen for PlayingScreen {
 
                 if let Some(speaker) = speaker {
                     let name = ctx.characters.display_name(speaker, ctx.story);
+                    let speaker_text = crate::ui::reading::text(&config.speaker_text);
                     let text = match ctx.characters.color(speaker) {
-                        Some(color) => config.speaker_text.clone().color(color),
-                        None => config.speaker_text.clone(),
+                        Some(color) => speaker_text.clone().color(color),
+                        None => speaker_text.clone(),
                     };
                     match &style.name_plate {
                         Some(plate) => {
@@ -465,7 +466,7 @@ impl Screen for PlayingScreen {
                         }
                         None => {
                             ui::draw_text(d, fonts, &name, Vector2::new(inner_x, y), &text);
-                            y += config.speaker_text.size * 1.4;
+                            y += speaker_text.size * 1.4;
                         }
                     }
                 }
@@ -476,14 +477,15 @@ impl Screen for PlayingScreen {
                     &StyledText::parse(text),
                     Vector2::new(inner_x, y),
                     inner_width,
-                    &config.dialogue_text,
+                    &crate::ui::reading::text(&config.dialogue_text),
                     self.visible.unwrap_or(usize::MAX),
                 );
             }
             Some(Event::Choice { options }) => {
                 let rects = config.choice_rects(options.len(), screen);
                 for (at, (option, rect)) in options.iter().zip(&rects).enumerate() {
-                    let style = config.option_style(option);
+                    let mut style = config.option_style(option);
+                    style.text.size *= crate::ui::reading::scale();
                     let label = novn_script::markup::plain(&option.text);
                     ui::button::Button::new(&label, &style)
                         .focused(ctx.shows_focus(&self.choice_focus, at))

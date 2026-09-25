@@ -266,11 +266,13 @@ impl DialogueBoxStyle {
     pub fn rect(&self, screen: Vector2) -> Rectangle {
         let full = screen.x - self.margin * 2.0;
         let width = self.max_width.map_or(full, |max| max.min(full));
+        let inside = (self.height - self.padding * 2.0).max(0.0);
+        let height = self.height + inside * (crate::ui::reading::scale() - 1.0);
         Rectangle::new(
             (screen.x - width) / 2.0,
-            screen.y - self.height - self.bottom.unwrap_or(self.margin),
+            screen.y - height - self.bottom.unwrap_or(self.margin),
             width,
-            self.height,
+            height,
         )
     }
 }

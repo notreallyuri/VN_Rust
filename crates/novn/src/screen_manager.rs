@@ -229,6 +229,7 @@ impl ScreenStateManager {
             self.show_inspector = !self.show_inspector;
         }
         crate::ui::motion::set_reduced(self.world.settings.values.reduce_motion);
+        crate::ui::reading::set_percent(self.world.settings.values.text_size);
         let styling = self
             .overlay_names()
             .any(|name| name == STYLE_EDITOR_OVERLAY);

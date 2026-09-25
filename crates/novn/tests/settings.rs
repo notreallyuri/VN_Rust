@@ -309,7 +309,7 @@ fn the_accessibility_page_has_its_own_rows_and_title() {
     let config = SettingsConfig::default();
     assert_eq!(
         config.page_rows(SettingsPage::Accessibility),
-        [SettingsRow::ReduceMotion]
+        [SettingsRow::TextSize, SettingsRow::ReduceMotion]
     );
     assert_eq!(config.page_rows(SettingsPage::Main), config.rows());
     assert_eq!(
@@ -328,5 +328,32 @@ fn the_accessibility_page_has_its_own_rows_and_title() {
     assert!(
         settings.reduce_motion,
         "opening the page changes no setting"
+    );
+}
+
+#[test]
+fn text_size_steps_through_its_sizes_and_stops_at_the_ends() {
+    use novn::screens::settings::SettingsRow;
+    let config = SettingsConfig::default();
+    let mut settings = Settings::default();
+    assert_eq!(settings.text_size, 100);
+    config.step(SettingsRow::TextSize, &mut settings, 1);
+    assert_eq!(settings.text_size, 115);
+    assert_eq!(config.value_name(SettingsRow::TextSize, &settings), "115%");
+    for _ in 0..10 {
+        config.step(SettingsRow::TextSize, &mut settings, 1);
+    }
+    assert_eq!(settings.text_size, 150);
+    for _ in 0..10 {
+        config.step(SettingsRow::TextSize, &mut settings, -1);
+    }
+    assert_eq!(settings.text_size, 90);
+    config.set_fraction(SettingsRow::TextSize, &mut settings, 1.0);
+    assert_eq!(settings.text_size, 150);
+
+    let old: Settings = serde_json::from_str(r#"{ "fullscreen": false }"#).unwrap();
+    assert_eq!(
+        old.text_size, 100,
+        "a file from before it existed reads as normal size"
     );
 }

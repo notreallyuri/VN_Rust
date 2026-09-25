@@ -471,9 +471,13 @@ impl PlayingConfig {
 
     pub fn choice_rects(&self, count: usize, screen: Vector2) -> Vec<Rectangle> {
         let button = &self.choice_button;
-        let sizes = vec![Vector2::new(button.width, button.height); count];
-        self.choice_layout
-            .place(inset(screen, self.dialogue_box.margin), &sizes)
+        let area = inset(screen, self.dialogue_box.margin);
+        let scale = crate::ui::reading::scale();
+        let size = Vector2::new(
+            (button.width * scale).min(area.width),
+            button.height * scale,
+        );
+        self.choice_layout.place(area, &vec![size; count])
     }
 }
 

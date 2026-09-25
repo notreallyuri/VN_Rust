@@ -274,6 +274,7 @@ impl VnApp {
             &settings.on_label,
             &settings.off_label,
             &settings.reduce_motion_label,
+            &settings.text_size_label,
             &settings.sample_text,
             &settings.back_label,
         ] {

@@ -83,6 +83,7 @@ settings do not break old files.
 | Skip unseen | off: skipping stops at a line the player has not read |
 | Language | none, meaning the story as written |
 | Reduce motion | off |
+| Text size | 100 percent, from 90 to 150 |
 
 The default screen shows one row per setting. `audio_rows(false)` hides the volumes,
 `voice_row(false)` just the voice one, `play_rows(false)` auto-forward and skip, and the
@@ -100,6 +101,20 @@ The last row of the settings screen opens a page of its own, since the options t
 the ones a player may need before they can comfortably use the rest. Esc or Back returns to
 the settings rather than out of them. `accessibility_rows(false)` hides it, though a game
 should have a reason to.
+
+### Text size
+
+Five sizes from 90 to 150 percent, and it applies to what a player reads for hours rather
+than to every label on screen: dialogue and the speaker's name, narration, NVL pages, choice
+options, and the log. The sample line under the rows grows as the slider moves, so the choice
+is made looking at the result.
+
+The dialogue box grows upward with it, keeping its bottom edge and its padding and making
+the room inside larger, so a long line that wraps to an extra row at 150 percent still fits.
+Choice buttons grow with their text, and never past the edge of the screen.
+
+Menus, settings and buttons keep their sizes. Those are laid out to fixed positions, and
+scaling them would push rows into each other and cut labels short.
 
 ### Reduce motion
 

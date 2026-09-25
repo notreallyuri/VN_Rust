@@ -36,6 +36,8 @@ pub struct SettingsConfig {
     pub off_label: String,
     pub reduce_motion_label: String,
     pub reduce_motion_tooltip: Option<String>,
+    pub text_size_label: String,
+    pub text_size_tooltip: Option<String>,
     pub voice_volume_label: String,
     pub auto_delay_label: String,
     pub skip_label: String,
@@ -102,6 +104,10 @@ impl Default for SettingsConfig {
             reduce_motion_label: "Reduce motion".to_string(),
             reduce_motion_tooltip: Some(
                 "No slides, shaking, flashes or drifting scenery. Fades stay".to_string(),
+            ),
+            text_size_label: "Text size".to_string(),
+            text_size_tooltip: Some(
+                "Dialogue, choices and the log. The box grows to fit".to_string(),
             ),
             voice_volume_label: "Voice volume".to_string(),
             auto_delay_label: "Auto-forward".to_string(),
@@ -269,6 +275,7 @@ impl SettingsConfig {
             SettingsRow::Language => self.language_tooltip = text,
             SettingsRow::Accessibility => self.accessibility_tooltip = text,
             SettingsRow::ReduceMotion => self.reduce_motion_tooltip = text,
+            SettingsRow::TextSize => self.text_size_tooltip = text,
         }
         self
     }
