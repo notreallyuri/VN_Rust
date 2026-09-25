@@ -75,7 +75,7 @@ export default function Home() {
             </div>
             <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4">
               <Link
-                className="rounded-md bg-foreground px-5 py-2.5 font-medium text-background text-sm transition-opacity hover:opacity-85"
+                className="rounded-xl bg-foreground px-5 py-2.5 font-medium text-background text-sm transition-opacity hover:opacity-85"
                 href="/docs"
               >
                 Read the guide
@@ -101,7 +101,7 @@ export default function Home() {
           </section>
 
           <section className="border-line border-t py-20">
-            <Eyebrow>vn check</Eyebrow>
+            <Eyebrow>novn check</Eyebrow>
             <h2 className="max-w-2xl text-balance font-semibold text-2xl tracking-tight sm:text-3xl">
               Everything gets checked before the game runs
             </h2>
@@ -109,9 +109,9 @@ export default function Home() {
               Every name a story mentions has to exist somewhere: the
               characters, their images, the variables a condition reads, the
               scene a jump lands in. Run{" "}
-              <code className="font-mono text-foreground/80">vn check</code> and
-              it reads the whole project in milliseconds, then tells you what it
-              expected instead.
+              <code className="font-mono text-foreground/80">novn check</code>{" "}
+              and it reads the whole project in milliseconds, then tells you
+              what it expected instead.
             </p>
             <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
               <CodeBlock

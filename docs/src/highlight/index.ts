@@ -40,6 +40,20 @@ const kinds: Record<string, string> = {
   "punctuation.special": "operator",
 };
 
+type Span = { start: number; end: number; kind: string };
+
+function split(around: Span, inner: Span): Span[] {
+  const parts: Span[] = [];
+  if (around.start < inner.start) {
+    parts.push({ start: around.start, end: inner.start, kind: around.kind });
+  }
+  parts.push(inner);
+  if (inner.end < around.end) {
+    parts.push({ start: inner.end, end: around.end, kind: around.kind });
+  }
+  return parts;
+}
+
 type Grammar = {
   parser: Parser;
   query: Query;
@@ -63,6 +77,7 @@ const grammars: Record<string, Grammar> = {
   story: await grammar("story", "story.scm"),
   rust: await grammar("rust", "rust.scm"),
   bash: await grammar("bash", "bash.scm"),
+  toml: await grammar("toml", "toml.scm"),
 };
 
 const aliases: Record<string, string> = {
@@ -73,6 +88,7 @@ const aliases: Record<string, string> = {
   bash: "bash",
   shell: "bash",
   console: "bash",
+  toml: "toml",
 };
 
 const INDENT = "  ";
@@ -81,13 +97,23 @@ function lex({ parser, query }: Grammar, code: string): Token[][] {
   const tree = parser.parse(code);
   if (!tree) return [[{ text: code, kind: null }]];
 
-  const spans: { start: number; end: number; kind: string }[] = [];
+  const spans: Span[] = [];
   for (const capture of query.captures(tree.rootNode)) {
     const kind = kinds[capture.name];
     if (!kind) continue;
     const { startIndex: start, endIndex: end } = capture.node;
-    const covering = spans.findIndex((s) => s.start <= start && s.end >= end);
-    if (covering !== -1) spans.splice(covering, 1);
+    if (end <= start) continue;
+
+    const outer = spans.findIndex((s) => s.start <= start && s.end >= end);
+    if (outer !== -1) {
+      const around = spans[outer];
+      if (around.start === start && around.end === end) {
+        around.kind = kind;
+        continue;
+      }
+      spans.splice(outer, 1, ...split(around, { start, end, kind }));
+      continue;
+    }
     if (!spans.some((s) => s.start < end && s.end > start)) {
       spans.push({ start, end, kind });
     }

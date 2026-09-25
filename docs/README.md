@@ -27,10 +27,31 @@ CSS. Write those through the components or relative, and the prefix takes care o
 `public/.nojekyll` is what stops Pages hiding the `_next` directory.
 
 Code blocks are highlighted by tree-sitter at build time, so no highlighter ships to the
-browser. `.story` uses the same grammar nvim and the LSP use; Rust and shell use the
-grammars from `tree-sitter-rust` and `tree-sitter-bash`, whose wasm and queries are copied
-into `src/highlight/` from `node_modules`. A shell block is drawn with a prompt in the
-gutter, and that prompt is not selectable, so copying gives the commands alone.
+browser. Four grammars: `.story` uses the same one nvim and the LSP use, and Rust, shell
+and TOML come from `tree-sitter-rust`, `tree-sitter-bash` and
+`@tree-sitter-grammars/tree-sitter-toml`, whose wasm and queries are copied into
+`src/highlight/` from `node_modules`. One capture-to-kind map covers all four, so a colour
+is decided once.
+
+`toml.scm` is the one query that is adapted rather than copied. Upstream captures a whole
+`pair` as `@property`, which overlaps the key, the `=` and the value, and it gives table
+headers and keys the same capture, so `[features]` and the keys under it would come out one
+colour. Ours captures the table name as `@label` and the key as `@variable`, and takes the
+whole key node so a dotted key like `workspace.package` stays one span; `dotted_key` nests
+left-recursively, so matching its parts by depth would miss all but the last. `.` is left
+out of the punctuation rule for the same reason.
+
+Overlapping captures resolve by splitting, not discarding: a capture inside another cuts
+the outer one in two and keeps its colour on both sides. That is what makes a `\"` inside a
+string, a `{variable}` inside a `.story` line and a `$VAR` inside a quoted shell path keep
+the string colour around them. Two captures on the exact same range keep the last one,
+which is the precedence `rust.scm` is written against.
+
+A shell block is drawn with a prompt in the gutter, and that prompt is `select-none` and
+`aria-hidden`, so both selecting and the copy button give the commands alone. The copy
+button is the only client component in the site; it renders nothing until it has seen a
+`navigator.clipboard`, and it stays on `Copy` if the write is refused rather than claiming
+a copy that did not happen.
 
 `src/highlight/tree-sitter-story.wasm` and `story.scm` are copies of what lives in
 `editors/tree-sitter-story`; CI diffs the queries so they cannot drift, and the wasm is
@@ -41,5 +62,18 @@ cd editors/tree-sitter-story && tree-sitter build --wasm
 cp tree-sitter-story.wasm ../../docs/src/highlight/
 ```
 
-Content will live in `src/content` as MDX, one page per subsystem, and the crate READMEs
-will shrink to front doors that link into it. Until that move happens, edit the READMEs.
+The other three ship their own wasm, so upgrading one is a recopy from `node_modules`:
+
+```sh
+cp node_modules/tree-sitter-rust/tree-sitter-rust.wasm src/highlight/
+cp node_modules/tree-sitter-rust/queries/highlights.scm src/highlight/rust.scm
+```
+
+Content lives in `src/app/docs/` as `page.mdx`, one page per subject, with `src/nav.ts` as
+the manifest that drives the sidebar and the previous/next links. The crate READMEs are
+front doors that link into it, so prose belongs here and not there.
+
+`scripts/check_links.py` at the repository root checks relative links and anchors across
+the markdown, the `/docs/...` links inside MDX against the routes the export actually
+produces, and braces in MDX prose that would be read as JSX. CI runs it after the build,
+since two of the three need `out/`.

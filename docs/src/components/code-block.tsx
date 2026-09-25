@@ -1,3 +1,4 @@
+import { CopyButton } from "@/components/copy-button";
 import { Frame } from "@/components/frame";
 import { highlight, type Token } from "@/highlight";
 
@@ -20,7 +21,7 @@ export function CodeBlock({
   const gutter = numbered || shell;
 
   return (
-    <Frame name={name}>
+    <Frame action={<CopyButton text={body} />} name={name}>
       <pre className="overflow-x-auto px-4 py-4 font-mono text-[0.82rem] leading-6">
         <code>
           {lines.map((tokens, index) => (

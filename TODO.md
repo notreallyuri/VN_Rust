@@ -485,10 +485,27 @@ solved by the same work rather than twice.
   capture-to-kind map covers all three, so a colour is decided once. `sh`, `bash`, `shell`,
   `console`, `rs` and `rust` are aliases onto the two. A shell block gets a prompt gutter
   that is `select-none` and `aria-hidden`, so copying a command does not take a `$` with it.
-  Rust is the most common fence on the site now, 44 blocks to `.story`'s 29
-- [ ] `toml` is the one fence still drawn flat, in three pages, all of them a
-  `[build-dependencies]` stanza. A fourth grammar for six lines of TOML is a bad trade;
-  either the snippets become `text`, or the manifest lines move into prose
+  Rust is the most common fence on the site now, 46 blocks to `.story`'s 31
+- [x] TOML as a fourth grammar, from `@tree-sitter-grammars/tree-sitter-toml`, which ships
+  its own wasm. Four fences today, all manifest stanzas, which on its own would not have
+  been worth it; it is in because a TOML configuration layer would make it load-bearing
+  (see the idea below). Its query is the one that is adapted rather than copied: upstream
+  captures a whole `pair` as `@property`, overlapping the key, the `=` and the value, and
+  gives table headers and keys the same capture, so `[features]` and the keys under it came
+  out one colour
+- [x] Overlapping captures resolve by splitting instead of discarding. A capture inside
+  another used to delete the outer one, so `"a \" quote"` lost its string colour entirely
+  and kept it only on the escape. It now cuts the outer span in two and keeps its colour on
+  both sides, which fixed 71 tokens across the site with nothing changing colour: strings
+  around a `{variable}` in a `.story` line, strings around a `$VAR` in a quoted shell path,
+  and `#[derive(...)]` attributes. Two captures on the exact same range still keep the last
+  one, which is the precedence `rust.scm` is written against; getting that backwards
+  recoloured every method name from `label` to `variable`
+- [x] A copy button on every code block, the site's only client component. It copies the
+  code without the shell prompt, since the prompt is gutter rather than content, and it
+  stays on `Copy` if the write is refused rather than claiming a copy that did not happen.
+  Verified over CDP against the real hydrated page: 50 blocks across eight pages, every
+  label flipping and no prompt reaching the clipboard
 - [ ] A Preview/Code tab where a snippet has something to show. This is the half of the
   code block that is still missing, and it is the one that wants the playground underneath
   it, so it may be cheaper after phase 3 than before
@@ -529,8 +546,44 @@ through emscripten and `raylib-rs` on wasm, which is its own project. The script
 playground above is cheap precisely because `novn_script` has no rendering dependencies;
 do not let it sell the much larger one.
 
+## Not committed to: a TOML configuration layer
+
+Noted 2026-09-25, out of adding the TOML grammar to the site. Not scheduled, and worth
+arguing about before it is.
+
+**The case for it.** A game's *look* is Rust today: window size, fonts, the theme, corner
+shapes, panel and button styles, the dialogue box, scenery, default transition lengths. All
+of it is a recompile away from being tried, while a story reloads on save. Someone tuning a
+dialogue box against real art is doing the slowest possible edit loop for the most visual
+part of the engine. A `novn.toml` read at startup and watched by the existing hot reload
+would put look on the same footing as prose, and it is the kind of file a person can hand to
+someone who does not write Rust.
+
+**What would go in it**, if anything does: window and resolution, fonts by role, the theme
+and its colours, shapes and panel styles, the default transition lengths, the scenery, and
+the default keybinds. All of it description, none of it behaviour.
+
+**What must not.** Characters, variables, commands, hooks, screens. Those are the registries
+the whole validation story rests on: a story may only name what Rust already declared, and
+`schema.json` is an export of that rather than a source. Moving any of it into a config file
+would mean a story could name something no compiler ever saw, which is the property this
+engine exists to have. The line is that a config file may say what things *look* like and
+never what *exists*.
+
+**The tension to resolve first.** A config file is untyped until something parses it, and
+this project's character is catching mistakes before a window opens. So it only earns its
+place with the same treatment everything else gets: a schema, `novn check` reading it,
+unknown keys as errors with a "did you mean", and a bad value naming its file and line.
+A TOML layer that fails at runtime with a default silently substituted would be a hole in
+the design, not a feature. Worth noting `suggest::did_you_mean` is already public and
+generic over candidates, so the diagnostics half is mostly there.
+
+**The cheap first slice**, if it happens: the theme alone, since it is the most visual, the
+most iterated, and the part with no behaviour attached at all. If that is not pleasant to
+use, nothing else in the list will be.
+
 ## Ongoing
 
-- [x] Tests: golden tests over the SCRIPT.md examples (`crates/novn-script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `novn dump`
+- [x] Tests: golden tests over every story example in the documentation (`crates/novn-script/tests/spec.rs`: each one compiles cleanly, its listing and VM events match `tests/golden/examples.txt`); `Program::listing()` and `Display for Instruction` shared with `novn dump`
 - [x] SCRIPT.md §8.3 typo: `-+` → `-=`
 - [x] SCRIPT.md: specify audio (backgrounds, positions and string escaping done)
