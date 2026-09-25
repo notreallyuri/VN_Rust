@@ -19,10 +19,44 @@ a release build, for a tester's copy.
 | Key | Tool |
 | --- | --- |
 | F2 | The story error panel, when a hot reload failed. See [hot reload](/docs/engine/story#hot-reload) |
+| F3 | The inspector: what is drawn where, the focus order, and frame timing |
 | F4 | Jump to a scene |
 
 They draw in their own plain style rather than your game's theme, so a tool stays readable
 however the game looks, and they only use characters every font has.
+
+## The inspector
+
+F3 turns it on and off, and the game keeps running underneath, so you can click, hover and
+play while it watches. It is the fastest way to answer "why is that button there".
+
+**Every widget is outlined.** Buttons and panels, which covers menus, the dialogue box, the
+name plate, save slots, choices, toasts and tooltips.
+
+**Point at one to read it.** The widget under the pointer lights up, and a card beside it
+gives its rect in the game's own coordinates and the style it was drawn with.
+
+| Kind | What the card shows |
+| --- | --- |
+| Button | Its label and rect, the size its style asked for, font role, size and colour, fill, padding, alignment and overflow, border, and whether it has an image, icon or transform |
+| Panel | Its rect, fill, gradient, border, inner border and shadow |
+
+The rect and the configured size side by side is the useful part: a button whose rect is
+narrower than its style is being squeezed by a layout, and that is the usual answer to text
+that ellipsizes when it should not.
+
+**The focus order is numbered.** Every list that keyboard and gamepad navigation moves
+through gets its items numbered in the order Tab visits them. The focused one is outlined,
+and disabled ones are greyed. The numbers show even when a mouse user has nothing focused,
+which is when a wrong order is easiest to miss.
+
+**Frame timing sits in a corner.** Frames per second, the average and the worst frame of
+the last two seconds, and a graph with a line at 60 fps and spikes over it in red. The
+loading hitch when a scene brings in new art shows up here. The graph moves to the other
+corner when the pointer comes near it, so it never covers what you are inspecting.
+
+It costs nothing while it is off: a widget checks one flag before recording anything, and
+nothing is recorded in a release build at all.
 
 ## Jump to a scene
 

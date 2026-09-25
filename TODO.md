@@ -354,7 +354,17 @@ tools instead, which is what this milestone copies. Everything here is debug-bui
 and sits beside the existing hot reload (`VnApp::hot_reload`, on by default in debug
 builds), F1 (controls) and F2 (script errors).
 
-- [ ] Debug overlay on F3: layout rectangles, focus order, the style and rect of the widget under the cursor, and frame timing. The equivalent of Ren'Py's inspector, and the fastest way to find a layout bug
+- [x] The inspector on F3: every button and panel outlined, the one under the pointer with a
+  card giving its rect beside the size its style asked for (the usual answer to text that
+  ellipsizes when it should not), the focus order numbered in the order Tab actually visits,
+  and frame timing with a graph. Two hooks carry it: `Button::draw` and `PanelStyle::draw_faded`
+  record what they draw, `Focus::update` records its list, into a thread-local frame that
+  costs one flag check while it is off. The focus hook sits at the top of `update`, since two
+  early returns there are exactly the "mouse user, nothing focused" case, and a test pins it
+  by failing when the hook is moved back. Played in the example: the first run showed the
+  frame graph sitting on the game's own top-right buttons, so the graph now moves to the
+  other corner when the pointer comes near; and the dialogue box, being a panel rather than a
+  button, was not inspectable until panels were recorded too
 - [ ] Live style tweaking: hot-reload the style values a game defines (the example keeps them in `src/style.rs`), or edit them in an overlay with sliders and colour pickers that writes the tweaked values back out as Rust to paste. This is the part of a UI editor people actually want
 - [ ] Position picker: drag a sprite in the running game and get the `at` position, or exact coordinates, to paste into the `.story` line. Ren'Py's image location picker
 - [ ] Director: while playing, pick `show`, `background`, `music`, `sound` or `voice` from a menu, see it applied live, and write the line into the `.story` file at the current point. `.story` is line-oriented and `novn fmt` normalizes whatever a tool writes, so generated lines can't drift from hand-written style

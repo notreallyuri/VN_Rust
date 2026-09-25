@@ -474,6 +474,7 @@ impl Focus {
         if self.index.is_some_and(|i| !usable(i)) {
             self.index = None;
         }
+        crate::dev::inspector::focus_list(rects, enabled, self.index);
         if nav.pointer
             && let Some(i) = hovered.filter(|&i| usable(i))
         {

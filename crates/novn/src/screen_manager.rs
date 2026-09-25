@@ -14,8 +14,8 @@ use crate::data::saves::{Saves, THUMBNAIL_WIDTH};
 use crate::data::session::{PlayModes, SeenLines, SessionLog};
 use crate::data::settings::SettingsStore;
 use crate::data::state::GameState;
-use crate::dev::SCENE_JUMP_KEY;
 use crate::dev::scene_jump::SCENE_JUMP_OVERLAY;
+use crate::dev::{INSPECTOR_KEY, SCENE_JUMP_KEY};
 use crate::game::audio::Audio;
 use crate::game::characters::Characters;
 use crate::game::commands::Commands;
@@ -112,6 +112,7 @@ pub struct ScreenStateManager {
     pub close_confirmation: Option<String>,
     pub keybind_keys: Vec<KeyboardKey>,
     pub dev_tools: bool,
+    timing: crate::dev::inspector::Timing,
     pub prompts: crate::input::prompts::Prompts,
     pub(crate) pointer: Option<crate::ui::cursor::Pointer>,
     script_errors: Option<ScriptErrors>,
@@ -198,6 +199,7 @@ impl ScreenStateManager {
             close_confirmation: Some(CLOSE_MESSAGE.to_string()),
             keybind_keys: vec![KeyboardKey::KEY_F1],
             dev_tools: false,
+            timing: crate::dev::inspector::Timing::default(),
             prompts: Default::default(),
             pointer: Some(crate::ui::cursor::Pointer::system()),
             script_errors: None,
@@ -210,6 +212,15 @@ impl ScreenStateManager {
     }
 
     pub fn update(&mut self, rl: &mut RaylibHandle, thread: &RaylibThread) {
+        crate::dev::inspector::begin_frame();
+        if self.dev_tools {
+            if rl.is_key_pressed(INSPECTOR_KEY) {
+                crate::dev::inspector::set_active(!crate::dev::inspector::active());
+            }
+            if crate::dev::inspector::active() {
+                self.timing.push(rl.get_frame_time());
+            }
+        }
         let now = rl.get_time();
         let keybinds_open = self.overlay_name() == Some(KEYBINDS_OVERLAY);
         self.show.resources.load_requested(rl, thread);
@@ -439,6 +450,17 @@ impl ScreenStateManager {
             && let Some(text) = self.frame.tooltip_timer.visible(d.get_time(), config.delay)
         {
             crate::ui::tooltip::draw_tooltip(d, ctx.fonts(), text, config);
+        }
+
+        if self.dev_tools && crate::dev::inspector::active() {
+            let mouse = crate::frame::viewport::mouse_position(d);
+            crate::dev::inspector::draw(
+                d,
+                ctx.fonts(),
+                &crate::dev::inspector::frame(),
+                &self.timing,
+                mouse,
+            );
         }
     }
 

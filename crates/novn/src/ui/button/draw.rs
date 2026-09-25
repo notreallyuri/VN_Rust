@@ -109,9 +109,60 @@ impl<'a> Button<'a> {
         if look.opacity <= 0.0 {
             return;
         }
+        if crate::dev::inspector::active() {
+            self.inspect(rect);
+        }
         with_transform(rect, &look.transform, || {
             draw_body(d, ctx, rect, self.style, &look);
             draw_content(d, ctx, rect, self.label, self.style, &look);
+        });
+    }
+}
+
+impl Button<'_> {
+    fn inspect(&self, rect: Rectangle) {
+        use crate::dev::inspector::{Widget, colour, widget};
+        let style = self.style;
+        let mut details = vec![
+            ("size", format!("{:.0} x {:.0}", style.width, style.height)),
+            (
+                "font",
+                format!(
+                    "{:?} {:.0}  {}",
+                    style.text.font,
+                    style.text.size,
+                    colour(style.text.color)
+                ),
+            ),
+            ("fill", colour(style.color)),
+            (
+                "padding",
+                format!("{:.0}, {:.0}", style.padding.x, style.padding.y),
+            ),
+            ("text", format!("{:?}, {:?}", style.align, style.overflow)),
+        ];
+        if let Some(border) = &style.border {
+            details.push((
+                "border",
+                format!("{:.0}  {}", border.width, colour(border.color)),
+            ));
+        }
+        if style.image.is_some() {
+            details.push(("image", "yes".into()));
+        }
+        if style.icon.is_some() {
+            details.push(("icon", "yes".into()));
+        }
+        if !style.transform.is_identity() {
+            details.push(("transform", "yes".into()));
+        }
+        widget(Widget {
+            kind: "button",
+            rect,
+            label: self.label.to_string(),
+            focused: self.focused,
+            disabled: self.disabled,
+            details,
         });
     }
 }
