@@ -230,6 +230,8 @@ impl ScreenStateManager {
         }
         crate::ui::motion::set_reduced(self.world.settings.values.reduce_motion);
         crate::ui::reading::set_percent(self.world.settings.values.text_size);
+        crate::ui::reading::set_backdrop(self.world.settings.values.text_backdrop);
+        crate::ui::reading::set_outline(self.world.settings.values.text_outline);
         let styling = self
             .overlay_names()
             .any(|name| name == STYLE_EDITOR_OVERLAY);

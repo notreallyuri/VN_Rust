@@ -3,9 +3,9 @@ use raylib::prelude::*;
 use super::PlayingConfig;
 use crate::context::DrawContext;
 use crate::data::session::LogEntry;
+use crate::ui::TextStyle;
 use crate::ui::shape::PanelStyle;
 use crate::ui::styled::{self, StyledText};
-use crate::ui::{self, TextStyle};
 
 const SPEAKER_SPACING: f32 = 1.3;
 
@@ -164,7 +164,7 @@ pub(super) fn draw(
         return;
     }
 
-    style.panel.draw(d, rect);
+    crate::ui::reading::backdrop(&style.panel).draw(d, rect);
 
     let fonts = ctx.fonts();
     let heights: Vec<f32> = entries.iter().map(|entry| entry.height).collect();
@@ -177,14 +177,14 @@ pub(super) fn draw(
             y += style.entry_spacing;
         }
         if let Some((name, name_style)) = &entry.speaker {
-            ui::draw_text(d, fonts, name, Vector2::new(area.x, y), name_style);
+            crate::ui::reading::draw_text(d, fonts, name, Vector2::new(area.x, y), name_style);
             y += name_style.size * SPEAKER_SPACING;
         }
         let shown = match index == last {
             true => visible.unwrap_or(usize::MAX),
             false => usize::MAX,
         };
-        y += styled::draw(
+        y += styled::draw_outlined(
             d,
             fonts,
             &entry.text,
@@ -192,6 +192,7 @@ pub(super) fn draw(
             area.width,
             &entry.style,
             shown,
+            crate::ui::reading::outline(),
         );
     }
 }

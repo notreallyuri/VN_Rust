@@ -20,6 +20,8 @@ pub struct Settings {
     pub language: Option<String>,
     pub reduce_motion: bool,
     pub text_size: u32,
+    pub text_backdrop: u32,
+    pub text_outline: bool,
 }
 
 impl Default for Settings {
@@ -35,6 +37,8 @@ impl Default for Settings {
             language: None,
             reduce_motion: false,
             text_size: 100,
+            text_backdrop: 0,
+            text_outline: false,
         }
     }
 }

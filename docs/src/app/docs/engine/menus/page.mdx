@@ -84,6 +84,8 @@ settings do not break old files.
 | Language | none, meaning the story as written |
 | Reduce motion | off |
 | Text size | 100 percent, from 90 to 150 |
+| Text backdrop | as designed |
+| Text outline | off |
 
 The default screen shows one row per setting. `audio_rows(false)` hides the volumes,
 `voice_row(false)` just the voice one, `play_rows(false)` auto-forward and skip, and the
@@ -139,6 +141,19 @@ risk, not just a comfort question, so it goes entirely rather than getting softe
 Nothing in the story changes: a `with slide_left` still reads as written and still plays as
 a slide for everyone else. The setting decides how it is drawn, every frame, so switching it
 mid-scene takes effect at once.
+
+### Readability
+
+Two options for dialogue over a bright or busy background, and they can be used together.
+
+**Text backdrop** makes the panel behind the words more opaque: As designed, Stronger, or
+Solid. It only ever raises the opacity and never changes the color, so a game's dark red
+box stays dark red, just harder to see through. A panel already more opaque than the chosen
+level is left alone. It covers the dialogue box and NVL pages.
+
+**Text outline** draws a thin edge around each letter, in whichever of black or white
+contrasts with the text, and scaled to the text size. It covers dialogue, the speaker's
+name, narration and NVL pages.
 
 ## Notifications
 

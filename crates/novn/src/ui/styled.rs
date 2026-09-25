@@ -303,12 +303,40 @@ pub fn draw_line(
     position: Vector2,
     style: &TextStyle,
 ) {
+    paint_line(d, fonts, line, position, style, false);
+}
+
+fn paint_line(
+    d: &mut RaylibDrawHandle,
+    fonts: &Fonts,
+    line: &StyledLine,
+    position: Vector2,
+    style: &TextStyle,
+    outline: bool,
+) {
     let baseline = line.height(style) / LINE_SPACING;
     let mut x = position.x;
 
     for piece in &line.pieces {
         let size = size_of(&piece.span, style);
         let at = Vector2::new(x, position.y + (baseline - size));
+        if outline {
+            let edge = crate::ui::reading::outline_color(color_of(&piece.span, style));
+            let width = crate::ui::reading::outline_width(size);
+            for (dx, dy) in crate::ui::reading::OFFSETS {
+                fonts.draw_styled(
+                    d,
+                    style.font,
+                    &piece.text,
+                    Vector2::new(at.x + dx * width, at.y + dy * width),
+                    size,
+                    style.spacing,
+                    edge,
+                    piece.span.bold,
+                    piece.span.italic,
+                );
+            }
+        }
         fonts.draw_styled(
             d,
             style.font,
@@ -333,6 +361,34 @@ pub fn draw(
     style: &TextStyle,
     visible: usize,
 ) -> f32 {
+    paint(d, fonts, text, position, max_width, style, visible, false)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn draw_outlined(
+    d: &mut RaylibDrawHandle,
+    fonts: &Fonts,
+    text: &StyledText,
+    position: Vector2,
+    max_width: f32,
+    style: &TextStyle,
+    visible: usize,
+    outline: bool,
+) -> f32 {
+    paint(d, fonts, text, position, max_width, style, visible, outline)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn paint(
+    d: &mut RaylibDrawHandle,
+    fonts: &Fonts,
+    text: &StyledText,
+    position: Vector2,
+    max_width: f32,
+    style: &TextStyle,
+    visible: usize,
+    outline: bool,
+) -> f32 {
     let lines = wrap(fonts, text, style, max_width);
     let mut left = visible;
     let mut y = position.y;
@@ -349,7 +405,14 @@ pub fn draw(
             line.take(left)
         };
         left = left.saturating_sub(shown);
-        draw_line(d, fonts, &drawn, Vector2::new(position.x, y), style);
+        paint_line(
+            d,
+            fonts,
+            &drawn,
+            Vector2::new(position.x, y),
+            style,
+            outline,
+        );
         y += height;
     }
 

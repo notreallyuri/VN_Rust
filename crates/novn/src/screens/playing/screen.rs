@@ -421,7 +421,7 @@ impl Screen for PlayingScreen {
                 let style = &style;
                 let rect = style.rect(screen);
 
-                style.panel.draw(d, rect);
+                crate::ui::reading::backdrop(&style.panel).draw(d, rect);
 
                 if let (Some(bust), Some(speaker)) = (&style.bust, speaker.as_deref())
                     && let Some(file) = ctx.characters.bust(speaker)
@@ -465,13 +465,19 @@ impl Screen for PlayingScreen {
                             ui::draw_text(d, fonts, &name, at, &text);
                         }
                         None => {
-                            ui::draw_text(d, fonts, &name, Vector2::new(inner_x, y), &text);
+                            crate::ui::reading::draw_text(
+                                d,
+                                fonts,
+                                &name,
+                                Vector2::new(inner_x, y),
+                                &text,
+                            );
                             y += speaker_text.size * 1.4;
                         }
                     }
                 }
 
-                crate::ui::styled::draw(
+                crate::ui::styled::draw_outlined(
                     d,
                     fonts,
                     &StyledText::parse(text),
@@ -479,6 +485,7 @@ impl Screen for PlayingScreen {
                     inner_width,
                     &crate::ui::reading::text(&config.dialogue_text),
                     self.visible.unwrap_or(usize::MAX),
+                    crate::ui::reading::outline(),
                 );
             }
             Some(Event::Choice { options }) => {

@@ -275,10 +275,15 @@ impl VnApp {
             &settings.off_label,
             &settings.reduce_motion_label,
             &settings.text_size_label,
+            &settings.text_backdrop_label,
+            &settings.text_outline_label,
             &settings.sample_text,
             &settings.back_label,
         ] {
             add(text);
+        }
+        for label in &settings.text_backdrop_levels {
+            add(label);
         }
         for (label, _) in &settings.text_speeds {
             add(label);

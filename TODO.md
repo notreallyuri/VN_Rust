@@ -365,7 +365,7 @@ player has seen.
   he otherwise slides in from the edge. The example's real settings file was backed up and
   restored byte for byte, and test runs now use their own data folder, after these runs had
   already overwritten the example's autosave
-- [ ] Readability options: text outline or a dimmed backdrop behind dialogue over bright backgrounds
+- [x] Readability options: text outline or a dimmed backdrop behind dialogue over bright backgrounds (Text backdrop raises the dialogue and NVL panel opacity to Stronger or Solid without changing its color; Text outline edges dialogue, names and NVL text in a contrasting black or white scaled to the text size; both on the Accessibility page)
 - [ ] A self-voicing hook (the engine hands the current line to a game-provided reader)
 
 ## M10: Authoring and dev tools

@@ -309,7 +309,12 @@ fn the_accessibility_page_has_its_own_rows_and_title() {
     let config = SettingsConfig::default();
     assert_eq!(
         config.page_rows(SettingsPage::Accessibility),
-        [SettingsRow::TextSize, SettingsRow::ReduceMotion]
+        [
+            SettingsRow::TextSize,
+            SettingsRow::TextBackdrop,
+            SettingsRow::TextOutline,
+            SettingsRow::ReduceMotion
+        ]
     );
     assert_eq!(config.page_rows(SettingsPage::Main), config.rows());
     assert_eq!(

@@ -74,7 +74,12 @@ impl SettingsConfig {
     pub fn page_rows(&self, page: SettingsPage) -> Vec<SettingsRow> {
         match page {
             SettingsPage::Main => self.rows(),
-            SettingsPage::Accessibility => vec![SettingsRow::TextSize, SettingsRow::ReduceMotion],
+            SettingsPage::Accessibility => vec![
+                SettingsRow::TextSize,
+                SettingsRow::TextBackdrop,
+                SettingsRow::TextOutline,
+                SettingsRow::ReduceMotion,
+            ],
         }
     }
 
@@ -115,6 +120,8 @@ impl SettingsConfig {
             SettingsRow::TextSize => {
                 reading::nearest(settings.text_size) as f32 / (reading::SIZES.len() - 1) as f32
             }
+            SettingsRow::TextBackdrop => settings.text_backdrop.min(2) as f32 / 2.0,
+            SettingsRow::TextOutline => f32::from(u8::from(settings.text_outline)),
         }
     }
 
@@ -141,6 +148,10 @@ impl SettingsConfig {
                 settings.text_size =
                     reading::SIZES[ui::slider_step(fraction, reading::SIZES.len())];
             }
+            SettingsRow::TextBackdrop => {
+                settings.text_backdrop = ui::slider_step(fraction, 3) as u32;
+            }
+            SettingsRow::TextOutline => settings.text_outline = fraction >= 0.5,
             SettingsRow::Language => {
                 let index = ui::slider_step(fraction, self.languages.len());
                 if let Some(language) = self.languages.get(index) {
@@ -161,6 +172,10 @@ impl SettingsConfig {
                 let at = (reading::nearest(settings.text_size) as i32 + delta).clamp(0, last);
                 settings.text_size = reading::SIZES[at as usize];
             }
+            SettingsRow::TextBackdrop => {
+                settings.text_backdrop = (settings.text_backdrop.min(2) + 1) % 3;
+            }
+            SettingsRow::TextOutline => settings.text_outline = !settings.text_outline,
             SettingsRow::Language => {
                 let count = self.languages.len();
                 if count == 0 {
@@ -221,6 +236,11 @@ impl SettingsConfig {
             SettingsRow::ReduceMotion if settings.reduce_motion => self.on_label.clone(),
             SettingsRow::ReduceMotion => self.off_label.clone(),
             SettingsRow::TextSize => format!("{}%", settings.text_size),
+            SettingsRow::TextBackdrop => {
+                self.text_backdrop_levels[settings.text_backdrop.min(2) as usize].clone()
+            }
+            SettingsRow::TextOutline if settings.text_outline => self.on_label.clone(),
+            SettingsRow::TextOutline => self.off_label.clone(),
             SettingsRow::Language => self
                 .language_of(settings.language.as_deref())
                 .map(|language| language.label.clone())
@@ -241,6 +261,8 @@ impl SettingsConfig {
             SettingsRow::Accessibility => &self.accessibility_label,
             SettingsRow::ReduceMotion => &self.reduce_motion_label,
             SettingsRow::TextSize => &self.text_size_label,
+            SettingsRow::TextBackdrop => &self.text_backdrop_label,
+            SettingsRow::TextOutline => &self.text_outline_label,
         }
     }
 
@@ -257,6 +279,8 @@ impl SettingsConfig {
             SettingsRow::Accessibility => self.accessibility_tooltip.as_deref(),
             SettingsRow::ReduceMotion => self.reduce_motion_tooltip.as_deref(),
             SettingsRow::TextSize => self.text_size_tooltip.as_deref(),
+            SettingsRow::TextBackdrop => self.text_backdrop_tooltip.as_deref(),
+            SettingsRow::TextOutline => self.text_outline_tooltip.as_deref(),
         }
     }
 
