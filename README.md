@@ -179,7 +179,10 @@ cargo publish -p novn-live2d     # needs novn
 ```
 
 Before any of that, `cargo package -p <crate> --allow-dirty` says what would be uploaded
-and refuses anything the registry would. The examples carry `publish = false` and never
+and refuses anything the registry would. Each crate carries `LICENSE-MIT` and
+`LICENSE-APACHE` as symlinks to the pair at the root: Cargo packages only a crate's own
+directory, and it follows the links when it does, so the licence text travels inside every
+`.crate` rather than only being named in its metadata. The examples carry `publish = false` and never
 leave the repository.
 
 Every crate inherits its version, edition, MSRV, repository, homepage and authors from
@@ -190,8 +193,25 @@ Every crate inherits its version, edition, MSRV, repository, homepage and author
 anyone has measured. Edition 2024 needs 1.85 at the least, so there is room to lower it
 once an older toolchain has actually been tried.
 
-Everything here is Apache-2.0, declared once in `[workspace.package]` and inherited. The
-Live2D SDK and Live2D's sample models are not: see `crates/novn-live2d/README.md`.
+The licence is declared once in `[workspace.package]` and inherited by every crate. The
+Live2D SDK and Live2D's sample models are not covered by it: see
+`crates/novn-live2d/README.md`.
+
+## Licence
+
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+  <https://www.apache.org/licenses/LICENSE-2.0>)
+- MIT licence ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
+
+at your option, which is the usual arrangement in Rust: take MIT for its brevity and its
+GPLv2 compatibility, or Apache-2.0 for its patent grant. Unless you say otherwise, any
+contribution you submit for inclusion is dual licensed the same way, with no further
+terms.
+
+Live2D's SDK and its sample models are neither: see
+[`crates/novn-live2d`](crates/novn-live2d/README.md).
 
 ## Project Status
 
