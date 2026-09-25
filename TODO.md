@@ -366,8 +366,8 @@ builds), F1 (controls) and F2 (script errors).
 A React site rather than generated API docs. The audience splits: someone writing
 `.story` files will never open `cargo doc` and should not have to, and
 `Instruction::Say { char_id, text }` tells them nothing. The comparator is Ren'Py's
-documentation, not a crate on docs.rs. Most of the prose exists already — about 4000
-lines across the READMEs — so the work is structure, navigation and search, not writing.
+documentation, not a crate on docs.rs. Most of the prose exists already — see the table
+below — so the work is structure, navigation and search, not writing.
 
 The model is [ui.shadcn.com](https://ui.shadcn.com): a hand-built Next.js app rather than
 a configured docs framework, which is the whole reason it does not look like everything
@@ -376,57 +376,88 @@ strict sidebar / content / on-this-page layout, almost nothing decorative — an
 signature is the Preview/Code tab, the real component beside its real source. Copy the
 method, not the stack.
 
-- [ ] The site, in React, with the design owned rather than inherited. Docusaurus is the
-  opposite trade: best-in-class infrastructure (versioning, i18n, Algolia, sidebars) and a
-  theme (Infima) recognisable at a glance, where restyling means swizzling components and
-  giving up the upgrade path that justified it. [Fumadocs](https://fumadocs.dev) or plain
-  Next.js + MDX fit better, and for a stronger reason than looks: **code-block rendering
-  has to be our own code, because a compiler is going behind it** (see the playground
-  below). Revisit if the docs themselves need translating or versioning soon — that is
-  where Docusaurus earns its keep. Either way the content stays **in this repo** as
-  Markdown/MDX: the READMEs are accurate today because they change in the same commit as
-  the code, and a separate docs repo is where that habit dies
-- [ ] **A live `.story` playground — the equivalent of shadcn's Preview/Code tab, and the
-  thing that would make this site worth looking at.** `vn_script` compiles to
-  `wasm32-unknown-unknown` **unchanged** (verified 2026-09-20: `cargo check -p vn_script
-  --target wasm32-unknown-unknown` is clean). Its only dependency is `serde`, and
-  `std::fs` appears in three file-loading helpers, never in the lexer, parser, compiler or
-  VM. So an editable story block can show, live as the writer types: diagnostics with the
-  real "did you mean" suggestions, the compiled instruction listing (`vn dump`), and the
-  VM event stream. Same compiler as the engine and `vn check`, so a doc example cannot
-  drift from the language, and every `.story` sample in the site becomes runnable in place
-- [ ] `.story` syntax highlighting from the grammar we already maintain.
-  `editors/tree-sitter-story/grammar.js` compiled to WASM and run through
-  `web-tree-sitter` gives the docs exactly what nvim and the LSP show. The alternative is
-  a second grammar written for Prism (Docusaurus) or TextMate/Shiki (everyone else), kept
-  in sync by hand forever
-- [ ] Split the content into a page tree, keeping the cross-references working:
+**Decided 2026-09-24.** The content moves into the site and the READMEs shrink to front
+doors, so there is one copy of every explanation. The site is plain Next + MDX, hand
+built, no docs framework: the design is owned, and the code block has a compiler behind it
+so it was never going to be someone else's component. It is a static export served from
+GitHub Pages. The playground comes straight after the pages, because it reuses the code
+block the pages need anyway.
 
-  | Source | Becomes |
-  | --- | --- |
-  | `README.md` (178 lines) | Landing page, project goals, the three-layer architecture |
-  | `SCRIPT.md` (665 lines, 12 + 38 sections) | The DSL reference: the writer's half of the site, and where the playground earns the most |
-  | `crates/vn_engine/README.md` (2182 lines, 47 + 23 sections) | The engine guide, as roughly ten pages. Already a book squeezed into one file |
-  | `crates/vn_script/README.md` (526 lines) | Internals, for contributors |
-  | `crates/vn_cli/README.md` (285 lines) | Tooling reference (`vn new`, `check`, `fmt`, `translate`, `lsp`) |
-  | `crates/vn_build`, `crates/vn_live2d` | Short pages under a "release and optional backends" heading |
+Still true and load-bearing, re-checked 2026-09-24: `cargo check -p vn_script --target
+wasm32-unknown-unknown` is clean, so the playground needs no port; the tree-sitter grammar
+and its queries are in `editors/tree-sitter-story`; and `crates/vn_script/tests/spec.rs`
+already compiles every fenced block in SCRIPT.md and golden-tests the result.
 
-- [ ] Keep the code examples verified. `crates/vn_script/tests/spec.rs` already does this
-  for `SCRIPT.md`: it pulls every fenced block out, compiles it, and golden-tests the
-  listing and VM events against `tests/golden/script_md.txt`. That mechanism has to
-  survive the move, and the Rust snippets in the engine guide need the same treatment —
-  nothing checks those today. An engine whose character is catching mistakes before they
-  run (`did you mean 'guide'?`, `takes 2 arguments, got 1`) should not ship examples that
-  do not compile. A React site loses `mdbook test`, so this needs its own extractor in CI
-- [ ] Search. 47 top-level sections in the engine guide alone; without it the site is the
-  same "search the file" problem with nicer typography. Algolia DocSearch is free for
-  open-source documentation and works with any of these stacks
-- [ ] One-line `///` pointers on public items, linking into the site rather than
-  repeating it: `/// Switch to the text input screen. See <docs/engine/text-input>.` This
-  is the half a site cannot do — typing `ctx.` in an editor currently shows a list of
-  names and nothing else, and the LSP can only surface what is in the source. Pointers,
-  not prose, so the convention that documentation lives in one place still holds. Do it
-  after the page tree exists, so the links have somewhere to point
+What there is to move, as it stands today: 5226 lines of prose, 3033 of them in the engine
+guide.
+
+| Source | Lines | Becomes |
+| --- | --- | --- |
+| `README.md` | 179 | Landing page, project goals, the three-layer architecture |
+| `SCRIPT.md` | 746 | The DSL reference: the writer's half of the site, and where the playground earns the most |
+| `crates/vn_engine/README.md` | 3033 | The engine guide, as roughly twelve pages. Already a book squeezed into one file |
+| `crates/vn_script/README.md` | 540 | Internals, for contributors |
+| `crates/vn_cli/README.md` | 287 | Tooling reference (`vn new`, `check`, `fmt`, `translate`, `lsp`) |
+| `crates/vn_live2d`, `crates/vn_build`, `crates/vn_macros` | 441 | Short pages under "release and optional backends". The dated verification logs in the Live2D README stay in this file instead — they are a record of what was run, not documentation |
+
+**Phase 0 — the ground.** Nothing here is about documentation; it is what the rest needs
+to stand on.
+
+- [ ] There is no CI in this repository at all. A first workflow: `cargo fmt --check`,
+  `clippy -D warnings` over the workspace and over each off-by-default feature,
+  `cargo test --workspace`, and the `character-visuals` suite. The GPU tests can run in
+  the same job under `xvfb-run`, since both backends draw the same frame under llvmpipe
+- [ ] Commit `docs/` (a bare `create-next-app`: Next 16, React 19, Tailwind 4, Biome,
+  pnpm). Decide how a pnpm project inside a cargo workspace is built in CI, and keep the
+  site's own lint and typecheck in that workflow
+- [ ] A `basePath` for project pages (`/VN_Rust`), or a domain, before any link is written
+
+**Phase 1 — the pages.** The site is useful at the end of this, and the README problem is
+solved by the same work rather than twice.
+
+- [ ] The shell: sidebar, content, on-this-page, and the type scale. Near-monochrome, one
+  accent, generous whitespace — the restraint is the design
+- [ ] `docs/content/**.mdx` with the page tree above; the engine guide's 47 sections
+  become about twelve pages, with its tables kept as tables
+- [ ] Every crate README shrinks to a front door of about 150 lines: what it is, a quick
+  start, the module map, and a link to its guide. A README that is the first thing a
+  reader meets on the repository page should not be the last word on `ButtonStyle`
+- [ ] A link checker in CI: every cross-reference the split breaks is a link the reader
+  will meet. Anchors from the old files must resolve or redirect
+
+**Phase 2 — the code block.** One component, built knowing what is coming next.
+
+- [ ] `.story` highlighting from `editors/tree-sitter-story`, compiled to WASM and run
+  through `web-tree-sitter`, so the site shows exactly what nvim and the LSP show. The
+  risk to check early: building the grammar to WASM needs emscripten or docker in CI
+- [ ] Rust snippets highlighted by the same component, and a Preview/Code tab where a
+  snippet has something to show
+
+**Phase 3 — the playground.** The thing that makes the site worth looking at.
+
+- [ ] A thin `crates/vn_playground` wasm crate over `vn_script`, so `vn_script` itself
+  keeps its one dependency and never learns about `wasm-bindgen`
+- [ ] An editable `.story` block showing, live as it is typed: the real diagnostics with
+  their "did you mean" suggestions, the compiled listing (`vn dump`), and the VM event
+  stream. Same compiler as the engine and `vn check`, so an example cannot drift from the
+  language
+- [ ] Every `.story` sample in the site becomes runnable in place
+
+**Phase 4 — keeping it honest.**
+
+- [ ] The `spec.rs` extractor follows the content into MDX, so fenced `.story` blocks stay
+  compiled and golden-tested
+- [ ] The same for Rust snippets, which nothing checks today: an extractor that generates
+  a compile-only crate from the site's fenced `rust` blocks. An engine whose character is
+  catching mistakes before they run should not ship examples that do not compile
+- [ ] Search, ours since there is no framework to inherit it from: an index generated at
+  build time from the MDX, and a small client over it. Algolia DocSearch is the fallback
+  if a build-time index proves too coarse for 5000 lines
+- [ ] One-line `///` pointers on public items, linking into the site rather than repeating
+  it: `/// Switch to the text input screen. See <docs/engine/text-input>.` Typing `ctx.`
+  in an editor shows a list of names and nothing else today, and the LSP can only surface
+  what is in the source. Pointers, not prose, so documentation still lives in one place.
+  Last, because the links need somewhere to point
 
 Not in this milestone: running the **whole engine** in the browser. That means raylib
 through emscripten and `raylib-rs` on wasm, which is its own project. The script-level
