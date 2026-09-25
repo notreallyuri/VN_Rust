@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 description = "The #[command] and #[derive(StoryWord)] attributes for novn. Re-exported by novn."
 rust-version.workspace = true
+license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 authors.workspace = true

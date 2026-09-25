@@ -2107,7 +2107,7 @@ msgid "just now"
 msgstr ""
 
 #. ui
-msgctxt "ui|4053a44f2dadeaf4"
+msgctxt "ui|033519a25a1fe456"
 msgid "v0.3 · made with novn"
 msgstr ""
 

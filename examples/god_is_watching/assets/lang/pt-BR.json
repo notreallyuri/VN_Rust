@@ -1697,6 +1697,11 @@
       "source": "Cancel",
       "text": ""
     },
+    "033519a25a1fe456": {
+      "kind": "ui",
+      "source": "v0.3 · made with novn",
+      "text": ""
+    },
     "040e8442afb4e6bc": {
       "kind": "ui",
       "source": "1 minute ago",
@@ -1800,11 +1805,6 @@
     "3f1950f038042b6b": {
       "kind": "ui",
       "source": "Loaded {slot}",
-      "text": ""
-    },
-    "4053a44f2dadeaf4": {
-      "kind": "ui",
-      "source": "v0.3 · made with novn",
       "text": ""
     },
     "4212d7c714517b07": {

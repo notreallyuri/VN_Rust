@@ -190,6 +190,9 @@ Every crate inherits its version, edition, MSRV, repository, homepage and author
 anyone has measured. Edition 2024 needs 1.85 at the least, so there is room to lower it
 once an older toolchain has actually been tried.
 
+Everything here is Apache-2.0, declared once in `[workspace.package]` and inherited. The
+Live2D SDK and Live2D's sample models are not: see `crates/novn-live2d/README.md`.
+
 ## Project Status
 
 Work in progress
