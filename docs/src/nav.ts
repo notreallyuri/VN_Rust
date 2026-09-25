@@ -28,5 +28,3 @@ export const nav: NavSection[] = [
     ],
   },
 ];
-
-export const flat = nav.flatMap((section) => section.items);

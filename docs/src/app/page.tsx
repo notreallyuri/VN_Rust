@@ -1,16 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CodeBlock } from "@/components/code-block";
+import { Frame } from "@/components/frame";
 import { SiteHeader } from "@/components/site-header";
 import playing from "@/screens/playing.webp";
 
-const story = [
-  "scene archive_start:",
-  "  background archive_office with fade",
-  "  show registrar netural at right with dissolve",
-  '  registrar "You’re the new one. Sit."',
-  "  jump vault",
-];
+const story = `scene archive_start:
+  background archive_office with fade
+  show registrar netural at right with dissolve
+  registrar "You\u2019re the new one. Sit."
+  jump vault`;
 
 const diagnostics = [
   {
@@ -116,11 +115,8 @@ export default function Home() {
               expected instead.
             </p>
             <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
-              <CodeBlock name="story/01.story" lines={story} numbered />
-              <figure className="overflow-hidden rounded-lg border border-line bg-faint">
-                <figcaption className="border-line border-b px-4 py-2.5 font-mono text-[0.7rem] text-muted uppercase tracking-widest">
-                  vn check assets
-                </figcaption>
+              <CodeBlock name="story/01.story" code={story} numbered />
+              <Frame name="novn check assets">
                 <div className="space-y-3 px-4 py-4 font-mono text-[0.78rem] leading-6">
                   {diagnostics.map((line) => (
                     <p key={line.where}>
@@ -136,7 +132,7 @@ export default function Home() {
                     warnings
                   </p>
                 </div>
-              </figure>
+              </Frame>
             </div>
           </section>
 
