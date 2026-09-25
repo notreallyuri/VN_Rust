@@ -130,4 +130,24 @@ export const nav: NavSection[] = [
       },
     ],
   },
+  {
+    title: "The other crates",
+    items: [
+      {
+        title: "Embedding assets",
+        href: "/docs/crates/build",
+        summary: "novn-build: one file you can hand to someone.",
+      },
+      {
+        title: "The command macros",
+        href: "/docs/crates/macros",
+        summary: "novn-macros: #[command] and #[derive(StoryWord)].",
+      },
+      {
+        title: "Live2D Cubism",
+        href: "/docs/crates/live2d",
+        summary: "novn-live2d: the SDK, the probes, and what is pinned.",
+      },
+    ],
+  },
 ];

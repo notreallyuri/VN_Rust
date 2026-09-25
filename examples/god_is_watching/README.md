@@ -102,7 +102,7 @@ Where each feature is used, so the example can be read as a reference.
 The UI takes its materials from the art: candlelit ink browns, brass, parchment, and
 oxblood kept for the few actions that can't be undone. `src/style.rs` is the whole
 system: `style::theme` hands the palette to the engine once (see
-[Theme](../../crates/novn/README.md#theme)), so the default screens are already
+[Look and feel](https://notreallyuri.github.io/novn/docs/engine/look)), so the default screens are already
 dressed and `src/setup/` only says what each screen does differently. The custom screens
 use the same helpers directly:
 

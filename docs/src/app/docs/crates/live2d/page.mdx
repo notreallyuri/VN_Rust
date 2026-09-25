@@ -1,0 +1,174 @@
+# Live2D Cubism
+
+`novn-live2d` backs a character with a Live2D Cubism model instead of a PNG. It is the second
+backend on the [character visuals](/docs/engine/visuals) seam, and the one that proved the
+seam was a seam rather than a shape drawn around a single implementation.
+
+It is experimental. The story path has been played end to end against the proprietary Core,
+with two models on screen, saves, rollback and hot reload, but all of that was watched by a
+person rather than checked by a test, so treat it as working and unguarded.
+
+The dependency runs one way. `novn-live2d` uses `novn` and never the reverse, and the seam
+itself lives behind `novn`'s `character-visuals` feature, which is off by default. This
+crate's `engine` feature turns it on.
+
+## What you need
+
+The target is Linux x86_64, OpenGL 3.3, **Cubism SDK for Native 5-r.5**. Other platforms and
+SDK releases are refused rather than attempted, because nothing else has been validated.
+
+Download the SDK from [Live2D's Native SDK page](https://www.live2d.com/en/sdk/download/native/)
+and point `CUBISM_SDK_ROOT` at the directory holding:
+
+```text
+Core/include/Live2DCubismCore.h
+Core/lib/linux/x86_64/libLive2DCubismCore.a
+Framework/CMakeLists.txt
+Framework/src/Rendering/OpenGL/Shaders/Standard/
+```
+
+You also need CMake, a C++17 compiler, and the OpenGL and GLEW development libraries. The
+build script makes no network requests and neither installs the SDK nor accepts anything on
+your behalf.
+
+The asset loader works without any of this. Only the `native` feature needs the SDK, and that
+is the feature that brings up the C ABI bridge to the official C++ Framework and Core, so
+Cubism's motion blending, expressions and physics run as Live2D wrote them rather than as
+someone's port of them.
+
+## The viewer
+
+```sh
+export CUBISM_SDK_ROOT=/absolute/path/to/CubismSdkForNative-5-r.5
+cargo run -p novn-live2d --features native --example viewer -- \
+  "$CUBISM_SDK_ROOT/Samples/Resources" Haru/Haru.model3.json
+```
+
+It draws into the engine's render target and composites with raylib, with a red square before
+Cubism and a green one after, so if the host's GL state does not survive a draw you see it
+immediately. Press M for motions, E for expressions, Space to pause, R to destroy and reload
+the model, and resize the window freely.
+
+This is a developer probe, not a game-facing API.
+
+## The story probe
+
+The more useful one plays an actual scene through the seam a game uses, and needs no input:
+it turns auto mode on and plays itself.
+
+```sh
+cargo run -p novn-live2d --features engine --example story
+```
+
+It builds a temporary assets folder, symlinks one model folder in as two separate characters,
+and plays a scene that shows one, changes her appearance, brings the second up beside her,
+pushes parameters from a frame hook and releases them, saves, loads, and removes one again.
+It screenshots as it goes and prints each step.
+
+With no arguments it uses the example game's Hiyori. Pass a model folder to use another, and
+it reads that model's `.model3.json` for its motion count and expression names, so a model
+with expressions gets one per appearance and a model without falls back to motions alone.
+
+```sh
+cargo run -p novn-live2d --features engine --example story -- \
+  "$CUBISM_SDK_ROOT/Samples/Resources/Natori"
+```
+
+| Flag | What it does |
+| --- | --- |
+| `--break` | Truncates that model's `.moc3` in the copy, so Core rejects it and you see the PNG fallback beside a model that still works |
+| `--post` | Leaves a grain and a desaturate pass on for the whole scene |
+| `--watch=<seconds>` | Keeps screenshotting that often once the scene has ended, for watching motion and physics over a long run |
+| `--smoke` | Quits at the end |
+
+### Picking a model to test with
+
+A `.moc3` says which rendering paths it actually exercises, and most sample models exercise
+very few. Of Live2D's eight, only Mao, Rice and Ren use inverted masks at all. Mao is the
+awkward one: 15 additive drawables, 8 multiplicative and 10 inverted masks out of 262, which
+is why it is the model the blend-mode checks run against.
+
+`native/tools/moc_flags.c` is how that was found out. It needs Core alone, no window and no
+Framework:
+
+```sh
+cc -std=c11 -O1 -I"$CUBISM_SDK_ROOT/Core/include" \
+  crates/novn-live2d/native/tools/moc_flags.c \
+  "$CUBISM_SDK_ROOT/Core/lib/linux/x86_64/libLive2DCubismCore.a" -o /tmp/moc-flags -lm
+/tmp/moc-flags "$CUBISM_SDK_ROOT"/Samples/Resources/*/*.moc3
+```
+
+## How it works
+
+**Loading.** `ModelAssets::load` resolves a `.model3.json` and everything it references,
+textures, motions, expressions, physics and pose files, through the engine's `Assets`, so a
+folder build and an embedded build load identically. It checks version, names, paths,
+availability, JSON syntax and sizes before anything native touches the file. That is a
+preflight against your own mistakes, not a validator for untrusted files: Cubism's own
+consistency check validates structure rather than content, and a 64-byte corruption in the
+middle of a `.moc3` loads without complaint.
+
+**Lifetime.** `with_cubism` scopes SDK initialisation to the lifetime of a raylib window.
+Models borrow that session, so they cannot escape the closure or move across threads, and
+destruction releases native model resources before the textures and the SDK.
+
+**A frame.** `Model` exposes motion and expression selection, persistent parameter overrides,
+restart, update and draw. The order matters and is fixed: motion, then expression, then your
+stored parameter overrides, then physics and pose. Applying overrides in that slot is what
+lets `ctx.visual_parameter` hold a value over a running motion. Animation time is capped at
+100 ms per update, so a stall does not turn into a lurch.
+
+**GL state.** The Framework's OpenGL renderer uses CPU vertex and index arrays. Its two
+drawing source files are copied into Cargo's build directory and their submission calls
+redirected to a small VBO and VAO compatibility layer, leaving your SDK untouched, which is
+also why the Framework version is pinned. A draw flushes raylib's batch, uses a separate VAO,
+then restores the framebuffer, viewport, shader, buffers, texture unit, blend state and the
+rest. The shaders are ported from GLSL 1.20 to 3.30 core as they are copied, since the
+originals are not legal in a core context even where Mesa accepts them.
+
+Native exceptions become Rust errors, and no C++ object layout crosses the C ABI. The
+Framework's shaders are embedded at build time, so running does not depend on where the SDK
+sits or what the working directory is.
+
+Not implemented in this milestone: audio referenced by motion files, automatic breathing, and
+voice-driven lip sync inside the backend. The engine does have a voice level to push into a
+parameter yourself, which [character visuals](/docs/engine/visuals) covers.
+
+## Sample models are development-only
+
+Live2D's sample models, Haru, Hiyori, Mao, Mark, Natori, Ren, Rice and Wanko, come under the
+Free Material License, which forbids redistributing them.
+
+`ModelAssets::load` recognises all eight by the fingerprint of their `.moc3`, whatever they
+have been renamed to. A debug build warns and carries on, so they stay useful while you
+develop. A release build refuses to load them, so they cannot leave inside a shipped game.
+`is_sample_model` is the same check if you want it yourself. Use models you hold the rights
+to for anything you publish.
+
+The SDK itself is a different matter. Core links statically and the Framework compiles in, so
+players install nothing, and Core's static library is on Live2D's redistributable list. A
+Cubism SDK Release License is required only for businesses with annual gross revenue of 10M
+JPY or more. See `LICENSE.md` in the SDK, the
+[Framework license](https://github.com/Live2D/CubismNativeFramework/blob/5-r.5/LICENSE.md)
+and [Live2D's release licensing](https://www.live2d.com/en/sdk/license/). None of it is
+covered by novn's own licence, and none of it is vendored here.
+
+## Tests
+
+Without Core:
+
+```sh
+cargo test -p novn-live2d
+cargo clippy -p novn-live2d --all-targets -- -D warnings
+```
+
+The standalone graphics test needs GLFW development libraries and a display, or Xvfb. It
+covers the compatibility layer only, not Cubism itself:
+
+```sh
+c++ -std=c++17 -Wall -Wextra -Werror -Icrates/novn-live2d/native \
+  crates/novn-live2d/native/core_profile.cpp \
+  crates/novn-live2d/native/tests/core_profile.cpp \
+  -lGLEW -lglfw -lGL -o /tmp/vn-live2d-core-profile-test
+xvfb-run -a /tmp/vn-live2d-core-profile-test
+```

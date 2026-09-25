@@ -1,0 +1,101 @@
+# Embedding assets with novn-build
+
+A game that reads its assets from a folder only runs on the machine that built it. Hand the
+executable to someone else and it opens onto missing art, or does not open at all.
+
+`novn-build` is the build script that fixes that. It walks the assets folder at compile time
+and writes out a list of every file with its bytes, which the engine then loads from memory
+instead of from disk. A release build becomes one file you can send to a person.
+
+It has no dependencies of its own, which matters more than it sounds: a build dependency is
+compiled for the machine doing the building, so anything it pulls in gets built twice. This
+crate pulls in nothing, so using it does not compile raylib a second time.
+
+## Setting it up
+
+Three files, once.
+
+```toml
+# Cargo.toml
+[build-dependencies]
+novn-build = "0.1"
+```
+
+```rust
+// build.rs
+fn main() {
+    novn_build::embed_assets("assets");
+}
+```
+
+```rust
+// src/main.rs
+VnApp::new("My Game")
+    .assets(concat!(env!("CARGO_MANIFEST_DIR"), "/assets"))
+    .embedded_assets(novn::embedded_assets!())
+```
+
+Both lines in `main.rs` stay. The folder is what a debug build reads, the embedded list is
+what a release build reads, and the engine picks between them on its own.
+
+## When it embeds
+
+The whole point is that developing and shipping want opposite things, so the default follows
+the profile rather than asking you to remember a flag.
+
+| Build | What is embedded |
+| --- | --- |
+| `cargo build --release` | Every file |
+| A debug build | Nothing. An empty list, so it compiles fast and the game reads the folder |
+| `VN_EMBED_ASSETS=1` or `=0` | Forces it on or off, whichever profile you are in |
+| `Embed::new(dir).always(true)` | Always |
+
+A debug build reading the folder is what keeps hot reload working, and what lets the game
+export its `schema.json` for `novn check`. Embedding in debug would take both away and slow
+every rebuild down, so it does not.
+
+## Leaving things out
+
+Hidden files, the ones starting with `.`, are skipped already. For anything else, name it:
+
+```rust
+fn main() {
+    novn_build::Embed::new("assets")
+        .exclude(["schema.json", "sources"])
+        .run();
+}
+```
+
+Paths are relative to the assets folder, and naming a folder leaves out everything under it.
+`schema.json` is the usual one, since it exists for the CLI rather than for the game, and
+`sources` is wherever you keep the layered art the PNGs were exported from.
+
+The build script asks Cargo to rerun it when anything under the folder changes, so adding a
+file is enough. You do not need to touch `build.rs` again.
+
+## What it actually writes
+
+`embed_assets` writes `vn_assets.rs` into `$OUT_DIR`, and `embedded_assets!()` includes it.
+What comes out is a plain table:
+
+```rust
+&'static [(&'static str, &'static [u8])]
+```
+
+Each entry is a path relative to the assets folder, always with `/` separators whatever
+platform built it, beside that file's bytes from `include_bytes!`. The list is sorted, so two
+builds of the same folder produce the same file.
+
+From there it is the engine's ordinary asset layer. Textures, fonts, music, sounds and the
+story itself are decoded from memory exactly as they are decoded from disk, which is why a
+game behaves the same either way. See [assets and fonts](/docs/engine/assets) for that side
+of it.
+
+## Tests
+
+```sh
+cargo test -p novn-build
+```
+
+`tests/embed.rs` covers the file list itself, sorted, with `/` separators, hidden files and
+exclusions left out, and checks that the generated code compiles to the table above.

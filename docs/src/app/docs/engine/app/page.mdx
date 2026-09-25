@@ -115,8 +115,10 @@ use novn::input::prelude::*;
 use novn::ui::prelude::*;
 ```
 
-`novn::prelude` is the short list nearly every game file needs: `Action`, `AppError`,
-`Character`, `DrawContext`, `FontRole`, `GameContext`, `GameView`, `Overlay`,
-`OverlayAction`, `OverlayRequest`, `PanelStyle`, `Screen`, `ScreenState`, `TextStyle`,
-`Value`, `VariableDef` and `VnApp`. It stays small on purpose, so a glob import of it does
-not hide where a name came from.
+`novn::prelude` is the short list nearly every game file needs: `VnApp` and `AppError`,
+`Action`, `Character`, `Command`, the three contexts (`DrawContext`, `GameContext`,
+`GameView`), `Screen` and `ScreenState`, the overlay and request types, `FontRole`,
+`PanelStyle`, `TextStyle`, `Value` and `VariableDef`, and the `#[command]` and `StoryWord`
+macros. It stays small on purpose, so a glob import of it does not hide where a name came
+from. With `character-visuals` on it also carries the puppet rig: `Idle`, `Motion`, `Part`,
+`Pose` and `Puppet`.

@@ -11,7 +11,14 @@ It provides:
 - Engine-side systems (state, inventory, stores, routes)
 - Deterministic execution with strong validation
 
-The scripting language is intentionally limited — all game logic lives in Rust.
+The scripting language is intentionally limited; all game logic lives in Rust.
+
+**Documentation: <https://notreallyuri.github.io/novn>**
+
+[Your first novel](https://notreallyuri.github.io/novn/docs/first-novel) is the place to
+start, [the story language](https://notreallyuri.github.io/novn/docs/scenes) is what a
+writer needs, and [the engine guide](https://notreallyuri.github.io/novn/docs/engine/app)
+is the rest.
 
 ## Project Goals
 
@@ -79,17 +86,18 @@ It may only:
 
 | Crate | Role |
 |---|---|
-| [`crates/vn_script`](crates/vn_script/README.md) | Story DSL: lexer, parser, compiler and VM. No rendering dependencies |
-| [`crates/vn_engine`](crates/vn_engine/README.md) | raylib-based engine: `VnApp` builder, configurable default screens, UI helpers, resources, fonts. Re-exports `raylib` and `vn_script` |
-| [`crates/vn_macros`](crates/vn_macros/README.md) | `#[command]`, the attribute that turns a Rust function into a story command. Re-exported by `vn_engine`, never depended on directly |
-| [`crates/vn_build`](crates/vn_build/README.md) | Build-script helper (no dependencies) that embeds a game's assets in release builds |
-| [`crates/vn_live2d`](crates/vn_live2d/README.md) | Experimental optional Cubism Native adapter and standalone viewer; not yet integrated into story rendering |
-| [`crates/vn_cli`](crates/vn_cli/README.md) | `novn` command-line tool (`novn new <dir>`, `novn check <path>`, `novn dump <file.story | dir>`, `novn lsp`) |
-| [`examples/god_is_watching`](examples/god_is_watching/README.md) | Reference game built on `vn_engine` |
+| [`crates/novn-script`](crates/novn-script/README.md) | Story DSL: lexer, parser, compiler and VM. No rendering dependencies |
+| [`crates/novn`](crates/novn/README.md) | raylib-based engine: `VnApp` builder, configurable default screens, UI helpers, resources, fonts. Re-exports `raylib` and `novn_script` |
+| [`crates/novn-macros`](crates/novn-macros/README.md) | `#[command]`, the attribute that turns a Rust function into a story command. Re-exported by `novn`, never depended on directly |
+| [`crates/novn-build`](crates/novn-build/README.md) | Build-script helper (no dependencies) that embeds a game's assets in release builds |
+| [`crates/novn-live2d`](crates/novn-live2d/README.md) | Experimental Cubism Native backend for the character-visuals seam, plus a standalone viewer. Optional, and needs the SDK |
+| [`crates/novn-cli`](crates/novn-cli/README.md) | `novn` command-line tool (`novn new <dir>`, `novn check <path>`, `novn dump <file.story | dir>`, `novn lsp`) |
+| [`examples/god_is_watching`](examples/god_is_watching/README.md) | Reference game built on `novn` |
 
-Each crate documents its API and behavior in its own README.
+Each README is a front door: what the crate is, how to start it, and how to work on it.
+The guide itself lives at <https://notreallyuri.github.io/novn/docs>.
 
-Games depend only on `vn_engine`.
+Games depend only on `novn`.
 
 ## Running the Example
 
@@ -103,7 +111,7 @@ raylib is built from source on the first run, so you need CMake and a C compiler
 
 `cargo build --release -p god_is_watching` embeds the assets in the executable, so
 `target/release/god_is_watching` (or the `.exe`) can be sent to someone and played on its
-own. See [vn_build](crates/vn_build/README.md).
+own. See [novn-build](crates/novn-build/README.md).
 
 Its assets live in `examples/god_is_watching/assets/`:
 
@@ -120,32 +128,31 @@ placeholder card, so a story can be played before its art exists.
 
 The engine ships Noto Sans as its default font, and a game can give each kind of text
 (menu, dialogue, speaker names, ...) its own font from `assets/fonts/`. See
-[vn_engine's README](crates/vn_engine/README.md#fonts).
+[Assets and fonts](https://notreallyuri.github.io/novn/docs/engine/assets).
 
 To check the stories without starting the game, and to inspect how they compile:
 
 ```sh
-cargo run -p vn_cli -- check examples/god_is_watching/assets
-cargo run -p vn_cli -- dump examples/god_is_watching/assets/story
+cargo run -p novn-cli -- check examples/god_is_watching/assets
+cargo run -p novn-cli -- dump examples/god_is_watching/assets/story
 ```
 
 ## Starting a Game
 
 ```sh
-cargo run -p vn_cli -- new ../my-novel
+cargo run -p novn-cli -- new ../my-novel
 cd ../my-novel
 cargo run
 ```
 
 `novn new` writes a small working game (a `main.rs` that registers a character, variables
-and a command, and a two-scene story) that depends on this workspace's `vn_engine`. See
-[vn_cli's README](crates/vn_cli/README.md#vn-new-directory---title-title---engine-path-dir----engine-git-url).
+and a command, and a two-scene story) that depends on this workspace's `novn`. See
+[novn-cli's README](crates/novn-cli/README.md).
 
 ## Writing Story Scripts
 
-Story content is written using a custom DSL designed for clarity and structure.
-
-**[Story Script Specification](SCRIPT.md)**
+Story content is written in a small indentation-based DSL. [SCRIPT.md](SCRIPT.md) is the
+cheat sheet; the guide starts at <https://notreallyuri.github.io/novn/docs/scenes>.
 
 ## Design Intent
 

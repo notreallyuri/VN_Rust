@@ -7,32 +7,32 @@ Organized as milestones. Each one should leave the workspace building and runnab
 novn is a Ren'Py alternative for **Rust developers**: writers work in `.story` files,
 while all logic, state and UI live in Rust and can be debugged with normal Rust tooling.
 
-A new game should get going with: `cargo new` → add `vn_engine` → a short `main.rs` that
+A new game should get going with: `cargo new` → add `novn` → a short `main.rs` that
 registers characters/variables/commands → drop `.story` files in `assets/` → `cargo run`.
 
 Three levels of control, each optional:
 
 1. **Defaults**: write stories, register variables, done.
 2. **Override pieces**: replace the main menu, dialogue box, choice screen, etc. via traits; hooks.
-3. **Bring your own frontend**: use `vn_script` alone and drive the VM, which emits events.
+3. **Bring your own frontend**: use `novn_script` alone and drive the VM, which emits events.
 
 ### Workspace layout
 
 | Crate | Role |
 | --- | --- |
-| `crates/vn_script` | DSL lexer, parser, compiler, VM. **No rendering deps**, reusable by CLI/LSP |
-| `crates/vn_engine` | raylib engine: screens, resources, game loop. Re-exports `raylib` and `vn_script` (as `script`) |
-| `crates/vn_build` | Build-script helper: embeds a game's assets in release builds |
-| `crates/vn_cli` | `novn` binary: `novn new`, `novn check`, `novn dump`, `novn lsp`; later `run`, `fmt` |
+| `crates/novn-script` | DSL lexer, parser, compiler, VM. **No rendering deps**, reusable by CLI/LSP |
+| `crates/novn` | raylib engine: screens, resources, game loop. Re-exports `raylib` and `novn_script` (as `script`) |
+| `crates/novn-build` | Build-script helper: embeds a game's assets in release builds |
+| `crates/novn-cli` | `novn` binary: `novn new`, `novn check`, `novn dump`, `novn lsp`; later `run`, `fmt` |
 | `examples/god_is_watching` | The reference game, and the first real consumer of the engine API |
 
 ---
 
 ## M0: Reorganization
 
-- [x] Split `vn_core` into `vn_script` (no raylib) and `vn_engine`
+- [x] Split `novn_core` into `novn_script` (no raylib) and `novn`
 - [x] Move the game out of `runtime/` into `examples/god_is_watching`
-- [x] `test_compiler` → `vn_cli` (`novn dump <file>`, no hardcoded path)
+- [x] `test_compiler` → `novn_cli` (`novn dump <file>`, no hardcoded path)
 - [x] Rename `StoryProvider` → `StoryVm`
 - [x] Drop the legacy JSON story types (`runtime/types/story.rs`) and unused deps
 - [x] Shared `[workspace.package]` / `[workspace.dependencies]`
@@ -41,7 +41,7 @@ Three levels of control, each optional:
 
 - [x] Commit an assets layout for the example: `examples/god_is_watching/assets/{story,characters,backgrounds}`. `.gitignore` now ignores only the root `/assets/`.
 - [x] Story adapted from the source documents (rewritten in M7)
-- [x] Sample story covering every DSL feature: `crates/vn_script/tests/fixtures/all_features.story` (lexer, parser and VM tests)
+- [x] Sample story covering every DSL feature: `crates/novn-script/tests/fixtures/all_features.story` (lexer, parser and VM tests)
 - [x] Placeholder character art: generated, color-coded, labeled fallback texture in `ResourceManager`
 - [x] Fix: the engine passed the script **path** to `StoryVm::from_source`. Added `StoryVm::from_file`.
 - [x] Resolve asset paths relative to the game crate (`ResourceManager` has an asset root; the example passes `CARGO_MANIFEST_DIR/assets`)
@@ -66,7 +66,7 @@ Three levels of control, each optional:
 
 ## M3: App builder and registries (the "how do I get going" API)
 
-- [x] `VnApp` builder in `vn_engine`: title, window size, assets, story directory and entry scene, fonts, `.run()`
+- [x] `VnApp` builder in `novn`: title, window size, assets, story directory and entry scene, fonts, `.run()`
 - [x] Character registry (id → display name, color, image set); display names may use `{variable}`
 - [x] Text input screen (`ctx.ask_text`), used by the example's `ask_name` command
 - [x] Variable registry (id → typed default: bool, int, enum, string)
@@ -138,7 +138,7 @@ Three levels of control, each optional:
 - [x] Autosave (on scene change / on quit), save thumbnails, delete-slot and overwrite confirmation in the default screens; `Action::Continue` loads the newest save
 - [x] Platform save directory (e.g. `~/.local/share/<game>`) instead of `./saves`
 - [x] Save format migrations: engine steps for `SAVE_FORMAT_VERSION`, and game steps (`.save_version(n)`, `.migrate_save(from, ..)`) that rename/edit state and variables in the save and its rollback history
-- [x] Release builds that run anywhere: `Assets` (a folder or files embedded in the executable) behind every load, `vn_build` embedding `assets/` from `build.rs` in release builds, `embedded_assets!()`, and an `assets` folder next to the executable as a fallback
+- [x] Release builds that run anywhere: `Assets` (a folder or files embedded in the executable) behind every load, `novn_build` embedding `assets/` from `build.rs` in release builds, `embedded_assets!()`, and an `assets` folder next to the executable as a fallback
 - [x] `novn new` project template (Cargo.toml, `main.rs`, a two-scene story, a matching `schema.json`)
 - [x] Multi-file projects: every `.story` under `story_dir` is one program; diagnostics name their file; the example's chapters jump into each other
 - [ ] Editor support for `.story` files:
@@ -146,8 +146,8 @@ Three levels of control, each optional:
   - [ ] Corpus tests from `all_features.story` (`test/corpus/` is still empty; they would have caught the EOF loop that made parsing run out of memory)
   - [x] Neovim (`editors/nvim`): filetype detection, the grammar and queries through nvim-treesitter, folds, and indentation as an `indentexpr` (tree-sitter indent queries don't work well while typing in an indentation-sensitive grammar)
   - [ ] Zed, Helix and VS Code: not a focus for now. Zed and Helix reuse the grammar and queries; VS Code needs a TextMate grammar
-  - [x] LSP (`novn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type (unsaved buffers included), go to scene definition, completion of scenes, characters, images, variables, values, commands, positions, transitions and asset ids, hover, scene outline. Setup for Neovim and Helix in vn_cli's README
-  - [x] Formatter (`novn fmt <path> [--check]`, `vn_script::format`): two-space indentation, spacing around operators, comments and blank lines normalized, strings untouched; only rewrites a file when the result compiles to the same program
+  - [x] LSP (`novn lsp`, reusing `novn_script` diagnostics and the exported schema): errors as you type (unsaved buffers included), go to scene definition, completion of scenes, characters, images, variables, values, commands, positions, transitions and asset ids, hover, scene outline. Setup for Neovim and Helix in novn_cli's README
+  - [x] Formatter (`novn fmt <path> [--check]`, `novn_script::format`): two-space indentation, spacing around operators, comments and blank lines normalized, strings untouched; only rewrites a file when the result compiles to the same program
 
 ## M7: Example overhaul
 
@@ -170,7 +170,7 @@ Worth doing before the engine grows further: it touches the DSL, every default s
 fonts and saves at once, and each of those is cheaper to change now than later.
 
 - [x] `novn translate <lang> [path]`: extracts every translatable string (dialogue, narration, choice options, and the display names in `schema.json`) into `lang/<lang>.json` beside the schema, keyed by the story file's name and a hash of the source text. Re-running keeps the translations already written, adds what is new, and marks what was edited or deleted `stale` (with the old text to work from) instead of silently keeping it. A story with errors extracts nothing
-- [x] Look translations up at runtime through the VM's `Say`/`Choice` events, falling back to the source text when one is missing (`vn_script::translate::Catalog`, `StoryVm::set_catalog`, `language()`). The lookup runs before interpolation, so `{variable}` works inside a translation
+- [x] Look translations up at runtime through the VM's `Say`/`Choice` events, falling back to the source text when one is missing (`novn_script::translate::Catalog`, `StoryVm::set_catalog`, `language()`). The lookup runs before interpolation, so `{variable}` works inside a translation
 - [x] The engine side: `VnApp::source_language` / `language(code, label)`, `lang/<code>.json` read through `Assets` (folder or embedded), a `language` setting saved in `settings.json` and applied at startup, a Language row in the settings screen when a game ships more than one, `ctx.set_language` / `apply_language`, and a hot reload that keeps it. Changing language re-renders the line being read
 - [x] Translatable UI labels: every string the default screens show goes through `ctx.label` / `ctx.message` and is looked up in the catalog's `ui` section by its English text, so a game's own labels and notifications are translatable with nothing to declare. A debug build writes `lang/ui.json` (what the game actually shows, read from the live configs) and `novn translate` folds it into the catalog; `VnApp::ui_text` adds strings a game builds itself
 - [x] Fonts per language with a fallback chain (`VnApp::language_font`; language+role → language+Default → role → Default → built-in), a glyph set read from the story and every catalog so a CJK atlas covers what the game shows and no more, and wrapping between characters for scripts without spaces, with kinsoku rules (`ui::wrap`)
@@ -185,7 +185,7 @@ else draws through, so it is cheaper now; the rest is additive.
 
 ### Foundations
 
-- [x] Inline text markup: `[b]`, `[i]`, `[color=#rrggbb]`, `[size=N]` and `[w]` waits, parsed into spans in `vn_script::markup` and validated by `novn check`; span-aware wrapping, drawing, typewriter and log in the engine, with bold/italic font variants (`VnApp::font_variant`). Square brackets because `{...}` is variable interpolation
+- [x] Inline text markup: `[b]`, `[i]`, `[color=#rrggbb]`, `[size=N]` and `[w]` waits, parsed into spans in `novn_script::markup` and validated by `novn check`; span-aware wrapping, drawing, typewriter and log in the engine, with bold/italic font variants (`VnApp::font_variant`). Square brackets because `{...}` is variable interpolation
   - [ ] Ruby text for furigana, left out of the first pass
 - [x] Draw the game to a `RenderTexture` instead of straight to the screen (`RenderTarget` in `target.rs`), recreated on resize, with a fallback to drawing to the screen; screenshots and thumbnails still capture the game image
 - [x] Screen transitions (`ScreenTransitionConfig`): crossfade (the default, 0.2s), fade through black and slide, built on a snapshot of the previous frame
@@ -222,7 +222,7 @@ else draws through, so it is cheaper now; the rest is additive.
   - [x] Shared `ctx.play_video(VideoRequest)` API and `ScreenState::Video`, launched through a registered command; blocking playback with skip, pause, overlay suspension, aspect-preserving letterboxing and return to the story. Voice stops, music is muted while continuing underneath, movie audio uses sound volume, and starting a cutscene marks a rollback barrier. No mid-movie position in saves; autosave is suppressed during playback, and hot reload cancels the movie
   - [x] Worker-thread decoding, bounded frame/audio queues, timestamped RGBA uploads, streamed stereo audio with a callback-driven sample clock, silent playback, EOF draining, cancellation and error notifications. Folder and embedded assets work; FFmpeg stages embedded media in a temporary file. Colour conversion is on the CPU for this first pass
   - [x] Desktop H.264/H.265 rejection by codec ID, independent of extension or the linked FFmpeg build. The policy reserves these codecs for browser WASM targets; browser playback is not implemented yet
-  - [x] Generated AV1/Vorbis, VP9/Opus, silent and rejected-codec fixtures; decoder, audio timeline and cancellation tests; a runnable `vn_engine` video example and usage/packaging notes in its README
+  - [x] Generated AV1/Vorbis, VP9/Opus, silent and rejected-codec fixtures; decoder, audio timeline and cancellation tests; a runnable `novn` video example and usage/packaging notes in its README
   - [x] End-to-end playback on Linux (Ryzen 5 5600X, release, SIMD): 60 s 1080p30 AV1/Vorbis at 1.1 and 28 Mbit/s, on all cores and pinned to two. The queue never ran dry; CPU averaged 31–34% of one core at 1.1 Mbit/s and ~90% at 28 Mbit/s; peak RSS ~250 MiB against ~100 MiB for a tiny clip; texture upload averaged 0.6 ms on the main thread. The audio clock stood still in 18% of ticks and jumped up to 37 ms, dropping up to 100 of 1800 frames; interpolating it between callbacks brought that to 0–2
   - [ ] Release validation on Windows/macOS and genuinely low-end hardware (two pinned desktop cores is not an old laptop); real footage instead of generated clips, and shipped size. The earlier conversation's synthetic decoder-only 66/250/341 fps figures are not end-to-end acceptance results. FFmpeg currently requires externally supplied matching development/runtime libraries; automated trimmed LGPL builds and distribution remain separate work
   - [ ] Later extensions: GPU conversion after profiling, looping menu/background video, seeking and browser playback. Keep M9 Extras focused on its existing persistence/seen-record primitives
@@ -231,11 +231,11 @@ else draws through, so it is cheaper now; the rest is additive.
 
 Started 2026-09-20. The seam, both backends and their state exist; what is left is listed
 at the end. The APIs are documented in
-[`crates/vn_engine`](crates/vn_engine/README.md#character-visuals) for the seam and the
-puppet, and [`crates/vn_live2d`](crates/vn_live2d/README.md) for Cubism. Four layers,
+[the guide](https://notreallyuri.github.io/novn/docs/engine/visuals) for the seam and the
+puppet, and [`crates/novn-live2d`](crates/novn-live2d/README.md) for Cubism. Four layers,
 bottom to top, then the gaps.
 
-- [x] **The seam** (`vn_engine`, behind the off-by-default `character-visuals` feature).
+- [x] **The seam** (`novn`, behind the off-by-default `character-visuals` feature).
   `CharacterVisualFactory` is what a game registers with `VnApp::character_visual`: it
   names its appearances, validates its assets without a window, and loads one instance.
   `CharacterVisual` is that instance: natural size, update, draw into a rect at an alpha,
@@ -245,7 +245,7 @@ bottom to top, then the gaps.
   while it fades out and dropped when it leaves. Nothing about a backend is load-bearing:
   any failure prints one line and falls back to `characters/<id>/<appearance>.png`,
   without retrying every frame
-- [x] **The puppet backend** (`vn_engine`'s own `game::puppet`, no SDK and no FFI). A
+- [x] **The puppet backend** (`novn`'s own `game::puppet`, no SDK and no FFI). A
   character cut into flat parts, each placed by a pivot in the rig's own coordinate space
   and moved by parameters through rotation, offset, scale or opacity. An appearance is a
   pose: parts swapped for another picture, parts hidden, parameters held. Breathing, sway
@@ -253,7 +253,7 @@ bottom to top, then the gaps.
   is the clock going back to zero. It is also what proved the seam was an abstraction
   rather than one backend's shape: taking it cost the trait one method, `set_parameter`,
   and changed nothing else
-- [x] **The Cubism backend** (`vn_live2d`, optional, and never a `vn_engine` dependency —
+- [x] **The Cubism backend** (`novn_live2d`, optional, and never a `novn` dependency —
   the dependency runs one way). Asset preflight that resolves a `.model3.json` through
   `Assets` and checks it before any native call, a C ABI bridge to the official Framework
   5-r.5 and the proprietary Core, model lifetime and control APIs, a renderer hosted
@@ -281,10 +281,10 @@ bottom to top, then the gaps.
     instant, from an envelope taken at load (10 ms buckets, normalised to the clip's
     loudest moment, so a quiet recording opens the mouth as wide as a loud one), and
     pushing it at a mouth parameter from `on_frame` is the whole of it
-  - [x] Frames are checked against references. `vn_engine`'s `tests/gpu.rs` holds every
+  - [x] Frames are checked against references. `novn`'s `tests/gpu.rs` holds every
     parameter still, draws the rig and compares against committed pictures; llvmpipe under
     Xvfb and an AMD card produce the same frame pixel for pixel, so it runs without a GPU.
-    `vn_live2d`'s `tests/gpu.rs` does the same for a model against a baseline it writes on
+    `novn_live2d`'s `tests/gpu.rs` does the same for a model against a baseline it writes on
     first run under `target/`, since the sample models cannot be redistributed
   - [ ] Both probes are still watched by a person for anything the two reference frames do
     not cover: motions over time, physics, masks, a scene's worth of loading and dropping
@@ -383,9 +383,9 @@ so it was never going to be someone else's component. It is a static export serv
 GitHub Pages. The playground comes straight after the pages, because it reuses the code
 block the pages need anyway.
 
-Still true and load-bearing, re-checked 2026-09-24: `cargo check -p vn_script --target
+Still true and load-bearing, re-checked 2026-09-24: `cargo check -p novn_script --target
 wasm32-unknown-unknown` is clean, so the playground needs no port; the tree-sitter grammar
-and its queries are in `editors/tree-sitter-story`; and `crates/vn_script/tests/spec.rs`
+and its queries are in `editors/tree-sitter-story`; and `crates/novn-script/tests/spec.rs`
 already compiles every fenced block in SCRIPT.md and golden-tests the result.
 
 What there is to move, as it stands today: 5226 lines of prose, 3033 of them in the engine
@@ -395,10 +395,10 @@ guide.
 | --- | --- | --- |
 | `README.md` | 179 | Landing page, project goals, the three-layer architecture |
 | `SCRIPT.md` | 746 | The DSL reference: the writer's half of the site, and where the playground earns the most |
-| `crates/vn_engine/README.md` | 3033 | The engine guide, as roughly twelve pages. Already a book squeezed into one file |
-| `crates/vn_script/README.md` | 540 | Internals, for contributors |
-| `crates/vn_cli/README.md` | 287 | Tooling reference (`novn new`, `check`, `fmt`, `translate`, `lsp`) |
-| `crates/vn_live2d`, `crates/vn_build`, `crates/vn_macros` | 441 | Short pages under "release and optional backends". The dated verification logs in the Live2D README stay in this file instead — they are a record of what was run, not documentation |
+| `crates/novn/README.md` | 3033 | The engine guide, as roughly twelve pages. Already a book squeezed into one file |
+| `crates/novn-script/README.md` | 540 | Internals, for contributors |
+| `crates/novn-cli/README.md` | 287 | Tooling reference (`novn new`, `check`, `fmt`, `translate`, `lsp`) |
+| `crates/novn-live2d`, `crates/novn-build`, `crates/novn-macros` | 441 | Short pages under "release and optional backends". The dated verification logs in the Live2D README stay in this file instead — they are a record of what was run, not documentation |
 
 **Phase 0 — the ground.** Nothing here is about documentation; it is what the rest needs
 to stand on.
@@ -408,7 +408,7 @@ to stand on.
   `#[ignore]`d window test under `xvfb-run` on llvmpipe — seven of them, including the
   reference frames. A separate `video` job for the FFmpeg backend, whose apt list is
   half the install time and whose failures should not look like the engine's. Neither
-  can build `vn_live2d`'s native bridge: that needs the proprietary Core, which cannot be
+  can build `novn_live2d`'s native bridge: that needs the proprietary Core, which cannot be
   put in CI, so the crate is only covered in its SDK-independent form
 - [x] `docs/` is committed and built by CI: a `docs` job runs `pnpm install
   --frozen-lockfile`, Biome, and the static export, which typechecks on the way through.
@@ -439,14 +439,22 @@ solved by the same work rather than twice.
   sit in: building an app, the screens you get, menus and settings, story integration,
   look and feel, the picture, input, audio and video, languages, screens of your own,
   character visuals, saving and rollback, assets and fonts
-- [ ] Still to move: `novn-script`'s README for contributors, the CLI reference, and short
-  pages for build, macros and live2d. Then the crate READMEs shrink to front doors, which
-  is the point of the whole move and has not happened yet
-- [ ] Every crate README shrinks to a front door of about 150 lines: what it is, a quick
-  start, the module map, and a link to its guide. A README that is the first thing a
-  reader meets on the repository page should not be the last word on `ButtonStyle`
-- [ ] A link checker in CI: every cross-reference the split breaks is a link the reader
-  will meet. Anchors from the old files must resolve or redirect
+- [x] A fourth section, the other crates: embedding assets (`novn-build`), the command
+  macros (`novn-macros`), and Live2D Cubism (`novn-live2d`)
+- [ ] Still to move: `novn-script`'s README for contributors, and the CLI reference
+- [x] The crate READMEs shrink to front doors: what the crate is, a quick start, the
+  features, how to work on it, and a link to its guide. `novn` went from 3,035 lines to
+  154 and SCRIPT.md from 746 to a cheat sheet; live2d kept its licensing in full, since
+  that has to travel inside the `.crate` rather than live on a website, and sent its
+  validation log here instead. `novn-script` and `novn-cli` are still to do, and wait on
+  their pages
+- [x] The rename reached the docs. Every `crates/vn_*` path and `vn_engine`-era crate name
+  in README.md and TODO.md was stale from the move to `novn`, so every link in the
+  workspace table was broken; four anchors into sections that no longer exist now point at
+  the guide
+- [ ] A link checker in CI: relative links and anchors across the repository's markdown,
+  and the `/docs/...` links inside MDX against the routes the export actually produces.
+  Both pass today, by a script run by hand, which is the wrong place for it
 
 **Phase 2 — the code block.** One component, built knowing what is coming next.
 
@@ -462,7 +470,7 @@ solved by the same work rather than twice.
 
 **Phase 3 — the playground.** The thing that makes the site worth looking at.
 
-- [ ] A thin `crates/vn_playground` wasm crate over `vn_script`, so `vn_script` itself
+- [ ] A thin `crates/novn-playground` wasm crate over `novn_script`, so `novn_script` itself
   keeps its one dependency and never learns about `wasm-bindgen`
 - [ ] An editable `.story` block showing, live as it is typed: the real diagnostics with
   their "did you mean" suggestions, the compiled listing (`novn dump`), and the VM event
@@ -488,11 +496,11 @@ solved by the same work rather than twice.
 
 Not in this milestone: running the **whole engine** in the browser. That means raylib
 through emscripten and `raylib-rs` on wasm, which is its own project. The script-level
-playground above is cheap precisely because `vn_script` has no rendering dependencies;
+playground above is cheap precisely because `novn_script` has no rendering dependencies;
 do not let it sell the much larger one.
 
 ## Ongoing
 
-- [x] Tests: golden tests over the SCRIPT.md examples (`crates/vn_script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `novn dump`
+- [x] Tests: golden tests over the SCRIPT.md examples (`crates/novn-script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `novn dump`
 - [x] SCRIPT.md §8.3 typo: `-+` → `-=`
 - [x] SCRIPT.md: specify audio (backgrounds, positions and string escaping done)
