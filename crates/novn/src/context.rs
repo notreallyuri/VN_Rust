@@ -16,6 +16,7 @@ use crate::game::audio::Audio;
 use crate::game::characters::Characters;
 use crate::game::commands::Commands;
 use crate::game::hooks::Hooks;
+use crate::game::reader::Reading;
 use crate::input::navigation::{Focus, NavInput};
 use crate::overlay::OverlayRequest;
 use crate::request::Request;
@@ -35,6 +36,7 @@ pub struct GameContext<'a> {
     pub previous: Option<&'a ScreenState>,
     pub rollback: &'a mut Rollback,
     pub settings: &'a mut SettingsStore,
+    pub characters: &'a Characters,
     pub(crate) commands: Rc<Commands>,
     pub(crate) hooks: Rc<Hooks>,
     pub(crate) requests: &'a mut crate::request::Requests,
@@ -138,9 +140,20 @@ impl GameContext<'_> {
         self.effects.flash(now, seconds);
     }
 
+    pub fn self_voicing(&self) -> bool {
+        self.settings.values.self_voicing && self.hooks.has_reader()
+    }
+
+    pub fn read_aloud(&self, reading: &Reading) {
+        if self.self_voicing() {
+            self.hooks.read(reading);
+        }
+    }
+
     pub fn notify(&mut self, text: impl Into<String>) {
         let text = text.into();
         let text = self.label(&text).to_string();
+        self.read_aloud(&Reading::Notice { text: text.clone() });
         self.requests.push(Request::Toast(Toast::info(text)));
     }
 

@@ -366,7 +366,7 @@ player has seen.
   restored byte for byte, and test runs now use their own data folder, after these runs had
   already overwritten the example's autosave
 - [x] Readability options: text outline or a dimmed backdrop behind dialogue over bright backgrounds (Text backdrop raises the dialogue and NVL panel opacity to Stronger or Solid without changing its color; Text outline edges dialogue, names and NVL text in a contrasting black or white scaled to the text size; both on the Accessibility page)
-- [ ] A self-voicing hook (the engine hands the current line to a game-provided reader)
+- [x] A self-voicing hook (the engine hands the current line to a game-provided reader) (`VnApp::reader` gets a `Reading` for each new line, choice, focused option and notification, as plain translated text; a Self-voicing row on the Accessibility page and a V key exist only when a reader is set)
 
 ## M10: Authoring and dev tools
 

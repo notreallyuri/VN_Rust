@@ -43,6 +43,9 @@ pub struct SettingsConfig {
     pub text_backdrop_tooltip: Option<String>,
     pub text_outline_label: String,
     pub text_outline_tooltip: Option<String>,
+    pub self_voicing_label: String,
+    pub self_voicing_tooltip: Option<String>,
+    pub self_voicing_row: bool,
     pub voice_volume_label: String,
     pub auto_delay_label: String,
     pub skip_label: String,
@@ -127,6 +130,11 @@ impl Default for SettingsConfig {
             text_outline_tooltip: Some(
                 "A thin edge around dialogue, for text over a busy background".to_string(),
             ),
+            self_voicing_label: "Self-voicing".to_string(),
+            self_voicing_tooltip: Some(
+                "Reads each line and choice aloud as it appears".to_string(),
+            ),
+            self_voicing_row: false,
             voice_volume_label: "Voice volume".to_string(),
             auto_delay_label: "Auto-forward".to_string(),
             skip_label: "Skip".to_string(),
@@ -296,6 +304,7 @@ impl SettingsConfig {
             SettingsRow::TextSize => self.text_size_tooltip = text,
             SettingsRow::TextBackdrop => self.text_backdrop_tooltip = text,
             SettingsRow::TextOutline => self.text_outline_tooltip = text,
+            SettingsRow::SelfVoicing => self.self_voicing_tooltip = text,
         }
         self
     }

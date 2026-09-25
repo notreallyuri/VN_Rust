@@ -275,6 +275,7 @@ impl ScreenStateManager {
             previous: self.screens.previous.as_ref(),
             rollback: &mut self.world.rollback,
             settings: &mut self.world.settings,
+            characters: &self.world.characters,
             commands: Rc::clone(&self.commands),
             hooks: Rc::clone(&self.hooks),
             requests: &mut requests,

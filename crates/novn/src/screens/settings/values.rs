@@ -74,12 +74,18 @@ impl SettingsConfig {
     pub fn page_rows(&self, page: SettingsPage) -> Vec<SettingsRow> {
         match page {
             SettingsPage::Main => self.rows(),
-            SettingsPage::Accessibility => vec![
-                SettingsRow::TextSize,
-                SettingsRow::TextBackdrop,
-                SettingsRow::TextOutline,
-                SettingsRow::ReduceMotion,
-            ],
+            SettingsPage::Accessibility => {
+                let mut rows = vec![
+                    SettingsRow::TextSize,
+                    SettingsRow::TextBackdrop,
+                    SettingsRow::TextOutline,
+                    SettingsRow::ReduceMotion,
+                ];
+                if self.self_voicing_row {
+                    rows.push(SettingsRow::SelfVoicing);
+                }
+                rows
+            }
         }
     }
 
@@ -122,6 +128,7 @@ impl SettingsConfig {
             }
             SettingsRow::TextBackdrop => settings.text_backdrop.min(2) as f32 / 2.0,
             SettingsRow::TextOutline => f32::from(u8::from(settings.text_outline)),
+            SettingsRow::SelfVoicing => f32::from(u8::from(settings.self_voicing)),
         }
     }
 
@@ -152,6 +159,7 @@ impl SettingsConfig {
                 settings.text_backdrop = ui::slider_step(fraction, 3) as u32;
             }
             SettingsRow::TextOutline => settings.text_outline = fraction >= 0.5,
+            SettingsRow::SelfVoicing => settings.self_voicing = fraction >= 0.5,
             SettingsRow::Language => {
                 let index = ui::slider_step(fraction, self.languages.len());
                 if let Some(language) = self.languages.get(index) {
@@ -176,6 +184,7 @@ impl SettingsConfig {
                 settings.text_backdrop = (settings.text_backdrop.min(2) + 1) % 3;
             }
             SettingsRow::TextOutline => settings.text_outline = !settings.text_outline,
+            SettingsRow::SelfVoicing => settings.self_voicing = !settings.self_voicing,
             SettingsRow::Language => {
                 let count = self.languages.len();
                 if count == 0 {
@@ -241,6 +250,8 @@ impl SettingsConfig {
             }
             SettingsRow::TextOutline if settings.text_outline => self.on_label.clone(),
             SettingsRow::TextOutline => self.off_label.clone(),
+            SettingsRow::SelfVoicing if settings.self_voicing => self.on_label.clone(),
+            SettingsRow::SelfVoicing => self.off_label.clone(),
             SettingsRow::Language => self
                 .language_of(settings.language.as_deref())
                 .map(|language| language.label.clone())
@@ -263,6 +274,7 @@ impl SettingsConfig {
             SettingsRow::TextSize => &self.text_size_label,
             SettingsRow::TextBackdrop => &self.text_backdrop_label,
             SettingsRow::TextOutline => &self.text_outline_label,
+            SettingsRow::SelfVoicing => &self.self_voicing_label,
         }
     }
 
@@ -281,6 +293,7 @@ impl SettingsConfig {
             SettingsRow::TextSize => self.text_size_tooltip.as_deref(),
             SettingsRow::TextBackdrop => self.text_backdrop_tooltip.as_deref(),
             SettingsRow::TextOutline => self.text_outline_tooltip.as_deref(),
+            SettingsRow::SelfVoicing => self.self_voicing_tooltip.as_deref(),
         }
     }
 

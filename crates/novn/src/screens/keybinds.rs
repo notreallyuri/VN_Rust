@@ -187,7 +187,8 @@ pub fn default_keybinds(
         .row(one(playing.quick_save_key), "", "Quick save")
         .row(one(playing.quick_load_key), "", "Quick load")
         .row(key_list(&keys.screenshot), "", "Screenshot")
-        .row(key_list(&keys.fullscreen), "", "Fullscreen on / off");
+        .row(key_list(&keys.fullscreen), "", "Fullscreen on / off")
+        .row(key_list(&keys.self_voicing), "", "Self-voicing on / off");
     story
         .rows
         .retain(|row| !row.keys.is_empty() || !row.gamepad.is_empty());

@@ -22,6 +22,7 @@ pub struct Settings {
     pub text_size: u32,
     pub text_backdrop: u32,
     pub text_outline: bool,
+    pub self_voicing: bool,
 }
 
 impl Default for Settings {
@@ -39,6 +40,7 @@ impl Default for Settings {
             text_size: 100,
             text_backdrop: 0,
             text_outline: false,
+            self_voicing: false,
         }
     }
 }

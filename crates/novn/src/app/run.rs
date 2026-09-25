@@ -86,6 +86,10 @@ impl VnApp {
         }
 
         self.settings.languages = self.languages.clone();
+        self.settings.self_voicing_row = self.hooks.has_reader();
+        if !self.hooks.has_reader() {
+            self.playing.keys.self_voicing.clear();
+        }
 
         let mut prompts = crate::screens::keybinds::default_prompts(
             &self.playing,

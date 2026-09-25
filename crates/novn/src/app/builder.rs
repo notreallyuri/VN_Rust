@@ -594,6 +594,11 @@ impl VnApp {
         self
     }
 
+    pub fn reader(mut self, reader: impl Fn(&crate::game::reader::Reading) + 'static) -> Self {
+        self.hooks.reader(reader);
+        self
+    }
+
     pub fn hooks(&self) -> &Hooks {
         &self.hooks
     }

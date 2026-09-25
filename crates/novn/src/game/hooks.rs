@@ -1,15 +1,18 @@
 use crate::context::GameContext;
+use crate::game::reader::Reading;
 use crate::screen::ScreenState;
 
 type SceneHook = Box<dyn Fn(&mut GameContext, &str) -> Option<ScreenState>>;
 type ChoiceHook = Box<dyn Fn(&mut GameContext, usize, &str) -> Option<ScreenState>>;
 type FrameHook = Box<dyn Fn(&mut GameContext, f32)>;
+type Reader = Box<dyn Fn(&Reading)>;
 
 #[derive(Default)]
 pub struct Hooks {
     scene_enter: Vec<SceneHook>,
     choice: Vec<ChoiceHook>,
     frame: Vec<FrameHook>,
+    reader: Option<Reader>,
 }
 
 impl Hooks {
@@ -29,6 +32,20 @@ impl Hooks {
 
     pub fn on_frame(&mut self, hook: impl Fn(&mut GameContext, f32) + 'static) {
         self.frame.push(Box::new(hook));
+    }
+
+    pub fn reader(&mut self, reader: impl Fn(&Reading) + 'static) {
+        self.reader = Some(Box::new(reader));
+    }
+
+    pub fn has_reader(&self) -> bool {
+        self.reader.is_some()
+    }
+
+    pub fn read(&self, reading: &Reading) {
+        if let Some(reader) = &self.reader {
+            reader(reading);
+        }
     }
 
     pub fn scene_enter_count(&self) -> usize {

@@ -9,6 +9,7 @@ pub struct PlayingKeys {
     pub log: Vec<KeyboardKey>,
     pub screenshot: Vec<KeyboardKey>,
     pub fullscreen: Vec<KeyboardKey>,
+    pub self_voicing: Vec<KeyboardKey>,
     pub middle_click_hides: bool,
     pub right_click_pauses: bool,
 }
@@ -26,6 +27,7 @@ impl Default for PlayingKeys {
             log: vec![KeyboardKey::KEY_L],
             screenshot: vec![KeyboardKey::KEY_S],
             fullscreen: vec![KeyboardKey::KEY_F],
+            self_voicing: vec![KeyboardKey::KEY_V],
             middle_click_hides: true,
             right_click_pauses: true,
         }
@@ -65,6 +67,11 @@ impl PlayingKeys {
 
     pub fn fullscreen(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
         self.fullscreen = keys.into_iter().collect();
+        self
+    }
+
+    pub fn self_voicing(mut self, keys: impl IntoIterator<Item = KeyboardKey>) -> Self {
+        self.self_voicing = keys.into_iter().collect();
         self
     }
 

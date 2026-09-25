@@ -86,6 +86,7 @@ settings do not break old files.
 | Text size | 100 percent, from 90 to 150 |
 | Text backdrop | as designed |
 | Text outline | off |
+| Self-voicing | off, and only offered when the game has a reader |
 
 The default screen shows one row per setting. `audio_rows(false)` hides the volumes,
 `voice_row(false)` just the voice one, `play_rows(false)` auto-forward and skip, and the
@@ -155,6 +156,40 @@ level is left alone. It covers the dialogue box and NVL pages.
 contrasts with the text, and scaled to the text size. It covers dialogue, the speaker's
 name, narration and NVL pages.
 
+### Self-voicing
+
+The engine hands what is on screen to a reader the game provides, so a player who cannot
+read the screen can still play. The engine has no speech of its own: the reader is where a
+game plugs in a text-to-speech crate, a screen reader bridge, or anything else.
+
+```rust
+VnApp::new("My Novel").reader(|reading| {
+    speech.speak(&reading.text());
+})
+```
+
+| Reading | When |
+| --- | --- |
+| `Line { speaker, text }` | A line appears. `speaker` is the name as shown |
+| `Choices { options }` | A choice appears, with the options the player can take |
+| `Option { text }` | Focus or the mouse moves to another option |
+| `Notice { text }` | A notification appears, quick save's for example |
+
+Text arrives as the player sees it: translated, with variables filled in and markup taken
+out. `text()` joins it into one string to speak, `"Mary: Hello."` for a line and the
+options one sentence each. A reading usually means the last one is out of date, so a reader
+that interrupts itself is the simple choice.
+
+A line is read once, when it appears, and not again until it changes, a rollback lands on it,
+or self-voicing is turned back on. Nothing is read while skipping; the line skipping stops
+on is. Locked options are left out, since focus cannot reach them either. A voiced line is
+still read, over its voice clip.
+
+With a reader set, the Accessibility page gains a Self-voicing row and V turns it on and off
+while playing, the key a player can find without seeing the menu. Without one, neither
+exists. `ctx.read_aloud(&reading)` sends a reading of a game's own, from a custom screen say,
+and does nothing while self-voicing is off.
+
 ## Notifications
 
 `ctx.notify(text)` and `ctx.notify_error(text)` put a short message at the top left, above
@@ -176,6 +211,7 @@ Ren'Py's defaults, on the playing screen.
 | F1 | The controls overlay, from any screen |
 | S | Screenshot of the finished frame, shader passes and screen shake included |
 | F | Toggle fullscreen |
+| V | Toggle self-voicing, when the game has a reader |
 | Escape, right click, gamepad Start | Pause menu |
 | F5, F9 | Quick save, quick load |
 

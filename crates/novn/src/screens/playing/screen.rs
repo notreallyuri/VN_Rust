@@ -9,6 +9,7 @@ use crate::context::{DrawContext, GameContext};
 use crate::data::resources::{background_path, bust_path};
 use crate::data::session::{LogEntry, Spoken};
 use crate::frame::stage::Stage;
+use crate::game::reader::Reading;
 use crate::input::navigation::Focus;
 use crate::screen::{Screen, ScreenState};
 use crate::ui;
@@ -25,6 +26,8 @@ pub struct PlayingScreen {
     pub(super) skipping: bool,
     pub(super) last_skip: f64,
     pub(super) ready_since: Option<f64>,
+    pub(super) read: Option<(usize, Reading)>,
+    pub(super) read_option: Option<usize>,
 }
 
 impl PlayingScreen {
@@ -40,6 +43,8 @@ impl PlayingScreen {
             skipping: false,
             last_skip: 0.0,
             ready_since: None,
+            read: None,
+            read_option: None,
         }
     }
 }
@@ -76,6 +81,7 @@ impl PlayingScreen {
         let skip_toggle = any(&keys.skip_toggle);
         let skip_hold = held(&keys.skip_hold) || ctx.nav.skip_held;
         let auto = any(&keys.auto);
+        let voicing = any(&keys.self_voicing);
 
         if menu {
             return Some(ScreenState::MainMenu);
@@ -109,6 +115,9 @@ impl PlayingScreen {
         }
         if fullscreen {
             ctx.settings.update(|s| s.fullscreen = !s.fullscreen);
+        }
+        if voicing {
+            self.toggle_voicing(ctx);
         }
 
         if self.current.is_some() && hide {
@@ -325,6 +334,7 @@ impl Screen for PlayingScreen {
         if next.is_some() {
             return next;
         }
+        self.voice(&ctx);
         ctx.run_frame_hooks(ctx.rl.get_frame_time());
 
         #[cfg(feature = "character-visuals")]

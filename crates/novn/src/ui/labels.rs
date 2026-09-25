@@ -32,6 +32,8 @@ pub fn fill(template: &str, fields: &[(&str, &str)]) -> String {
 pub const MESSAGES: &[&str] = &[
     "No saved game yet",
     "Quick saved",
+    "Self-voicing on",
+    "Self-voicing off",
     "Quick loaded",
     "Could not continue: {reason}",
     "Quick save failed: {reason}",

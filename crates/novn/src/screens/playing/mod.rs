@@ -6,6 +6,7 @@ mod nvl;
 mod screen;
 mod style;
 mod typewriter;
+mod voicing;
 
 pub use choice::*;
 pub use config::*;

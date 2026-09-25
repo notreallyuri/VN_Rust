@@ -13,6 +13,7 @@ pub enum SettingsRow {
     TextSize,
     TextBackdrop,
     TextOutline,
+    SelfVoicing,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -23,7 +24,7 @@ pub enum SettingsPage {
 }
 
 impl SettingsRow {
-    pub const ALL: [SettingsRow; 13] = [
+    pub const ALL: [SettingsRow; 14] = [
         SettingsRow::Display,
         SettingsRow::TextSpeed,
         SettingsRow::MusicVolume,
@@ -37,6 +38,7 @@ impl SettingsRow {
         SettingsRow::TextSize,
         SettingsRow::TextBackdrop,
         SettingsRow::TextOutline,
+        SettingsRow::SelfVoicing,
     ];
 
     pub fn is_slider(self) -> bool {
@@ -49,6 +51,7 @@ impl SettingsRow {
                 | SettingsRow::ReduceMotion
                 | SettingsRow::TextBackdrop
                 | SettingsRow::TextOutline
+                | SettingsRow::SelfVoicing
         )
     }
 }

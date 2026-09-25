@@ -277,6 +277,7 @@ impl VnApp {
             &settings.text_size_label,
             &settings.text_backdrop_label,
             &settings.text_outline_label,
+            &settings.self_voicing_label,
             &settings.sample_text,
             &settings.back_label,
         ] {
