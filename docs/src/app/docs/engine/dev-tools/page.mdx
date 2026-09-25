@@ -22,6 +22,7 @@ a release build, for a tester's copy.
 | F3 | The inspector: what is drawn where, the focus order, and frame timing |
 | F4 | Jump to a scene |
 | F6 | The position picker, while playing |
+| F7 | The director, while playing |
 | F12 | A screenshot, from any screen |
 | Shift+F12 | Start or stop a GIF recording |
 
@@ -125,6 +126,46 @@ Nothing you drag changes the story. The character is only drawn somewhere else w
 picker is open, and Esc, F6 again, or anything that leaves the screen puts them back where
 the story has them. A character drawn by a [visual backend](/docs/engine/visuals) rather
 than an image can't be picked up yet.
+
+## The director
+
+F7 while playing opens a panel down the right side. Pick what to add, then move through
+what your assets folder holds, and each one plays out on the stage as you land on it: a
+background swaps in, a character steps on, a track crossfades, a sound or voice line plays.
+Nothing about the story changes while you browse. Hold H to hide the panel and see the whole
+stage.
+
+| Pick | Lists | Previews by |
+| --- | --- | --- |
+| `show` | Every image under `characters/<id>/` | Standing the character on stage, or changing the image of one already there |
+| `background` | Every image in `backgrounds/` | Swapping it in |
+| `music` | Every track in `music/` | Crossfading to it |
+| `sound` | Everything in `sounds/` | Playing it once |
+| `voice` | Everything in `voice/` | Playing it once |
+
+Enter writes the line into your `.story` file, directly above the line on screen and at its
+indentation, so it happens right where you were looking. The panel says which file and line
+before you commit to anything. Hot reload then restarts the scene with the line in it, and
+the director closes, since the line it was pointing at has just moved.
+
+```story
+  show registrar neutral at right with dissolve
+  background field_post
+  registrar "You're the new one. Sit."
+```
+
+**It will not break your story.** The file is compiled with the new line before anything is
+written, and if the line would add an error, say a `background` among a choice's options,
+nothing is written and the panel says why. A story that already has an error elsewhere can
+still be directed, as long as the new line does not add another.
+
+**It lists what the engine can load, and nothing else.** Looking a file up is
+case-sensitive, and the engine asks for `night.png`, so a `Night.PNG` would load on your
+machine and show a placeholder on another. It is left out rather than offered. The same goes
+for names a story could not write, like `old-attic`.
+
+It needs the story in a folder on disk. A build that embeds its story has no file to write
+to, and says so.
 
 ## Screenshots and recordings
 

@@ -265,7 +265,16 @@ impl Stage {
         let fade = self.draw_background(d, resources, story, config.background.as_ref(), now);
         crate::dev::picker::record_slots(Position::ALL.map(|position| config.position_x(position)));
 
-        let current = stage_layout(story, config);
+        let mut current = stage_layout(story, config);
+        if let Some((id, image)) = crate::dev::director::character() {
+            current
+                .entry(id)
+                .and_modify(|placed| placed.image = image.clone())
+                .or_insert(Placed {
+                    image,
+                    x: config.position_x(Position::Center),
+                });
+        }
         let mut ids: Vec<&String> = current.keys().collect();
         for (id, anim) in &self.characters {
             if anim.leaving.is_some() && !current.contains_key(id) {
@@ -348,7 +357,8 @@ impl Stage {
         now: f64,
     ) -> f32 {
         let screen = ui::screen_size(d);
-        let current = story.background();
+        let preview = crate::dev::director::background();
+        let current = preview.as_deref().or(story.background());
         ui::draw_background(d, resources, fallback);
 
         let Some(anim) = &self.backdrop else {

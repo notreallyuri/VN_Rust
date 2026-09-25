@@ -63,6 +63,12 @@ impl StoryVm {
             .map(crate::translate::file_key)
     }
 
+    pub fn current_source(&self) -> Option<(&str, usize)> {
+        let ip = self.pending_choice.or(self.current_ip)?;
+        let line = self.program.line(ip);
+        (line > 0).then_some((self.program.file(ip)?, line))
+    }
+
     pub fn current_say(&self) -> Option<(Option<&str>, &str)> {
         let Some(Instruction::Say { char_id, text }) =
             self.program.instructions.get(self.current_ip?)

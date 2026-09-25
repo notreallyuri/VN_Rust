@@ -268,7 +268,7 @@ scene example:  (line 1)
 > Say { speaker: Some("player"), text: "Nice to meet you." }
 > End
 
-======== docs/engine/dev-tools:110  The position picker
+======== docs/engine/dev-tools:111  The position picker
 scene example:
   show registrar neutral at far_left
 -------- instructions
@@ -277,6 +277,24 @@ scene example:  (line 1)
 001: END
 -------- events
 > Show { character: "registrar", image: "neutral", position: Some(FarLeft), transition: None }
+> End
+
+======== docs/engine/dev-tools:151  The director
+scene example:
+  show registrar neutral at right with dissolve
+  background field_post
+  registrar "You're the new one. Sit."
+-------- instructions
+scene example:  (line 1)
+000: WITH dissolve
+001: SHOW registrar neutral AT right
+002: BACKGROUND field_post
+003: SAY [registrar]: "You're the new one. Sit."
+004: END
+-------- events
+> Show { character: "registrar", image: "neutral", position: Some(Right), transition: Some(Transition { kind: Dissolve, millis: None }) }
+> Background { image: Some("field_post"), transition: None }
+> Say { speaker: Some("registrar"), text: "You're the new one. Sit." }
 > End
 
 ======== docs/engine/story:12  Commands

@@ -14,9 +14,10 @@ use crate::data::saves::{Saves, THUMBNAIL_WIDTH};
 use crate::data::session::{PlayModes, SeenLines, SessionLog};
 use crate::data::settings::SettingsStore;
 use crate::data::state::GameState;
+use crate::dev::director::DIRECTOR_OVERLAY;
 use crate::dev::picker::POSITION_PICKER_OVERLAY;
 use crate::dev::scene_jump::SCENE_JUMP_OVERLAY;
-use crate::dev::{CAPTURE_KEY, INSPECTOR_KEY, PICKER_KEY, SCENE_JUMP_KEY};
+use crate::dev::{CAPTURE_KEY, DIRECTOR_KEY, INSPECTOR_KEY, PICKER_KEY, SCENE_JUMP_KEY};
 use crate::game::audio::Audio;
 use crate::game::characters::Characters;
 use crate::game::commands::Commands;
@@ -360,6 +361,18 @@ impl ScreenStateManager {
             }
         }
 
+        let wants_director = self.dev_tools
+            && self.screens.showing == ScreenState::Playing
+            && rl.is_key_pressed(DIRECTOR_KEY);
+        if wants_director {
+            if self.overlay_name() == Some(DIRECTOR_OVERLAY) {
+                self.close_overlay();
+            } else {
+                self.world.modes.skip = false;
+                self.open_overlay(DIRECTOR_OVERLAY);
+            }
+        }
+
         let wants_scene_jump = self.dev_tools
             && self.screens.showing != ScreenState::TextInput
             && self.overlay_name() != Some(SCENE_JUMP_OVERLAY)
@@ -401,9 +414,8 @@ impl ScreenStateManager {
             ScreenState::StartScreen | ScreenState::MainMenu => {
                 self.show.audio.config().menu_music.clone()
             }
-            ScreenState::Playing | ScreenState::TextInput => {
-                self.world.story.music().map(str::to_string)
-            }
+            ScreenState::Playing | ScreenState::TextInput => crate::dev::director::music()
+                .or_else(|| self.world.story.music().map(str::to_string)),
             _ => self.show.audio.music().map(str::to_string),
         };
 

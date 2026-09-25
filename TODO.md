@@ -382,7 +382,20 @@ builds), F1 (controls) and F2 (script errors).
   gamepad here, and every engine overlay reads Escape itself. The earlier check that Esc closed
   the scene jump had measured the brightness of a strip that is dark either way; it was
   redone by comparing screenshots and looking at them
-- [ ] Director: while playing, pick `show`, `background`, `music`, `sound` or `voice` from a menu, see it applied live, and write the line into the `.story` file at the current point. `.story` is line-oriented and `novn fmt` normalizes whatever a tool writes, so generated lines can't drift from hand-written style
+- [x] The director on F7: pick `show`, `background`, `music`, `sound` or `voice`, move through
+  what the assets folder holds and each plays out as you land on it, then Enter writes the
+  line above the one on screen at its indentation. Previews are render-only overrides read by
+  the stage and by `update_music`, and the overlay clears them on `Drop`. A write compiles the
+  file with the new line first and refuses anything that adds an error, leaving the file
+  byte-for-byte as it was; a test holds that and fails with the check removed. The list is
+  exactly what the engine can load: lookups are case-sensitive and the engine asks for
+  lowercase `.png`, so `Night.PNG` would work on one machine and show a placeholder on
+  another, and is left out. `StoryVm::current_source` joins `novn-script` to say where the
+  line on screen lives, preferring a waiting choice, since `current_ip` still points at the
+  line before it. Played in the example with the story's diff as the check: exactly one line,
+  correctly indented, then hot reload restarting the scene. Playing it caught two things: the
+  panel sat over the right-hand slots, so H now hides it while held, and after a write the
+  panel went on pointing at a line that had just moved, so a successful write now closes it
 - [x] Scene jump on F4: every scene with the file and line it starts on, beside every
   registered variable and its current value. Change the values a scene depends on and jump.
   "With its variables set" turned out to mean *you* set them: there is no way to compute what

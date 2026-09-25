@@ -996,3 +996,34 @@ fn the_mode_follows_the_scene_the_story_is_in() {
     vm.advance_until_blocking();
     assert!(vm.scene_mode().is_nvl());
 }
+
+#[test]
+fn the_line_on_screen_knows_its_file_and_line() {
+    let program = novn_script::compile_sources(vec![
+        (
+            "a.story".to_string(),
+            "scene start:\n  \"one\"\n  jump next\n".to_string(),
+        ),
+        (
+            "b.story".to_string(),
+            "scene next:\n  mary \"two\"\n  choice:\n    \"Go\":\n      \"three\"\n".to_string(),
+        ),
+    ]);
+    let mut vm = StoryVm::from_program(program);
+    assert_eq!(
+        vm.current_source(),
+        None,
+        "nothing is on screen before the first advance"
+    );
+
+    vm.advance_until_blocking();
+    assert_eq!(vm.current_source(), Some(("a.story", 2)));
+    vm.advance_until_blocking();
+    assert_eq!(vm.current_source(), Some(("b.story", 2)));
+    vm.advance_until_blocking();
+    assert_eq!(
+        vm.current_source(),
+        Some(("b.story", 3)),
+        "a waiting choice is its own line"
+    );
+}
