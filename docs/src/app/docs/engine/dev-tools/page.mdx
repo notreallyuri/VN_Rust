@@ -21,6 +21,8 @@ a release build, for a tester's copy.
 | F2 | The story error panel, when a hot reload failed. See [hot reload](/docs/engine/story#hot-reload) |
 | F3 | The inspector: what is drawn where, the focus order, and frame timing |
 | F4 | Jump to a scene |
+| F12 | A screenshot, from any screen |
+| Shift+F12 | Start or stop a GIF recording |
 
 They draw in their own plain style rather than your game's theme, so a tool stays readable
 however the game looks, and they only use characters every font has.
@@ -91,3 +93,29 @@ happened, so there is nothing to roll back to.
 
 It opens on the scene being played, so pressing Enter straight away restarts the current
 scene with the current values, which is a quick way to see a scene again after editing it.
+
+## Screenshots and recordings
+
+For bug reports and devlogs. Both land in the `screenshots` folder beside your saves, next to
+the ones a player takes with `S`, and the console prints the path.
+
+**F12** takes a screenshot from any screen: the main menu, the settings, the middle of a
+choice, with the inspector open if it is. The player's `S` only works while playing.
+
+**Shift+F12** starts a GIF and Shift+F12 again stops it. A red REC badge counts the time in
+the corner, and it never appears in the recording: it is drawn after the frame is captured.
+Recordings stop by themselves at 30 seconds.
+
+It records at 15 frames a second, scaled to 640 pixels wide, and every frame is held on
+screen for as long as it really was, so a hitch while a scene loads plays back as a hitch
+rather than being smoothed over. Encoding happens on a thread of its own, and the game never
+waits for it. If it ever falls behind, frames are dropped rather than the game slowed, and
+the console says how many.
+
+**Only what changed is stored.** A visual novel is mostly still: the background holds while
+text types into one box. Each frame keeps only the rectangle that differs from the one before,
+and a frame with no change at all just lengthens the previous one. Six seconds of the example
+game went from 12.4 MB to 0.7 MB this way, so a full thirty-second recording is a few
+megabytes and fits where you would post it.
+
+Close the game mid-recording and the file is still finished properly before it exits.

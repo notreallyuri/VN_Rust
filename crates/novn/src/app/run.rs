@@ -378,11 +378,14 @@ impl VnApp {
                     manager.draw(&mut d, &thread);
                 }
             }
+            manager.capture_frame(&mut d, &thread);
             if manager.screenshot_requested() {
                 manager.take_screenshot(&mut d, &thread);
             }
+            manager.draw_capture_indicator(&mut d);
         }
 
+        manager.finish_capture(rl.get_time());
         manager.autosave();
         manager.world.seen.save();
         manager.world.persistent.save();

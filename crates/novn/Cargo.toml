@@ -31,6 +31,7 @@ lewton = { version = "0.10", optional = true, default-features = false }
 libc = { version = "0.2", optional = true }
 ffmpeg-next = { version = "9.0", optional = true, default-features = false, features = ["format", "software-scaling", "software-resampling"] }
 tempfile = { version = "3", optional = true }
+gif = "0.14"
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 rav1d = { version = "1.1", optional = true, default-features = false, features = ["bitdepth_8", "bitdepth_16", "asm", "asm_arm64_dotprod", "asm_arm64_i8mm"] }

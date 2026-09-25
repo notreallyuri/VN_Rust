@@ -382,7 +382,19 @@ builds), F1 (controls) and F2 (script errors).
   screen change cleared the overlay opened in the same frame; and clicking a row re-centred
   the list, sliding that row out from under the pointer so "click twice to jump" landed on a
   different scene. The list now scrolls only to keep the selection visible
-- [ ] A screenshot and GIF capture key for bug reports and devlogs, writing next to the existing screenshot key
+- [x] F12 for a screenshot from any screen, Shift+F12 to start and stop a GIF, both beside the
+  player's screenshots. The recording captures at 15 fps after compositing, so shader passes
+  and screen effects are in it, scaled to 640 wide, and hands frames to an encoder thread
+  behind a bounded queue: the game never waits on it, and drops frames rather than slowing
+  if it falls behind. Frame delays follow the clock with the rounding carried forward, so a
+  15 fps recording plays at 15 fps rather than 6% slow, which is what rounding each frame on
+  its own gives, and a test checked against that version fails. The REC badge is drawn after
+  capture and never lands in a frame (checked on all 36 frames of a real recording).
+  The first real recording was 12.4 MB for six seconds, too big for GitHub's 10 MB image
+  limit, so each frame now stores only the rectangle that changed since the last, and a
+  frame with no change lengthens the one before: the same six seconds came to 0.7 MB. A test
+  replays the sub-frames onto a canvas and compares it with the last picture pixel for pixel,
+  and was checked to fail when the crop is shifted by one column
 
 ## M11: Documentation site
 

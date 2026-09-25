@@ -15,7 +15,7 @@ use crate::data::session::{PlayModes, SeenLines, SessionLog};
 use crate::data::settings::SettingsStore;
 use crate::data::state::GameState;
 use crate::dev::scene_jump::SCENE_JUMP_OVERLAY;
-use crate::dev::{INSPECTOR_KEY, SCENE_JUMP_KEY};
+use crate::dev::{CAPTURE_KEY, INSPECTOR_KEY, SCENE_JUMP_KEY};
 use crate::game::audio::Audio;
 use crate::game::characters::Characters;
 use crate::game::commands::Commands;
@@ -113,6 +113,9 @@ pub struct ScreenStateManager {
     pub keybind_keys: Vec<KeyboardKey>,
     pub dev_tools: bool,
     timing: crate::dev::inspector::Timing,
+    recording: Option<crate::dev::capture::Recording>,
+    wants_recording: bool,
+    finishing: Option<crate::dev::capture::Finishing>,
     pub prompts: crate::input::prompts::Prompts,
     pub(crate) pointer: Option<crate::ui::cursor::Pointer>,
     script_errors: Option<ScriptErrors>,
@@ -200,6 +203,9 @@ impl ScreenStateManager {
             keybind_keys: vec![KeyboardKey::KEY_F1],
             dev_tools: false,
             timing: crate::dev::inspector::Timing::default(),
+            recording: None,
+            wants_recording: false,
+            finishing: None,
             prompts: Default::default(),
             pointer: Some(crate::ui::cursor::Pointer::system()),
             script_errors: None,
@@ -220,7 +226,19 @@ impl ScreenStateManager {
             if crate::dev::inspector::active() {
                 self.timing.push(rl.get_frame_time());
             }
+            if rl.is_key_pressed(CAPTURE_KEY) {
+                let shift = rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT)
+                    || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT);
+                if !shift {
+                    self.frame.screenshot = true;
+                } else if let Some(recording) = self.recording.take() {
+                    self.finishing = Some(recording.finish(rl.get_time()));
+                } else if self.finishing.is_none() {
+                    self.wants_recording = true;
+                }
+            }
         }
+        self.poll_recording();
         let now = rl.get_time();
         let keybinds_open = self.overlay_name() == Some(KEYBINDS_OVERLAY);
         self.show.resources.load_requested(rl, thread);
@@ -543,6 +561,140 @@ impl ScreenStateManager {
         return self.show.resources.visuals.pushed().clone();
         #[cfg(not(feature = "character-visuals"))]
         return Default::default();
+    }
+
+    fn poll_recording(&mut self) {
+        let Some(finishing) = &mut self.finishing else {
+            return;
+        };
+        let Some(result) = finishing.poll() else {
+            return;
+        };
+        self.finishing = None;
+        self.report_recording(result);
+    }
+
+    fn report_recording(&mut self, result: io::Result<crate::dev::capture::Saved>) {
+        match result {
+            Ok(saved) => {
+                let dropped = if saved.dropped > 0 {
+                    format!(", {} dropped", saved.dropped)
+                } else {
+                    String::new()
+                };
+                println!(
+                    "Recording: {} ({} frames{})",
+                    saved.path.display(),
+                    saved.frames,
+                    dropped
+                );
+                self.notify(Toast::info(format!(
+                    "Recording saved ({} frames)",
+                    saved.frames
+                )));
+            }
+            Err(error) => {
+                eprintln!("⚠️ Recording not saved: {}", error);
+                self.notify(Toast::error(format!("Recording not saved: {error}")));
+            }
+        }
+    }
+
+    pub fn capture_frame(&mut self, d: &mut RaylibDrawHandle, thread: &RaylibThread) {
+        use crate::dev::capture::{MAX_WIDTH, Recording, scaled};
+        let now = d.get_time();
+        if std::mem::take(&mut self.wants_recording) {
+            let size = scaled((d.get_screen_width(), d.get_screen_height()), MAX_WIDTH);
+            let path = self
+                .world
+                .saves
+                .dir()
+                .join("screenshots")
+                .join(format!("recording-{}.gif", crate::data::saves::now()));
+            match Recording::start(path, size, now) {
+                Ok(recording) => self.recording = Some(recording),
+                Err(error) => {
+                    eprintln!("⚠️ Could not start recording: {}", error);
+                    self.notify(Toast::error(format!("Could not start recording: {error}")));
+                }
+            }
+        }
+
+        let Some(recording) = &mut self.recording else {
+            return;
+        };
+        if recording.over_limit(now) {
+            if let Some(recording) = self.recording.take() {
+                self.finishing = Some(recording.finish(now));
+            }
+            return;
+        }
+        if !recording.due(now) {
+            return;
+        }
+
+        flush_batch();
+        let mut image = d.load_image_from_screen(thread);
+        let (width, height) = recording.size();
+        image.resize(width as i32, height as i32);
+        let colors = image.get_image_data();
+        let mut rgba = Vec::with_capacity(colors.len() * 4);
+        for color in colors.iter() {
+            rgba.extend_from_slice(&[color.r, color.g, color.b, 255]);
+        }
+        recording.push(rgba, now);
+    }
+
+    pub fn draw_capture_indicator(&self, d: &mut RaylibDrawHandle) {
+        let label = match (&self.recording, &self.finishing) {
+            (Some(recording), _) => {
+                let seconds = recording.elapsed(d.get_time()) as u64;
+                format!(
+                    "REC {}:{:02}   Shift+F12 to stop",
+                    seconds / 60,
+                    seconds % 60
+                )
+            }
+            (None, Some(_)) => "Saving the recording...".to_string(),
+            _ => return,
+        };
+        let fonts = &self.show.resources.fonts;
+        let style = crate::ui::TextStyle::new(
+            crate::ui::fonts::FontRole::Menu,
+            14.0,
+            Color::new(255, 235, 235, 255),
+        );
+        let size = crate::ui::measure_text(fonts, &label, &style);
+        let panel = Rectangle::new(8.0, 8.0, size.x + 34.0, size.y + 12.0);
+        d.draw_rectangle_rec(panel, Color::new(20, 10, 12, 220));
+        let blink = self.recording.is_some() && (d.get_time() * 2.0) as i64 % 2 == 0;
+        let dot = if blink || self.recording.is_none() {
+            Color::new(235, 60, 60, 255)
+        } else {
+            Color::new(120, 40, 40, 255)
+        };
+        d.draw_circle_v(
+            Vector2::new(panel.x + 14.0, panel.y + panel.height / 2.0),
+            5.0,
+            dot,
+        );
+        crate::ui::draw_text(
+            d,
+            fonts,
+            &label,
+            Vector2::new(panel.x + 26.0, panel.y + 6.0),
+            &style,
+        );
+    }
+
+    pub fn finish_capture(&mut self, now: f64) {
+        if let Some(recording) = self.recording.take() {
+            self.finishing = Some(recording.finish(now));
+        }
+        if let Some(mut finishing) = self.finishing.take() {
+            let result = finishing.wait();
+            self.report_recording(result);
+        }
     }
 
     pub fn screenshot_requested(&mut self) -> bool {
