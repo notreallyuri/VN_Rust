@@ -74,10 +74,11 @@ jobs:
 
       - name: No hand-written absolute URLs, which skip the deployed basePath
         run: |
-          if grep -rnE '(<a[^>]+href|<(img|video|source|link)[^>]+(src|href)|url\()="?/[^/]' src; then
+          if grep -rnE '(<a[^>]+href|<(img|Image|video|source|link)[^>]+(src|href)|url\()="/[^/]' src; then
             echo
             echo "A path written by hand does not get the /VN_Rust prefix the deployed"
-            echo "site is served under. Use next/link, next/image, or a relative path."
+            echo "site is served under. Links go through next/link, which adds it;"
+            echo "images are imported as modules, which the bundler rewrites."
             exit 1
           fi
 

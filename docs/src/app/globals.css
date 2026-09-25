@@ -38,6 +38,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.bg-glow {
+  background: radial-gradient(
+    60rem 22rem at 18% -6rem,
+    color-mix(in oklab, var(--accent) 24%, transparent),
+    transparent 70%
+  );
+}
+
 ::selection {
   background: color-mix(in oklab, var(--accent) 28%, transparent);
 }
