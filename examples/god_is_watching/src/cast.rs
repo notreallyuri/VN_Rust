@@ -1,5 +1,5 @@
-use vn_engine::prelude::*;
-use vn_engine::raylib::prelude::Color;
+use novn::prelude::*;
+use novn::raylib::prelude::Color;
 
 fn person(name: &str, color: (u8, u8, u8), images: &[&str]) -> Character {
     Character::new(name)

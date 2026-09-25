@@ -1,7 +1,0 @@
-[package]
-name = "vn_build"
-description = "Build-script helpers for VN_Rust games: embed the assets into release binaries."
-version.workspace = true
-edition.workspace = true
-
-[dependencies]

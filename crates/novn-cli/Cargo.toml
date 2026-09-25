@@ -1,0 +1,23 @@
+[package]
+name = "novn-cli"
+description = "Command-line tooling for story scripts."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["visual-novel", "cli", "lsp", "linter", "gamedev"]
+categories = ["command-line-utilities", "game-development", "development-tools"]
+
+[[bin]]
+name = "novn"
+path = "src/main.rs"
+
+[dependencies]
+novn-script.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

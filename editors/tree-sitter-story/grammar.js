@@ -1,5 +1,5 @@
 /**
- * @file Story scripts for VN_Rust (SCRIPT.md)
+ * @file Story scripts for novn (SCRIPT.md)
  * @license MIT
  */
 

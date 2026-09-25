@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
+use novn::prelude::*;
 use serde::{Deserialize, Serialize};
-use vn_engine::prelude::*;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Evidence {

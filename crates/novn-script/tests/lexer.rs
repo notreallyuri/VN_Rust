@@ -1,0 +1,49 @@
+use novn_script::{TokenKind, tokenize};
+
+const ALL_FEATURES: &str = include_str!("fixtures/all_features.story");
+
+#[test]
+fn fixture_covers_every_token_kind() {
+    let (tokens, diagnostics) = tokenize(ALL_FEATURES);
+    assert_eq!(diagnostics, []);
+
+    let expected = [
+        TokenKind::Scene,
+        TokenKind::Show,
+        TokenKind::Background,
+        TokenKind::Music,
+        TokenKind::Sound,
+        TokenKind::Voice,
+        TokenKind::Remove,
+        TokenKind::Clear,
+        TokenKind::Dialogue,
+        TokenKind::Narration,
+        TokenKind::ChoiceBlock,
+        TokenKind::ChoiceOption,
+        TokenKind::Jump,
+        TokenKind::If,
+        TokenKind::Else,
+        TokenKind::Call,
+        TokenKind::Set,
+        TokenKind::Add,
+        TokenKind::Commit,
+    ];
+
+    for kind in expected {
+        assert!(
+            tokens.iter().any(|t| t.kind == kind),
+            "fixture has no {:?} token",
+            kind
+        );
+    }
+}
+
+#[test]
+fn skips_comments_and_blank_lines() {
+    let (tokens, diagnostics) = tokenize(ALL_FEATURES);
+    assert_eq!(diagnostics, []);
+
+    assert!(tokens.iter().all(|t| !t.payload.starts_with('#')));
+    assert_eq!(tokens[0].kind, TokenKind::Scene);
+    assert_eq!(tokens[0].line, 4);
+}

@@ -1,0 +1,2133 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vn\n"
+"Language: pt-BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. narration
+#: 00_archive.story:7
+msgctxt "story|00_archive.story|228673cda9ec2534"
+msgid "October, 1903. The Archive of the House, two floors below the street."
+msgstr ""
+
+#. narration
+#: 00_archive.story:8
+msgctxt "story|00_archive.story|0edbd1c7e6ec40f6"
+msgid "The lamps are never put out down here. Paper is cheaper than daylight."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:10
+msgctxt "story|00_archive.story|8b225b229a290804"
+msgid "You're the new one. Sit."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:11
+msgctxt "story|00_archive.story|4da46a236ae3d1f7"
+msgid "I don't keep names I haven't needed yet. Write yours in the ledger."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:13
+msgctxt "story|00_archive.story|d83b9e227b0230cd"
+msgid "{player_name}. Good. Now forget it. Nobody down here will use it."
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 00_archive.story:14
+msgctxt "story|00_archive.story|1b1c0e027367bf02"
+msgid "What am I to work on, Registrar?"
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:15
+msgctxt "story|00_archive.story|c0dbc2ee8a9877ca"
+msgid "Two things that were never meant to be read together."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:17
+msgctxt "story|00_archive.story|6501cb6e2cc0853c"
+msgid "Box fourteen. What was recovered from the Von Lucis residence. Never catalogued."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:19
+msgctxt "story|00_archive.story|25a3731395b2a9db"
+msgid "And nineteen reports from our field post at Santa Ilde. Numbers two hundred and three to two hundred and twenty-one."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:21
+msgctxt "story|00_archive.story|9e89869e85896fce"
+msgid "Report two hundred and twenty-one ends in the middle of a word."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:22
+msgctxt "story|00_archive.story|6f15cab930bb18cb"
+msgid "The man who wrote it has not come back. I want to know what he nearly wrote."
+msgstr ""
+
+#. choice
+#: 00_archive.story:24
+msgctxt "story|00_archive.story|5e1e1116d3474051"
+msgid "Ask to be sent to Santa Ilde"
+msgstr ""
+
+#. choice
+#: 00_archive.story:24
+msgctxt "story|00_archive.story|0d73c75a51092567"
+msgid "Read everything first"
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 00_archive.story:27
+msgctxt "story|00_archive.story|3d2d2cbc4f07887b"
+msgid "I'll read the box first. All of it."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:28
+msgctxt "story|00_archive.story|44c93a62b0f8ed75"
+msgid "Slow. Good. Slow people last longer here."
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 00_archive.story:32
+msgctxt "story|00_archive.story|8a3a7a33ce0b59d2"
+msgid "Why not send me to Santa Ilde and ask them?"
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:33
+msgctxt "story|00_archive.story|797fd40bfb4ac96a"
+msgid "Because the last three we sent forgot why they went."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:34
+msgctxt "story|00_archive.story|1c64a434fe0ecaf4"
+msgid "Read first. Then we'll see how eager you are."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:36
+msgctxt "story|00_archive.story|00279a2bf8b0720e"
+msgid "One more thing. What you read down here stays down here."
+msgstr ""
+
+#. registrar (dialogue)
+#: 00_archive.story:37
+msgctxt "story|00_archive.story|c1551fd91024cfa4"
+msgid "And if a page ever feels like it is \"reading you back\", close the box and come and find me."
+msgstr ""
+
+#. narration
+#: 00_archive.story:40
+msgctxt "story|00_archive.story|e7770f7862dac88d"
+msgid "The box smells of smoke and lavender. The first item is a notebook, in a young woman's hand."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:7
+msgctxt "story|01_box_14.story|f7dbb59fad6e68f2"
+msgid "Item 1. From the notebook of Mary Von Lucis. November, 1893."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:8
+msgctxt "story|01_box_14.story|45fed32a2e5744e7"
+msgid "Before the notebook there are the photographs: the study, as the House found it."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:10
+msgctxt "story|01_box_14.story|15c678bf9b4b7538"
+msgid "The letters from the Verlaine House come in pale envelopes that smell of perfume."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:11
+msgctxt "story|01_box_14.story|3f52fff8fa6f2c93"
+msgid "Father burns them in the study fireplace. I have counted three."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:13
+msgctxt "story|01_box_14.story|6d6e6ec5dd2c320b"
+msgid "The first one he laughed at. The second one he read twice."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:14
+msgctxt "story|01_box_14.story|9d4584ff9455d587"
+msgid "The third one he left open on the desk while he went to fetch his coat."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:15
+msgctxt "story|01_box_14.story|153a24afd2908022"
+msgid "I did not read it. His hands told me everything at supper."
+msgstr ""
+
+#. hugo (dialogue)
+#: 01_box_14.story:18
+msgctxt "story|01_box_14.story|cfb87a34aa8b46ee"
+msgid "Mary. You should be in bed."
+msgstr ""
+
+#. mary (dialogue)
+#: 01_box_14.story:19
+msgctxt "story|01_box_14.story|91b46c56d79b60c6"
+msgid "So should you, Father."
+msgstr ""
+
+#. hugo (dialogue)
+#: 01_box_14.story:20
+msgctxt "story|01_box_14.story|ab7e427def0b3bbc"
+msgid "Go up. Lock your door tonight."
+msgstr ""
+
+#. mary (dialogue)
+#: 01_box_14.story:21
+msgctxt "story|01_box_14.story|348a151646df872f"
+msgid "Why?"
+msgstr ""
+
+#. hugo (dialogue)
+#: 01_box_14.story:22
+msgctxt "story|01_box_14.story|36e7516f94faca27"
+msgid "Because I asked."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:29
+msgctxt "story|01_box_14.story|7434ce3e6d051733"
+msgid "The Archive. Under the notebook there is an envelope, pale, sealed again with somebody else's wax."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:30
+msgctxt "story|01_box_14.story|254f4f1e029b2adf"
+msgid "Whoever put it in the box wanted it kept, and did not want it read."
+msgstr ""
+
+#. choice
+#: 01_box_14.story:32
+msgctxt "story|01_box_14.story|1cdf61c5696ac425"
+msgid "Break the seal"
+msgstr ""
+
+#. choice
+#: 01_box_14.story:32
+msgctxt "story|01_box_14.story|e9b81912b188cc58"
+msgid "Leave it sealed"
+msgstr ""
+
+#. narration
+#: 01_box_14.story:37
+msgctxt "story|01_box_14.story|8d7abb161a1cdbea"
+msgid "One word, and a signature. \"Von Lucis. Three days.\""
+msgstr ""
+
+#. narration
+#: 01_box_14.story:38
+msgctxt "story|01_box_14.story|9441cb4eb06d21bc"
+msgid "No \"Sir\". No \"Mister\". Only the name, as if it were a debt of its own."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:39
+msgctxt "story|01_box_14.story|44180d9bdf1d7aab"
+msgid "You check the house register in the box. Three days after that letter, a Von Lucis debt is marked paid."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:42
+msgctxt "story|01_box_14.story|81551e8cdadbc8af"
+msgid "You put it back where it was. She never read it either."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:49
+msgctxt "story|01_box_14.story|e99a39b1fcf38a69"
+msgid "Item 3. Mary's notebook again. The fourteenth of November, 1893."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:50
+msgctxt "story|01_box_14.story|ee1b78339cc831d3"
+msgid "I wake up and the candle has gone out on its own."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:51
+msgctxt "story|01_box_14.story|b8c9b975774a4169"
+msgid "I go to the window first. I always look at the windows first."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:52
+msgctxt "story|01_box_14.story|3b4c93bfde0a1f2e"
+msgid "Outside it is not night. Outside it is not anything."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:53
+msgctxt "story|01_box_14.story|8488ec8a1192950f"
+msgid "There is a voice downstairs. Father's voice, talking and talking, filling a silence."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:54
+msgctxt "story|01_box_14.story|0fa29d962ae7621d"
+msgid "He talks about the bloodline. He talks about having no heir."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:55
+msgctxt "story|01_box_14.story|10cdd3a623293d8f"
+msgid "Then he says my name."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:56
+msgctxt "story|01_box_14.story|8d106624a8c2455f"
+msgid "Nobody answers him. Nobody needs to."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:57
+msgctxt "story|01_box_14.story|9cfba9a3f1090503"
+msgid "I lie down again. I tell myself it was a dream, and for nine months it is."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:62
+msgctxt "story|01_box_14.story|6f77d879b04b7231"
+msgid "Item 4. Testimony of Adelaide Roque, lady's maid. Taken in August, 1894."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:63
+msgctxt "story|01_box_14.story|6b9d115fc8bb4a19"
+msgid "July 31st. The wind begins at night. It is not a rain wind. It comes from inside the house."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:64
+msgctxt "story|01_box_14.story|97875e1b4180531b"
+msgid "August 1st. I go in before the six o'clock bell, as I have every day for nine years."
+msgstr ""
+
+#. adelaide (dialogue)
+#: 01_box_14.story:67
+msgctxt "story|01_box_14.story|111752b63553ff1b"
+msgid "Your hot water, miss. Miss? Are you unwell?"
+msgstr ""
+
+#. mary (dialogue)
+#: 01_box_14.story:68
+msgctxt "story|01_box_14.story|a04ef43947b4efbf"
+msgid "Adelaide. Did I sleep last night?"
+msgstr ""
+
+#. adelaide (dialogue)
+#: 01_box_14.story:69
+msgctxt "story|01_box_14.story|56125f2dc52d0a07"
+msgid "You did, miss. I put you to bed myself."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:70
+msgctxt "story|01_box_14.story|c7d7f4b88c2d7be9"
+msgid "She pulls back the blanket."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:73
+msgctxt "story|01_box_14.story|58d6cd4e24732e75"
+msgid "Yesterday there was nothing. Today it is nine months."
+msgstr ""
+
+#. mary (dialogue)
+#: 01_box_14.story:74
+msgctxt "story|01_box_14.story|52277b18e3bb9ae8"
+msgid "Please. Don't tell anyone. Not yet."
+msgstr ""
+
+#. adelaide (dialogue)
+#: 01_box_14.story:75
+msgctxt "story|01_box_14.story|e07712c2487b53af"
+msgid "Yes, miss."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:77
+msgctxt "story|01_box_14.story|b0adab658001fde9"
+msgid "I told. I went straight to her father. May God forgive me. May God forgive all of us."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:83
+msgctxt "story|01_box_14.story|d3d8ef1762bb65bb"
+msgid "Item 5. Mary's notebook. The last pages."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:84
+msgctxt "story|01_box_14.story|6633ae23f3c4222d"
+msgid "By the second day the whole house has chosen its word. Half say miracle. Half say sin."
+msgstr ""
+
+#. mary (dialogue)
+#: 01_box_14.story:87
+msgctxt "story|01_box_14.story|01acbe0b9c9a6dd0"
+msgid "Father."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:88
+msgctxt "story|01_box_14.story|f5a08eb91acad808"
+msgid "He looks at the floor, at the window, at the door. Anywhere but my face."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:89
+msgctxt "story|01_box_14.story|69d9219fd810573f"
+msgid "And that is when I understand. I am not being punished for something I did."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:90
+msgctxt "story|01_box_14.story|0dd8536c4c84e5fb"
+msgid "I am being punished for something he did."
+msgstr ""
+
+#. hugo (dialogue)
+#: 01_box_14.story:91
+msgctxt "story|01_box_14.story|b806db4aa6bebaf4"
+msgid "Go to your room, Mary."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:94
+msgctxt "story|01_box_14.story|ed069a12ad0d6e35"
+msgid "On the sixth of August the house scribe strikes my name from the register."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:95
+msgctxt "story|01_box_14.story|326ddff892217b4b"
+msgid "That night I take the servants' door, and one thing that is not mine."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:102
+msgctxt "story|01_box_14.story|00175b60bb23c663"
+msgid "The Archive. The Von Lucis register is in the box, and it has a column you have not seen in a register before."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:103
+msgctxt "story|01_box_14.story|beeda94cdb250f6b"
+msgid "Cause of the birth. For the eighth of August, 1894, it is empty."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:104
+msgctxt "story|01_box_14.story|530ae6457768df66"
+msgid "The House expects the archivist who opens a box to complete it. In ink."
+msgstr ""
+
+#. choice
+#: 01_box_14.story:106
+msgctxt "story|01_box_14.story|02c0bfefbcdccb4f"
+msgid "Write \"a miracle\""
+msgstr ""
+
+#. choice
+#: 01_box_14.story:106
+msgctxt "story|01_box_14.story|6e82eb15cee4ea9c"
+msgid "Write \"a sin\""
+msgstr ""
+
+#. choice
+#: 01_box_14.story:106
+msgctxt "story|01_box_14.story|15fa6fcddcfab50e"
+msgid "Write nothing, and initial the blank"
+msgstr ""
+
+#. narration
+#: 01_box_14.story:109
+msgctxt "story|01_box_14.story|ec297fa93dffa15d"
+msgid "You write it. The pen scratches louder than it should."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:112
+msgctxt "story|01_box_14.story|63b55904b821816f"
+msgid "You write it. It is what her father's house decided. Now it is what the House decided."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:116
+msgctxt "story|01_box_14.story|f17f905dcf8c3dd9"
+msgid "You initial the empty column. Somebody upstairs will ask why."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:123
+msgctxt "story|01_box_14.story|5227f48dd5de7af2"
+msgid "Item 6. A note left at the Santa Ilde orphanage, folded four times. Copied by the House in 1894."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:124
+msgctxt "story|01_box_14.story|fc4d335ad7551d7b"
+msgid "His name is Gabriel. I swear on my soul, which is not worth much anymore, I never knew the father."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:125
+msgctxt "story|01_box_14.story|972c909bc3755400"
+msgid "An object goes with this note. It is not a keepsake and not an inheritance. It is proof."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:126
+msgctxt "story|01_box_14.story|e877ccafe75fa54d"
+msgid "One day he will ask where he came from. Give him this."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:131
+msgctxt "story|01_box_14.story|4030146f68f41260"
+msgid "Item 7. A report from the men her father sent. August 8th, 1894."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:132
+msgctxt "story|01_box_14.story|c4f364c0d3f574e1"
+msgid "She was found on the old road by the river. She did not run."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:133
+msgctxt "story|01_box_14.story|6588dfce8cb9f21d"
+msgid "She turned around and looked at us, as if she wanted to remember our faces."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:134
+msgctxt "story|01_box_14.story|66b8830332558559"
+msgid "She was searched, and the bank and the road as far as the bridge. What we were sent for was not found."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:140
+msgctxt "story|01_box_14.story|51a885c785f9ee6e"
+msgid "Item 8. A loose sheet, in the hand of whoever compiled the box."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:141
+msgctxt "story|01_box_14.story|2a02fc276745f92d"
+msgid "The debt was paid on the fifteenth of November. The child was born on the eighth of August."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:142
+msgctxt "story|01_box_14.story|65931b06059c03ab"
+msgid "Two hundred and sixty-six days. A whole pregnancy. An exact one."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:143
+msgctxt "story|01_box_14.story|00c2b26d3e5cdbfc"
+msgid "Everyone repeats it with the word miracle, or with the word sin."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:144
+msgctxt "story|01_box_14.story|86bd8ac891932124"
+msgid "Nobody asks the only question that matters. Where was he for those nine months?"
+msgstr ""
+
+#. narration
+#: 01_box_14.story:146
+msgctxt "story|01_box_14.story|6c40d1fe90ff4317"
+msgid "You look at the word you wrote in the register, and it answers nothing."
+msgstr ""
+
+#. narration
+#: 01_box_14.story:148
+msgctxt "story|01_box_14.story|21f3384f90efce0d"
+msgid "You look at the blank you initialled. At least it isn't lying."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:7
+msgctxt "story|02_notebook.story|45fa0fc90e27ba2c"
+msgid "Report two hundred and fourteen has an annex: a copy of the administrator's notebook, made by our man Francis in one night."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:11
+msgctxt "story|02_notebook.story|22ea41171dec3a53"
+msgid "July 12th, 1894. Santa Ilde. Lately I have begun to forget things."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:12
+msgctxt "story|02_notebook.story|c3dad1e80c58db77"
+msgid "It's all been signed since May. I leave Santa Ilde on my birthday and go to live with my sister."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:13
+msgctxt "story|02_notebook.story|4529d8737d75db24"
+msgid "So I am keeping a diary. I know that, eventually, I will forget to keep it too."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:14
+msgctxt "story|02_notebook.story|443b9aa08b21714b"
+msgid "The children have behaved better than usual, ever since the arrival of the"
+msgstr ""
+
+#. narration
+#: 02_notebook.story:16
+msgctxt "story|02_notebook.story|38c222b7e7dba05b"
+msgid "Ever since the guest arrived."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:20
+msgctxt "story|02_notebook.story|08e2eb147a94ce3d"
+msgid "July 14th. I am writing down what the guest looks like, because tomorrow I may not."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:22
+msgctxt "story|02_notebook.story|658f09b55b60c2d7"
+msgid "He is a tall man in a dark frock coat, thin enough to pity. He speaks little. He eats less."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:24
+msgctxt "story|02_notebook.story|1cb62cfa4cc7a61e"
+msgid "I read that back and it isn't right. He is broad in the shoulders. The coat is grey."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:25
+msgctxt "story|02_notebook.story|43dc6e953c9c7fd7"
+msgid "He eats normally, at the sisters' table."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:27
+msgctxt "story|02_notebook.story|f5f0c3b53ce0a90d"
+msgid "July 23rd. The guest left two days ago. Nobody can tell me how long he stayed."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:30
+msgctxt "story|02_notebook.story|9397511731d9ad70"
+msgid "Sister Clara, the guest. How long was he with us?"
+msgstr ""
+
+#. clara (dialogue)
+#: 02_notebook.story:31
+msgctxt "story|02_notebook.story|9ede5f64f21c00ea"
+msgid "What guest, Mr. Moriarty?"
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:32
+msgctxt "story|02_notebook.story|da5dfdb5ded49931"
+msgid "The man in the coat. At your table."
+msgstr ""
+
+#. clara (dialogue)
+#: 02_notebook.story:33
+msgctxt "story|02_notebook.story|0c72827366cc5443"
+msgid "No guest stayed here this year."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:35
+msgctxt "story|02_notebook.story|fe94d40d5723b606"
+msgid "Sister Clara served him dinner every night."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:41
+msgctxt "story|02_notebook.story|714ec5037a967756"
+msgid "August 9th. A young woman came to the door after midnight, soaked through."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:44
+msgctxt "story|02_notebook.story|8ce1108da19f656b"
+msgid "She did not ask for discretion. She did not offer money. She did not cry."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:45
+msgctxt "story|02_notebook.story|07f826cb648e7d53"
+msgid "What is his name?"
+msgstr ""
+
+#. mary (dialogue)
+#: 02_notebook.story:46
+msgctxt "story|02_notebook.story|bc4cb318bffeceeb"
+msgid "Gabriel."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:47
+msgctxt "story|02_notebook.story|1059b0dc94bdb034"
+msgid "And his family name?"
+msgstr ""
+
+#. narration
+#: 02_notebook.story:48
+msgctxt "story|02_notebook.story|ac455e340c495b55"
+msgid "She looked at the door."
+msgstr ""
+
+#. mary (dialogue)
+#: 02_notebook.story:49
+msgctxt "story|02_notebook.story|979db6c8748f574a"
+msgid "Don't let anyone come looking for me."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:51
+msgctxt "story|02_notebook.story|e57ce3275b5f4d37"
+msgid "I decided to take him in."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:56
+msgctxt "story|02_notebook.story|9d441c03d2fb1dd2"
+msgid "August 11th. Men came this morning. Three of them, in black, polite in a way that makes you cold."
+msgstr ""
+
+#. man_in_black (dialogue)
+#: 02_notebook.story:59
+msgctxt "story|02_notebook.story|7fbf8dfcdaab40c1"
+msgid "Good morning. Has a new child come in this week?"
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:60
+msgctxt "story|02_notebook.story|6fd4667b6ba9b437"
+msgid "No. No one new."
+msgstr ""
+
+#. man_in_black (dialogue)
+#: 02_notebook.story:61
+msgctxt "story|02_notebook.story|76775b0efddf0ec1"
+msgid "Thank you for your time."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:63
+msgctxt "story|02_notebook.story|cd35bff60ee335de"
+msgid "I lied to an armed man before breakfast, and I do not recognise myself."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:64
+msgctxt "story|02_notebook.story|dd3c18ff8af103ac"
+msgid "Afterwards I unwrapped the boy's cloths to change him, and there was"
+msgstr ""
+
+#. narration
+#: 02_notebook.story:65
+msgctxt "story|02_notebook.story|c78d793ee7d5d7d3"
+msgid "..."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:66
+msgctxt "story|02_notebook.story|e664abeed04e6ad6"
+msgid "(The sentence ends mid-line. The next page has been torn out at the stitching.)"
+msgstr ""
+
+#. narration
+#: 02_notebook.story:72
+msgctxt "story|02_notebook.story|e0c1256617d54d6c"
+msgid "The Archive. Francis copied the notebook faithfully, down to the torn page. He copied the indentations too."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:73
+msgctxt "story|02_notebook.story|67f774567579041c"
+msgid "Whoever wrote on the missing page pressed hard enough to mark the next one."
+msgstr ""
+
+#. choice
+#: 02_notebook.story:75
+msgctxt "story|02_notebook.story|3deb2c8ae38d7e54"
+msgid "Hold the page to the lamp"
+msgstr ""
+
+#. choice
+#: 02_notebook.story:75
+msgctxt "story|02_notebook.story|8a247bb88d0e8a0b"
+msgid "Leave it"
+msgstr ""
+
+#. narration
+#: 02_notebook.story:78
+msgctxt "story|02_notebook.story|7b7645b9db1e8f6e"
+msgid "You tilt it against the lamp until the grooves catch the light."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:79
+msgctxt "story|02_notebook.story|85521ea7f194b6de"
+msgid "\"...a page from a register, folded small. Folio 41. His name is on it, and a price...\""
+msgstr ""
+
+#. narration
+#: 02_notebook.story:83
+msgctxt "story|02_notebook.story|a424ddd02c3a48b9"
+msgid "You turn the page. Some things are torn out for a reason."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:90
+msgctxt "story|02_notebook.story|28872bb3d3938bc0"
+msgid "Part II of the annex. A conversation in the administrator's office, 1901, written down by Francis."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:93
+msgctxt "story|02_notebook.story|26ee67f7d2352bdd"
+msgid "Read it. Then you'll understand why I talk about that half-year the way I do."
+msgstr ""
+
+#. francis (dialogue)
+#: 02_notebook.story:94
+msgctxt "story|02_notebook.story|c631592d3d2c4bdf"
+msgid "Then why did you stay? After everything in there?"
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:95
+msgctxt "story|02_notebook.story|bab2eef3befd3729"
+msgid "I grew attached. To my colleagues. To Gabriel."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:96
+msgctxt "story|02_notebook.story|9edba53497f4c3ec"
+msgid "Look after a child for seven years and then tell me you can pack your bags."
+msgstr ""
+
+#. francis (dialogue)
+#: 02_notebook.story:97
+msgctxt "story|02_notebook.story|eab9971a5f1d465f"
+msgid "The torn page. What was in the boy's cloths?"
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:98
+msgctxt "story|02_notebook.story|063fad58a85e18eb"
+msgid "Nothing. Cloths."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:99
+msgctxt "story|02_notebook.story|f49cdf51ed0578ad"
+msgid "The only quick answer of the night. It had been ready for years."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:100
+msgctxt "story|02_notebook.story|1a382669eaf5279a"
+msgid "And Francis. Whoever it is you write to at night, tell them this."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 02_notebook.story:101
+msgctxt "story|02_notebook.story|4c504de84e2da8e1"
+msgid "There's no family here. There's a boy."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:105
+msgctxt "story|02_notebook.story|d5694d77260e2e8c"
+msgid "In Francis's copy, somebody at the field post wrote in the margin: \"A diversion. Not to be treated as information.\""
+msgstr ""
+
+#. choice
+#: 02_notebook.story:107
+msgctxt "story|02_notebook.story|208f606cd69609d1"
+msgid "Let the margin note stand"
+msgstr ""
+
+#. choice
+#: 02_notebook.story:107
+msgctxt "story|02_notebook.story|f1d671b97a2984e6"
+msgid "Underline his last words"
+msgstr ""
+
+#. narration
+#: 02_notebook.story:110
+msgctxt "story|02_notebook.story|6ac32938343c63fb"
+msgid "You underline them twice, under the margin note, where the next reader will see both."
+msgstr ""
+
+#. narration
+#: 02_notebook.story:112
+msgctxt "story|02_notebook.story|6fb391b597528d40"
+msgid "The field post knew the man. You didn't. You let it stand."
+msgstr ""
+
+#. narration
+#: 03_reports.story:7
+msgctxt "story|03_reports.story|db7d6e77836ba963"
+msgid "Report No. 203. Santa Ilde has owed us servants since 1871. In 1898 the numbers fell by half. In 1899 they stopped."
+msgstr ""
+
+#. narration
+#: 03_reports.story:8
+msgctxt "story|03_reports.story|2eba7d7945d5c437"
+msgid "A house that breaks with one House is in trouble. A house that breaks with four is being carried."
+msgstr ""
+
+#. narration
+#: 03_reports.story:9
+msgctxt "story|03_reports.story|25d179eb6f6bc0dd"
+msgid "Report No. 206. A note from the House, for the younger men who still mix up the terms."
+msgstr ""
+
+#. house_envoy (dialogue)
+#: 03_reports.story:11
+msgctxt "story|03_reports.story|213b06dc620a9a3a"
+msgid "A signature is learned. A blessing is inherited."
+msgstr ""
+
+#. house_envoy (dialogue)
+#: 03_reports.story:12
+msgctxt "story|03_reports.story|b8b3f902703a4f38"
+msgid "If there is a hand at work in Santa Ilde, someone trained it. Find the master and you find the hand."
+msgstr ""
+
+#. narration
+#: 03_reports.story:14
+msgctxt "story|03_reports.story|242db7a1af71fee3"
+msgid "We are looking for the master."
+msgstr ""
+
+#. narration
+#: 03_reports.story:18
+msgctxt "story|03_reports.story|6ad43322a23ebcff"
+msgid "Report No. 217. The shadows arrived on the eleventh. There are three."
+msgstr ""
+
+#. shadow (dialogue)
+#: 03_reports.story:20
+msgctxt "story|03_reports.story|6e78861b7ea6df42"
+msgid "There is residue in Santa Ilde, and a great deal of it. In the young children's wing."
+msgstr ""
+
+#. shadow (dialogue)
+#: 03_reports.story:21
+msgctxt "story|03_reports.story|f37830d2484e0ee7"
+msgid "The residue has no master. It is as if someone were writing without ever having seen a letter."
+msgstr ""
+
+#. narration
+#: 03_reports.story:23
+msgctxt "story|03_reports.story|b97cc49ee7af3b2a"
+msgid "The third shadow sweeps the old wing, closed since '94. He comes back in the morning and asks why we are in Santa Ilde."
+msgstr ""
+
+#. shadow_third (dialogue)
+#: 03_reports.story:24
+msgctxt "story|03_reports.story|ff7c2f62cfe49a4d"
+msgid "Why are we in Santa Ilde?"
+msgstr ""
+
+#. narration
+#: 03_reports.story:25
+msgctxt "story|03_reports.story|a2a057cf14e21ef3"
+msgid "Half an hour later. The same question."
+msgstr ""
+
+#. narration
+#: 03_reports.story:27
+msgctxt "story|03_reports.story|e9f99ff5dac92b88"
+msgid "Neither of the other two remembers that there were three of them."
+msgstr ""
+
+#. narration
+#: 03_reports.story:33
+msgctxt "story|03_reports.story|9698d808d7c9f5b0"
+msgid "Report No. 219. We went to the Von Lucis residence. We are late. Someone methodical was here before us."
+msgstr ""
+
+#. narration
+#: 03_reports.story:34
+msgctxt "story|03_reports.story|7599db15f1c066a9"
+msgid "Folio 41 of the register has been torn out. The floorboard by the fireplace is loose, and the space beneath it is empty."
+msgstr ""
+
+#. narration
+#: 03_reports.story:36
+msgctxt "story|03_reports.story|b156a821567d1336"
+msgid "You stop reading. Folio 41. You have seen that number before, pressed into a page from 1894."
+msgstr ""
+
+#. narration
+#: 03_reports.story:37
+msgctxt "story|03_reports.story|ce8d6ec16dbd7ce6"
+msgid "Someone is putting together the same story we are, and is three steps ahead."
+msgstr ""
+
+#. narration
+#: 03_reports.story:43
+msgctxt "story|03_reports.story|5f247162ff2f97cd"
+msgid "Report No. 220. There is no use of signatures in Santa Ilde. No master. No rival House."
+msgstr ""
+
+#. narration
+#: 03_reports.story:44
+msgctxt "story|03_reports.story|b9de2cb6ed2f664c"
+msgid "Whoever does this has a blessing. A blessing is inherited, and inheritance has blood. The blood there is Von Lucis."
+msgstr ""
+
+#. narration
+#: 03_reports.story:45
+msgctxt "story|03_reports.story|14fc79d712c563cf"
+msgid "And whoever does it has no idea what he is doing."
+msgstr ""
+
+#. narration
+#: 03_reports.story:46
+msgctxt "story|03_reports.story|b46f194658181dd2"
+msgid "If the child does not know what he does, someone decided for him, and has been deciding since 1894."
+msgstr ""
+
+#. narration
+#: 03_reports.story:47
+msgctxt "story|03_reports.story|b6e68d63cc510292"
+msgid "And that person knows exactly what they hold."
+msgstr ""
+
+#. narration
+#: 03_reports.story:51
+msgctxt "story|03_reports.story|c0e64cf995884afc"
+msgid "Report No. 221."
+msgstr ""
+
+#. narration
+#: 03_reports.story:52
+msgctxt "story|03_reports.story|392c85079bfcc47b"
+msgid "(Hurried handwriting. The ink is smeared across two lines.)"
+msgstr ""
+
+#. narration
+#: 03_reports.story:54
+msgctxt "story|03_reports.story|ae96394a93cab95f"
+msgid "One of the shadows claims to have discov"
+msgstr ""
+
+#. narration
+#: 03_reports.story:55
+msgctxt "story|03_reports.story|347e919c2a519ff2"
+msgid "..."
+msgstr ""
+
+#. registrar (dialogue)
+#: 03_reports.story:59
+msgctxt "story|03_reports.story|da072fd3770b3d71"
+msgid "Well?"
+msgstr ""
+
+#. registrar (dialogue)
+#: 03_reports.story:61
+msgctxt "story|03_reports.story|ff8c3e0789c1ba97"
+msgid "You wanted to go and ask them. Go and ask them."
+msgstr ""
+
+#. registrar (dialogue)
+#: 03_reports.story:63
+msgctxt "story|03_reports.story|42f49de6f5c86d8b"
+msgid "You've read it all. Now go and look at it."
+msgstr ""
+
+#. registrar (dialogue)
+#: 03_reports.story:64
+msgctxt "story|03_reports.story|96b655ec79ab5b56"
+msgid "Santa Ilde. Ask for the administrator. Don't ask for the boy."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:7
+msgctxt "story|04_santa_ilde.story|cc2cb2305b6bd606"
+msgid "November, 1903. Santa Ilde is smaller than the reports made it sound. Twenty-one windows. Somebody is singing."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:10
+msgctxt "story|04_santa_ilde.story|9aae8779120a96a2"
+msgid "The administrator comes out to meet you before you knock. He has worn the same coat for nine years."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:11
+msgctxt "story|04_santa_ilde.story|74bc015943f8cdc0"
+msgid "You're not the bishopric. The bishopric sends letters."
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 04_santa_ilde.story:12
+msgctxt "story|04_santa_ilde.story|8b89b5f2f840ee16"
+msgid "My name is {player_name}."
+msgstr ""
+
+#. choice
+#: 04_santa_ilde.story:14
+msgctxt "story|04_santa_ilde.story|8a12650ebebd2a6b"
+msgid "Say the House sent you"
+msgstr ""
+
+#. choice
+#: 04_santa_ilde.story:14
+msgctxt "story|04_santa_ilde.story|8bb8dc54a26d8e44"
+msgid "Say you're from the bishopric"
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 04_santa_ilde.story:17
+msgctxt "story|04_santa_ilde.story|dd024c24e361a827"
+msgid "I'm from the House. The Archive."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:18
+msgctxt "story|04_santa_ilde.story|a5deffd63685f330"
+msgid "Honest. That's rarer than you'd think. Come in."
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 04_santa_ilde.story:21
+msgctxt "story|04_santa_ilde.story|67c93821f6b6f22d"
+msgid "The bishopric sent me, after all."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:22
+msgctxt "story|04_santa_ilde.story|96a7797c47ed4cb7"
+msgid "The bishopric doesn't know how many children live here. Come in anyway."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:29
+msgctxt "story|04_santa_ilde.story|360cea12221e0873"
+msgid "Ask your questions. I'll tell you which ones I've forgotten the answers to."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:31
+msgctxt "story|04_santa_ilde.story|f455a84b09b9d344"
+msgid "The folio number is on the tip of your tongue."
+msgstr ""
+
+#. choice
+#: 04_santa_ilde.story:32
+msgctxt "story|04_santa_ilde.story|44b20d5d2d833b06"
+msgid "Ask about folio 41"
+msgstr ""
+
+#. choice
+#: 04_santa_ilde.story:32
+msgctxt "story|04_santa_ilde.story|457afafd063ec7e2"
+msgid "Keep it to yourself"
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 04_santa_ilde.story:35
+msgctxt "story|04_santa_ilde.story|02e4a78d078e1d84"
+msgid "What was in the boy's cloths, Mr. Moriarty? Folio 41?"
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:36
+msgctxt "story|04_santa_ilde.story|7194cd32a7fd9bb6"
+msgid "Who else has read that page?"
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 04_santa_ilde.story:39
+msgctxt "story|04_santa_ilde.story|dfc37254234f720d"
+msgid "Only me. And I underlined what you said to Francis."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:40
+msgctxt "story|04_santa_ilde.story|b852662157413411"
+msgid "Then you already know what I'd say. A boy. Not a family."
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 04_santa_ilde.story:43
+msgctxt "story|04_santa_ilde.story|ebfd1a28a0f363e5"
+msgid "The field post."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:44
+msgctxt "story|04_santa_ilde.story|78b998ffe35cfbcb"
+msgid "Then you have your answer, and so do they."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:46
+msgctxt "story|04_santa_ilde.story|c9b0623407d25f67"
+msgid "You keep the number to yourself. He watches you do it."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:48
+msgctxt "story|04_santa_ilde.story|58c122f1b1523987"
+msgid "No questions? The last ones had a list."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:54
+msgctxt "story|04_santa_ilde.story|92768a53f0ccd59b"
+msgid "The nursery is empty except for one boy, nine years old, sitting on the floor by the window."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:55
+msgctxt "story|04_santa_ilde.story|ad5b2af65d3926cc"
+msgid "Beside him there is a painted wooden horse. It was not there when you came in."
+msgstr ""
+
+#. gabriel (dialogue)
+#: 04_santa_ilde.story:57
+msgctxt "story|04_santa_ilde.story|a371c06d60976872"
+msgid "Are you going to forget me too? The last man forgot me."
+msgstr ""
+
+#. choice
+#: 04_santa_ilde.story:59
+msgctxt "story|04_santa_ilde.story|4e6f4f073ff0c41a"
+msgid "Ask him where the horse came from"
+msgstr ""
+
+#. choice
+#: 04_santa_ilde.story:59
+msgctxt "story|04_santa_ilde.story|c87cb4fae9b91936"
+msgid "Write it down"
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 04_santa_ilde.story:62
+msgctxt "story|04_santa_ilde.story|ff1f882acc7f21bb"
+msgid "Where did the horse come from?"
+msgstr ""
+
+#. gabriel (dialogue)
+#: 04_santa_ilde.story:63
+msgctxt "story|04_santa_ilde.story|1be5618133bca24d"
+msgid "I wanted it."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:64
+msgctxt "story|04_santa_ilde.story|7b8c95e9945ba813"
+msgid "He holds it out to you. Moriarty, in the doorway, lets out a breath."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:68
+msgctxt "story|04_santa_ilde.story|f49e8908663380ca"
+msgid "You note the time, the toy, the window. The House will want to know. The boy watches the pencil."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:76
+msgctxt "story|04_santa_ilde.story|5167550849292bb5"
+msgid "The sister who brings you tea keeps her eyes down. She has been at Santa Ilde longer than anyone but the administrator."
+msgstr ""
+
+#. clara (dialogue)
+#: 04_santa_ilde.story:77
+msgctxt "story|04_santa_ilde.story|e50d16ce00125d71"
+msgid "Your hot water, miss."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:79
+msgctxt "story|04_santa_ilde.story|c865224f8159b2fc"
+msgid "Four words. You have read them before, in a testimony taken in August 1894."
+msgstr ""
+
+#. choice
+#: 04_santa_ilde.story:80
+msgctxt "story|04_santa_ilde.story|a08c2c5c7a484fae"
+msgid "Call her Adelaide"
+msgstr ""
+
+#. choice
+#: 04_santa_ilde.story:80
+msgctxt "story|04_santa_ilde.story|628f5ac1ffa58542"
+msgid "Thank her, and let it go"
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 04_santa_ilde.story:85
+msgctxt "story|04_santa_ilde.story|0cbf116745df171e"
+msgid "Thank you, Adelaide."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:86
+msgctxt "story|04_santa_ilde.story|1fc48b59f9dad64e"
+msgid "The cup does not shake. She has been waiting nine years for somebody to say it."
+msgstr ""
+
+#. clara (dialogue)
+#: 04_santa_ilde.story:87
+msgctxt "story|04_santa_ilde.story|b851d403341262ff"
+msgid "I told her father. I went straight to him, like a good servant."
+msgstr ""
+
+#. clara (dialogue)
+#: 04_santa_ilde.story:88
+msgctxt "story|04_santa_ilde.story|25c751cadeb081c0"
+msgid "I've spent every day since deciding things for her son instead."
+msgstr ""
+
+#. clara (dialogue)
+#: 04_santa_ilde.story:89
+msgctxt "story|04_santa_ilde.story|ca448315d8f94c22"
+msgid "The floorboard was mine, too. Your people were three steps behind. I made sure of it."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:91
+msgctxt "story|04_santa_ilde.story|6773751dbbc296c2"
+msgid "You thank her. She leaves. Some names are safer where they are."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:93
+msgctxt "story|04_santa_ilde.story|6f4a09f0346c9ca8"
+msgid "You thank her. She leaves without a sound."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:102
+msgctxt "story|04_santa_ilde.story|bc9cb298188dcfe9"
+msgid "You'll write something about us. Everyone who comes here does."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:104
+msgctxt "story|04_santa_ilde.story|e968c34acad95b28"
+msgid "Write it carefully. He's the only reason this house still has children in it."
+msgstr ""
+
+#. moriarty (dialogue)
+#: 04_santa_ilde.story:106
+msgctxt "story|04_santa_ilde.story|1ef48b51cb054588"
+msgid "Write what you like. We've been written about before."
+msgstr ""
+
+#. narration
+#: 04_santa_ilde.story:108
+msgctxt "story|04_santa_ilde.story|e3077d45061cb6e5"
+msgid "You sign the visitors' book on your way out. Whatever you do next, you have been to Santa Ilde."
+msgstr ""
+
+#. narration
+#: 05_report.story:7
+msgctxt "story|05_report.story|48df88db2183dfda"
+msgid "Before you answer there is the box, and the question of what goes in with the report."
+msgstr ""
+
+#. registrar (dialogue)
+#: 05_report.story:10
+msgctxt "story|05_report.story|89707f71ce1f19c7"
+msgid "Report two hundred and twenty-two. Yours. What is in Santa Ilde?"
+msgstr ""
+
+#. narration
+#: 05_report.story:15
+msgctxt "story|05_report.story|5567640ec515b385"
+msgid "You think of a wooden horse, a woman who waited nine years, and a man who kept a promise he couldn't remember making."
+msgstr ""
+
+#. choice
+#: 05_report.story:16
+msgctxt "story|05_report.story|93acb24b572aeb7a"
+msgid "\"Nothing.\" Then go back"
+msgstr ""
+
+#. choice
+#: 05_report.story:24
+msgctxt "story|05_report.story|88890eab46c1f3aa"
+msgid "\"A boy with a blessing. The Von Lucis blood.\""
+msgstr ""
+
+#. choice
+#: 05_report.story:24
+msgctxt "story|05_report.story|1190fdfd2df880de"
+msgid "\"Nothing the House needs.\""
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 05_report.story:34
+msgctxt "story|05_report.story|330b65e09b6d9a22"
+msgid "A boy with a blessing. The blood is Von Lucis. He doesn't know what he does."
+msgstr ""
+
+#. registrar (dialogue)
+#: 05_report.story:35
+msgctxt "story|05_report.story|7717ddc126942bf4"
+msgid "Thank you, {player_name}. That is what an archive is for."
+msgstr ""
+
+#. narration
+#: 05_report.story:38
+msgctxt "story|05_report.story|99679ec02eb07808"
+msgid "In December, three men in black knock at the door of Santa Ilde. Polite, in a way that makes you cold."
+msgstr ""
+
+#. narration
+#: 05_report.story:39
+msgctxt "story|05_report.story|86c2037d26810f7d"
+msgid "The administrator tells them there is no one new. It is true. The boy has been there for nine years."
+msgstr ""
+
+#. narration
+#: 05_report.story:41
+msgctxt "story|05_report.story|9e1477230732aae0"
+msgid "Report 222 is filed under Von Lucis. Nobody asks you where he was for those nine months."
+msgstr ""
+
+#. narration
+#: 05_report.story:42
+msgctxt "story|05_report.story|c7d77737cf34c1fc"
+msgid "You never write another report that anyone reads twice."
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 05_report.story:48
+msgctxt "story|05_report.story|f51d5cb0ac6b0412"
+msgid "Nothing the House needs. An old man, twenty-one children and a very quiet wing."
+msgstr ""
+
+#. registrar (dialogue)
+#: 05_report.story:50
+msgctxt "story|05_report.story|779899bb7f1ec078"
+msgid "You initialled a blank in the Von Lucis register. You wanted to go there before you'd read a page."
+msgstr ""
+
+#. registrar (dialogue)
+#: 05_report.story:51
+msgctxt "story|05_report.story|24ba5b6bebfd33bd"
+msgid "Then we'll send someone who'll find something."
+msgstr ""
+
+#. registrar (dialogue)
+#: 05_report.story:53
+msgctxt "story|05_report.story|7acaef10ddeadcc4"
+msgid "Then Santa Ilde is closed. We have spent enough shadows on it."
+msgstr ""
+
+#. narration
+#: 05_report.story:57
+msgctxt "story|05_report.story|f4deaa5d3db71b2b"
+msgid "Box fourteen goes back on its shelf. You put the reports in after it, in order, and you don't write the last word of 221."
+msgstr ""
+
+#. registrar (dialogue)
+#: 05_report.story:64
+msgctxt "story|05_report.story|0847052410243b0e"
+msgid "Nothing."
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 05_report.story:65
+msgctxt "story|05_report.story|a575a3a5efa45bd9"
+msgid "An old man, twenty-one children and a very quiet wing. I'd like to be the one who keeps watching it."
+msgstr ""
+
+#. registrar (dialogue)
+#: 05_report.story:66
+msgctxt "story|05_report.story|3b7abc9422df837f"
+msgid "..."
+msgstr ""
+
+#. registrar (dialogue)
+#: 05_report.story:67
+msgctxt "story|05_report.story|1d5bf4052547abfa"
+msgid "Report two hundred and twenty-two. Filed. Go."
+msgstr ""
+
+#. narration
+#: 05_report.story:72
+msgctxt "story|05_report.story|aa391ecb8cbcba0d"
+msgid "In the spring you take a room in the town below Santa Ilde. Every week you write the House a report."
+msgstr ""
+
+#. narration
+#: 05_report.story:73
+msgctxt "story|05_report.story|007d4075f63b3997"
+msgid "Every week it says the same thing, and every week it is true: there's no family here. There's a boy."
+msgstr ""
+
+#. gabriel (dialogue)
+#: 05_report.story:74
+msgctxt "story|05_report.story|ef56830041a8845b"
+msgid "Are you going to forget me?"
+msgstr ""
+
+#. {player_name} (dialogue)
+#: 05_report.story:75
+msgctxt "story|05_report.story|9c3f3d31f202f495"
+msgid "No. That's my whole job now."
+msgstr ""
+
+#. name
+msgctxt "name|adelaide"
+msgid "Adelaide"
+msgstr ""
+
+#. name
+msgctxt "name|clara"
+msgid "Sister Clara"
+msgstr ""
+
+#. name
+msgctxt "name|francis"
+msgid "Francis"
+msgstr ""
+
+#. name
+msgctxt "name|gabriel"
+msgid "Gabriel"
+msgstr ""
+
+#. name
+msgctxt "name|guest"
+msgid "The Guest"
+msgstr ""
+
+#. name
+msgctxt "name|house_envoy"
+msgid "Envoy of the House"
+msgstr ""
+
+#. name
+msgctxt "name|hugo"
+msgid "Hugo Von Lucis"
+msgstr ""
+
+#. name
+msgctxt "name|man_in_black"
+msgid "The Man in Black"
+msgstr ""
+
+#. name
+msgctxt "name|mary"
+msgid "Mary"
+msgstr ""
+
+#. name
+msgctxt "name|moriarty"
+msgid "Moriarty"
+msgstr ""
+
+#. name
+msgctxt "name|registrar"
+msgid "The Registrar"
+msgstr ""
+
+#. name
+msgctxt "name|shadow"
+msgid "Shadow"
+msgstr ""
+
+#. name
+msgctxt "name|shadow_third"
+msgid "The Third Shadow"
+msgstr ""
+
+#. ui
+msgctxt "ui|591bf2c6ccc5e3d9"
+msgid "\"Your hot water, miss. Miss? Are you unwell?\""
+msgstr ""
+
+#. ui
+msgctxt "ui|3a7250589527abe0"
+msgid "1 day ago"
+msgstr ""
+
+#. ui
+msgctxt "ui|a3bcdb18fb5b4772"
+msgid "1 hour ago"
+msgstr ""
+
+#. ui
+msgctxt "ui|040e8442afb4e6bc"
+msgid "1 minute ago"
+msgstr ""
+
+#. ui
+msgctxt "ui|70dd0a3f2e548518"
+msgid "1 month ago"
+msgstr ""
+
+#. ui
+msgctxt "ui|e1f2567d3380ce45"
+msgid "AN ACCOUNT FROM THE ARCHIVE OF THE HOUSE  ·  1903"
+msgstr ""
+
+#. ui
+msgctxt "ui|b6795ad3b51f20ae"
+msgid "All text"
+msgstr "Todo o texto"
+
+#. ui
+msgctxt "ui|2c50c220df9c3c1b"
+msgid "Auto"
+msgstr ""
+
+#. ui
+msgctxt "ui|80c67a7b9ce6bb3f"
+msgid "Auto-forward"
+msgstr "Avanço automático"
+
+#. ui
+msgctxt "ui|4d5885b9777e24f6"
+msgid "Autosave"
+msgstr "Gravação automática"
+
+#. ui
+msgctxt "ui|df74222c15a174e7"
+msgid "Back"
+msgstr "Voltar"
+
+#. ui
+msgctxt "ui|76ff67b9000cd513"
+msgid "Back to where you left off, or your most recent save"
+msgstr ""
+
+#. ui
+msgctxt "ui|82ae264e677e419a"
+msgid "Background music. Drag, or hover and press Left/Right"
+msgstr ""
+
+#. ui
+msgctxt "ui|b7ba3588c79d720d"
+msgid "CONTINUE"
+msgstr ""
+
+#. ui
+msgctxt "ui|fc13fb103933973e"
+msgid "CREDITS"
+msgstr ""
+
+#. ui
+msgctxt "ui|02c442e7782c842e"
+msgid "Cancel"
+msgstr ""
+
+#. ui
+msgctxt "ui|52406913e77ace76"
+msgid "Case file"
+msgstr ""
+
+#. ui
+msgctxt "ui|847a9a36ceb98a6f"
+msgid "Click to see the credits"
+msgstr ""
+
+#. ui
+msgctxt "ui|dc064933da27dac1"
+msgid "Close the case file"
+msgstr ""
+
+#. ui
+msgctxt "ui|e66d19bb92e24f30"
+msgid "Close the evidence"
+msgstr ""
+
+#. ui
+msgctxt "ui|f30b2646cc72b446"
+msgid "Controls"
+msgstr ""
+
+#. ui
+msgctxt "ui|4212d7c714517b07"
+msgid "Could not continue: {reason}"
+msgstr ""
+
+#. ui
+msgctxt "ui|0772d058fe9b16de"
+msgid "Could not save the screenshot"
+msgstr ""
+
+#. ui
+msgctxt "ui|2842eae8c27c6f07"
+msgid "Delete"
+msgstr ""
+
+#. ui
+msgctxt "ui|e0c743fc8837d0c2"
+msgid "Delete failed: {reason}"
+msgstr ""
+
+#. ui
+msgctxt "ui|02a5e8e290104137"
+msgid "Delete {slot}? This can't be undone."
+msgstr ""
+
+#. ui
+msgctxt "ui|aded2949d5578183"
+msgid "Deleted {slot}"
+msgstr ""
+
+#. ui
+msgctxt "ui|b6c978489adb2812"
+msgid "Display"
+msgstr "Ecrã"
+
+#. ui
+msgctxt "ui|11aab403262b1ddc"
+msgid "EXIT"
+msgstr ""
+
+#. ui
+msgctxt "ui|bec42be1f406e41d"
+msgid "Empty"
+msgstr ""
+
+#. ui
+msgctxt "ui|ac06e1e1b0ce6ae4"
+msgid "English"
+msgstr ""
+
+#. ui
+msgctxt "ui|6519876cdc906a22"
+msgid "Everything read and decided so far (L)"
+msgstr ""
+
+#. ui
+msgctxt "ui|ae5204ec88aa7da1"
+msgid "Evidence"
+msgstr ""
+
+#. ui
+msgctxt "ui|37ed7f09852348ea"
+msgid "Fast"
+msgstr "Rápido"
+
+#. ui
+msgctxt "ui|0bfd05ea1b180fc5"
+msgid "Fullscreen"
+msgstr "Ecrã inteiro"
+
+#. ui
+msgctxt "ui|e8b7f7a5ebc6a0e7"
+msgid "GAMEPAD"
+msgstr ""
+
+#. ui
+msgctxt "ui|2eab4a3a4c13507b"
+msgid "GOD IS WATCHING"
+msgstr ""
+
+#. ui
+msgctxt "ui|f9d2b7525abe6234"
+msgid "How fast lines appear. Clicking while a line types shows all of it"
+msgstr ""
+
+#. ui
+msgctxt "ui|9ed1f5b547fe59c6"
+msgid "How long Auto waits after a line (longer lines wait a little more)"
+msgstr ""
+
+#. ui
+msgctxt "ui|7e646ea33cdcb306"
+msgid "In the Archive"
+msgstr ""
+
+#. ui
+msgctxt "ui|a6acbbd56bd34c9d"
+msgid "Instant"
+msgstr "Instantâneo"
+
+#. ui
+msgctxt "ui|04e627f6b730c47f"
+msgid "KEYBOARD / MOUSE"
+msgstr ""
+
+#. ui
+msgctxt "ui|59db1cb5ccb7e7f0"
+msgid "LOAD"
+msgstr ""
+
+#. ui
+msgctxt "ui|5cb2e8c4960fc696"
+msgid "Language"
+msgstr "Idioma"
+
+#. ui
+msgctxt "ui|ff6407ebe226bbfa"
+msgid "Leave a room you are searching"
+msgstr ""
+
+#. ui
+msgctxt "ui|a2eedcf41d37dd8f"
+msgid "Leave the report desk"
+msgstr ""
+
+#. ui
+msgctxt "ui|443f1cb52f5be3d0"
+msgid "Load"
+msgstr ""
+
+#. ui
+msgctxt "ui|e0db68db85111fd2"
+msgid "Load Game"
+msgstr ""
+
+#. ui
+msgctxt "ui|316507fd679df67f"
+msgid "Load failed: {reason}"
+msgstr ""
+
+#. ui
+msgctxt "ui|3f1950f038042b6b"
+msgid "Loaded {slot}"
+msgstr ""
+
+#. ui
+msgctxt "ui|a2cefc56569e812e"
+msgid "Log"
+msgstr ""
+
+#. ui
+msgctxt "ui|b59d35351451b68c"
+msgid "Main Menu"
+msgstr ""
+
+#. ui
+msgctxt "ui|bc604c61ce329661"
+msgid "Making a choice"
+msgstr ""
+
+#. ui
+msgctxt "ui|fe1637c0fafaef03"
+msgid "Menu"
+msgstr ""
+
+#. ui
+msgctxt "ui|7b5cabbd0486553f"
+msgid "Music volume"
+msgstr "Volume da música"
+
+#. ui
+msgctxt "ui|b003ebb97a1f3e94"
+msgid "NEW GAME"
+msgstr ""
+
+#. ui
+msgctxt "ui|77135b0f94a7f7c4"
+msgid "No saved game yet"
+msgstr ""
+
+#. ui
+msgctxt "ui|dd504d6911d9cb8f"
+msgid "Normal"
+msgstr "Normal"
+
+#. ui
+msgctxt "ui|d09f0073c98bbdc4"
+msgid "Overwrite {slot}?"
+msgstr ""
+
+#. ui
+msgctxt "ui|00ec2fd8db85906a"
+msgid "PRESS ANY KEY"
+msgstr ""
+
+#. ui
+msgctxt "ui|43aaa0a30ee80ee2"
+msgid "Pause (Esc)"
+msgstr ""
+
+#. ui
+msgctxt "ui|77221d85d8a3bcc6"
+msgid "Paused"
+msgstr ""
+
+#. ui
+msgctxt "ui|0cf5af89fd0fefd8"
+msgid "Play in a window, or fill the whole screen"
+msgstr ""
+
+#. ui
+msgctxt "ui|6aeb97350dfcc10f"
+msgid "Português (BR)"
+msgstr ""
+
+#. ui
+msgctxt "ui|d89dba9ff954a1a5"
+msgid "Quick Load"
+msgstr ""
+
+#. ui
+msgctxt "ui|d741f451ce04a27c"
+msgid "Quick Save"
+msgstr ""
+
+#. ui
+msgctxt "ui|d5ff0b79f4c57c20"
+msgid "Quick load failed: {reason}"
+msgstr ""
+
+#. ui
+msgctxt "ui|8919e77217b65e0c"
+msgid "Quick loaded"
+msgstr ""
+
+#. ui
+msgctxt "ui|01cff55dcf75165c"
+msgid "Quick save"
+msgstr "Gravação rápida"
+
+#. ui
+msgctxt "ui|3e8e9eca77782ea3"
+msgid "Quick save failed: {reason}"
+msgstr ""
+
+#. ui
+msgctxt "ui|8974266783f4c128"
+msgid "Quick saved"
+msgstr "Gravação rápida feita"
+
+#. ui
+msgctxt "ui|96b7b9a954a7601b"
+msgid "Quit"
+msgstr ""
+
+#. ui
+msgctxt "ui|63488426b1510195"
+msgid "Quit the game? Unsaved progress will be lost."
+msgstr ""
+
+#. ui
+msgctxt "ui|eccbe27fc01ac88f"
+msgid "Resume"
+msgstr ""
+
+#. ui
+msgctxt "ui|e4aecbdb24794bf1"
+msgid "SETTINGS"
+msgstr ""
+
+#. ui
+msgctxt "ui|9addbcbb01b21209"
+msgid "Save"
+msgstr ""
+
+#. ui
+msgctxt "ui|9a95b1b0c3853709"
+msgid "Save Game"
+msgstr ""
+
+#. ui
+msgctxt "ui|12d2bc2df1ba776c"
+msgid "Save failed: {reason}"
+msgstr ""
+
+#. ui
+msgctxt "ui|7ab3cfa85271a744"
+msgid "Saved to {slot}"
+msgstr "Gravado em {slot}"
+
+#. ui
+msgctxt "ui|5c81cfcf6f9ec743"
+msgid "Screenshot saved"
+msgstr ""
+
+#. ui
+msgctxt "ui|52e8239002755ba2"
+msgid "Seen text"
+msgstr "Texto já lido"
+
+#. ui
+msgctxt "ui|a3a67af4a5e56891"
+msgid "Settings"
+msgstr "Definições"
+
+#. ui
+msgctxt "ui|6520afbae2c1c943"
+msgid "Skip"
+msgstr "Saltar"
+
+#. ui
+msgctxt "ui|a10f08d403c66b8e"
+msgid "Skip »"
+msgstr ""
+
+#. ui
+msgctxt "ui|c8e87e8898583463"
+msgid "Slot {number}"
+msgstr "Espaço {number}"
+
+#. ui
+msgctxt "ui|39d0e7baca392b19"
+msgid "Slow"
+msgstr "Lento"
+
+#. ui
+msgctxt "ui|54c58ef7efa6bb54"
+msgid "Sound effects. Drag, or hover and press Left/Right"
+msgstr ""
+
+#. ui
+msgctxt "ui|80c3034a503c5ee3"
+msgid "Sound volume"
+msgstr "Volume dos sons"
+
+#. ui
+msgctxt "ui|2f1f549178ef538e"
+msgid "Story not reloaded: {reason}"
+msgstr ""
+
+#. ui
+msgctxt "ui|d1d8bf6abf3381e3"
+msgid "Story reloaded"
+msgstr ""
+
+#. ui
+msgctxt "ui|0513524c9bcb098c"
+msgid "Story reloaded; scene '{scene}' restarted"
+msgstr ""
+
+#. ui
+msgctxt "ui|d5156fb34f805c2c"
+msgid "Text speed"
+msgstr "Velocidade do texto"
+
+#. ui
+msgctxt "ui|1552c836bc381f1f"
+msgid "That language could not be loaded"
+msgstr ""
+
+#. ui
+msgctxt "ui|99b23801a0c6f1d2"
+msgid "The End"
+msgstr ""
+
+#. ui
+msgctxt "ui|ac5458023b9b2232"
+msgid "The end"
+msgstr ""
+
+#. ui
+msgctxt "ui|f2017dacf5a4cb15"
+msgid "The language the story is read in. Lines with no translation stay as written"
+msgstr ""
+
+#. ui
+msgctxt "ui|a07696a2e5b6b3ca"
+msgid "The page is blank."
+msgstr ""
+
+#. ui
+msgctxt "ui|e5402049167e836e"
+msgid "Turn the pages on their own (A). Tab or Ctrl skips read pages"
+msgstr ""
+
+#. ui
+msgctxt "ui|3471d760435d5dfa"
+msgid "Type your name, then press Enter to sign"
+msgstr ""
+
+#. ui
+msgctxt "ui|a98e15789f657f44"
+msgid "Voice volume"
+msgstr ""
+
+#. ui
+msgctxt "ui|dc29460106f2c9c4"
+msgid "Voiced lines. Drag, or hover and press Left/Right"
+msgstr ""
+
+#. ui
+msgctxt "ui|7031bd6aa046d492"
+msgid "What Skip passes over: only lines you've read, or everything"
+msgstr ""
+
+#. ui
+msgctxt "ui|9d265b87439bc93a"
+msgid "What you have filed so far"
+msgstr ""
+
+#. ui
+msgctxt "ui|91c62856e4d64451"
+msgid "Windowed"
+msgstr "Em janela"
+
+#. ui
+msgctxt "ui|5aff4d56bf983337"
+msgid "Yes"
+msgstr ""
+
+#. ui
+msgctxt "ui|37a00b2b5439406a"
+msgid "Your notes, your decisions and what the Archive knows"
+msgstr ""
+
+#. ui
+msgctxt "ui|d0d7c1026326ff26"
+msgid "just now"
+msgstr ""
+
+#. ui
+msgctxt "ui|4053a44f2dadeaf4"
+msgid "v0.3 · made with novn"
+msgstr ""
+
+#. ui
+msgctxt "ui|e7f730db159820e2"
+msgid "{n} days ago"
+msgstr ""
+
+#. ui
+msgctxt "ui|f95ab72f5dc249e6"
+msgid "{n} hours ago"
+msgstr ""
+
+#. ui
+msgctxt "ui|8850e3cf6d23d1a0"
+msgid "{n} minutes ago"
+msgstr ""
+
+#. ui
+msgctxt "ui|d725481d494f3ed6"
+msgid "{n} months ago"
+msgstr ""
+

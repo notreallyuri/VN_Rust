@@ -1,7 +1,7 @@
-use vn_engine::prelude::*;
-use vn_engine::raylib::prelude::*;
-use vn_engine::ui;
-use vn_engine::ui::button::ButtonStyle;
+use novn::prelude::*;
+use novn::raylib::prelude::*;
+use novn::ui;
+use novn::ui::button::ButtonStyle;
 
 use crate::gallery::{TABS, Tab, found};
 use crate::style;

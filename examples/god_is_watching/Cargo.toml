@@ -5,8 +5,8 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-vn_engine.workspace = true
+novn.workspace = true
 serde.workspace = true
 
 [build-dependencies]
-vn_build.workspace = true
+novn-build.workspace = true

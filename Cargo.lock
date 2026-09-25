@@ -152,10 +152,10 @@ dependencies = [
 name = "example_vn"
 version = "0.1.0"
 dependencies = [
+ "novn",
+ "novn-build",
+ "novn-live2d",
  "serde",
- "vn_build",
- "vn_engine",
- "vn_live2d",
 ]
 
 [[package]]
@@ -216,9 +216,9 @@ checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
 name = "god_is_watching"
 version = "0.1.0"
 dependencies = [
+ "novn",
+ "novn-build",
  "serde",
- "vn_build",
- "vn_engine",
 ]
 
 [[package]]
@@ -341,6 +341,61 @@ checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
 dependencies = [
  "memchr",
  "minimal-lexical",
+]
+
+[[package]]
+name = "novn"
+version = "0.1.0"
+dependencies = [
+ "ffmpeg-next",
+ "lewton",
+ "libc",
+ "matroska-demuxer",
+ "novn-macros",
+ "novn-script",
+ "rav1d",
+ "raylib",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "novn-build"
+version = "0.1.0"
+
+[[package]]
+name = "novn-cli"
+version = "0.1.0"
+dependencies = [
+ "novn-script",
+ "serde_json",
+]
+
+[[package]]
+name = "novn-live2d"
+version = "0.1.0"
+dependencies = [
+ "novn",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "novn-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "novn-script"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -713,61 +768,6 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
-
-[[package]]
-name = "vn_build"
-version = "0.1.0"
-
-[[package]]
-name = "vn_cli"
-version = "0.1.0"
-dependencies = [
- "serde_json",
- "vn_script",
-]
-
-[[package]]
-name = "vn_engine"
-version = "0.1.0"
-dependencies = [
- "ffmpeg-next",
- "lewton",
- "libc",
- "matroska-demuxer",
- "rav1d",
- "raylib",
- "serde",
- "serde_json",
- "tempfile",
- "vn_macros",
- "vn_script",
-]
-
-[[package]]
-name = "vn_live2d"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "vn_engine",
-]
-
-[[package]]
-name = "vn_macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "vn_script"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
 
 [[package]]
 name = "windows-link"

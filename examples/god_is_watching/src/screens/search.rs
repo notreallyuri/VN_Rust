@@ -1,8 +1,8 @@
-use vn_engine::input::prelude::*;
-use vn_engine::prelude::*;
-use vn_engine::raylib::prelude::*;
-use vn_engine::ui;
-use vn_engine::ui::button::ButtonStyle;
+use novn::input::prelude::*;
+use novn::prelude::*;
+use novn::raylib::prelude::*;
+use novn::ui;
+use novn::ui::button::ButtonStyle;
 
 use crate::desk::{Desk, Room};
 use crate::style;
@@ -151,7 +151,7 @@ fn study() -> ImageMap {
                 LabelStyle::default()
                     .at(LabelAt::Pointer)
                     .text(TextStyle::new(
-                        vn_engine::ui::fonts::FontRole::Menu,
+                        novn::ui::fonts::FontRole::Menu,
                         17.0,
                         style::PARCHMENT,
                     ))

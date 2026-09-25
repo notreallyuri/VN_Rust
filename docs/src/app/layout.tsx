@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VN_Rust",
+  title: "novn",
   description: "A visual novel engine in Rust, and the language it plays.",
 };
 

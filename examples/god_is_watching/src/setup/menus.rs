@@ -1,6 +1,6 @@
-use vn_engine::prelude::*;
-use vn_engine::screens::prelude::*;
-use vn_engine::ui::layout::Anchor;
+use novn::prelude::*;
+use novn::screens::prelude::*;
+use novn::ui::layout::Anchor;
 
 use super::{CREDITS, GALLERY, SUBTITLE, screen};
 use crate::journal::CaseLedger;
@@ -23,7 +23,7 @@ pub fn menus(app: VnApp) -> VnApp {
             .prompt_text(style::section(14.0).spacing(6.0))
             .prompt_in_bar(true)
             .prompt_pulse(2.6)
-            .footer("v0.3 · made with VN_Rust")
+            .footer("v0.3 · made with novn")
             .footer_text(style::label(12.0))
     })
     .main_menu(|m| {

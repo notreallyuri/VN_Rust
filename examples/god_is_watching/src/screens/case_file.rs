@@ -1,6 +1,6 @@
-use vn_engine::prelude::*;
-use vn_engine::raylib::prelude::*;
-use vn_engine::ui;
+use novn::prelude::*;
+use novn::raylib::prelude::*;
+use novn::ui;
 
 use crate::desk::Desk;
 use crate::journal::Journal;

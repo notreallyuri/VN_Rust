@@ -1,14 +1,14 @@
-use vn_engine::prelude::*;
-use vn_engine::raylib::prelude::*;
-use vn_engine::ui;
-use vn_engine::ui::button::ButtonStyle;
+use novn::prelude::*;
+use novn::raylib::prelude::*;
+use novn::ui;
+use novn::ui::button::ButtonStyle;
 
 use crate::journal::{Achievements, CaseLedger, Ending};
 use crate::style;
 
 const LINES: [&str; 5] = [
     "A story built on \"Box 14\" and the Santa Ilde reports",
-    "Made with VN_Rust",
+    "Made with novn",
     "Fonts: Noto Sans, Noto Serif (SIL OFL). Art generated with ChatGPT",
     "Music: Emma_MA, Tozan, Centurion_of_war, Independent.nu, Bobjt (CC0)",
     "Sounds: Kenney, RPG Audio (CC0). See assets/AUDIO_CREDITS.md",

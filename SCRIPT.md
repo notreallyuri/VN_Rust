@@ -324,7 +324,7 @@ choice:
 - With a reason, it is shown but cannot be taken, and the reason is what the player reads
   when they point at it. Reasons are translated like any other line
 - The conditions are the ones `if` takes (8.4), variables included
-- `vn check` warns when every option of a choice can be hidden: a choice with nothing
+- `novn check` warns when every option of a choice can be hidden: a choice with nothing
   left to offer is skipped at runtime
 
 ```story

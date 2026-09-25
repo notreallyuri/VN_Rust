@@ -1,8 +1,8 @@
 use std::process::ExitCode;
 
-use vn_engine::prelude::*;
-use vn_engine::raylib::prelude::Color;
-use vn_engine::screens::text_input::TextRequest;
+use novn::prelude::*;
+use novn::raylib::prelude::Color;
+use novn::screens::text_input::TextRequest;
 
 const ASSETS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 
@@ -23,7 +23,7 @@ fn remember_name(ctx: &mut GameContext, variable: String) -> Option<ScreenState>
 
 #[cfg(feature = "live2d")]
 fn kaede_model(app: VnApp) -> VnApp {
-    use vn_live2d::{Appearance, Live2dCharacter};
+    use novn_live2d::{Appearance, Live2dCharacter};
 
     app.character_visual(
         "kaede",

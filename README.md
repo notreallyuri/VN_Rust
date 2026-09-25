@@ -1,6 +1,6 @@
-# VN_Rust
+# novn
 
-**VN_Rust** is a **full visual novel engine written in Rust**, designed around a
+**novn** is a **full visual novel engine written in Rust**, designed around a
 clear separation between **story definition** and **engine logic**
 
 It provides:
@@ -25,7 +25,7 @@ The scripting language is intentionally limited — all game logic lives in Rust
 
 ## Engine Overview
 
-VN_Rust is composed of **three clearly separated layers**, each with a distinct
+novn is composed of **three clearly separated layers**, each with a distinct
 role.
 
 ### Runtime Layer
@@ -84,7 +84,7 @@ It may only:
 | [`crates/vn_macros`](crates/vn_macros/README.md) | `#[command]`, the attribute that turns a Rust function into a story command. Re-exported by `vn_engine`, never depended on directly |
 | [`crates/vn_build`](crates/vn_build/README.md) | Build-script helper (no dependencies) that embeds a game's assets in release builds |
 | [`crates/vn_live2d`](crates/vn_live2d/README.md) | Experimental optional Cubism Native adapter and standalone viewer; not yet integrated into story rendering |
-| [`crates/vn_cli`](crates/vn_cli/README.md) | `vn` command-line tool (`vn new <dir>`, `vn check <path>`, `vn dump <file.story | dir>`, `vn lsp`) |
+| [`crates/vn_cli`](crates/vn_cli/README.md) | `novn` command-line tool (`novn new <dir>`, `novn check <path>`, `novn dump <file.story | dir>`, `novn lsp`) |
 | [`examples/god_is_watching`](examples/god_is_watching/README.md) | Reference game built on `vn_engine` |
 
 Each crate documents its API and behavior in its own README.
@@ -113,7 +113,7 @@ Its assets live in `examples/god_is_watching/assets/`:
 | `characters/<character_id>/<image_id>.png` | Character art, as referenced by `show <character_id> <image_id>` |
 | `backgrounds/<image_id>.png` | Backgrounds, as referenced by `background <image_id>` |
 | `fonts/` | `.ttf`/`.otf` fonts, assigned to text roles with `VnApp::font` in `main.rs` |
-| `schema.json` | The game's registries, exported by the game in debug builds, for `vn check` |
+| `schema.json` | The game's registries, exported by the game in debug builds, for `novn check` |
 
 Missing art is not an error: the engine logs a warning and draws a labeled
 placeholder card, so a story can be played before its art exists.
@@ -137,7 +137,7 @@ cd ../my-novel
 cargo run
 ```
 
-`vn new` writes a small working game (a `main.rs` that registers a character, variables
+`novn new` writes a small working game (a `main.rs` that registers a character, variables
 and a command, and a two-scene story) that depends on this workspace's `vn_engine`. See
 [vn_cli's README](crates/vn_cli/README.md#vn-new-directory---title-title---engine-path-dir----engine-git-url).
 
@@ -149,7 +149,7 @@ Story content is written using a custom DSL designed for clarity and structure.
 
 ## Design Intent
 
-VN_Rust intentionally avoids:
+novn intentionally avoids:
 
 - Embedded scripting languages
 - Runtime-evaluated logic
@@ -163,6 +163,33 @@ This keeps stories:
 - Easy to refactor
 - Friendly to tooling and large projects
 
+## Publishing
+
+The crates go to crates.io as a family under `novn`. They depend on each other by path
+*and* version, so the leaves have to be on the registry before anything that needs them
+can even be packaged:
+
+```sh
+cargo publish -p novn-macros
+cargo publish -p novn-script
+cargo publish -p novn-build
+cargo publish -p novn            # needs macros and script
+cargo publish -p novn-cli        # needs script
+cargo publish -p novn-live2d     # needs novn
+```
+
+Before any of that, `cargo package -p <crate> --allow-dirty` says what would be uploaded
+and refuses anything the registry would. The examples carry `publish = false` and never
+leave the repository.
+
+Every crate inherits its version, edition, MSRV, repository, homepage and authors from
+`[workspace.package]`, so a release bumps one number in the root manifest and the six
+`version = "0.1.0"` lines under `[workspace.dependencies]` beside it.
+
+`rust-version` is 1.98, which is what this is built and tested with rather than a floor
+anyone has measured. Edition 2024 needs 1.85 at the least, so there is room to lower it
+once an older toolchain has actually been tried.
+
 ## Project Status
 
 Work in progress
@@ -170,7 +197,7 @@ Work in progress
 Working today: the story DSL with validation and "did you mean" diagnostics, the VM, the
 raylib engine (default screens, transitions, keyboard/gamepad navigation, saves with
 autosave, thumbnails and migrations, rollback, settings, music, sound and voice, hot
-reload, release builds with embedded assets), `vn new` / `vn check` / `vn dump` / `vn lsp`
+reload, release builds with embedded assets), `novn new` / `novn check` / `novn dump` / `novn lsp`
 (a language server for any editor), and the example game.
 
 Planned (see TODO.md):

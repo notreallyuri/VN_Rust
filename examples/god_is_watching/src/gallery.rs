@@ -1,4 +1,4 @@
-use vn_engine::data::session::{background_key, character_key, music_key};
+use novn::data::session::{background_key, character_key, music_key};
 
 pub const STUDY_DESK: &str = "cg:study_desk";
 

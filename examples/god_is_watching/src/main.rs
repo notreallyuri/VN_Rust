@@ -1,6 +1,6 @@
 use std::process::ExitCode;
 
-use vn_engine::prelude::*;
+use novn::prelude::*;
 
 mod cast;
 mod commands;

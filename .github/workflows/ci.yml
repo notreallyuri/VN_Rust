@@ -41,15 +41,15 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Clippy with character-visuals, which the default build leaves out
-        run: cargo clippy -p vn_engine --features character-visuals --all-targets -- -D warnings
+        run: cargo clippy -p novn --features character-visuals --all-targets -- -D warnings
 
       - run: cargo test --workspace
 
       - name: Test with character-visuals
-        run: cargo test -p vn_engine --features character-visuals
+        run: cargo test -p novn --features character-visuals
 
       - name: The tests that open a window, on a virtual display
-        run: xvfb-run -a cargo test -p vn_engine --features character-visuals -- --ignored --test-threads=1
+        run: xvfb-run -a cargo test -p novn --features character-visuals -- --ignored --test-threads=1
 
   docs:
     name: The documentation site
@@ -110,6 +110,6 @@ jobs:
           key: video
 
       - name: Clippy the video backend and its example, which nothing else compiles
-        run: cargo clippy -p vn_engine --features video-ffmpeg --all-targets -- -D warnings
+        run: cargo clippy -p novn --features video-ffmpeg --all-targets -- -D warnings
 
-      - run: cargo test -p vn_engine --features video-ffmpeg
+      - run: cargo test -p novn --features video-ffmpeg

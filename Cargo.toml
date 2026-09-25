@@ -2,12 +2,12 @@
 resolver = "2"
 
 members = [
-    "crates/vn_script",
-    "crates/vn_engine",
-    "crates/vn_macros",
-    "crates/vn_build",
-    "crates/vn_cli",
-    "crates/vn_live2d",
+    "crates/novn-script",
+    "crates/novn",
+    "crates/novn-macros",
+    "crates/novn-build",
+    "crates/novn-cli",
+    "crates/novn-live2d",
     "examples/god_is_watching",
     "examples/example_vn",
 ]
@@ -15,12 +15,16 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.98"
+repository = "https://github.com/notreallyuri/VN_Rust"
+homepage = "https://notreallyuri.github.io/VN_Rust"
+authors = ["notreallyuri"]
 
 [workspace.dependencies]
-vn_script = { path = "crates/vn_script" }
-vn_engine = { path = "crates/vn_engine" }
-vn_macros = { path = "crates/vn_macros" }
-vn_build = { path = "crates/vn_build" }
+novn-script = { path = "crates/novn-script", version = "0.1.0" }
+novn = { path = "crates/novn", version = "0.1.0" }
+novn-macros = { path = "crates/novn-macros", version = "0.1.0" }
+novn-build = { path = "crates/novn-build", version = "0.1.0" }
 raylib = "5.5.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"

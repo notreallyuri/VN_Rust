@@ -26,7 +26,7 @@ cp -r "$CUBISM_SDK_ROOT/Samples/Resources/Hiyori" \
 ```
 
 Hiyori is one of Live2D's sample models, so it is for development only: a release
-build refuses to load it (see `crates/vn_live2d/README.md`), and `build.rs` keeps
+build refuses to load it (see `crates/novn-live2d/README.md`), and `build.rs` keeps
 `characters/kaede/` out of the embedded assets. Ship a model you hold the rights to.
 
 Hiyori has no expressions, only nine idle motions, so the three appearances pick
@@ -35,7 +35,7 @@ others) would map onto `Appearance::new().expression("Smile")` instead. `size(w,
 sets how large the model is drawn; without it the model's own canvas size is used.
 
 Building with `live2d` needs the Cubism SDK, nasm-free but CMake- and GLEW-dependent;
-see `crates/vn_live2d/README.md`. Without the feature, and without PNGs for those
+see `crates/novn-live2d/README.md`. Without the feature, and without PNGs for those
 appearances, the engine draws its placeholder and logs a warning.
 
 ## Still missing

@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
+use novn::prelude::*;
 use serde::{Deserialize, Serialize};
-use vn_engine::prelude::*;
 
 #[derive(StoryWord, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Ending {

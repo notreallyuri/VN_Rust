@@ -1,6 +1,6 @@
 # The documentation site
 
-The guide for VN_Rust: the story language, the engine, and the tools around them. It is a
+The guide for novn: the story language, the engine, and the tools around them. It is a
 hand-built Next.js app rather than a docs framework, because the design is owned here and
 because the code block has a compiler behind it — see `TODO.md` in the repository root,
 milestone 11, for the plan and the decisions behind it.

@@ -6,12 +6,12 @@ publish = false
 
 [features]
 default = []
-live2d = ["dep:vn_live2d", "vn_live2d/engine"]
+live2d = ["dep:novn-live2d", "novn-live2d/engine"]
 
 [dependencies]
-vn_engine.workspace = true
+novn.workspace = true
 serde.workspace = true
-vn_live2d = { path = "../../crates/vn_live2d", optional = true }
+novn-live2d = { path = "../../crates/novn-live2d", optional = true }
 
 [build-dependencies]
-vn_build.workspace = true
+novn-build.workspace = true

@@ -1,8 +1,8 @@
-use vn_engine::frame::scenery::{Scenery, Weather};
-use vn_engine::prelude::*;
-use vn_engine::raylib::prelude::Color;
-use vn_engine::ui::prelude::*;
-use vn_engine::ui::theme::Theme;
+use novn::frame::scenery::{Scenery, Weather};
+use novn::prelude::*;
+use novn::raylib::prelude::Color;
+use novn::ui::prelude::*;
+use novn::ui::theme::Theme;
 
 pub const INK: Color = Color::new(12, 10, 8, 255);
 pub const PANEL: Color = Color::new(20, 16, 12, 240);

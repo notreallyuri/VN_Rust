@@ -1,4 +1,4 @@
-use vn_engine::prelude::*;
+use novn::prelude::*;
 
 mod menus;
 mod playing;

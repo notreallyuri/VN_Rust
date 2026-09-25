@@ -14,7 +14,7 @@
   "metadata": {
     "version": "0.1.0",
     "license": "MIT",
-    "description": "Story scripts for the VN_Rust visual novel engine",
+    "description": "Story scripts for the novn visual novel engine",
     "links": {
       "repository": "https://github.com/notreallyuri/VN_Rust"
     }

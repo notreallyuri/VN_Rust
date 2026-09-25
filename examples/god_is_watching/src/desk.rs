@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use novn::prelude::*;
 use serde::{Deserialize, Serialize};
-use vn_engine::prelude::*;
 
 use crate::evidence::EvidenceItem;
 

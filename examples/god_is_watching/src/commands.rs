@@ -1,5 +1,5 @@
-use vn_engine::prelude::*;
-use vn_engine::screens::text_input::TextRequest;
+use novn::prelude::*;
+use novn::screens::text_input::TextRequest;
 
 use crate::desk::{Desk, Room};
 use crate::evidence::{Evidence, EvidenceItem};

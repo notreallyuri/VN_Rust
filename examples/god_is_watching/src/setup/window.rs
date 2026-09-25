@@ -1,5 +1,5 @@
-use vn_engine::prelude::*;
-use vn_engine::ui::cursor::{CursorKind, CursorStyle};
+use novn::prelude::*;
+use novn::ui::cursor::{CursorKind, CursorStyle};
 
 use super::ASSETS_ROOT;
 use crate::style;
@@ -8,7 +8,7 @@ pub fn window(app: VnApp) -> VnApp {
     app.size(1280, 720)
         .render_scale(1.5)
         .assets(ASSETS_ROOT)
-        .embedded_assets(vn_engine::embedded_assets!())
+        .embedded_assets(novn::embedded_assets!())
         .clear_color(style::INK)
         .cursor(
             CursorStyle::new("cursor.png")

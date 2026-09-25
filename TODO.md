@@ -4,7 +4,7 @@ Organized as milestones. Each one should leave the workspace building and runnab
 
 ## Direction
 
-VN_Rust is a Ren'Py alternative for **Rust developers**: writers work in `.story` files,
+novn is a Ren'Py alternative for **Rust developers**: writers work in `.story` files,
 while all logic, state and UI live in Rust and can be debugged with normal Rust tooling.
 
 A new game should get going with: `cargo new` → add `vn_engine` → a short `main.rs` that
@@ -23,7 +23,7 @@ Three levels of control, each optional:
 | `crates/vn_script` | DSL lexer, parser, compiler, VM. **No rendering deps**, reusable by CLI/LSP |
 | `crates/vn_engine` | raylib engine: screens, resources, game loop. Re-exports `raylib` and `vn_script` (as `script`) |
 | `crates/vn_build` | Build-script helper: embeds a game's assets in release builds |
-| `crates/vn_cli` | `vn` binary: `vn new`, `vn check`, `vn dump`, `vn lsp`; later `run`, `fmt` |
+| `crates/vn_cli` | `novn` binary: `novn new`, `novn check`, `novn dump`, `novn lsp`; later `run`, `fmt` |
 | `examples/god_is_watching` | The reference game, and the first real consumer of the engine API |
 
 ---
@@ -32,7 +32,7 @@ Three levels of control, each optional:
 
 - [x] Split `vn_core` into `vn_script` (no raylib) and `vn_engine`
 - [x] Move the game out of `runtime/` into `examples/god_is_watching`
-- [x] `test_compiler` → `vn_cli` (`vn dump <file>`, no hardcoded path)
+- [x] `test_compiler` → `vn_cli` (`novn dump <file>`, no hardcoded path)
 - [x] Rename `StoryProvider` → `StoryVm`
 - [x] Drop the legacy JSON story types (`runtime/types/story.rs`) and unused deps
 - [x] Shared `[workspace.package]` / `[workspace.dependencies]`
@@ -95,8 +95,8 @@ Three levels of control, each optional:
 - [x] Choice options non-empty (text and body), `choice:` has at least one option
 - [x] Identifiers match `[a-z_][a-z0-9_]*` everywhere (scenes, characters, images, commands, variables, enum members); tabs in indentation are errors
 - [x] `{variable}` in text must name a registered variable
-- [x] Export the registry as a schema file (`schema.json`, refreshed in debug builds, `--export-schema`) so `vn check` and the LSP can validate without running the game
-- [x] `vn check <path>`: whole story or one file in its project, schema found by walking up, exit code for CI
+- [x] Export the registry as a schema file (`schema.json`, refreshed in debug builds, `--export-schema`) so `novn check` and the LSP can validate without running the game
+- [x] `novn check <path>`: whole story or one file in its project, schema found by walking up, exit code for CI
 - [x] "Did you mean" suggestions: a first word close to a keyword (`remoe hugo` → `remove`), and unknown scenes, characters, images, variables, commands and entry scenes close to a known one (`marry` → `mary`)
 - [x] Show script errors in the game (debug builds): a panel listing `file:line: message` when a hot reload fails (F2 collapses it), cleared by the next good reload
 - [x] Parser edge cases:
@@ -139,15 +139,15 @@ Three levels of control, each optional:
 - [x] Platform save directory (e.g. `~/.local/share/<game>`) instead of `./saves`
 - [x] Save format migrations: engine steps for `SAVE_FORMAT_VERSION`, and game steps (`.save_version(n)`, `.migrate_save(from, ..)`) that rename/edit state and variables in the save and its rollback history
 - [x] Release builds that run anywhere: `Assets` (a folder or files embedded in the executable) behind every load, `vn_build` embedding `assets/` from `build.rs` in release builds, `embedded_assets!()`, and an `assets` folder next to the executable as a fallback
-- [x] `vn new` project template (Cargo.toml, `main.rs`, a two-scene story, a matching `schema.json`)
+- [x] `novn new` project template (Cargo.toml, `main.rs`, a two-scene story, a matching `schema.json`)
 - [x] Multi-file projects: every `.story` under `story_dir` is one program; diagnostics name their file; the example's chapters jump into each other
 - [ ] Editor support for `.story` files:
   - [x] `tree-sitter-story` grammar (`editors/tree-sitter-story`), with an external scanner for indentation (INDENT/DEDENT, like tree-sitter-python), `highlights.scm` and `folds.scm`
   - [ ] Corpus tests from `all_features.story` (`test/corpus/` is still empty; they would have caught the EOF loop that made parsing run out of memory)
   - [x] Neovim (`editors/nvim`): filetype detection, the grammar and queries through nvim-treesitter, folds, and indentation as an `indentexpr` (tree-sitter indent queries don't work well while typing in an indentation-sensitive grammar)
   - [ ] Zed, Helix and VS Code: not a focus for now. Zed and Helix reuse the grammar and queries; VS Code needs a TextMate grammar
-  - [x] LSP (`vn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type (unsaved buffers included), go to scene definition, completion of scenes, characters, images, variables, values, commands, positions, transitions and asset ids, hover, scene outline. Setup for Neovim and Helix in vn_cli's README
-  - [x] Formatter (`vn fmt <path> [--check]`, `vn_script::format`): two-space indentation, spacing around operators, comments and blank lines normalized, strings untouched; only rewrites a file when the result compiles to the same program
+  - [x] LSP (`novn lsp`, reusing `vn_script` diagnostics and the exported schema): errors as you type (unsaved buffers included), go to scene definition, completion of scenes, characters, images, variables, values, commands, positions, transitions and asset ids, hover, scene outline. Setup for Neovim and Helix in vn_cli's README
+  - [x] Formatter (`novn fmt <path> [--check]`, `vn_script::format`): two-space indentation, spacing around operators, comments and blank lines normalized, strings untouched; only rewrites a file when the result compiles to the same program
 
 ## M7: Example overhaul
 
@@ -169,13 +169,13 @@ Three levels of control, each optional:
 Worth doing before the engine grows further: it touches the DSL, every default screen,
 fonts and saves at once, and each of those is cheaper to change now than later.
 
-- [x] `vn translate <lang> [path]`: extracts every translatable string (dialogue, narration, choice options, and the display names in `schema.json`) into `lang/<lang>.json` beside the schema, keyed by the story file's name and a hash of the source text. Re-running keeps the translations already written, adds what is new, and marks what was edited or deleted `stale` (with the old text to work from) instead of silently keeping it. A story with errors extracts nothing
+- [x] `novn translate <lang> [path]`: extracts every translatable string (dialogue, narration, choice options, and the display names in `schema.json`) into `lang/<lang>.json` beside the schema, keyed by the story file's name and a hash of the source text. Re-running keeps the translations already written, adds what is new, and marks what was edited or deleted `stale` (with the old text to work from) instead of silently keeping it. A story with errors extracts nothing
 - [x] Look translations up at runtime through the VM's `Say`/`Choice` events, falling back to the source text when one is missing (`vn_script::translate::Catalog`, `StoryVm::set_catalog`, `language()`). The lookup runs before interpolation, so `{variable}` works inside a translation
 - [x] The engine side: `VnApp::source_language` / `language(code, label)`, `lang/<code>.json` read through `Assets` (folder or embedded), a `language` setting saved in `settings.json` and applied at startup, a Language row in the settings screen when a game ships more than one, `ctx.set_language` / `apply_language`, and a hot reload that keeps it. Changing language re-renders the line being read
-- [x] Translatable UI labels: every string the default screens show goes through `ctx.label` / `ctx.message` and is looked up in the catalog's `ui` section by its English text, so a game's own labels and notifications are translatable with nothing to declare. A debug build writes `lang/ui.json` (what the game actually shows, read from the live configs) and `vn translate` folds it into the catalog; `VnApp::ui_text` adds strings a game builds itself
+- [x] Translatable UI labels: every string the default screens show goes through `ctx.label` / `ctx.message` and is looked up in the catalog's `ui` section by its English text, so a game's own labels and notifications are translatable with nothing to declare. A debug build writes `lang/ui.json` (what the game actually shows, read from the live configs) and `novn translate` folds it into the catalog; `VnApp::ui_text` adds strings a game builds itself
 - [x] Fonts per language with a fallback chain (`VnApp::language_font`; language+role → language+Default → role → Default → built-in), a glyph set read from the story and every catalog so a CJK atlas covers what the game shows and no more, and wrapping between characters for scripts without spaces, with kinsoku rules (`ui::wrap`)
-- [x] `vn check` reports missing and stale translations for a language: a line per catalog in `lang/`, counted against the story as it is now, and `--lang <code>` lists each one with its file and line
-- [x] `vn translate <lang> --export` / `--import <file.po>`: the hash-keyed JSON stays the runtime format, and a PO file beside it is what a translator edits (Poedit, Weblate, Crowdin, OmegaT). Exported in story order with the speaker and file:line as comments, `msgctxt` carrying the catalog key; `stale` travels as `#~` obsolete and a translator's own `fuzzy` flag as `#, fuzzy`, which `Entry::translated()` withholds until it is cleared
+- [x] `novn check` reports missing and stale translations for a language: a line per catalog in `lang/`, counted against the story as it is now, and `--lang <code>` lists each one with its file and line
+- [x] `novn translate <lang> --export` / `--import <file.po>`: the hash-keyed JSON stays the runtime format, and a PO file beside it is what a translator edits (Poedit, Weblate, Crowdin, OmegaT). Exported in story order with the speaker and file:line as comments, `msgctxt` carrying the catalog key; `stale` travels as `#~` obsolete and a translator's own `fuzzy` flag as `#, fuzzy`, which `Entry::translated()` withholds until it is cleared
 - [x] Saves stay language-independent: the log and the save slots store the speaker's id, the story file, the line as written and the values it was read with (`Spoken`, `SavePoint`), and re-render through the active catalog; `time_ago` returns an `Elapsed` the screens fill in with `ctx.message`. `SAVE_FORMAT_VERSION` 2; older saves show their stored summary
 
 ## M9: UI and presentation
@@ -185,7 +185,7 @@ else draws through, so it is cheaper now; the rest is additive.
 
 ### Foundations
 
-- [x] Inline text markup: `[b]`, `[i]`, `[color=#rrggbb]`, `[size=N]` and `[w]` waits, parsed into spans in `vn_script::markup` and validated by `vn check`; span-aware wrapping, drawing, typewriter and log in the engine, with bold/italic font variants (`VnApp::font_variant`). Square brackets because `{...}` is variable interpolation
+- [x] Inline text markup: `[b]`, `[i]`, `[color=#rrggbb]`, `[size=N]` and `[w]` waits, parsed into spans in `vn_script::markup` and validated by `novn check`; span-aware wrapping, drawing, typewriter and log in the engine, with bold/italic font variants (`VnApp::font_variant`). Square brackets because `{...}` is variable interpolation
   - [ ] Ruby text for furigana, left out of the first pass
 - [x] Draw the game to a `RenderTexture` instead of straight to the screen (`RenderTarget` in `target.rs`), recreated on resize, with a fallback to drawing to the screen; screenshots and thumbnails still capture the game image
 - [x] Screen transitions (`ScreenTransitionConfig`): crossfade (the default, 0.2s), fade through black and slide, built on a snapshot of the previous frame
@@ -213,7 +213,7 @@ else draws through, so it is cheaper now; the rest is additive.
   the button or puts an icon beside the label, `ChoicePreviewStyle` draws the hovered or
   focused option's preview. `Event::Choice` now carries a `ChoiceOption` per offered
   option (its own `index`, `enabled`, `reason`, `image`, `preview`), and `choose` refuses
-  an option whose condition fails; `vn check` warns when every option of a choice can be
+  an option whose condition fails; `novn check` warns when every option of a choice can be
   hidden. Save format 3, migrating the old choices in mid-choice saves
 - [x] Sharper edges: `VnApp::render_scale` supersamples the frame (the render target is not multisampled, so window MSAA would not help), and corner segments scale with corner size and render scale; `post::FXAA` is the cheap alternative
 - [x] Cursor states wherever they mean something — `Text` over the text field, `Hand` over anything clickable including image-map hotspots and save slots, `Grab`/`Grabbing` for drag boards, sliders and scroll thumbs, `NotAllowed` over disabled items, empty load slots and refusing drop targets — merged by priority, falling back through the pictures a game supplies, with a hotspot per picture. Without pictures they drive the system's own shapes. Games choose their own per element (`ButtonStyle::cursor`, `Hotspot::cursor`, `CursorKind::Custom`), per frame (`ctx.cursor`) or regardless (`ctx.override_cursor`, owned by the screen that set it)
@@ -240,7 +240,7 @@ bottom to top, then the gaps.
   names its appearances, validates its assets without a window, and loads one instance.
   `CharacterVisual` is that instance: natural size, update, draw into a rect at an alpha,
   restart, set_parameter. A backend's appearances join the schema, so `show mary happy`
-  validates against a rig exactly as against a folder of PNGs, and `vn check` names a
+  validates against a rig exactly as against a folder of PNGs, and `novn check` names a
   missing part before a window opens. One instance per character *and* appearance, kept
   while it fades out and dropped when it leaves. Nothing about a backend is load-bearing:
   any failure prints one line and falls back to `characters/<id>/<appearance>.png`,
@@ -357,7 +357,7 @@ builds), F1 (controls) and F2 (script errors).
 - [ ] Debug overlay on F3: layout rectangles, focus order, the style and rect of the widget under the cursor, and frame timing. The equivalent of Ren'Py's inspector, and the fastest way to find a layout bug
 - [ ] Live style tweaking: hot-reload the style values a game defines (the example keeps them in `src/style.rs`), or edit them in an overlay with sliders and colour pickers that writes the tweaked values back out as Rust to paste. This is the part of a UI editor people actually want
 - [ ] Position picker: drag a sprite in the running game and get the `at` position, or exact coordinates, to paste into the `.story` line. Ren'Py's image location picker
-- [ ] Director: while playing, pick `show`, `background`, `music`, `sound` or `voice` from a menu, see it applied live, and write the line into the `.story` file at the current point. `.story` is line-oriented and `vn fmt` normalizes whatever a tool writes, so generated lines can't drift from hand-written style
+- [ ] Director: while playing, pick `show`, `background`, `music`, `sound` or `voice` from a menu, see it applied live, and write the line into the `.story` file at the current point. `.story` is line-oriented and `novn fmt` normalizes whatever a tool writes, so generated lines can't drift from hand-written style
 - [ ] Scene jump: a debug menu listing every scene, to jump straight to one with its variables set, instead of replaying to reach it
 - [ ] A screenshot and GIF capture key for bug reports and devlogs, writing next to the existing screenshot key
 
@@ -397,7 +397,7 @@ guide.
 | `SCRIPT.md` | 746 | The DSL reference: the writer's half of the site, and where the playground earns the most |
 | `crates/vn_engine/README.md` | 3033 | The engine guide, as roughly twelve pages. Already a book squeezed into one file |
 | `crates/vn_script/README.md` | 540 | Internals, for contributors |
-| `crates/vn_cli/README.md` | 287 | Tooling reference (`vn new`, `check`, `fmt`, `translate`, `lsp`) |
+| `crates/vn_cli/README.md` | 287 | Tooling reference (`novn new`, `check`, `fmt`, `translate`, `lsp`) |
 | `crates/vn_live2d`, `crates/vn_build`, `crates/vn_macros` | 441 | Short pages under "release and optional backends". The dated verification logs in the Live2D README stay in this file instead — they are a record of what was run, not documentation |
 
 **Phase 0 — the ground.** Nothing here is about documentation; it is what the rest needs
@@ -450,8 +450,8 @@ solved by the same work rather than twice.
 - [ ] A thin `crates/vn_playground` wasm crate over `vn_script`, so `vn_script` itself
   keeps its one dependency and never learns about `wasm-bindgen`
 - [ ] An editable `.story` block showing, live as it is typed: the real diagnostics with
-  their "did you mean" suggestions, the compiled listing (`vn dump`), and the VM event
-  stream. Same compiler as the engine and `vn check`, so an example cannot drift from the
+  their "did you mean" suggestions, the compiled listing (`novn dump`), and the VM event
+  stream. Same compiler as the engine and `novn check`, so an example cannot drift from the
   language
 - [ ] Every `.story` sample in the site becomes runnable in place
 
@@ -478,6 +478,6 @@ do not let it sell the much larger one.
 
 ## Ongoing
 
-- [x] Tests: golden tests over the SCRIPT.md examples (`crates/vn_script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `vn dump`
+- [x] Tests: golden tests over the SCRIPT.md examples (`crates/vn_script/tests/spec.rs`: each example compiles cleanly, its listing and VM events match `tests/golden/script_md.txt`); `Program::listing()` and `Display for Instruction` shared with `novn dump`
 - [x] SCRIPT.md §8.3 typo: `-+` → `-=`
 - [x] SCRIPT.md: specify audio (backgrounds, positions and string escaping done)

@@ -1,0 +1,26 @@
+[package]
+name = "novn-live2d"
+description = "Experimental optional Cubism Native adapter for novn."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["visual-novel", "live2d", "cubism", "gamedev", "animation"]
+categories = ["game-development", "api-bindings"]
+
+[features]
+default = []
+native = []
+engine = ["native", "novn/character-visuals"]
+
+[dependencies]
+novn.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[[example]]
+name = "viewer"
+required-features = ["native"]

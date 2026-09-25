@@ -53,7 +53,7 @@ export default function Home() {
       <div className="-z-10 pointer-events-none absolute inset-x-0 top-0 h-[32rem] bg-glow" />
       <div className="mx-auto w-full max-w-5xl px-6">
         <header className="flex items-center justify-between py-6">
-          <span className="font-mono text-sm tracking-tight">VN_Rust</span>
+          <span className="font-mono text-sm tracking-tight">novn</span>
           <nav className="flex items-center gap-6 text-muted text-sm">
             <a
               className="transition-colors hover:text-foreground"
@@ -67,7 +67,7 @@ export default function Home() {
         <main>
           <section className="py-16 sm:py-20">
             <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">
-              What is VN_Rust?
+              What is novn?
             </h1>
             <div className="mt-6 max-w-2xl space-y-4 text-base/7 text-muted sm:text-lg/8">
               <p>
@@ -90,7 +90,7 @@ export default function Home() {
                 Read the guide
               </a>
               <code className="font-mono text-muted text-sm">
-                cargo run -p vn_cli -- new my-novel
+                cargo install novn-cli && novn new my-novel
               </code>
             </div>
 
@@ -168,7 +168,7 @@ export default function Home() {
           <span>
             The guide still lives in the repository while I build this site.
           </span>
-          <span className="font-mono text-xs">MIT</span>
+          <span className="font-mono text-xs">v0.1.0</span>
         </footer>
       </div>
     </div>

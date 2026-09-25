@@ -1,8 +1,8 @@
-use vn_engine::prelude::*;
-use vn_engine::raylib::prelude::Color;
-use vn_engine::screens::prelude::*;
-use vn_engine::ui::layout::Anchor;
-use vn_engine::ui::shape::Corners;
+use novn::prelude::*;
+use novn::raylib::prelude::Color;
+use novn::screens::prelude::*;
+use novn::ui::layout::Anchor;
+use novn::ui::shape::Corners;
 
 use super::{CASE_FILE, CREDITS, EVIDENCE, GALLERY, REPORT_DESK, SEARCH, screen};
 use crate::screens as custom;
