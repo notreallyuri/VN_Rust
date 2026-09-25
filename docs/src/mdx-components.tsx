@@ -61,7 +61,10 @@ const components: MDXComponents = {
   pre: ({ children }) => <CodeBlock {...fenceFrom(children)} />,
   table: (props) => (
     <div className="my-6 overflow-x-auto rounded-lg border border-line">
-      <table className="w-full border-collapse text-left text-sm" {...props} />
+      <table
+        className="w-full border-collapse text-left text-sm [&_td:first-child]:text-foreground"
+        {...props}
+      />
     </div>
   ),
   th: (props) => (
@@ -72,7 +75,7 @@ const components: MDXComponents = {
   ),
   td: (props) => (
     <td
-      className="border-line/60 border-b px-4 py-3 align-top text-muted"
+      className="border-line/60 border-b px-4 py-3 align-top text-muted [&_code]:whitespace-nowrap"
       {...props}
     />
   ),

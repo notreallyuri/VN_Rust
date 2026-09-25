@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CodeBlock } from "@/components/code-block";
+import { Command } from "@/components/command";
 import { Frame } from "@/components/frame";
 import { SiteHeader } from "@/components/site-header";
 import playing from "@/screens/playing.webp";
@@ -79,9 +80,7 @@ export default function Home() {
               >
                 Read the guide
               </Link>
-              <code className="font-mono text-muted text-sm">
-                cargo install novn-cli && novn new my-novel
-              </code>
+              <Command>cargo install novn-cli</Command>
             </div>
 
             <figure className="mt-14">
