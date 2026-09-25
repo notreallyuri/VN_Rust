@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Search } from "@/components/search";
 
-export function SiteHeader() {
+export function SiteHeader({ width = "max-w-7xl" }: { width?: string }) {
   const [lifted, setLifted] = useState(false);
 
   useEffect(() => {
@@ -22,7 +22,9 @@ export function SiteHeader() {
           : "border-transparent bg-transparent"
       }`}
     >
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
+      <div
+        className={`mx-auto flex w-full items-center justify-between px-6 py-4 ${width}`}
+      >
         <Link className="font-mono text-sm tracking-tight" href="/">
           novn
         </Link>

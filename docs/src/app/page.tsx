@@ -53,7 +53,7 @@ export default function Home() {
   return (
     <div className="relative">
       <div className="-z-10 pointer-events-none absolute inset-x-0 top-0 h-[32rem] bg-glow" />
-      <SiteHeader />
+      <SiteHeader width="max-w-5xl" />
       <div className="mx-auto w-full max-w-5xl px-6">
         <main>
           <section className="py-16 sm:py-20">
