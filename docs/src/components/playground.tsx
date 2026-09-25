@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Editor } from "@/components/editor";
 import { type Answer, ask } from "@/playground/client";
 
 type View = "play" | "listing";
@@ -208,15 +209,7 @@ export function Playground({ code, name }: { code: string; name?: string }) {
       <div className="grid lg:grid-cols-2 lg:divide-x lg:divide-line">
         <div className="flex min-w-0">
           <Gutter notes={answer?.notes ?? []} lines={Math.max(lines, 10)} />
-          <textarea
-            aria-label="story source"
-            className="flex-1 resize-none overflow-x-auto bg-transparent py-3 pr-4 font-mono text-[0.78rem] text-foreground leading-6 outline-none focus-visible:bg-background/40"
-            onChange={(event) => edit(event.target.value)}
-            rows={Math.max(lines, 10)}
-            spellCheck={false}
-            value={source}
-            wrap="off"
-          />
+          <Editor onChange={edit} rows={Math.max(lines, 10)} value={source} />
         </div>
 
         <div className="border-line border-t lg:border-t-0">

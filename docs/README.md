@@ -79,6 +79,13 @@ recording. `pnpm build` and `pnpm dev` compile it first, through `scripts/build_
 so working on the site needs a Rust toolchain with `wasm32-unknown-unknown`. The `.wasm` lands
 in `public/` and is gitignored, since it is a build product.
 
+The playground's editor is highlighted by the same grammar, run in the browser this time:
+`highlight/lex.ts` holds the capture map and the span logic, `highlight/index.ts` loads the
+grammars from disk at build time and `highlight/browser.ts` fetches them at runtime, so there
+is one implementation and the editor cannot come out a different colour from the block beside
+it. The runtime and the story grammar are staged into `public/highlight/` by the same script
+that builds the playground wasm, and they are fetched only on a page that has an editor.
+
 Every `story` block also carries a Code/Run/Listing tab strip, a thin client wrapper around
 the server-rendered block that fetches the wasm on the first click rather than on page load.
 A block becomes a full editor by asking for `story-play` instead of `story`. That marker has to

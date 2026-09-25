@@ -40,5 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# built by scripts/build_playground_wasm.sh
+# staged by scripts/build_playground_wasm.sh
 /public/novn-playground.wasm
+/public/highlight/

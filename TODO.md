@@ -539,10 +539,17 @@ solved by the same work rather than twice.
   does at runtime; and a lone `...` becomes a narration line, exactly as `spec.rs` has always
   done. The first two are only defensible because the playground has no schema and never
   claimed to be `novn check`
-- [ ] The editor is a `textarea`, so the story it holds is not highlighted while the block
-  beside it is. Worth an overlay of the highlighted spans behind a transparent textarea, which
-  is the usual trick, but it wants the highlighter in the browser and that is currently
-  build-time only
+- [x] The editor is highlighted, by the usual trick: the spans in a `pre` behind a textarea
+  whose text is transparent and whose caret is not. It is the same tree-sitter grammar and the
+  same `story.scm` the static blocks use, with the lex code split into `highlight/lex.ts` so
+  both a Node and a browser entry share one implementation, which is the only reason the
+  editor cannot come out a different colour from the block beside it. Checked by dumping the
+  token stream from both and comparing: five sources, including a broken one and one with
+  blank lines, match tag for tag and character for character.
+  The alignment is the fiddly half, and it is measured rather than eyeballed: the two boxes
+  are pixel-identical, the fourth line sits at 84px in both, and `scrollLeft` follows. The
+  cost is about 380 KiB, the `web-tree-sitter` runtime and the grammar, fetched on demand and
+  only on a page that has an editor. A failed load leaves a plain textarea with visible text
 
 **Phase 4 — keeping it honest.**
 
