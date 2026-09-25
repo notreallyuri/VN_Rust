@@ -37,7 +37,7 @@ const pillars = [
   },
   {
     title: "The tools",
-    body: "vn new starts a project, vn check reads the story against the game's schema, vn fmt tidies a script, and vn lsp gives any editor completion and diagnostics while you type.",
+    body: "novn new starts a project, novn check reads the story against the game's schema, novn fmt tidies a script, and novn lsp gives any editor completion and diagnostics while you type.",
   },
 ];
 
