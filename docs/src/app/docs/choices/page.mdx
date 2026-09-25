@@ -1,0 +1,68 @@
+# Choices and jumps
+
+```story
+choice:
+  "Agree":
+    "You nod silently."
+    jump next_scene
+
+  "Disagree":
+    "You shake your head."
+    jump argument_scene
+```
+
+A choice opens a block and needs at least one option. Each option is a non-empty quoted
+string, ends with a colon, and contains at least one instruction. Nothing falls through to
+the next option and nothing is implied — a quoted line ending in a colon outside a
+`choice:` block is an error rather than narration.
+
+## Gating an option
+
+```story
+set has_key = true
+choice:
+  "Open the door" when has_key == true "The door is locked":
+    "The lock gives."
+  "Look through the window" unless curtains == true:
+    "You see a table, and nothing else."
+  "Turn back":
+    "You leave the way you came."
+```
+
+`when` offers the option only while the condition holds, and `unless` is its opposite. The
+conditions are the ones `if` takes, variables included.
+
+Without a reason, an option whose condition fails is not shown at all. With a reason, it is
+shown but cannot be taken, and the reason is what the player reads when they point at it.
+Reasons are translated like any other line.
+
+`novn check` warns when every option of a choice can be hidden, since a choice with
+nothing left to offer is skipped at runtime.
+
+## Pictures on an option
+
+```story
+choice:
+  "The north road" image north preview north_view:
+    "Stones, and then trees."
+  "The river path" image river:
+    "Water, loud enough to hide a voice."
+```
+
+`image` draws `choices/<image_id>.png` on the option itself, and the game decides whether
+that fills the button or sits beside the label as an icon. `preview` shows
+`previews/<image_id>.png` while the option is under the pointer or has the focus. Both are
+ids like any other asset, not paths.
+
+Between an option's text and its colon come these modifiers, each at most once, in any
+order. `when`, `unless`, `image` and `preview` mean what they say only there; everywhere
+else they are ordinary words.
+
+## Jumping
+
+```story
+jump vault
+```
+
+`jump` transfers execution to another scene and ends the current one. The target has to
+exist, which is one of the things `novn check` verifies before the game runs.

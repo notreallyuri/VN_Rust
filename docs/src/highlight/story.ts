@@ -39,7 +39,7 @@ function kindOf(capture: string): string | null {
   return kinds[capture] ?? null;
 }
 
-export function highlightStory(code: string): Token[][] {
+function lex(code: string): Token[][] {
   const tree = parser.parse(code);
   if (!tree) return [[{ text: code, kind: null }]];
 
@@ -75,4 +75,30 @@ export function highlightStory(code: string): Token[][] {
     });
   }
   return lines;
+}
+
+function parses(code: string): boolean {
+  const tree = parser.parse(code);
+  return tree !== null && !tree.rootNode.hasError;
+}
+
+const INDENT = "  ";
+
+export function highlightStory(code: string): Token[][] {
+  if (parses(code)) return lex(code);
+
+  const wrapped = `scene __fragment:\n${code
+    .split("\n")
+    .map((line) => (line ? INDENT + line : line))
+    .join("\n")}`;
+  if (!parses(wrapped)) return lex(code);
+
+  return lex(wrapped)
+    .slice(1)
+    .map((line) => {
+      const [first, ...rest] = line;
+      if (!first || !first.text.startsWith(INDENT)) return line;
+      const text = first.text.slice(INDENT.length);
+      return text ? [{ ...first, text }, ...rest] : rest;
+    });
 }

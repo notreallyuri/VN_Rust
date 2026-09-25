@@ -1,0 +1,67 @@
+# Dialogue and narration
+
+```story
+mary "Nice to meet you."
+"The lamps are never put out down here."
+```
+
+A line with a character in front of it is that character speaking, and the character has to
+exist. A line on its own is narration with no speaker, drawn however the engine decides.
+That rule is explicit rather than a fallback. Both block until the player moves on.
+
+## Showing a variable
+
+Dialogue, narration, choice options and the speaker can all show a variable's value with
+braces.
+
+```story
+mary "Nice to meet you, {player_name}."
+{player_name} "Nice to meet you, Mary."
+"You have {coins} coins."
+```
+
+The value is inserted as text: `true` or `false`, the number, the enum member, or the
+string. Writing `{{` or `}}` gets you a literal brace. A variable with no value yet is
+shown exactly as written, so the mistake is visible on screen rather than silent. Putting
+a variable where the speaker goes uses its value as the displayed name.
+
+## Strings
+
+Dialogue, narration, choice options and string values are written in double quotes, and
+two escapes are allowed inside them.
+
+| Write | To get |
+| --- | --- |
+| `\"` | `"` |
+| `\\` | `\` |
+
+```story
+mary "The sign says \"Closed\"."
+```
+
+Any other backslash is an error, and nothing may follow the closing quote — except the `:`
+that ends a choice option.
+
+## Text tags
+
+Dialogue, narration and choice text can carry tags in square brackets. Variables stay in
+braces, so the two never collide.
+
+| Tag | Effect |
+| --- | --- |
+| `[b]…[/b]` | Bold |
+| `[i]…[/i]` | Italic |
+| `[color=#c8a165]…[/color]` | Colour, six hex digits |
+| `[size=34]…[/size]` | Text size in pixels |
+| `[w]` / `[w=0.75]` | Hold the typewriter there, half a second by default |
+
+```story
+registrar "October, [b]1903[/b]. The [color=#c8a165]Archive of the House[/color][w=0.5], two floors below the street."
+```
+
+Tags nest, and `[[` writes a literal `[`. An unknown tag, a bad colour or size, and a
+closing tag that closes nothing are all errors; a tag left open is a warning and ends with
+the line. Choice buttons show the text with its tags stripped.
+
+Italic needs an italic font registered for that role, and bold a bold one. Without them
+the text is drawn in the regular face — bold twice, with a small offset.

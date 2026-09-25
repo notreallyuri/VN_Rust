@@ -1,32 +1,17 @@
-# Writing a scene
+# Scenes and characters
 
 A script is made of scenes, and each scene is a linear sequence of instructions. Scene
-names are jump targets, they have to be unique, and execution starts at whichever scene
-the game names as its entry.
+names have to be unique, they are what `jump` targets, and execution starts at whichever
+scene the game names as its entry.
 
 ```story
 scene archive_start:
   background archive_office with fade
+  music archive
   show registrar neutral at right with dissolve
   registrar "You're the new one. Sit."
   "The lamps are never put out down here."
 ```
-
-A line with a speaker in front of it is that character talking. A line on its own is
-narration.
-
-## Showing and hiding characters
-
-```story
-show registrar neutral at right with dissolve
-show registrar stern
-remove registrar with dissolve
-```
-
-`show` takes the character, the image, optionally a position (`far_left`, `left`,
-`center`, `right`, `far_right`) and optionally a transition. Showing a character who is
-already on stage swaps the image and keeps the position, so the second line above only
-changes the face.
 
 ## Text mode
 
@@ -40,28 +25,94 @@ scene ruins nvl:
   "Her voice does not echo."
 ```
 
-The mode belongs to the scene, so a jump changes it, and a save or a rollback restores it
-without storing anything of its own. The page is built from the lines the player has read,
-which is why it survives a load and steps back with rollback.
+`adv` and `nvl` are the only modes. The mode belongs to the scene, so a jump changes it,
+and a save or a rollback restores it without storing anything of its own. The page is
+built from the lines the player has read, which is why it survives a load and steps back
+with rollback; it starts empty and turns over when it is full.
 
-## Choices
-
-```story
-choice:
-  "Open the box":
-    "The lid gives more easily than it should."
-    jump box_open
-  "Leave it":
-    jump corridor
-```
-
-Options can be gated by a condition, with or without a reason. Without a reason the option
-is not offered at all; with one it is drawn disabled and the reason becomes its tooltip.
+## Showing a character
 
 ```story
-choice:
-  "Unlock it" when has_key:
-    jump vault
-  "Force it" unless tired "Not with these hands.":
-    jump vault
+show mary tired at left
+show hugo neutral at right
+mary "Father."
+show mary angry
 ```
+
+Both the character and the image have to exist in the engine's registry. Re-showing a
+character updates the image, and re-showing without `at` keeps the spot — so changing an
+expression never moves anyone. Characters shown without a position are spread evenly.
+
+Positions are `far_left`, `left`, `center`, `right` and `far_right`. A character stands
+where you put them until they are removed; `remove` and `clear` forget the spot.
+
+```story
+remove hugo
+clear
+```
+
+`remove` takes one character off the stage. `clear` takes all of them, and leaves the
+background alone.
+
+## Backgrounds
+
+```story
+background study_night
+background none
+```
+
+The backdrop is replaced whole, and stays until the next `background` — across jumps and
+across scenes. Characters on screen are not affected. Where the image lives is the
+engine's business: for the default engine, `assets/backgrounds/<image_id>.png`.
+
+## Transitions
+
+```story
+show moriarty older at right with dissolve
+show moriarty wary at left with dissolve 0.8
+remove moriarty with slide_left
+background santa_ilde_courtyard with fade
+clear with shake
+```
+
+| Transition | Characters | Backgrounds | Default |
+| --- | --- | --- | --- |
+| `dissolve` | fade in, fade out, crossfade between expressions | crossfade | 0.5 s |
+| `fade` | like `dissolve` | through black | 1 s |
+| `slide_left` | enter from the right edge, leave to the left | the new one pushes the old out to the left | 0.6 s |
+| `slide_right` | enter from the left edge, leave to the right | pushed out to the right | 0.6 s |
+| `shake` | instant, and the screen shakes | the same | 0.4 s |
+| `flash` | instant, and the screen flashes | the same | 0.3 s |
+
+`with` goes last on the line, and the length is in seconds, above 0 and up to 30. Showing
+a character who is already on screen with a new expression crossfades the two; give it a
+new `at` as well and they move there too. Without `with`, the change is instant.
+
+Transitions do not pause the story: the next line starts while they play, and a click
+finishes them. Rollback and loading a save show the end result at once.
+
+`shake` and `flash` are effects rather than motions — whatever the line changes happens at
+once, and the whole screen shakes or flashes for that long. `clear with shake` and
+`background storm with flash` are the usual ways to punctuate a moment.
+
+## Music and sound
+
+```story
+music santa_ilde
+music none
+sound door_open
+voice registrar_01
+```
+
+`music` starts a looping track and replaces whatever was playing; the default engine
+crossfades, and `music none` fades out. Like the background, music carries across jumps
+and scenes, is saved, and rolls back with the story — and naming the track that is already
+playing does nothing.
+
+`sound` is a one-shot effect: not saved, not replayed on rollback or load. `voice` plays a
+clip for the next line of dialogue and stops when the player moves on; auto mode waits for
+it.
+
+The engine decides where the files live. For the default engine that is
+`assets/music/`, `assets/sounds/` and `assets/voice/`, as `.ogg`, `.mp3`, `.wav` or
+`.flac`. A missing file is a warning, and the game stays silent there.

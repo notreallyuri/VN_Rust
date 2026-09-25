@@ -432,9 +432,11 @@ solved by the same work rather than twice.
   runtime from the headings `rehype-slug` gives ids to. MDX through `@next/mdx`, with
   `remark-gfm` for the tables the READMEs are full of — plugins named as strings, since
   Turbopack cannot take a JavaScript function through its Rust side
-- [ ] The page tree above, as `page.mdx` under `src/app/docs/`. Three pages exist so far
-  (what novn is, your first novel, writing a scene), all of them content lifted from the
-  READMEs rather than written fresh; the engine guide's 47 sections are still to come
+- [ ] The page tree above, as `page.mdx` under `src/app/docs/`. Six pages so far: what
+  novn is, your first novel, and the story language as scenes and characters, dialogue and
+  narration, choices and jumps. All of it lifted from SCRIPT.md and the READMEs rather
+  than written fresh. Still to move: variables, commands, rollback, identifiers (the rest
+  of SCRIPT.md), and the engine guide's 47 sections
 - [ ] Every crate README shrinks to a front door of about 150 lines: what it is, a quick
   start, the module map, and a link to its guide. A README that is the first thing a
   reader meets on the repository page should not be the last word on `ButtonStyle`

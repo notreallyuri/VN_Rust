@@ -21,9 +21,19 @@ export const nav: NavSection[] = [
     title: "The story language",
     items: [
       {
-        title: "Writing a scene",
+        title: "Scenes and characters",
         href: "/docs/scenes",
-        summary: "Dialogue, characters, backgrounds, transitions.",
+        summary: "Scenes, showing characters, backgrounds, transitions, audio.",
+      },
+      {
+        title: "Dialogue and narration",
+        href: "/docs/dialogue",
+        summary: "Speakers, narration, variables in text, tags.",
+      },
+      {
+        title: "Choices and jumps",
+        href: "/docs/choices",
+        summary: "Branching, gated options, pictures, jump.",
       },
     ],
   },
