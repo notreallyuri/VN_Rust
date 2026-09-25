@@ -84,7 +84,7 @@ fn blocks() -> Option<Vec<Block>> {
                     block.text.push_str(line);
                     block.text.push('\n');
                 }
-                None if line.trim_start() == "```story" => {
+                None if is_story_fence(line.trim_start()) => {
                     current = Some(Block {
                         source: source.label.clone(),
                         line: index + 1,
@@ -100,6 +100,10 @@ fn blocks() -> Option<Vec<Block>> {
         }
     }
     Some(blocks)
+}
+
+fn is_story_fence(line: &str) -> bool {
+    line == "```story" || line == "```story-play"
 }
 
 fn placeholder() -> Block {

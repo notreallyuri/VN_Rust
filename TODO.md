@@ -512,13 +512,30 @@ solved by the same work rather than twice.
 
 **Phase 3 — the playground.** The thing that makes the site worth looking at.
 
-- [ ] A thin `crates/novn-playground` wasm crate over `novn_script`, so `novn_script` itself
-  keeps its one dependency and never learns about `wasm-bindgen`
-- [ ] An editable `.story` block showing, live as it is typed: the real diagnostics with
-  their "did you mean" suggestions, the compiled listing (`novn dump`), and the VM event
-  stream. Same compiler as the engine and `novn check`, so an example cannot drift from the
-  language
-- [ ] Every `.story` sample in the site becomes runnable in place
+- [x] A thin `crates/novn-playground` wasm crate over `novn_script`, which never learns about
+  `wasm-bindgen` and neither does the playground: the whole interface is one string in and one
+  string out, small enough to hand-roll, so there is no `wasm-pack`, no `wasm-bindgen-cli`
+  version to keep in step, and no generated glue. Three exports and `memory`. 263 KiB on the
+  `wasm` profile. `picks` in the request is what removes session state: the story is replayed
+  from the start with those choices applied, so every call is a pure function of its request
+  and the JS side has no handle to leak. Fuzzed through 29 hostile sources and 5 malformed
+  requests with no trap, and memory flat at 45 pages over 4000 calls
+- [x] An editable `.story` block showing, live as it is typed: the real diagnostics with
+  their "did you mean" suggestions, the compiled listing (`novn dump`) behind a tab, and the
+  story played out with its choices clickable, including a gated option shown shut with the
+  reason a player would read. `/docs/playground` is the dedicated page and the getting-started
+  example is playable in place. Driven in a real browser over CDP rather than trusted from the
+  markup: replay, the gate, the listing tab, and typing `remoe` producing the engine's own
+  diagnostic at the right line
+- [ ] Every `.story` sample in the site becomes runnable in place. Two blocked on content
+  rather than plumbing: most samples are deliberate fragments that `jump` to scenes which do
+  not exist, and the playground reports unknown jump targets, which `spec.rs` does not. Either
+  they grow the scenes they jump to, or the playground learns to treat a fragment's dangling
+  jump as a note rather than an error
+- [ ] The editor is a `textarea`, so the story it holds is not highlighted while the block
+  beside it is. Worth an overlay of the highlighted spans behind a transparent textarea, which
+  is the usual trick, but it wants the highlighter in the browser and that is currently
+  build-time only
 
 **Phase 4 — keeping it honest.**
 

@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# built by scripts/build_playground_wasm.sh
+/public/novn-playground.wasm

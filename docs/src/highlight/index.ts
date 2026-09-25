@@ -89,6 +89,7 @@ const aliases: Record<string, string> = {
   shell: "bash",
   console: "bash",
   toml: "toml",
+  "story-play": "story",
 };
 
 const INDENT = "  ";

@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "wasm": "sh ../scripts/build_playground_wasm.sh",
+    "predev": "pnpm wasm",
     "dev": "next dev",
+    "prebuild": "pnpm wasm",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",

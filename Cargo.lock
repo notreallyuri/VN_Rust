@@ -391,6 +391,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "novn-playground"
+version = "0.1.0"
+dependencies = [
+ "novn-script",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "novn-script"
 version = "0.1.0"
 dependencies = [

@@ -1,8 +1,10 @@
 import { CopyButton } from "@/components/copy-button";
 import { Frame } from "@/components/frame";
+import { Playground } from "@/components/playground";
 import { highlight, type Token } from "@/highlight";
 
 const SHELLS = new Set(["sh", "bash", "shell", "console"]);
+const PLAYABLE = "story-play";
 
 export function CodeBlock({
   code,
@@ -16,6 +18,8 @@ export function CodeBlock({
   numbered?: boolean;
 }) {
   const body = code.replace(/\n$/, "");
+  if (language === PLAYABLE) return <Playground code={body} name={name} />;
+
   const lines: Token[][] = highlight(body, language);
   const shell = language ? SHELLS.has(language) : false;
   const gutter = numbered || shell;
@@ -72,7 +76,7 @@ export function fenceFrom(children: unknown): {
     | undefined;
   const inner = node?.props?.children;
   const className = node?.props?.className ?? "";
-  const match = /language-(\w+)/.exec(className);
+  const match = /language-([\w-]+)/.exec(className);
   return {
     code: typeof inner === "string" ? inner : "",
     language: match?.[1],

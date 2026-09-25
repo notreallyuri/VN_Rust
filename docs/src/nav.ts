@@ -15,6 +15,11 @@ export const nav: NavSection[] = [
         href: "/docs/first-novel",
         summary: "From novn new to a scene on screen.",
       },
+      {
+        title: "Try it here",
+        href: "/docs/playground",
+        summary: "The real compiler, in your browser.",
+      },
     ],
   },
   {

@@ -1,0 +1,20 @@
+[package]
+name = "novn-playground"
+description = "Compiles and plays a .story source for the documentation site's playground."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+novn-script = { path = "../novn-script", version = "0.1.0" }
+serde.workspace = true
+serde_json.workspace = true

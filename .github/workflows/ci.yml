@@ -65,6 +65,15 @@ jobs:
         with:
           package_json_file: docs/package.json
 
+      - name: Rust, for the playground's wasm, which pnpm build compiles
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: wasm
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -1,0 +1,86 @@
+# Try it here
+
+This is the real compiler. Not a highlighter pretending, not a recording: the same lexer,
+parser, compiler and VM the engine runs, built to WebAssembly and doing the work in your
+browser. Nothing is sent anywhere.
+
+Edit the story and it recompiles as you type. Click a choice to play through it. Switch to
+**listing** to see what it compiled to, which is what [`novn dump`](/docs/cli) prints.
+
+```story-play
+scene archive:
+  background archive_office
+  music archive
+  show registrar neutral at right
+
+  "October, 1903. Two floors below the street."
+  registrar "You're the new one. Sit."
+
+  set trust = 0
+
+  choice:
+    "Sit down":
+      add trust += 2
+      registrar "Good. You listen."
+    "Stay standing":
+      "The registrar writes something down."
+
+  show registrar reading
+
+  if trust >= 2:
+    registrar "Box fourteen. Bring it up."
+    jump box
+  else:
+    registrar "Come back when you can follow an instruction."
+    jump door
+
+scene box:
+  background shelves with fade
+  "The box is lighter than it looks."
+
+  choice:
+    "Open it":
+      "A letter, unsigned."
+    "Carry it up unopened" when trust >= 5 "You are not trusted with that yet":
+      "You never learn what was inside."
+
+  "The lamp gutters, and the day ends."
+
+scene door:
+  remove registrar
+  "The stairs are colder going up."
+```
+
+## Things worth trying
+
+**Break it.** Change `remove` to `remoe`, or `jump box` to `jump bxo`. The error is the one
+the engine gives, with the line and a suggestion of the nearest name that exists. That is the
+whole argument for the language being this small: a typo is an error before anything runs.
+
+**Take the other road.** Choose "Stay standing" and `trust` stays at 0, so the `if` sends you
+to `door` instead of `box`. Two scenes, no shared state to untangle.
+
+**Meet a gate.** In `box`, "Carry it up unopened" is shown but cannot be taken, and the reason
+is what a player would read on it. It needs `trust >= 5` and the most you can reach here is 2.
+Change the `2` in `add trust += 2` to `5` and it opens.
+
+**Watch the listing.** Every jump target is an absolute instruction index, the `choice` records
+where each option starts, and `if` is a `JUMP_IF_FALSE` over the then-branch. Scenes do not run
+into each other: each ends with `END`.
+
+## What is not here
+
+**The registries.** In a real game, `registrar`, `trust` and every image are declared in Rust
+and exported to a `schema.json`, and the compiler checks the story against them. There is no
+Rust here, so there is no schema: a character name is accepted because nothing knows better,
+and `trust` is a variable because you used it as one.
+
+That means the playground is *looser* than `novn check` on a real project, and everything it
+does catch is a genuine error. See [building an app](/docs/engine/app) for the half that lives
+in Rust.
+
+**The screens.** Dialogue, choices, backgrounds and music show up here as a list of what the
+story asked for. Drawing them is the engine's job, and the engine needs a window.
+
+**Rollback and saving.** `commit` compiles and shows in the listing, but there is no history to
+roll back through, because that is a screen's state rather than the VM's.

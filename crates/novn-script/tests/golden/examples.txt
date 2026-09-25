@@ -331,6 +331,104 @@ scene second_scene:  (line 17)
 > Say { speaker: None, text: "Things just got darker." }
 > End
 
+======== docs/playground:10  Try it here
+scene archive:
+  background archive_office
+  music archive
+  show registrar neutral at right
+
+  "October, 1903. Two floors below the street."
+  registrar "You're the new one. Sit."
+
+  set trust = 0
+
+  choice:
+    "Sit down":
+      add trust += 2
+      registrar "Good. You listen."
+    "Stay standing":
+      "The registrar writes something down."
+
+  show registrar reading
+
+  if trust >= 2:
+    registrar "Box fourteen. Bring it up."
+    jump box
+  else:
+    registrar "Come back when you can follow an instruction."
+    jump door
+
+scene box:
+  background shelves with fade
+  "The box is lighter than it looks."
+
+  choice:
+    "Open it":
+      "A letter, unsigned."
+    "Carry it up unopened" when trust >= 5 "You are not trusted with that yet":
+      "You never learn what was inside."
+
+  "The lamp gutters, and the day ends."
+
+scene door:
+  remove registrar
+  "The stairs are colder going up."
+-------- instructions
+scene archive:  (line 1)
+000: BACKGROUND archive_office
+001: MUSIC archive
+002: SHOW registrar neutral AT right
+003: SAY [NARRATOR]: "October, 1903. Two floors below the street."
+004: SAY [registrar]: "You're the new one. Sit."
+005: SET trust = 0
+006: CHOICE ['Sit down'->7, 'Stay standing'->10]
+007: ADD trust +2
+008: SAY [registrar]: "Good. You listen."
+009: GOTO 12
+010: SAY [NARRATOR]: "The registrar writes something down."
+011: GOTO 12
+012: SHOW registrar reading
+013: JUMP_IF_FALSE trust >= 2 (goto 17)
+014: SAY [registrar]: "Box fourteen. Bring it up."
+015: JUMP_SCENE 'box'
+016: GOTO 19
+017: SAY [registrar]: "Come back when you can follow an instruction."
+018: JUMP_SCENE 'door'
+019: END
+
+scene box:  (line 27)
+020: WITH fade
+021: BACKGROUND shelves
+022: SAY [NARRATOR]: "The box is lighter than it looks."
+023: CHOICE ['Open it'->24, 'Carry it up unopened'->26 when trust >= 5 "You are not trusted with that yet"]
+024: SAY [NARRATOR]: "A letter, unsigned."
+025: GOTO 28
+026: SAY [NARRATOR]: "You never learn what was inside."
+027: GOTO 28
+028: SAY [NARRATOR]: "The lamp gutters, and the day ends."
+029: END
+
+scene door:  (line 39)
+030: HIDE registrar
+031: SAY [NARRATOR]: "The stairs are colder going up."
+032: END
+-------- events
+> Background { image: Some("archive_office"), transition: None }
+> Music { track: Some("archive") }
+> Show { character: "registrar", image: "neutral", position: Some(Right), transition: None }
+> Say { speaker: None, text: "October, 1903. Two floors below the street." }
+> Say { speaker: Some("registrar"), text: "You're the new one. Sit." }
+> Choice { options: ["Sit down"#0, "Stay standing"#1] }
+> Say { speaker: Some("registrar"), text: "Good. You listen." }
+> Show { character: "registrar", image: "reading", position: None, transition: None }
+> Say { speaker: Some("registrar"), text: "Box fourteen. Bring it up." }
+> Background { image: Some("shelves"), transition: Some(Transition { kind: Fade, millis: None }) }
+> Say { speaker: None, text: "The box is lighter than it looks." }
+> Choice { options: ["Open it"#0, "Carry it up unopened"#1 unavailable: "You are not trusted with that yet"] }
+> Say { speaker: None, text: "A letter, unsigned." }
+> Say { speaker: None, text: "The lamp gutters, and the day ends." }
+> End
+
 ======== docs/rollback:9  commit
 scene example:
   commit

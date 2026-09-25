@@ -7,11 +7,11 @@ export default function DocsLayout({ children }: LayoutProps<"/docs">) {
   return (
     <>
       <SiteHeader />
-      <div className="mx-auto flex w-full max-w-6xl gap-10 px-6">
+      <div className="mx-auto flex w-full max-w-7xl gap-10 px-6">
         <aside className="sticky top-[4.5rem] hidden h-[calc(100vh-6rem)] w-52 shrink-0 overflow-y-auto py-12 lg:block">
           <Sidebar />
         </aside>
-        <main className="min-w-0 max-w-2xl flex-1 py-12">
+        <main className="min-w-0 max-w-3xl flex-1 py-12">
           {children}
           <PageNav />
         </main>

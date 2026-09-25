@@ -73,6 +73,21 @@ Content lives in `src/app/docs/` as `page.mdx`, one page per subject, with `src/
 the manifest that drives the sidebar and the previous/next links. The crate READMEs are
 front doors that link into it, so prose belongs here and not there.
 
+The playground on `/docs/playground` is [`novn-playground`](../crates/novn-playground/README.md)
+built to WebAssembly and run in the reader's browser: the real compiler and VM, not a
+recording. `pnpm build` and `pnpm dev` compile it first, through `scripts/build_playground_wasm.sh`,
+so working on the site needs a Rust toolchain with `wasm32-unknown-unknown`. The `.wasm` lands
+in `public/` and is gitignored, since it is a build product.
+
+A fenced block becomes one by asking for `story-play` instead of `story`. That marker has to
+live in the language tag rather than the fence's meta, because remark drops the meta before it
+reaches a component and Turbopack cannot take a rehype plugin as a function to put it back.
+`crates/novn-script/tests/spec.rs` reads both spellings, so a playable example is still
+compiled and golden-tested like every other one.
+
+Fetching the wasm needs the `basePath` that `next/link` adds for free elsewhere, so the config
+exposes it as `NEXT_PUBLIC_BASE_PATH` and `src/playground/client.ts` builds the URL from it.
+
 `scripts/check_links.py` at the repository root checks relative links and anchors across
 the markdown, the `/docs/...` links inside MDX against the routes the export actually
 produces, and braces in MDX prose that would be read as JSX. CI runs it after the build,

@@ -8,6 +8,7 @@ members = [
     "crates/novn-build",
     "crates/novn-cli",
     "crates/novn-live2d",
+    "crates/novn-playground",
     "examples/god_is_watching",
     "examples/example_vn",
 ]
@@ -32,3 +33,10 @@ serde_json = "1.0"
 
 [profile.dev.package.rav1d]
 opt-level = 3
+
+[profile.wasm]
+inherits = "release"
+opt-level = "z"
+lto = true
+panic = "abort"
+strip = true
