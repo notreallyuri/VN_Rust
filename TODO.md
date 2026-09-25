@@ -410,10 +410,18 @@ to stand on.
   half the install time and whose failures should not look like the engine's. Neither
   can build `vn_live2d`'s native bridge: that needs the proprietary Core, which cannot be
   put in CI, so the crate is only covered in its SDK-independent form
-- [ ] Commit `docs/` (a bare `create-next-app`: Next 16, React 19, Tailwind 4, Biome,
-  pnpm). Decide how a pnpm project inside a cargo workspace is built in CI, and keep the
-  site's own lint and typecheck in that workflow
-- [ ] A `basePath` for project pages (`/VN_Rust`), or a domain, before any link is written
+- [x] `docs/` is committed and built by CI: a `docs` job runs `pnpm install
+  --frozen-lockfile`, Biome, and the static export, which typechecks on the way through.
+  The scaffold's demo page and Vercel artwork are gone; the rest is Next 16, React 19,
+  Tailwind 4, Biome and pnpm as it came
+- [x] `basePath` is `/VN_Rust`, set unconditionally so a hand-written link that forgets it
+  breaks in development rather than only once deployed. `output: "export"`,
+  `trailingSlash: true`, unoptimized images (the default loader needs a server), and
+  `public/.nojekyll`, without which Pages hides `_next`. A domain would be one line here
+  and one in the deploy
+- [ ] Deploying to Pages, once there are pages worth deploying. It needs the repository's
+  Pages source set to GitHub Actions, and a workflow that uploads `docs/out`. Deliberately
+  not done while the site is one placeholder page
 
 **Phase 1 — the pages.** The site is useful at the end of this, and the README problem is
 solved by the same work rather than twice.
