@@ -76,6 +76,9 @@ impl ScreenFactory for DefaultScreens {
 
         match name {
             PAUSE_OVERLAY => Some(Box::new(PauseMenu::new(self.pause_menu.clone()))),
+            crate::dev::styler::STYLE_EDITOR_OVERLAY => {
+                Some(Box::new(crate::dev::styler::StyleEditorOverlay::new()))
+            }
             crate::dev::director::DIRECTOR_OVERLAY => {
                 Some(Box::new(crate::dev::director::DirectorOverlay::new()))
             }

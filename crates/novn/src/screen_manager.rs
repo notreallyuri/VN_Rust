@@ -17,7 +17,10 @@ use crate::data::state::GameState;
 use crate::dev::director::DIRECTOR_OVERLAY;
 use crate::dev::picker::POSITION_PICKER_OVERLAY;
 use crate::dev::scene_jump::SCENE_JUMP_OVERLAY;
-use crate::dev::{CAPTURE_KEY, DIRECTOR_KEY, INSPECTOR_KEY, PICKER_KEY, SCENE_JUMP_KEY};
+use crate::dev::styler::STYLE_EDITOR_OVERLAY;
+use crate::dev::{
+    CAPTURE_KEY, DIRECTOR_KEY, INSPECTOR_KEY, PICKER_KEY, SCENE_JUMP_KEY, STYLE_EDITOR_KEY,
+};
 use crate::game::audio::Audio;
 use crate::game::characters::Characters;
 use crate::game::commands::Commands;
@@ -115,6 +118,7 @@ pub struct ScreenStateManager {
     pub keybind_keys: Vec<KeyboardKey>,
     pub dev_tools: bool,
     timing: crate::dev::inspector::Timing,
+    show_inspector: bool,
     recording: Option<crate::dev::capture::Recording>,
     wants_recording: bool,
     finishing: Option<crate::dev::capture::Finishing>,
@@ -205,6 +209,7 @@ impl ScreenStateManager {
             keybind_keys: vec![KeyboardKey::KEY_F1],
             dev_tools: false,
             timing: crate::dev::inspector::Timing::default(),
+            show_inspector: false,
             recording: None,
             wants_recording: false,
             finishing: None,
@@ -220,13 +225,17 @@ impl ScreenStateManager {
     }
 
     pub fn update(&mut self, rl: &mut RaylibHandle, thread: &RaylibThread) {
+        if self.dev_tools && rl.is_key_pressed(INSPECTOR_KEY) {
+            self.show_inspector = !self.show_inspector;
+        }
+        let styling = self
+            .overlay_names()
+            .any(|name| name == STYLE_EDITOR_OVERLAY);
+        crate::dev::inspector::set_active(self.dev_tools && (self.show_inspector || styling));
         crate::dev::inspector::begin_frame();
         crate::dev::picker::begin_frame();
         if self.dev_tools {
-            if rl.is_key_pressed(INSPECTOR_KEY) {
-                crate::dev::inspector::set_active(!crate::dev::inspector::active());
-            }
-            if crate::dev::inspector::active() {
+            if self.show_inspector {
                 self.timing.push(rl.get_frame_time());
             }
             if rl.is_key_pressed(CAPTURE_KEY) {
@@ -373,6 +382,18 @@ impl ScreenStateManager {
             }
         }
 
+        let wants_styler = self.dev_tools
+            && self.screens.showing != ScreenState::TextInput
+            && rl.is_key_pressed(STYLE_EDITOR_KEY);
+        if wants_styler {
+            if self.overlay_name() == Some(STYLE_EDITOR_OVERLAY) {
+                self.close_overlay();
+            } else {
+                self.world.modes.skip = false;
+                self.open_overlay(STYLE_EDITOR_OVERLAY);
+            }
+        }
+
         let wants_scene_jump = self.dev_tools
             && self.screens.showing != ScreenState::TextInput
             && self.overlay_name() != Some(SCENE_JUMP_OVERLAY)
@@ -497,7 +518,7 @@ impl ScreenStateManager {
             crate::ui::tooltip::draw_tooltip(d, ctx.fonts(), text, config);
         }
 
-        if self.dev_tools && crate::dev::inspector::active() {
+        if self.dev_tools && self.show_inspector {
             let mouse = crate::frame::viewport::mouse_position(d);
             crate::dev::inspector::draw(
                 d,

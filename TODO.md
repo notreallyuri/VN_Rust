@@ -365,7 +365,23 @@ builds), F1 (controls) and F2 (script errors).
   frame graph sitting on the game's own top-right buttons, so the graph now moves to the
   other corner when the pointer comes near; and the dialogue box, being a panel rather than a
   button, was not inspectable until panels were recorded too
-- [ ] Live style tweaking: hot-reload the style values a game defines (the example keeps them in `src/style.rs`), or edit them in an overlay with sliders and colour pickers that writes the tweaked values back out as Rust to paste. This is the part of a UI editor people actually want
+- [x] The style editor on F8, the Rust half: click a button or panel, change its size, font
+  size, colours by channel, padding, roundness and border live, and Enter copies the builder
+  calls for what changed. Decided 2026-09-25 over a hot-reloaded TOML theme: a file format
+  is a public commitment and an editor is not, and building the editor first closes nothing
+  off. **When the TOML layer below is built, the editor is upgraded to write into it as well
+  as copying Rust.**
+  An override applies to every widget drawn with that exact style, since styles compare by
+  value and a menu's buttons share one; the panel says how many. Edits are applied through
+  the builder methods they copy, so the preview is exactly what the pasted code builds: a
+  test holds that and fails if the fill is set as a raw field, which would leave the hover
+  fill stale because `.color()` sets that too. Recording for it and for F3 was split from
+  showing F3, with the last frame kept for an overlay's update, as the picker needed.
+  Played in the example, which found two things: a size change drew nothing, because each
+  screen lays its buttons out from the original style, so size now grows around the centre
+  in the preview and the panel says the layout reflows once pasted; and the panel covered
+  buttons that shared the style, so it now keeps clear of all of them, shortening above or
+  below a full-width bar
 - [x] Position picker on F6: drag a character and the sprite follows, the five slots drawn as
   guides with the nearest lit. Letting go copies `show registrar neutral at far_left`; Enter
   copies `.position(Position::FarLeft, 0.208)`. "Exact coordinates" in the `.story` line is
@@ -682,6 +698,9 @@ unknown keys as errors with a "did you mean", and a bad value naming its file an
 A TOML layer that fails at runtime with a default silently substituted would be a hole in
 the design, not a feature. Worth noting `suggest::did_you_mean` is already public and
 generic over candidates, so the diagnostics half is mostly there.
+
+**Decided alongside the style editor (2026-09-25):** if this layer is built, the F8 style
+editor gains a way to write into it, beside copying Rust.
 
 **The cheap first slice**, if it happens: the theme alone, since it is the most visual, the
 most iterated, and the part with no behaviour attached at all. If that is not pleasant to

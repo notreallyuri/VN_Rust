@@ -12,6 +12,13 @@ pub const SAMPLES: usize = 120;
 thread_local! {
     static ACTIVE: Cell<bool> = const { Cell::new(false) };
     static FRAME: RefCell<Frame> = RefCell::new(Frame::default());
+    static LAST: RefCell<Frame> = RefCell::new(Frame::default());
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Styled {
+    Button(Box<crate::ui::button::ButtonStyle>),
+    Panel(crate::ui::shape::PanelStyle),
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -22,6 +29,7 @@ pub struct Widget {
     pub focused: bool,
     pub disabled: bool,
     pub details: Vec<(&'static str, String)>,
+    pub style: Option<Styled>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -42,14 +50,23 @@ pub fn active() -> bool {
 }
 
 pub fn set_active(on: bool) {
+    if active() == on {
+        return;
+    }
     ACTIVE.with(|active| active.set(on));
     FRAME.with(|frame| *frame.borrow_mut() = Frame::default());
+    LAST.with(|last| *last.borrow_mut() = Frame::default());
 }
 
 pub fn begin_frame() {
     if active() {
-        FRAME.with(|frame| *frame.borrow_mut() = Frame::default());
+        let done = FRAME.with(|frame| std::mem::take(&mut *frame.borrow_mut()));
+        LAST.with(|last| *last.borrow_mut() = done);
     }
+}
+
+pub fn last() -> Frame {
+    LAST.with(|last| last.borrow().clone())
 }
 
 pub fn widget(widget: Widget) {

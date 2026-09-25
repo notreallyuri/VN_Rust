@@ -268,7 +268,7 @@ scene example:  (line 1)
 > Say { speaker: Some("player"), text: "Nice to meet you." }
 > End
 
-======== docs/engine/dev-tools:111  The position picker
+======== docs/engine/dev-tools:112  The position picker
 scene example:
   show registrar neutral at far_left
 -------- instructions
@@ -279,7 +279,7 @@ scene example:  (line 1)
 > Show { character: "registrar", image: "neutral", position: Some(FarLeft), transition: None }
 > End
 
-======== docs/engine/dev-tools:151  The director
+======== docs/engine/dev-tools:152  The director
 scene example:
   show registrar neutral at right with dissolve
   background field_post

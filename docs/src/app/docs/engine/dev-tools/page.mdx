@@ -23,6 +23,7 @@ a release build, for a tester's copy.
 | F4 | Jump to a scene |
 | F6 | The position picker, while playing |
 | F7 | The director, while playing |
+| F8 | The style editor |
 | F12 | A screenshot, from any screen |
 | Shift+F12 | Start or stop a GIF recording |
 
@@ -166,6 +167,40 @@ for names a story could not write, like `old-attic`.
 
 It needs the story in a folder on disk. A build that embeds its story has no file to write
 to, and says so.
+
+## The style editor
+
+F8, then click any button or panel. A panel opens beside it listing what that style is made
+of, and Left and Right change the value under the cursor, with Shift for ten times the step
+and the mouse wheel working too. Colours are four rows each, red, green, blue and alpha, with
+a swatch.
+
+**It changes every widget drawn with that exact style.** The panel says how many that is. A
+menu's buttons usually share one style, so tuning one tunes the menu, which is nearly always
+what you wanted, and a button with a style of its own changes alone.
+
+Enter copies the calls for what you changed, ready to add to the chain that builds the style:
+
+```rust
+.main_menu(|m| m.button_style(|b| b
+    .size(154.0, 36.0)
+    .color(Color::new(0, 0, 0, 200))
+    .border(1.0, Color::new(124, 175, 66, 255))))
+```
+
+The editor applies your changes by calling those same builder methods, so what you see is
+exactly what the pasted code produces. It matters more than it sounds: `.color()` also sets
+the hover and pressed fills, and editing the raw field would have shown you something the
+code never makes.
+
+**Size is previewed in place.** Each screen lays its buttons out when it builds them, so a
+wider button grows around its own centre here and may overlap its neighbours, and the real
+layout reflows it once the code is pasted. The panel says so whenever you change a size.
+
+Corners that are not a plain roundness, like the notched ones in the example, show as
+`custom` rather than being guessed at. Changing roundness replaces them with round ones. R
+resets the style you are on, and Esc closes the editor and puts every style back, so nothing
+you try survives unless you paste it.
 
 ## Screenshots and recordings
 

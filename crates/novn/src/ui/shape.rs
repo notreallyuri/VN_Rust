@@ -240,7 +240,7 @@ impl PanelStyle {
         self.draw_faded(d, rect, 1.0);
     }
 
-    fn inspect(&self, rect: Rectangle) {
+    fn inspect(&self, rect: Rectangle, original: &PanelStyle) {
         use crate::dev::inspector::{Widget, colour, widget};
         let mut details = vec![("fill", colour(self.color))];
         if let Some(gradient) = &self.gradient {
@@ -278,14 +278,21 @@ impl PanelStyle {
             kind: "panel",
             rect,
             details,
+            style: Some(crate::dev::inspector::Styled::Panel(*original)),
             ..Widget::default()
         });
     }
 
-    pub fn draw_faded(&self, _d: &mut impl RaylibDraw, rect: Rectangle, opacity: f32) {
+    pub fn draw_faded(&self, d: &mut impl RaylibDraw, rect: Rectangle, opacity: f32) {
+        let edited = crate::dev::styler::panel(self);
+        let shown = edited.as_ref().unwrap_or(self);
         if opacity > 0.0 && crate::dev::inspector::active() {
-            self.inspect(rect);
+            shown.inspect(rect, self);
         }
+        shown.paint(d, rect, opacity);
+    }
+
+    fn paint(&self, _d: &mut impl RaylibDraw, rect: Rectangle, opacity: f32) {
         if let Some(shadow) = self.shadow {
             let offset = Rectangle::new(
                 rect.x + shadow.offset.x,

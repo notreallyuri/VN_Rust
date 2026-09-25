@@ -104,23 +104,32 @@ impl<'a> Button<'a> {
     }
 
     pub fn draw(self, d: &mut RaylibDrawHandle, ctx: &DrawContext, rect: Rectangle) {
-        let mut look = self.style.look(self.amounts(d, ctx, rect));
-        look.opacity *= self.opacity;
+        let original = self.style;
+        let edited = crate::dev::styler::button(original);
+        let rect = edited.as_ref().map_or(rect, |edited| {
+            crate::dev::styler::resized(rect, original, edited)
+        });
+        let button = Button {
+            style: edited.as_ref().unwrap_or(original),
+            ..self
+        };
+        let mut look = button.style.look(button.amounts(d, ctx, rect));
+        look.opacity *= button.opacity;
         if look.opacity <= 0.0 {
             return;
         }
         if crate::dev::inspector::active() {
-            self.inspect(rect);
+            button.inspect(rect, original);
         }
         with_transform(rect, &look.transform, || {
-            draw_body(d, ctx, rect, self.style, &look);
-            draw_content(d, ctx, rect, self.label, self.style, &look);
+            draw_body(d, ctx, rect, button.style, &look);
+            draw_content(d, ctx, rect, button.label, button.style, &look);
         });
     }
 }
 
 impl Button<'_> {
-    fn inspect(&self, rect: Rectangle) {
+    fn inspect(&self, rect: Rectangle, original: &ButtonStyle) {
         use crate::dev::inspector::{Widget, colour, widget};
         let style = self.style;
         let mut details = vec![
@@ -163,6 +172,9 @@ impl Button<'_> {
             focused: self.focused,
             disabled: self.disabled,
             details,
+            style: Some(crate::dev::inspector::Styled::Button(Box::new(
+                original.clone(),
+            ))),
         });
     }
 }
