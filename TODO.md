@@ -563,9 +563,20 @@ solved by the same work rather than twice.
 - [ ] The same for Rust snippets, which nothing checks today: an extractor that generates
   a compile-only crate from the site's fenced `rust` blocks. An engine whose character is
   catching mistakes before they run should not ship examples that do not compile
-- [ ] Search, ours since there is no framework to inherit it from: an index generated at
-  build time from the MDX, and a small client over it. Algolia DocSearch is the fallback
-  if a build-time index proves too coarse for 5000 lines
+- [x] Search, ours, and the build-time index turned out to be plenty rather than too
+  coarse, so Algolia stays unneeded. `scripts/build_search_index.py` walks the MDX and
+  cuts each page at its headings, so a hit lands on the section rather than the page:
+  193 sections over 31 pages, 152 KiB, fetched on the first open and not before.
+  The cleaner keeps `_` and `-`, which sounds like a detail and is not: stripping them as
+  markdown emphasis turned `has_key` into `has key` and `character-visuals` into two words,
+  which is exactly what a reader searches for. Code inside fences is indexed too, since
+  `VnApp::new` is a thing people look for and it only appears in examples.
+  Scoring weights the page title over the heading over the body, requires every term to
+  appear somewhere, and pays a bonus for the whole query appearing verbatim. Ctrl or Cmd K
+  and `/` open it, arrows move, Enter opens the anchor, Escape closes.
+  `scripts/check_links.py` grew a third check over it: every exported route that has pages
+  must have sections, and every indexed route must exist. Verified by deleting a page's
+  sections and watching it fail
 - [ ] One-line `///` pointers on public items, linking into the site rather than repeating
   it: `/// Switch to the text input screen. See <docs/engine/text-input>.` Typing `ctx.`
   in an editor shows a list of names and nothing else today, and the LSP can only surface

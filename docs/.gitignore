@@ -43,3 +43,4 @@ next-env.d.ts
 # staged by scripts/build_playground_wasm.sh
 /public/novn-playground.wasm
 /public/highlight/
+/public/search-index.json

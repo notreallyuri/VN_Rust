@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "wasm": "sh ../scripts/build_playground_wasm.sh",
-    "predev": "pnpm wasm",
+    "predev": "pnpm wasm && pnpm index",
     "dev": "next dev",
-    "prebuild": "pnpm wasm",
+    "prebuild": "pnpm wasm && pnpm index",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "index": "python3 ../scripts/build_search_index.py"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",

@@ -97,7 +97,15 @@ compiled and golden-tested like every other one.
 Fetching the wasm needs the `basePath` that `next/link` adds for free elsewhere, so the config
 exposes it as `NEXT_PUBLIC_BASE_PATH` and `src/playground/client.ts` builds the URL from it.
 
+Search is ours rather than a service. `scripts/build_search_index.py` walks the MDX at build
+time and cuts each page at its headings, so a hit lands on the section; the client fetches
+that index on the first open and never before. Two things in the indexer are load-bearing:
+the cleaner keeps `_` and `-`, because stripping them as markdown emphasis turns `has_key`
+into two words that nobody searches for, and fenced code is indexed, because `VnApp::new`
+appears only in examples.
+
 `scripts/check_links.py` at the repository root checks relative links and anchors across
 the markdown, the `/docs/...` links inside MDX against the routes the export actually
-produces, and braces in MDX prose that would be read as JSX. CI runs it after the build,
-since two of the three need `out/`.
+produces, braces in MDX prose that would be read as JSX, and the search index against the
+routes that were actually exported. CI runs it after the build, since three of the four
+need `out/`.

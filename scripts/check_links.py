@@ -74,10 +74,40 @@ def braces():
     return problems
 
 
+def index():
+    at = EXPORT / "search-index.json"
+    if not at.is_file():
+        return [f"{at.relative_to(ROOT)} is missing; build the site first"]
+
+    import json
+
+    sections = json.loads(at.read_text())
+    if len(sections) < 100:
+        return [f"only {len(sections)} sections indexed, which is too few to be right"]
+
+    known = {
+        ("/" + str(page.parent.relative_to(EXPORT))).rstrip("/") or "/"
+        for page in EXPORT.rglob("index.html")
+    }
+    pages = {section["r"] for section in sections}
+    problems = [f"{route} is indexed but not exported" for route in sorted(pages - known)]
+
+    wanted = set()
+    for page in PAGES.rglob("page.mdx"):
+        rest = page.parent.relative_to(PAGES).as_posix()
+        wanted.add("/docs" if rest == "." else f"/docs/{rest}")
+    problems += [f"{route} has pages but nothing indexed" for route in sorted(wanted - pages)]
+    return problems
+
+
 def main():
-    checks = [("markdown links", markdown), ("exported routes", routes)]
+    checks = [
+        ("markdown links", markdown),
+        ("exported routes", routes),
+        ("search index", index),
+    ]
     if "--no-export" in sys.argv:
-        checks = [checks[0]]
+        checks = checks[:1]
     checks.append(("unescaped braces", braces))
 
     failed = False

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Search } from "@/components/search";
 
 export function SiteHeader() {
   const [lifted, setLifted] = useState(false);
@@ -21,11 +22,12 @@ export function SiteHeader() {
           : "border-transparent bg-transparent"
       }`}
     >
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
         <Link className="font-mono text-sm tracking-tight" href="/">
           novn
         </Link>
-        <nav className="flex items-center gap-6 text-muted text-sm">
+        <nav className="flex items-center gap-5 text-muted text-sm">
+          <Search />
           <Link
             className="transition-colors hover:text-foreground"
             href="/docs"
