@@ -2661,8 +2661,10 @@ ctx.visual_parameter("mary", "mouth", None);
 `Some(value)` overrides whatever the appearance's pose or the idle clock would give;
 `None` releases it back to them. A push is remembered for the character rather than for
 the instance in front of it, so it survives a change of appearance and reaches the next
-one as it loads. A backend that refuses a value fails that instance into its PNG, like
-any other error.
+one as it loads. A parameter the backend does not have is the game's typo rather than a
+broken model, so it is reported once for that character and ignored from then on: the
+character keeps its backend, its other parameters go on working, and the next appearance
+is still offered it in case that one knows it.
 
 A push is part of the story's state. Each line records what was pushed when it was shown,
 so rolling back to it puts those values back — and releases anything pushed after it —

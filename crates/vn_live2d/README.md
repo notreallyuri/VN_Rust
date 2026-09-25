@@ -45,7 +45,7 @@ Cubism's motion blending, expressions, and physics to Rust.
     appearance's motion started again, and neither the moc nor the textures are
     reloaded. An earlier version of the probe looped the load and did it four times
     over, which the models survived.
-  - Failure behind Core behaves as designed: `--break` truncates kaede's `.moc3`, Core
+  - Failure behind Core behaves as designed: `--break` truncates one character's `.moc3`, Core
     rejects it (`Failed to CubismMoc::Create()`), and the engine prints one line and
     draws her PNG while the other character's model keeps running.
   - Toggling fullscreen mid-scene resized the window from 1280×720 to 1920×1080 with

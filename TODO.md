@@ -288,9 +288,9 @@ bottom to top, then the gaps.
     first run under `target/`, since the sample models cannot be redistributed
   - [ ] Both probes are still watched by a person for anything the two reference frames do
     not cover: motions over time, physics, masks, a scene's worth of loading and dropping
-  - [ ] A parameter the model does not have fails that instance into its PNG for the rest
-    of the scene — a harsh price for a typo in a game's code. Decide whether
-    `set_parameter` should report once and carry on instead
+  - [x] A parameter the model does not have is reported once for that character and
+    ignored from then on, rather than costing the instance its model for the rest of the
+    scene. A typo in a game's code is not a broken model
   - [ ] Platform: Linux x86_64, OpenGL 3.3 and Cubism SDK 5-r.5 only. Other platforms and
     SDK releases are deliberately refused until someone validates them
   - [ ] Art has to be authored in parts for either backend. The example's art is flat
@@ -403,10 +403,13 @@ guide.
 **Phase 0 — the ground.** Nothing here is about documentation; it is what the rest needs
 to stand on.
 
-- [ ] There is no CI in this repository at all. A first workflow: `cargo fmt --check`,
-  `clippy -D warnings` over the workspace and over each off-by-default feature,
-  `cargo test --workspace`, and the `character-visuals` suite. The GPU tests can run in
-  the same job under `xvfb-run`, since both backends draw the same frame under llvmpipe
+- [x] CI, in `.github/workflows/ci.yml`. A `check` job: `cargo fmt --check`, clippy over
+  the workspace and again with `character-visuals`, both test suites, and every
+  `#[ignore]`d window test under `xvfb-run` on llvmpipe — seven of them, including the
+  reference frames. A separate `video` job for the FFmpeg backend, whose apt list is
+  half the install time and whose failures should not look like the engine's. Neither
+  can build `vn_live2d`'s native bridge: that needs the proprietary Core, which cannot be
+  put in CI, so the crate is only covered in its SDK-independent form
 - [ ] Commit `docs/` (a bare `create-next-app`: Next 16, React 19, Tailwind 4, Biome,
   pnpm). Decide how a pnpm project inside a cargo workspace is built in CI, and keep the
   site's own lint and typecheck in that workflow
