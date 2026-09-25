@@ -91,6 +91,7 @@ pub struct VnApp {
     pub(super) characters: Characters,
     pub(super) warn_missing_art: bool,
     pub(super) hot_reload: bool,
+    pub(super) dev_tools: bool,
     pub(super) screen_transition: ScreenTransitionConfig,
     pub(super) design_size: Option<(i32, i32)>,
     pub(super) screen_effects: ScreenEffectsConfig,
@@ -152,6 +153,7 @@ impl VnApp {
             characters: Characters::default(),
             warn_missing_art: true,
             hot_reload: cfg!(debug_assertions),
+            dev_tools: cfg!(debug_assertions),
             screen_transition: ScreenTransitionConfig::default(),
             design_size: None,
             screen_effects: ScreenEffectsConfig::default(),
@@ -307,6 +309,11 @@ impl VnApp {
 
     pub fn hot_reload(mut self, enabled: bool) -> Self {
         self.hot_reload = enabled;
+        self
+    }
+
+    pub fn dev_tools(mut self, enabled: bool) -> Self {
+        self.dev_tools = enabled;
         self
     }
 

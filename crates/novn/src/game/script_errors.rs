@@ -63,7 +63,7 @@ impl ScriptErrors {
         let hint = if self.collapsed {
             "F2 to show"
         } else {
-            "Fix the file and save to reload  ·  F2 to hide"
+            "Fix the file and save to reload.   F2 to hide"
         };
 
         let mut wrapped = Vec::new();

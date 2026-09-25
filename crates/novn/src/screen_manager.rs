@@ -14,6 +14,8 @@ use crate::data::saves::{Saves, THUMBNAIL_WIDTH};
 use crate::data::session::{PlayModes, SeenLines, SessionLog};
 use crate::data::settings::SettingsStore;
 use crate::data::state::GameState;
+use crate::dev::SCENE_JUMP_KEY;
+use crate::dev::scene_jump::SCENE_JUMP_OVERLAY;
 use crate::game::audio::Audio;
 use crate::game::characters::Characters;
 use crate::game::commands::Commands;
@@ -109,6 +111,7 @@ pub struct ScreenStateManager {
     pub hooks: Rc<Hooks>,
     pub close_confirmation: Option<String>,
     pub keybind_keys: Vec<KeyboardKey>,
+    pub dev_tools: bool,
     pub prompts: crate::input::prompts::Prompts,
     pub(crate) pointer: Option<crate::ui::cursor::Pointer>,
     script_errors: Option<ScriptErrors>,
@@ -194,6 +197,7 @@ impl ScreenStateManager {
             hooks: Rc::new(Hooks::default()),
             close_confirmation: Some(CLOSE_MESSAGE.to_string()),
             keybind_keys: vec![KeyboardKey::KEY_F1],
+            dev_tools: false,
             prompts: Default::default(),
             pointer: Some(crate::ui::cursor::Pointer::system()),
             script_errors: None,
@@ -310,6 +314,15 @@ impl ScreenStateManager {
 
         if let Some(state) = next_state {
             self.transition_to(state);
+        }
+
+        let wants_scene_jump = self.dev_tools
+            && self.screens.showing != ScreenState::TextInput
+            && self.overlay_name() != Some(SCENE_JUMP_OVERLAY)
+            && rl.is_key_pressed(SCENE_JUMP_KEY);
+        if wants_scene_jump {
+            self.world.modes.skip = false;
+            self.open_overlay(SCENE_JUMP_OVERLAY);
         }
 
         if self.frame.closing && self.overlay_name() != Some(CONFIRM_OVERLAY) {

@@ -358,7 +358,20 @@ builds), F1 (controls) and F2 (script errors).
 - [ ] Live style tweaking: hot-reload the style values a game defines (the example keeps them in `src/style.rs`), or edit them in an overlay with sliders and colour pickers that writes the tweaked values back out as Rust to paste. This is the part of a UI editor people actually want
 - [ ] Position picker: drag a sprite in the running game and get the `at` position, or exact coordinates, to paste into the `.story` line. Ren'Py's image location picker
 - [ ] Director: while playing, pick `show`, `background`, `music`, `sound` or `voice` from a menu, see it applied live, and write the line into the `.story` file at the current point. `.story` is line-oriented and `novn fmt` normalizes whatever a tool writes, so generated lines can't drift from hand-written style
-- [ ] Scene jump: a debug menu listing every scene, to jump straight to one with its variables set, instead of replaying to reach it
+- [x] Scene jump on F4: every scene with the file and line it starts on, beside every
+  registered variable and its current value. Change the values a scene depends on and jump.
+  "With its variables set" turned out to mean *you* set them: there is no way to compute what
+  a variable would hold on arrival, since a scene is reached by many paths, so the panel starts
+  from what you have now and lets you change it. A jump is New Game at that scene, so game
+  state, the log and rollback start over; rolling back past it would land in a story that
+  never happened. Behind `VnApp::dev_tools`, on in debug builds like hot reload.
+  Played in the example on a virtual display, driven by `xdotool`, rather than trusted from
+  the tests alone, which is how three real bugs surfaced that 14 windowless tests had not: the
+  arrows in the hint drew as `??` because the game's font has no such glyphs, so dev tools now
+  draw ASCII only (F2's `·` too); F4 on the start screen was eaten by "press any key", whose
+  screen change cleared the overlay opened in the same frame; and clicking a row re-centred
+  the list, sliding that row out from under the pointer so "click twice to jump" landed on a
+  different scene. The list now scrolls only to keep the selection visible
 - [ ] A screenshot and GIF capture key for bug reports and devlogs, writing next to the existing screenshot key
 
 ## M11: Documentation site

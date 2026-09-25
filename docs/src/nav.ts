@@ -133,6 +133,11 @@ export const nav: NavSection[] = [
         href: "/docs/engine/assets",
         summary: "Folders or embedded, textures, placeholders, fonts.",
       },
+      {
+        title: "Dev tools",
+        href: "/docs/engine/dev-tools",
+        summary: "What runs inside a debug build: scene jump and friends.",
+      },
     ],
   },
   {

@@ -1,0 +1,59 @@
+# Dev tools
+
+novn has no visual editor, on purpose. Logic lives in Rust, where Rust's own tools debug it,
+and a WYSIWYG editor is something Godot and Unity already do better. What it has instead is
+what Ren'Py settled on too: hot reload, and a handful of tools inside the running game that
+cut out the slow parts of iterating on a story.
+
+All of them are on in debug builds and off in release builds, so none of them can ship to a
+player by accident.
+
+```rust
+VnApp::new("My Novel")
+    .dev_tools(false)
+```
+
+`.dev_tools(false)` turns them off while you develop, and `.dev_tools(true)` turns them on in
+a release build, for a tester's copy.
+
+| Key | Tool |
+| --- | --- |
+| F2 | The story error panel, when a hot reload failed. See [hot reload](/docs/engine/story#hot-reload) |
+| F4 | Jump to a scene |
+
+They draw in their own plain style rather than your game's theme, so a tool stays readable
+however the game looks, and they only use characters every font has.
+
+## Jump to a scene
+
+Replaying chapter one to check a line in chapter four is the slowest loop in writing a visual
+novel. F4 opens every scene in the story, in the order the files load, each with the file and
+line it starts on, next to every variable the game registered and its value right now.
+
+Pick a scene, change the variables it depends on, and press Enter.
+
+| Input | Does |
+| --- | --- |
+| Up and Down | Move through the list |
+| Tab, or Right from the scenes | Switch between scenes and variables |
+| Left and Right on a variable | Flip a `bool`, step an `int`, cycle an enum's members |
+| Enter | Jump |
+| Click a scene | Select it. Click it again to jump |
+| Click a variable | Change it: the left half steps back, the right half forward |
+| Esc, or a click outside | Close |
+
+It works on the start screen, the main menu, or halfway through a line. The one place it
+stays shut is a text input screen, the same as F1.
+
+**The values start from where you are.** Open it mid-game and every variable holds its
+current value, so a jump carries your state with it unless you change something. A value you
+changed is marked until you jump. Strings are shown but not editable, since a name the player
+typed has no sensible "next".
+
+**A jump is a new game at that scene.** The story starts there with the values in the panel,
+and everything else starts over the way New Game does: your Rust game state, the log, play
+modes and rollback history. Rolling back past a jump would land in a story that never
+happened, so there is nothing to roll back to.
+
+It opens on the scene being played, so pressing Enter straight away restarts the current
+scene with the current values, which is a quick way to see a scene again after editing it.

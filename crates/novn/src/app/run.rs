@@ -148,6 +148,7 @@ impl VnApp {
         manager.close_confirmation = self.close_confirmation;
         manager.show.tooltip_config = self.tooltips;
         manager.keybind_keys = self.keybinds.open_keys.clone();
+        manager.dev_tools = self.dev_tools;
         manager.prompts = prompts;
         manager.pointer = match (self.cursor, self.cursor_shapes) {
             (Some(style), _) => {
