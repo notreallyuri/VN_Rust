@@ -67,9 +67,19 @@ export const nav: NavSection[] = [
         summary: "VnApp, the registries, the schema, where things live.",
       },
       {
+        title: "The screens you get",
+        href: "/docs/engine/screens",
+        summary: "Start screen, main menu, actions, the playing screen.",
+      },
+      {
         title: "Story integration",
         href: "/docs/engine/story",
         summary: "Commands, story words, hooks, game state, hot reload.",
+      },
+      {
+        title: "Saving and rollback",
+        href: "/docs/engine/saving",
+        summary: "Save files, autosave, thumbnails, rollback, migrations.",
       },
     ],
   },

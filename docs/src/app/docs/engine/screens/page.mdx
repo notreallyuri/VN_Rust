@@ -1,0 +1,121 @@
+# The screens you get
+
+The engine ships the behaviour of every screen. A game changes text, sizes, colours,
+fonts, positions and actions, and leaves the rest alone.
+
+Layout is relative to the window: a `*_y` value is a fraction of the window height, where
+`0.5` is the middle, sizes are in pixels, and everything is centred horizontally.
+
+## The start screen
+
+A title card. Any key or click moves on, though input is ignored for the first 0.3
+seconds so a key still held from launching the game does not skip it.
+
+| Option | Default |
+| --- | --- |
+| `title`, `title_text`, `title_y` | none, Title font 64 px, at 0.25 |
+| `subtitle`, `subtitle_text` | none, Menu font 20 px light grey, under the title |
+| `prompt`, `prompt_text`, `prompt_y` | "Press any key to start", Menu font 30 px, at 0.5 |
+| `prompt_in_bar(bool)` | `false`; `true` centres the prompt in the letterbox's bottom bar |
+| `prompt_pulse(seconds)` | 0, steady. A period gives it a slow fade between 30% and 100% |
+| `footer`, `footer_text` | none, bottom right, Menu font 14 px grey |
+| `scenery`, `background` | none |
+| `next(state)` | `MainMenu` |
+
+## The main menu
+
+| Option | Default |
+| --- | --- |
+| `title`, `title_text`, `title_y` | the app title, Title font 64 px, at 0.25 |
+| `title_align` | `Center`. `Left` and `Right` line the title up with the button block's edge |
+| `button(label, action)`, `item(MenuItem)` | New Game, Continue, Load, Settings, Quit |
+| `button_style` | 240×52 |
+| `buttons_y` | 0.45, the top of the button area |
+| `layout`, `spacing(px)` | a column anchored at the top of that area, 18 apart |
+| `margin(px)` | 40 from the sides and bottom. A menu that would reach lower moves up, then tightens its spacing |
+| `panel`, `panel_padding(px)` | none, 40: a panel behind the title and the buttons |
+| `panel_sidebar(bool)` | `false`; `true` stretches that panel past the window edges so only its inner edge shows |
+| `separator(size, style)` | none: a diamond between buttons that sit side by side |
+| `buttons_in_bar(bool)` | `false`; `true` lays the buttons out inside the letterbox's bottom bar |
+| `intro(seconds)` | 0. At startup the title fades in and then the buttons; arriving from the start screen only the buttons fade, since the title card is already there |
+
+The first `button` or `item` call replaces the default list, and later calls append.
+`MenuItem::new(label, action).style(|b| ...)` restyles one button on top of
+`button_style`, and `.tooltip(text)` gives it a tooltip.
+
+## What a button can do
+
+`Action` is shared by the main menu, the pause menu and the HUD.
+
+| Action | Behaviour |
+| --- | --- |
+| `NewGame` | Reset the story and game state, then play |
+| `Continue` | Back to the game in progress; after a restart, load the most recent save, usually the autosave. With neither, a notification says there is no saved game |
+| `Goto(state)` | Switch to a state, closing any overlays. `Goto(Playing)` continues the current story |
+| `Action::overlay(name)` | Open an overlay on top of the current screen |
+| `Resume` | Close every open overlay |
+| `QuickSave`, `QuickLoad` | The `quick` slot, with a notification either way |
+| `Action::confirm(message, action)` | Ask first, and run the action only if the player says yes |
+| `Quit` | Close the app |
+| `Action::custom(\|ctx\| ...)` | Run your own code with the `GameContext`, returning the next state or `None` to stay |
+
+## The playing screen
+
+It plays the story from wherever the VM is. Coming back to it, from an inventory screen
+say, shows the same line or choice again.
+
+A `Say` draws the dialogue box, the speaker's name above word-wrapped text, using the
+registered character's display name and colour. New lines type out at the player's text
+speed; clicking while a line types shows all of it, and the next click continues. A line
+shown again, after a rollback or a load, appears whole. Words are wrapped for the full
+line before typing starts, so they never jump between lines as it goes.
+
+A `Choice` is one button per option, centred vertically. Options gated by the story are
+greyed out with their reason as a tooltip, or left out entirely. `End` shows an end title
+and a hint, and continuing goes wherever `after_end` says.
+
+The story's background fills the window, scaled to cover it and cropped if the aspect
+ratio differs. Characters stand at their `at` position as a fraction of the window width,
+bottom aligned, scaled to `character_height`; characters without a position are spread
+evenly, sorted by id.
+
+Click or an advance key continues. Escape opens the pause menu, F5 and F9 are quick save
+and quick load, and the HUD buttons sit in a row at the top right, hidden on the end
+screen. Clicking one runs its action without advancing the dialogue.
+
+| Option | Default |
+| --- | --- |
+| `dialogue_box` | height 170, margin 40, padding 24, black at 200 alpha, square corners |
+| `speaker_text`, `dialogue_text` | Speaker font 24 px gold; Dialogue font 26 px white |
+| `choice_button`, `choice_spacing` | 720×56 in the Choice font; 16 |
+| `choice_image`, `choice_preview` | an option's picture fills its button; a 360×240 preview anchored top right |
+| `nvl` | margin 60, padding 40, at most 1100 wide, 14 between lines |
+| `end_title`, `end_hint` | "The End"; "Click to return to the menu" |
+| `advance_keys` | Space, Enter |
+| `pause_key`, `menu_key` | Escape; none |
+| `position(Position, x)` | 0.15, 0.3, 0.5, 0.7, 0.85 of the window width |
+| `character_height(Option<f32>)` | `Some(0.8)` of the window height, keeping the aspect ratio; `None` draws sprites at their pixel size |
+| `hud_button(label, action)` | Log, Auto, Skip, replaced by the first call |
+| `skip_interval`, `auto_per_character` | 0.05 s a line while skipping; 0.02 s per character added to the auto delay |
+| `quick_save_key`, `quick_load_key` | F5, F9 |
+| `hud_layout`, `hud_group(name, layout)` | a row anchored top right; named groups get their own layout, so a second row can sit under the dialogue box |
+
+raylib's habit of closing the window on Escape is turned off, which is what leaves Escape
+free for the pause menu.
+
+## The dialogue box
+
+| Option | Default |
+| --- | --- |
+| `height`, `padding` | 170, 24 |
+| `margin` | 40 from the sides, and from the bottom unless `bottom` says otherwise |
+| `bottom(px)` | distance from the window's bottom edge, to leave a row for the HUD under the box |
+| `max_width(px)` | none; a narrower box is centred |
+| `panel` (or `color`, `roundness`) | black at 200 alpha, square |
+| `name_plate` | none: the speaker's name is the first line inside the box |
+| `bust` | none: no portrait inside the box |
+
+With a name plate the speaker's name sits in its own small panel on the box's top edge and
+the line starts at the top of the box. The plate keeps the character's colour, and takes
+its own panel, padding, indent from the box's left edge, overlap over its top edge, and a
+minimum width.

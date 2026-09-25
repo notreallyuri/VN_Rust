@@ -1,0 +1,142 @@
+# Saving, loading and rollback
+
+A save holds everything needed to continue: the story position, the story variables, the
+characters on screen, and every registered game state value.
+
+## Where saves live
+
+By default they go to the platform's data directory, in a folder named after the game.
+
+| Platform | Directory |
+| --- | --- |
+| Linux | `$XDG_DATA_HOME/<game>`, or `~/.local/share/<game>` |
+| macOS | `~/Library/Application Support/<game>` |
+| Windows | `%APPDATA%\<game>` |
+
+`saves_dir(path)` picks somewhere else, and debug builds print the directory in use at
+startup. `settings.json` lives in the same place.
+
+One JSON file per slot: `1.json` through `6.json`, `quick.json` and `auto.json`, each with
+an optional `<slot>.png` thumbnail. A slot name may only hold ASCII letters, digits, `_`
+and `-`, so it cannot point outside the directory. Files are written to `<slot>.json.tmp`
+and renamed, so a crash or a full disk mid-save leaves the previous save intact.
+
+## What a slot shows
+
+The line a save sits on is kept as ids rather than as the sentence the player read: the
+speaker's id, the story file, the line as written, and the values of anything it
+interpolates. The menu renders it through the active catalogue and the character registry,
+so slots and their timestamps appear in whatever language is on now, rather than the one
+the save was written in.
+
+## Autosave
+
+On by default. The engine saves to the `auto` slot when the story enters a scene, once its
+first line is on screen so the thumbnail and summary show the new scene, and when the game
+closes with a story in progress.
+
+Autosaves are silent, and a failure is only logged. They carry the rollback history like
+any other save. `ctx.autosave()` asks for one from a command or a screen, and it is
+written during that frame's draw, after the thumbnail is taken. The Load screen lists the
+autosave first, and `Action::Continue` loads the newest save, which is usually it.
+
+## Thumbnails
+
+While the playing screen is up with no overlay open, the engine grabs the frame at most
+once a second, scaled to 320 pixels wide. Every save writes that picture beside its JSON,
+so saving from the pause menu shows the game rather than the menu. A save made before any
+picture exists removes the old one, so a slot never shows a stale thumbnail.
+
+## Where a save is in the story
+
+The position is the scene and an offset within it, not an absolute instruction index, plus
+a fingerprint of that scene's compiled instructions.
+
+| What changed | What a load does |
+| --- | --- |
+| Other scenes, even adding lines before the saved one | Nothing: the save still points at the same line |
+| The saved scene itself | Restarts that scene from its start, keeping the saved variables, characters and state, and reports `SceneRestarted` |
+| The saved scene is gone | The load fails with `SaveError::Story` |
+
+## Rollback
+
+Mouse wheel up or Page Up steps back a line, wheel down or Page Down steps forward.
+Stepping back restores the story and every game state value, so an item a command gave is
+taken back too. Continuing after a rollback plays on from there and forgets the lines that
+were ahead.
+
+What cannot be undone is decided at three levels.
+
+| Level | How | Effect |
+| --- | --- | --- |
+| Game default | `rollback(\|r\| r.through_choices(false))` | Every choice is permanent once made |
+| Story | `choice final:` | That choice is permanent, whatever is picked |
+| Story | `commit` | A point of no return anywhere; inside one option, only that option |
+| Commands | `rollback(\|r\| r.block_command("unlock_achievement"))` | Running that command is a point of no return |
+
+Rollback stops at the first line after a barrier, and resets on New Game.
+
+| Option | Default |
+| --- | --- |
+| `enabled` | `true` |
+| `max_steps(n)` | 100 lines of history |
+| `through_choices` | `true` |
+| `save_history` | `true`: the history goes into save files |
+| `mouse_wheel` | `true` |
+| `back_keys`, `forward_keys` | Page Up, Page Down |
+
+Each step stores a story snapshot and the game state as JSON, the same data a save holds,
+so a large state type makes history expensive; lower `max_steps` if that bites.
+
+A save made through the save menus or quick save carries that history, so a player can
+roll back after loading, up to the same barriers. History that no longer fits the story is
+dropped: every checkpoint before one in an edited or deleted scene, and all of it when the
+saved scene itself restarted.
+
+## Game state in a save
+
+Every value registered with `state(T)` is saved under its type name, so `T` has to
+implement `Serialize` and `Deserialize`. Two registered types with the same name panic at
+startup. Renaming a type changes its key, so older saves report it missing unless a
+migration renames it.
+
+## Migrations
+
+Two versions live in every save. `format_version` is the engine's file layout, and the
+engine updates older saves itself. `game_version` is yours, set with `save_version(n)`.
+
+When a game changes what it stores, it raises its version and registers a step that turns
+saves from the old version into the new one.
+
+```rust
+VnApp::new("My Game")
+    .save_version(2)
+    .migrate_save(0, |save| {
+        save.rename_state("Bag", "Inventory");
+        save.rename_variable("met", "met_mary");
+        Ok(())
+    })
+    .migrate_save(1, |save| {
+        save.state("Inventory", |inventory| {
+            let fields = inventory.as_object_mut().ok_or("not an object")?;
+            let things = fields.remove("things").unwrap_or_default();
+            fields.insert("items".into(), things);
+            Ok(())
+        })
+    })
+```
+
+A save is migrated as it is read: engine steps first, then every game step from its
+version up to the current one, in order. A version with no step is left alone, and the
+file on disk is only rewritten when the player saves over it.
+
+| Method | Does |
+| --- | --- |
+| `state(key, \|value\| ...)` | Edit a state value as `serde_json::Value` |
+| `rename_state`, `remove_state` | Rename or drop a state key |
+| `variable(name, \|value\| ...)` | Edit a story variable |
+| `rename_variable`, `remove_variable` | Rename or drop a story variable |
+| `json()` | The whole file, for anything else |
+
+Every helper applies to the save and to each checkpoint of its rollback history. A step
+returns `Err(message)` to refuse the save.

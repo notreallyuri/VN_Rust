@@ -80,7 +80,7 @@ export default function Home() {
               >
                 Read the guide
               </Link>
-              <Command>cargo install novn-cli</Command>
+              <Command>cargo install novn-cli && novn-cli new my_story</Command>
             </div>
 
             <figure className="mt-14">

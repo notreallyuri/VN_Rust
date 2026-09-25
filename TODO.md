@@ -437,9 +437,9 @@ solved by the same work rather than twice.
   conditions, engine commands, rollback, identifiers and layout, with its complete example
   on the getting-started page. `README.md` became the landing page and "what novn is".
   The engine guide is being moved as thirteen pages grouped by what a reader wants:
-  building an app and story integration are in; screens, menus, screens of your own, look
-  and feel, the picture, input, saving, languages, audio and video, character visuals and
-  assets are not. Then `novn-script` for contributors, the CLI reference, and short pages
+  building an app, the screens you get, story integration and saving are in; menus,
+  screens of your own, look and feel, the picture, input, languages, audio and video,
+  character visuals and assets are not. Then `novn-script` for contributors, the CLI reference, and short pages
   for build, macros and live2d
 - [ ] Every crate README shrinks to a front door of about 150 lines: what it is, a quick
   start, the module map, and a link to its guide. A README that is the first thing a
