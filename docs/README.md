@@ -10,11 +10,15 @@ is the scaffold and the pipeline that will carry it.
 
 ```sh
 pnpm install
-pnpm dev      # http://localhost:3000/VN_Rust
+pnpm dev      # http://localhost:3000/VN_Rust — the prefix is not optional
 pnpm build    # a static export in out/
 pnpm lint     # biome
 pnpm format   # biome, writing
 ```
+
+`pnpm dev` prints that URL after Next's own banner, because Next's banner says
+`http://localhost:3000` and `/` is not a route here: the site lives under its `basePath`
+in development exactly as it does once deployed.
 
 `basePath` is `/VN_Rust` in development as well as in the build, so a hand-written link
 that forgets it breaks here rather than only once deployed. The build is a static export
