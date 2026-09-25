@@ -1,10 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Search } from "@/components/search";
 
-export function SiteHeader({ width = "max-w-7xl" }: { width?: string }) {
+export function SiteHeader({
+  width = "max-w-7xl",
+  leading,
+}: {
+  width?: string;
+  leading?: ReactNode;
+}) {
   const [lifted, setLifted] = useState(false);
 
   useEffect(() => {
@@ -25,9 +31,12 @@ export function SiteHeader({ width = "max-w-7xl" }: { width?: string }) {
       <div
         className={`mx-auto flex w-full items-center justify-between px-6 py-4 ${width}`}
       >
-        <Link className="font-mono text-sm tracking-tight" href="/">
-          novn
-        </Link>
+        <span className="flex items-center gap-2">
+          {leading}
+          <Link className="font-mono text-sm tracking-tight" href="/">
+            novn
+          </Link>
+        </span>
         <nav className="flex items-center gap-5 text-muted text-sm">
           <Search />
           <Link

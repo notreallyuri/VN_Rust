@@ -97,6 +97,11 @@ compiled and golden-tested like every other one.
 Fetching the wasm needs the `basePath` that `next/link` adds for free elsewhere, so the config
 exposes it as `NEXT_PUBLIC_BASE_PATH` and `src/playground/client.ts` builds the URL from it.
 
+The sidebar and the on-this-page column are hidden below `lg` and `xl`, so on a phone the
+header carries a menu that opens both in a drawer. It closes on a route change, on Escape and
+on the backdrop, and locks the body while it is open. Search finds a page you can already
+name; the drawer is what shows you the ones you cannot.
+
 Search is ours rather than a service. `scripts/build_search_index.py` walks the MDX at build
 time and cuts each page at its headings, so a hit lands on the section; the client fetches
 that index on the first open and never before. Two things in the indexer are load-bearing:
