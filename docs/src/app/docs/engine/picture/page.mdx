@@ -24,6 +24,11 @@ VnApp::new("My Game").size(1280, 720).design_size(1280, 720)
 Mouse positions are mapped back through the same transform, so clicks, hovers and tooltips
 land where they look even when the frame is scaled or letterboxed.
 
+The player's interface size setting shrinks the layout size further, and raises the render
+scale to match, so that screens are drawn larger at the same sharpness. A screen that lays
+itself out from `ui::screen_size` needs nothing for that; see
+[Interface size](/docs/engine/menus#interface-size).
+
 ## Sharper edges
 
 Shapes are drawn into the render target, which is not multisampled, so the window's own

@@ -275,6 +275,7 @@ impl VnApp {
             &settings.off_label,
             &settings.reduce_motion_label,
             &settings.text_size_label,
+            &settings.ui_scale_label,
             &settings.text_backdrop_label,
             &settings.text_outline_label,
             &settings.self_voicing_label,

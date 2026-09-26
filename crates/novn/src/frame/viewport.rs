@@ -25,6 +25,28 @@ impl Viewport {
     }
 }
 
+pub const UI_SCALES: [u32; 4] = [100, 110, 125, 150];
+
+pub fn nearest_ui_scale(percent: u32) -> usize {
+    UI_SCALES
+        .iter()
+        .enumerate()
+        .min_by_key(|(_, scale)| scale.abs_diff(percent))
+        .map_or(0, |(index, _)| index)
+}
+
+pub fn ui_factor(percent: u32) -> f32 {
+    UI_SCALES[nearest_ui_scale(percent)] as f32 / 100.0
+}
+
+pub fn scaled_layout(layout: (i32, i32), percent: u32) -> (i32, i32) {
+    let factor = ui_factor(percent);
+    (
+        (layout.0 as f32 / factor).round() as i32,
+        (layout.1 as f32 / factor).round() as i32,
+    )
+}
+
 thread_local! {
     static CURRENT: Cell<Option<Viewport>> = const { Cell::new(None) };
     static RENDER_SCALE: Cell<f32> = const { Cell::new(1.0) };

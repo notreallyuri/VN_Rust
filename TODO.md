@@ -347,12 +347,21 @@ player has seen.
   example at 150 percent: the story's longest ADV line wraps to two rows inside the grown box,
   the longest NVL line wraps inside its page. It found the settings preview box sized from the
   unscaled style, which clipped a second line; it grows now.
-- [ ] UI scale, the other half of the original item, deliberately not done with text size.
-  Scaling menus and buttons collides with fixed layouts: at 125 percent the settings rows
-  would reach the Back button. The promising route is the render target: lay out at the
-  design size divided by the scale and raise the render scale by the same factor, so the
-  target keeps its pixels and everything is drawn larger and sharp. It still needs each
-  default screen checked for fit at 125 percent, and the range kept to what fits
+- [x] UI scale, as Interface size on the Accessibility page: 100, 110, 125 or 150 percent,
+  by the route written down here before. Screens are laid out at the design size divided by
+  the scale and the render scale rises by the same factor, so the target keeps its pixels and
+  everything is drawn larger and sharp, while backgrounds and characters keep their size. It
+  is a value button, since a slider that resizes its own page moves out from under the
+  pointer. Played in the example at each scale, which found what did not fit and fixed it:
+  the settings rows reached Back from 125 percent, and now scroll, keeping the focused row in
+  view and the sample line while four rows fit beside it; the controls overflowed and cut
+  their keys short, and now scroll and stack into one column; save slots and the example's
+  gallery ran off both edges and now narrow to fit. The log was already clipping the wrong
+  region at the example's render scale of 1.5, because raylib's scissor ignores the camera;
+  `ui::scroll::begin_clip` clips on target pixels now. At 150 percent the Accessibility page
+  still fits, so the row that undoes it is always reachable. Tests hold that every settings
+  page leaves Back clear at every scale. Not played: the report desk and search rooms, which
+  the story reaches late
 - [x] A reduce-motion setting, on an Accessibility page of its own reached from the last row
   of Settings, since the settings screen was already full and does not scroll. The line drawn
   is the guidance's: remove movement, keep fades. Slides become dissolves or fades in place, a

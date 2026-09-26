@@ -12,6 +12,7 @@ use crate::ui;
 use crate::ui::TextStyle;
 use crate::ui::button::ButtonStyle;
 use crate::ui::fonts::FontRole;
+use crate::ui::scroll::{Scroll, ScrollStyle};
 use crate::ui::shape::PanelStyle;
 use crate::ui::theme::Theme;
 
@@ -360,7 +361,11 @@ pub struct KeybindsOverlay {
     config: Rc<KeybindsConfig>,
     sections: Vec<KeySection>,
     focus: Focus,
+    scroll: Scroll,
 }
+
+const COLUMN_GAP: f32 = 36.0;
+const MIN_COLUMN: f32 = 460.0;
 
 impl KeybindsOverlay {
     pub fn new(config: Rc<KeybindsConfig>, defaults: Vec<KeySection>) -> Self {
@@ -375,6 +380,7 @@ impl KeybindsOverlay {
             config,
             sections,
             focus: Focus::default(),
+            scroll: Scroll::new(),
         }
     }
 
@@ -385,6 +391,53 @@ impl KeybindsOverlay {
     fn panel_rect(&self, screen: Vector2) -> Rectangle {
         let width = self.config.panel_width.min(screen.x - 32.0);
         Rectangle::new((screen.x - width) / 2.0, 16.0, width, screen.y - 32.0)
+    }
+
+    fn body_rect(&self, screen: Vector2) -> Rectangle {
+        let panel = self.panel_rect(screen);
+        let top = panel.y + self.config.title_text.size + 40.0;
+        let bottom = self.back_rect(screen).y - 12.0;
+        Rectangle::new(
+            panel.x + 32.0,
+            top,
+            panel.width - 64.0,
+            (bottom - top).max(0.0),
+        )
+    }
+
+    pub fn columns(&self, width: f32) -> Vec<&[KeySection]> {
+        let two = (width - COLUMN_GAP) / 2.0 >= MIN_COLUMN;
+        match two {
+            true => {
+                let (first, rest) = self.sections.split_at(self.sections.len().min(1));
+                vec![first, rest]
+            }
+            false => vec![&self.sections[..]],
+        }
+    }
+
+    fn row_height(&self) -> f32 {
+        self.config.key_text.size * 1.55
+    }
+
+    fn column_height(&self, sections: &[KeySection]) -> f32 {
+        let config = &self.config;
+        sections
+            .iter()
+            .map(|section| {
+                config.section_text.size * 1.4
+                    + config.header_text.size * 1.6
+                    + section.rows.len() as f32 * self.row_height()
+                    + 18.0
+            })
+            .sum()
+    }
+
+    pub fn content_height(&self, width: f32) -> f32 {
+        self.columns(width)
+            .into_iter()
+            .map(|sections| self.column_height(sections))
+            .fold(0.0, f32::max)
     }
 
     fn back_rect(&self, screen: Vector2) -> Rectangle {
@@ -408,6 +461,28 @@ impl Overlay for KeybindsOverlay {
             .rl
             .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_RIGHT);
         let accepted = self.focus.update(&ctx.nav, &[back], &[], None);
+        let body = self.body_rect(ui::screen_size(ctx.rl));
+        let style = ScrollStyle::default();
+        self.scroll
+            .extent(body.height, self.content_height(body.width));
+        self.scroll.input(ctx.rl, body, &style);
+        if let Some(kind) = self.scroll.cursor(ctx.rl, body, &style) {
+            ctx.cursor(kind);
+        }
+        let mut delta = 0.0;
+        if ctx.nav.up {
+            delta -= style.step;
+        }
+        if ctx.nav.down {
+            delta += style.step;
+        }
+        if ctx.nav.page_back || ctx.rl.is_key_pressed(KeyboardKey::KEY_PAGE_UP) {
+            delta -= self.scroll.page();
+        }
+        if ctx.nav.page_forward || ctx.rl.is_key_pressed(KeyboardKey::KEY_PAGE_DOWN) {
+            delta += self.scroll.page();
+        }
+        self.scroll.by(delta);
 
         if ui::button::button_clicked(&mut ctx, back, &config.back_button)
             || key
@@ -440,18 +515,22 @@ impl Overlay for KeybindsOverlay {
             &config.title_text,
         );
 
-        let top = panel.y + config.title_text.size + 40.0;
-        let gap = 36.0;
-        let column_width = (panel.width - 64.0 - gap) / 2.0;
+        let body = self.body_rect(screen);
+        let columns = self.columns(body.width);
+        let count = columns.len() as f32;
+        let bar = match self.scroll.overflows() {
+            true => 16.0,
+            false => 0.0,
+        };
+        let column_width = (body.width - bar - COLUMN_GAP * (count - 1.0)) / count;
         let keys_width = column_width * 0.4;
         let pad_width = column_width * 0.22;
-        let row_height = config.key_text.size * 1.55;
+        let row_height = self.row_height();
 
-        let (first, rest) = self.sections.split_at(self.sections.len().min(1));
-        let columns = [first, rest];
+        crate::ui::scroll::begin_clip(body);
         for (column, sections) in columns.iter().enumerate() {
-            let x = panel.x + 32.0 + column as f32 * (column_width + gap);
-            let mut y = top;
+            let x = body.x + column as f32 * (column_width + COLUMN_GAP);
+            let mut y = body.y - self.scroll.offset();
             for section in sections.iter() {
                 ui::draw_text(
                     d,
@@ -511,6 +590,8 @@ impl Overlay for KeybindsOverlay {
                 y += 18.0;
             }
         }
+        crate::ui::scroll::end_clip();
+        self.scroll.draw_bar(d, body, &ScrollStyle::default());
 
         ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)
             .focused(ctx.shows_focus(&self.focus, 0))

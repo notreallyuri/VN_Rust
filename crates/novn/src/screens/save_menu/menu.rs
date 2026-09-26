@@ -115,6 +115,7 @@ impl SaveMenu {
     fn slot_rects(&self, screen: Vector2) -> Vec<Rectangle> {
         const TOP: f32 = 130.0;
         const MESSAGE_SPACE: f32 = 24.0;
+        const SIDE_MARGIN: f32 = 16.0;
 
         let count = self.slots.as_ref().map_or(0, Vec::len);
         let config = &self.config;
@@ -125,14 +126,20 @@ impl SaveMenu {
         let rows = layout.rows(count).max(1);
         let gaps = (rows - 1) as f32 * layout.spacing.y;
         let fitting = (area.height - gaps) / rows as f32;
-        let size = Vector2::new(config.slot_width, config.slot_height.min(fitting));
+        let columns = layout.columns(count).max(1);
+        let room = screen.x - (config.panel_padding + SIDE_MARGIN) * 2.0;
+        let across = (room - (columns - 1) as f32 * layout.spacing.x) / columns as f32;
+        let size = Vector2::new(
+            config.slot_width.min(across.max(0.0)),
+            config.slot_height.min(fitting),
+        );
 
         layout.place(area, &vec![size; count])
     }
 
     fn panel_rect(&self, screen: Vector2) -> Rectangle {
         let slots = self.slot_rects(screen);
-        let half = self.config.slot_width / 2.0;
+        let half = slots.first().map_or(self.config.slot_width, |r| r.width) / 2.0;
         let left = slots
             .iter()
             .map(|r| r.x)

@@ -277,15 +277,18 @@ impl VnApp {
 
             let screen = (rl.get_screen_width(), rl.get_screen_height());
             let now = rl.get_time();
-            let layout = self.design_size.unwrap_or(screen);
+            let ui_scale = manager.world.settings.values.ui_scale;
+            let designed = self.design_size.unwrap_or(screen);
+            let layout = crate::frame::viewport::scaled_layout(designed, ui_scale);
+            let render_scale = self.render_scale * crate::frame::viewport::ui_factor(ui_scale);
             let drawn = (
-                (layout.0 as f32 * self.render_scale).round() as i32,
-                (layout.1 as f32 * self.render_scale).round() as i32,
+                (layout.0 as f32 * render_scale).round() as i32,
+                (layout.1 as f32 * render_scale).round() as i32,
             );
             target.resize(&mut rl, &thread, drawn);
             let destination = crate::frame::target::destination(layout, screen);
             if target.frame().is_some() {
-                crate::frame::viewport::set_render_scale(self.render_scale);
+                crate::frame::viewport::set_render_scale(render_scale);
                 crate::frame::viewport::set(crate::frame::viewport::Viewport {
                     size: layout,
                     destination,
@@ -322,7 +325,7 @@ impl VnApp {
                             offset: Vector2::zero(),
                             target: Vector2::zero(),
                             rotation: 0.0,
-                            zoom: self.render_scale,
+                            zoom: render_scale,
                         });
                         manager.draw(&mut scaled, &thread);
                     }

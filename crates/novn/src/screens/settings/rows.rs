@@ -11,6 +11,7 @@ pub enum SettingsRow {
     Accessibility,
     ReduceMotion,
     TextSize,
+    UiScale,
     TextBackdrop,
     TextOutline,
     SelfVoicing,
@@ -24,7 +25,7 @@ pub enum SettingsPage {
 }
 
 impl SettingsRow {
-    pub const ALL: [SettingsRow; 14] = [
+    pub const ALL: [SettingsRow; 15] = [
         SettingsRow::Display,
         SettingsRow::TextSpeed,
         SettingsRow::MusicVolume,
@@ -36,6 +37,7 @@ impl SettingsRow {
         SettingsRow::Accessibility,
         SettingsRow::ReduceMotion,
         SettingsRow::TextSize,
+        SettingsRow::UiScale,
         SettingsRow::TextBackdrop,
         SettingsRow::TextOutline,
         SettingsRow::SelfVoicing,
@@ -49,6 +51,7 @@ impl SettingsRow {
                 | SettingsRow::Language
                 | SettingsRow::Accessibility
                 | SettingsRow::ReduceMotion
+                | SettingsRow::UiScale
                 | SettingsRow::TextBackdrop
                 | SettingsRow::TextOutline
                 | SettingsRow::SelfVoicing

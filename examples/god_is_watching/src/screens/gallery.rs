@@ -9,6 +9,7 @@ use crate::style;
 const COLUMNS: usize = 4;
 const CELL: Vector2 = Vector2::new(240.0, 150.0);
 const GAP: f32 = 16.0;
+const CAPTION: f32 = 34.0;
 const TRACK_ROW: Vector2 = Vector2::new(520.0, 46.0);
 
 pub struct GalleryScreen {
@@ -57,17 +58,22 @@ impl GalleryScreen {
 
     fn cell_rects(&self, tab: &Tab, screen: Vector2) -> Vec<Rectangle> {
         let columns = COLUMNS.min(tab.entries.len().max(1));
-        let total = CELL.x * columns as f32 + GAP * (columns - 1) as f32;
+        let rows = tab.entries.len().div_ceil(columns).max(1);
+        let across = (screen.x - 64.0 - GAP * (columns - 1) as f32) / columns as f32;
+        let down = (self.back_rect(screen).y - 16.0 - 168.0) / rows as f32 - CAPTION;
+        let scale = (across / CELL.x).min(down / CELL.y).clamp(0.0, 1.0);
+        let cell = Vector2::new(CELL.x * scale, CELL.y * scale);
+        let total = cell.x * columns as f32 + GAP * (columns - 1) as f32;
         tab.entries
             .iter()
             .enumerate()
             .map(|(index, _)| {
                 let (row, column) = (index / columns, index % columns);
                 Rectangle::new(
-                    (screen.x - total) / 2.0 + column as f32 * (CELL.x + GAP),
-                    168.0 + row as f32 * (CELL.y + 34.0),
-                    CELL.x,
-                    CELL.y,
+                    (screen.x - total) / 2.0 + column as f32 * (cell.x + GAP),
+                    168.0 + row as f32 * (cell.y + CAPTION),
+                    cell.x,
+                    cell.y,
                 )
             })
             .collect()

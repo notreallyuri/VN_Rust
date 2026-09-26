@@ -7,8 +7,17 @@ use crate::context::{DrawContext, GameContext};
 use crate::input::navigation::{Focus, NavInput};
 use crate::screens::playing::Typewriter;
 use crate::ui;
+use crate::ui::scroll::{Scroll, ScrollStyle};
 
 const PREVIEW_PAUSE: f64 = 1.5;
+const VIEW_BAND: f32 = 4.0;
+
+fn scrolled(controls: &[Rectangle], offset: f32) -> Vec<Rectangle> {
+    controls
+        .iter()
+        .map(|control| Rectangle::new(control.x, control.y - offset, control.width, control.height))
+        .collect()
+}
 
 pub(crate) enum Outcome {
     Stay,
@@ -22,6 +31,8 @@ pub(crate) struct SettingsMenu {
     dragging: Option<SettingsRow>,
     focus: Focus,
     page: SettingsPage,
+    scroll: Scroll,
+    reveal_focus: bool,
 }
 
 impl SettingsMenu {
@@ -33,6 +44,8 @@ impl SettingsMenu {
             dragging: None,
             focus: Focus::default(),
             page: SettingsPage::Main,
+            scroll: Scroll::new(),
+            reveal_focus: false,
         }
     }
 
@@ -56,7 +69,22 @@ impl SettingsMenu {
         }
 
         let rows = config.page_rows(self.page);
-        let controls = config.control_rects_for(rows.len(), screen);
+        let view = config.rows_view(rows.len(), screen);
+        let style = ScrollStyle::default();
+        let unscrolled = config.control_rects_for(rows.len(), screen);
+        let content = unscrolled
+            .last()
+            .map_or(0.0, |last| last.y + last.height - unscrolled[0].y);
+        self.scroll.extent(view.height - VIEW_BAND * 2.0, content);
+        if self.dragging.is_none() {
+            self.scroll.input(ctx.rl, view, &style);
+        }
+        if let Some(kind) = self.scroll.cursor(ctx.rl, view, &style) {
+            ctx.cursor(kind);
+        }
+        let mouse = crate::frame::viewport::mouse_position(ctx.rl);
+        let in_view = view.check_collision_point_rec(mouse) && !self.scroll.dragging();
+        let controls = scrolled(&unscrolled, self.scroll.offset());
 
         let mut targets: Vec<Rectangle> = controls
             .iter()
@@ -65,14 +93,24 @@ impl SettingsMenu {
         targets.push(back);
         let pointed = targets
             .iter()
-            .position(|rect| ui::is_hovered(ctx.rl, *rect));
+            .position(|rect| ui::is_hovered(ctx.rl, *rect))
+            .filter(|&index| index == rows.len() || in_view);
         let horizontal = ctx.nav.horizontal();
         let vertical_only = NavInput {
             left: false,
             right: false,
             ..ctx.nav
         };
-        match self.focus.update(&vertical_only, &targets, &[], pointed) {
+        let before = self.focus.index();
+        let chosen = self.focus.update(&vertical_only, &targets, &[], pointed);
+        let moved = self.focus.index() != before && pointed.is_none();
+        if (moved || std::mem::take(&mut self.reveal_focus))
+            && let Some(row) = self.focus.index().and_then(|i| unscrolled.get(i))
+        {
+            self.reveal(*row, view);
+        }
+        let controls = scrolled(&unscrolled, self.scroll.offset());
+        match chosen {
             Some(index) if index == rows.len() => return self.back(),
             Some(index) if index < rows.len() && !rows[index].is_slider() => {
                 let row = rows[index];
@@ -89,7 +127,6 @@ impl SettingsMenu {
             ctx.settings.update(|s| config.step(row, s, horizontal));
             sample |= row == SettingsRow::SoundVolume;
         }
-        let mouse = crate::frame::viewport::mouse_position(ctx.rl);
         let pressed = ctx
             .rl
             .is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
@@ -97,6 +134,9 @@ impl SettingsMenu {
 
         for (&row, &control) in rows.iter().zip(&controls) {
             let row_rect = config.row_rect(control, screen);
+            if !in_view {
+                continue;
+            }
             if let Some(text) = config.row_tooltip(row)
                 && self.dragging.is_none()
             {
@@ -152,6 +192,16 @@ impl SettingsMenu {
         Outcome::Stay
     }
 
+    fn reveal(&mut self, row: Rectangle, view: Rectangle) {
+        let top = view.y + VIEW_BAND + self.scroll.offset();
+        let bottom = top + view.height - VIEW_BAND * 2.0;
+        if row.y < top {
+            self.scroll.by(row.y - top);
+        } else if row.y + row.height > bottom {
+            self.scroll.by(row.y + row.height - bottom);
+        }
+    }
+
     fn back(&mut self) -> Outcome {
         match self.page {
             SettingsPage::Main => Outcome::Back,
@@ -164,6 +214,8 @@ impl SettingsMenu {
                     .position(|&row| row == SettingsRow::Accessibility);
                 self.focus.set(at);
                 self.dragging = None;
+                self.scroll.to_start();
+                self.reveal_focus = true;
                 Outcome::Stay
             }
         }
@@ -179,6 +231,7 @@ impl SettingsMenu {
             self.page = SettingsPage::Accessibility;
             self.focus = Focus::default();
             self.dragging = None;
+            self.scroll.to_start();
             return true;
         }
         ctx.settings.update(|s| config.step(row, s, 1));
@@ -222,11 +275,16 @@ impl SettingsMenu {
         let left = (screen.x - config.row_width) / 2.0;
         let rows = config.page_rows(self.page);
         let count = rows.len();
-        for (index, (row, control)) in rows
-            .into_iter()
-            .zip(config.control_rects_for(count, screen))
-            .enumerate()
-        {
+        let view = config.rows_view(count, screen);
+        let controls = scrolled(
+            &config.control_rects_for(count, screen),
+            self.scroll.offset(),
+        );
+        crate::ui::scroll::begin_clip(view);
+        for (index, (row, control)) in rows.into_iter().zip(controls).enumerate() {
+            if control.y + control.height < view.y || control.y > view.y + view.height {
+                continue;
+            }
             let focused = ctx.shows_focus(&self.focus, index);
             if focused {
                 let row_rect = config.row_rect(control, screen);
@@ -273,17 +331,22 @@ impl SettingsMenu {
             ui::draw_text(d, fonts, &value, Vector2::new(value_x, value_y), style);
         }
 
-        let sample = config.sample_rect(count, screen);
-        config.sample_box.draw(d, sample);
-        ui::draw_text_wrapped_visible(
-            d,
-            fonts,
-            ctx.label(&config.sample_text),
-            Vector2::new(sample.x + 16.0, sample.y + 16.0),
-            sample.width - 32.0,
-            &crate::ui::reading::text(&config.sample_text_style),
-            self.visible,
-        );
+        crate::ui::scroll::end_clip();
+        self.scroll.draw_bar(d, view, &ScrollStyle::default());
+
+        if config.shows_sample(count, screen) {
+            let sample = config.sample_rect(count, screen);
+            config.sample_box.draw(d, sample);
+            ui::draw_text_wrapped_visible(
+                d,
+                fonts,
+                ctx.label(&config.sample_text),
+                Vector2::new(sample.x + 16.0, sample.y + 16.0),
+                sample.width - 32.0,
+                &crate::ui::reading::text(&config.sample_text_style),
+                self.visible,
+            );
+        }
 
         let back_index = count;
         ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)

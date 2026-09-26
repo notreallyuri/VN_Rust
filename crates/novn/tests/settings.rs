@@ -311,6 +311,7 @@ fn the_accessibility_page_has_its_own_rows_and_title() {
         config.page_rows(SettingsPage::Accessibility),
         [
             SettingsRow::TextSize,
+            SettingsRow::UiScale,
             SettingsRow::TextBackdrop,
             SettingsRow::TextOutline,
             SettingsRow::ReduceMotion
@@ -361,4 +362,67 @@ fn text_size_steps_through_its_sizes_and_stops_at_the_ends() {
         old.text_size, 100,
         "a file from before it existed reads as normal size"
     );
+}
+
+#[test]
+fn interface_size_cycles_through_its_scales() {
+    use novn::screens::settings::SettingsRow;
+    let config = SettingsConfig::default();
+    let mut settings = Settings::default();
+    assert_eq!(settings.ui_scale, 100);
+    assert!(!SettingsRow::UiScale.is_slider());
+    let mut seen = Vec::new();
+    for _ in 0..4 {
+        config.step(SettingsRow::UiScale, &mut settings, 1);
+        seen.push(config.value_name(SettingsRow::UiScale, &settings));
+    }
+    assert_eq!(seen, ["110%", "125%", "150%", "100%"]);
+    config.step(SettingsRow::UiScale, &mut settings, -1);
+    assert_eq!(
+        settings.ui_scale, 150,
+        "Left from the first scale wraps to the last"
+    );
+
+    let old: Settings = serde_json::from_str(r#"{ "fullscreen": false }"#).unwrap();
+    assert_eq!(
+        old.ui_scale, 100,
+        "a file from before it existed reads as 100"
+    );
+}
+
+#[test]
+fn every_settings_page_fits_above_back_at_every_interface_size() {
+    use novn::frame::viewport::{UI_SCALES, scaled_layout};
+    use novn::screens::settings::SettingsPage;
+    use raylib::prelude::Vector2;
+
+    let config = SettingsConfig {
+        self_voicing_row: true,
+        ..Default::default()
+    };
+    for scale in UI_SCALES {
+        let (width, height) = scaled_layout((1280, 720), scale);
+        let screen = Vector2::new(width as f32, height as f32);
+        let back = config.back_rect(screen);
+        for page in [SettingsPage::Main, SettingsPage::Accessibility] {
+            let count = config.page_rows(page).len();
+            let view = config.rows_view(count, screen);
+            assert!(
+                view.y + view.height <= back.y,
+                "{scale}%: {page:?} rows reach the Back button"
+            );
+            assert!(
+                view.height >= 2.0 * config.value_button.height,
+                "{scale}%: {page:?} shows fewer than two rows"
+            );
+            if config.shows_sample(count, screen) {
+                let sample = config.sample_rect(count, screen);
+                assert!(sample.y >= view.y + view.height);
+                assert!(
+                    sample.y + sample.height <= back.y,
+                    "{scale}%: {page:?} sample covers Back"
+                );
+            }
+        }
+    }
 }

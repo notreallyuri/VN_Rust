@@ -1,7 +1,6 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use raylib::ffi;
 use raylib::prelude::*;
 
 use crate::context::{DrawContext, GameContext};
@@ -343,14 +342,7 @@ impl Overlay for LogOverlay {
             );
         }
 
-        unsafe {
-            ffi::BeginScissorMode(
-                area.x as i32,
-                area.y as i32,
-                area.width as i32,
-                area.height as i32,
-            );
-        }
+        crate::ui::scroll::begin_clip(area);
         let mut bottom = if content < area.height {
             area.y + content
         } else {
@@ -374,9 +366,7 @@ impl Overlay for LogOverlay {
                 break;
             }
         }
-        unsafe {
-            ffi::EndScissorMode();
-        }
+        crate::ui::scroll::end_clip();
         self.scroll.draw_bar(d, area, &config.scroll);
 
         ui::button::Button::new(ctx.label(&config.back_label), &config.back_button)

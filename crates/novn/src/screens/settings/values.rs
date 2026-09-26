@@ -2,6 +2,7 @@ use super::{
     AUTO_DELAY_MAX, AUTO_DELAY_MIN, AUTO_DELAY_STEP, SettingsConfig, SettingsPage, SettingsRow,
 };
 use crate::data::settings::Settings;
+use crate::frame::viewport::{UI_SCALES, nearest_ui_scale};
 use crate::ui;
 use crate::ui::reading;
 
@@ -77,6 +78,7 @@ impl SettingsConfig {
             SettingsPage::Accessibility => {
                 let mut rows = vec![
                     SettingsRow::TextSize,
+                    SettingsRow::UiScale,
                     SettingsRow::TextBackdrop,
                     SettingsRow::TextOutline,
                     SettingsRow::ReduceMotion,
@@ -126,6 +128,9 @@ impl SettingsConfig {
             SettingsRow::TextSize => {
                 reading::nearest(settings.text_size) as f32 / (reading::SIZES.len() - 1) as f32
             }
+            SettingsRow::UiScale => {
+                nearest_ui_scale(settings.ui_scale) as f32 / (UI_SCALES.len() - 1) as f32
+            }
             SettingsRow::TextBackdrop => settings.text_backdrop.min(2) as f32 / 2.0,
             SettingsRow::TextOutline => f32::from(u8::from(settings.text_outline)),
             SettingsRow::SelfVoicing => f32::from(u8::from(settings.self_voicing)),
@@ -155,6 +160,9 @@ impl SettingsConfig {
                 settings.text_size =
                     reading::SIZES[ui::slider_step(fraction, reading::SIZES.len())];
             }
+            SettingsRow::UiScale => {
+                settings.ui_scale = UI_SCALES[ui::slider_step(fraction, UI_SCALES.len())];
+            }
             SettingsRow::TextBackdrop => {
                 settings.text_backdrop = ui::slider_step(fraction, 3) as u32;
             }
@@ -179,6 +187,11 @@ impl SettingsConfig {
                 let last = reading::SIZES.len() as i32 - 1;
                 let at = (reading::nearest(settings.text_size) as i32 + delta).clamp(0, last);
                 settings.text_size = reading::SIZES[at as usize];
+            }
+            SettingsRow::UiScale => {
+                let count = UI_SCALES.len() as i32;
+                let at = (nearest_ui_scale(settings.ui_scale) as i32 + delta).rem_euclid(count);
+                settings.ui_scale = UI_SCALES[at as usize];
             }
             SettingsRow::TextBackdrop => {
                 settings.text_backdrop = (settings.text_backdrop.min(2) + 1) % 3;
@@ -245,6 +258,7 @@ impl SettingsConfig {
             SettingsRow::ReduceMotion if settings.reduce_motion => self.on_label.clone(),
             SettingsRow::ReduceMotion => self.off_label.clone(),
             SettingsRow::TextSize => format!("{}%", settings.text_size),
+            SettingsRow::UiScale => format!("{}%", UI_SCALES[nearest_ui_scale(settings.ui_scale)]),
             SettingsRow::TextBackdrop => {
                 self.text_backdrop_levels[settings.text_backdrop.min(2) as usize].clone()
             }
@@ -272,6 +286,7 @@ impl SettingsConfig {
             SettingsRow::Accessibility => &self.accessibility_label,
             SettingsRow::ReduceMotion => &self.reduce_motion_label,
             SettingsRow::TextSize => &self.text_size_label,
+            SettingsRow::UiScale => &self.ui_scale_label,
             SettingsRow::TextBackdrop => &self.text_backdrop_label,
             SettingsRow::TextOutline => &self.text_outline_label,
             SettingsRow::SelfVoicing => &self.self_voicing_label,
@@ -291,6 +306,7 @@ impl SettingsConfig {
             SettingsRow::Accessibility => self.accessibility_tooltip.as_deref(),
             SettingsRow::ReduceMotion => self.reduce_motion_tooltip.as_deref(),
             SettingsRow::TextSize => self.text_size_tooltip.as_deref(),
+            SettingsRow::UiScale => self.ui_scale_tooltip.as_deref(),
             SettingsRow::TextBackdrop => self.text_backdrop_tooltip.as_deref(),
             SettingsRow::TextOutline => self.text_outline_tooltip.as_deref(),
             SettingsRow::SelfVoicing => self.self_voicing_tooltip.as_deref(),

@@ -177,3 +177,33 @@ impl Scroll {
         d.draw_rectangle_rounded(thumb, radius / thumb.height.max(1.0), 6, style.bar_color);
     }
 }
+
+pub fn clip_pixels(area: Rectangle, scale: f32) -> (i32, i32, i32, i32) {
+    let left = (area.x * scale).floor();
+    let top = (area.y * scale).floor();
+    let right = ((area.x + area.width) * scale).ceil();
+    let bottom = ((area.y + area.height) * scale).ceil();
+    (
+        left as i32,
+        top as i32,
+        (right - left).max(0.0) as i32,
+        (bottom - top).max(0.0) as i32,
+    )
+}
+
+pub fn begin_clip(area: Rectangle) {
+    let scale = match crate::frame::viewport::current() {
+        Some(_) => crate::frame::viewport::render_scale(),
+        None => 1.0,
+    };
+    let (x, y, width, height) = clip_pixels(area, scale);
+    unsafe {
+        ffi::BeginScissorMode(x, y, width, height);
+    }
+}
+
+pub fn end_clip() {
+    unsafe {
+        ffi::EndScissorMode();
+    }
+}

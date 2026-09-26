@@ -140,3 +140,18 @@ fn games_add_or_replace_sections() {
         .collect();
     assert_eq!(titles, ["Only"], "no F1 row when nothing opens it");
 }
+
+#[test]
+fn the_controls_stack_into_one_column_when_two_would_cut_labels() {
+    let defaults = default_keybinds(
+        &PlayingConfig::default(),
+        &RollbackConfig::default(),
+        &NavigationConfig::default(),
+    );
+    let overlay = KeybindsOverlay::new(Rc::new(KeybindsConfig::default()), defaults);
+    assert_eq!(overlay.columns(1096.0).len(), 2);
+    let stacked = overlay.columns(789.0);
+    assert_eq!(stacked.len(), 1);
+    assert_eq!(stacked[0].len(), overlay.sections().len());
+    assert!(overlay.content_height(789.0) > overlay.content_height(1096.0));
+}

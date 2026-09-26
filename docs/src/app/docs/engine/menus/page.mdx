@@ -84,6 +84,7 @@ settings do not break old files.
 | Language | none, meaning the story as written |
 | Reduce motion | off |
 | Text size | 100 percent, from 90 to 150 |
+| Interface size | 100 percent; 110, 125 or 150 |
 | Text backdrop | as designed |
 | Text outline | off |
 | Self-voicing | off, and only offered when the game has a reader |
@@ -93,6 +94,10 @@ The default screen shows one row per setting. `audio_rows(false)` hides the volu
 language row only appears when the game ships more than one. Display and Skip are toggles;
 the rest are sliders you can drag, click along, or step with the arrow keys while the row
 is hovered. Under the rows a sample line types out at the chosen speed.
+
+When the rows do not fit above Back, the list scrolls, with the wheel, the scrollbar, or
+by moving focus with the keys, which brings the focused row into view. The sample line keeps
+its place while at least four rows fit beside it, and gives up its room when fewer would.
 
 It exists both as a screen, reached from the main menu, and as an overlay, reached from the
 pause menu. From code, `ctx.settings.values` reads and `ctx.settings.update(|s| ...)`
@@ -116,8 +121,32 @@ The dialogue box grows upward with it, keeping its bottom edge and its padding a
 the room inside larger, so a long line that wraps to an extra row at 150 percent still fits.
 Choice buttons grow with their text, and never past the edge of the screen.
 
-Menus, settings and buttons keep their sizes. Those are laid out to fixed positions, and
-scaling them would push rows into each other and cut labels short.
+Menus, settings and buttons keep their sizes; making those larger is what Interface size
+is for.
+
+### Interface size
+
+100, 110, 125 or 150 percent, and it makes the whole interface larger: menus, buttons,
+settings, the dialogue box and its text. The scene keeps its size, since backgrounds fill the
+frame and characters are sized as a fraction of its height.
+
+It works through the render target. The screens are laid out at the design size divided by
+the scale, 1024 x 576 for a 1280 x 720 game at 125 percent, and the render scale is raised
+by the same factor, so the target keeps its pixels and everything is drawn larger and still
+sharp. It is a value button rather than a slider: a slider that resizes the page it is on
+would move out from under the pointer while being dragged. It changes the layout the next
+frame, including the page the player is on.
+
+The default screens are made to fit down to 853 x 480, which is 150 percent of 1280 x 720:
+the settings rows and the controls scroll, the controls stack into one column when two would
+cut their labels short, and save slots narrow to fit the width. A game's own screens get the
+same smaller size from `ui::screen_size`, so a screen laid out from it rather than from fixed
+coordinates keeps working; one drawn at fixed positions for 1280 x 720 will run off the edge.
+It has no effect when drawing goes straight to the window because the render target could
+not be created.
+
+Both sizes multiply: text size 150 at interface size 150 draws dialogue at 225 percent of
+its design size.
 
 ### Reduce motion
 

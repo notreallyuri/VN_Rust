@@ -3,6 +3,10 @@ use raylib::prelude::*;
 use super::SettingsConfig;
 
 const ROWS_TOP: f32 = 110.0;
+const GAP: f32 = 24.0;
+const BAND: f32 = 4.0;
+const VIEW_MARGIN: f32 = 28.0;
+const MIN_ROWS: f32 = 4.0;
 
 impl SettingsConfig {
     pub fn control_rects(&self, screen: Vector2) -> Vec<Rectangle> {
@@ -44,14 +48,42 @@ impl SettingsConfig {
         )
     }
 
-    pub(crate) fn sample_rect(&self, count: usize, screen: Vector2) -> Rectangle {
-        let rows = self.control_rects_for(count, screen);
-        let top = rows.last().map_or(ROWS_TOP, |r| r.y + r.height) + 24.0;
+    fn rows_height(&self, count: usize) -> f32 {
+        let pitch = self.value_button.height + self.row_spacing;
+        (count as f32 * pitch - self.row_spacing).max(0.0)
+    }
+
+    fn sample_height(&self) -> f32 {
+        crate::ui::reading::text(&self.sample_text_style).size * 1.3 * 2.0 + 24.0
+    }
+
+    pub fn shows_sample(&self, count: usize, screen: Vector2) -> bool {
+        let room = self.back_rect(screen).y - GAP * 2.0 - self.sample_height() - ROWS_TOP;
+        let pitch = self.value_button.height + self.row_spacing;
+        room >= self.rows_height(count) || room >= MIN_ROWS * pitch - self.row_spacing
+    }
+
+    pub fn rows_view(&self, count: usize, screen: Vector2) -> Rectangle {
+        let mut bottom = self.back_rect(screen).y - GAP;
+        if self.shows_sample(count, screen) {
+            bottom -= self.sample_height() + GAP;
+        }
+        let height = self.rows_height(count).min(bottom - ROWS_TOP).max(0.0);
+        Rectangle::new(
+            (screen.x - self.row_width) / 2.0 - VIEW_MARGIN,
+            ROWS_TOP - BAND,
+            self.row_width + VIEW_MARGIN * 2.0,
+            height + BAND * 2.0,
+        )
+    }
+
+    pub fn sample_rect(&self, count: usize, screen: Vector2) -> Rectangle {
+        let view = self.rows_view(count, screen);
         Rectangle::new(
             (screen.x - self.row_width) / 2.0,
-            top,
+            view.y + view.height - BAND + GAP,
             self.row_width,
-            crate::ui::reading::text(&self.sample_text_style).size * 1.3 * 2.0 + 24.0,
+            self.sample_height(),
         )
     }
 
@@ -60,7 +92,7 @@ impl SettingsConfig {
         Rectangle::new((screen.x - width) / 2.0, 24.0, width, screen.y - 48.0)
     }
 
-    pub(crate) fn back_rect(&self, screen: Vector2) -> Rectangle {
+    pub fn back_rect(&self, screen: Vector2) -> Rectangle {
         let style = &self.back_button;
         Rectangle::new(
             (screen.x - style.width) / 2.0,

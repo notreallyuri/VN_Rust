@@ -38,6 +38,8 @@ pub struct SettingsConfig {
     pub reduce_motion_tooltip: Option<String>,
     pub text_size_label: String,
     pub text_size_tooltip: Option<String>,
+    pub ui_scale_label: String,
+    pub ui_scale_tooltip: Option<String>,
     pub text_backdrop_label: String,
     pub text_backdrop_levels: [String; 3],
     pub text_backdrop_tooltip: Option<String>,
@@ -116,6 +118,10 @@ impl Default for SettingsConfig {
             text_size_label: "Text size".to_string(),
             text_size_tooltip: Some(
                 "Dialogue, choices and the log. The box grows to fit".to_string(),
+            ),
+            ui_scale_label: "Interface size".to_string(),
+            ui_scale_tooltip: Some(
+                "Menus, buttons and text, all larger. The scene keeps its size".to_string(),
             ),
             text_backdrop_label: "Text backdrop".to_string(),
             text_backdrop_levels: [
@@ -302,6 +308,7 @@ impl SettingsConfig {
             SettingsRow::Accessibility => self.accessibility_tooltip = text,
             SettingsRow::ReduceMotion => self.reduce_motion_tooltip = text,
             SettingsRow::TextSize => self.text_size_tooltip = text,
+            SettingsRow::UiScale => self.ui_scale_tooltip = text,
             SettingsRow::TextBackdrop => self.text_backdrop_tooltip = text,
             SettingsRow::TextOutline => self.text_outline_tooltip = text,
             SettingsRow::SelfVoicing => self.self_voicing_tooltip = text,

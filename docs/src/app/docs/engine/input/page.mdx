@@ -141,9 +141,16 @@ It keeps an offset, clamps it to the content, and draws a scrollbar.
 ```rust
 scroll.extent(area.height, content_height);
 scroll.input(ctx.rl, area, &style);
-// draw the content shifted by scroll.offset(), inside a scissor
+
+ui::scroll::begin_clip(area);
+// draw the content shifted up by scroll.offset()
+ui::scroll::end_clip();
 scroll.draw_bar(d, area, &style);
 ```
+
+`begin_clip` takes the area in layout coordinates and clips on the render target's pixels.
+Raylib's own `BeginScissorMode` ignores the camera the frame is drawn through, so with a
+render scale above 1, or a larger interface size, it would clip the wrong part of the screen.
 
 `extent` takes the visible and content heights and pulls the offset back when the content
 shrinks. `input` handles the wheel, dragging the thumb and clicking the track. `by`, `page`,

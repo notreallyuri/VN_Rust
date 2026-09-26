@@ -115,3 +115,34 @@ fn a_copied_frame_keeps_its_orientation() {
         "the copy is upside down: the snapshot would show a flipped screen"
     );
 }
+
+#[test]
+fn interface_size_lays_out_smaller_and_draws_at_the_same_pixels() {
+    use novn::frame::viewport::{scaled_layout, ui_factor};
+    assert_eq!(scaled_layout((1280, 720), 100), (1280, 720));
+    assert_eq!(scaled_layout((1280, 720), 125), (1024, 576));
+    assert_eq!(scaled_layout((1280, 720), 150), (853, 480));
+    assert_eq!(
+        ui_factor(130),
+        1.25,
+        "an unknown value snaps to the nearest scale"
+    );
+    assert_eq!(ui_factor(0), 1.0);
+    for scale in [100, 110, 125, 150] {
+        let layout = scaled_layout((1280, 720), scale);
+        let drawn = (layout.0 as f32 * 1.5 * ui_factor(scale)).round();
+        assert!(
+            (drawn - 1920.0).abs() <= 2.0,
+            "{scale}%: target is {drawn} wide"
+        );
+    }
+}
+
+#[test]
+fn clips_land_on_render_target_pixels() {
+    use novn::ui::scroll::clip_pixels;
+    use raylib::prelude::Rectangle;
+    let area = Rectangle::new(100.0, 50.0, 400.0, 200.0);
+    assert_eq!(clip_pixels(area, 1.0), (100, 50, 400, 200));
+    assert_eq!(clip_pixels(area, 2.25), (225, 112, 900, 451));
+}
